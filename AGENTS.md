@@ -3,36 +3,40 @@
 > `CLAUDE.md` is a symlink to this file. Do not edit `CLAUDE.md` directly -- edit `AGENTS.md` instead.
 
 
-Above all: consolidate key understandings and new findings as inline Rust documentation
-(`//!` module docs and `///` item docs) close to the relevant code.
+## Core Principles
+
 Inline Rust documentation is the canonical documentation source for this repository.
+Consolidate key understandings, new findings, invariants, and design rationale close to
+the relevant code with `//!` module docs and `///` item docs.
 Write `/// Note: ` to explain why unusual design choices / compromises are made.
+Do not rely on a standalone `docs/` tree as the canonical source.
 
 Prioritize a clean codebase and elegant design over compatibility or migration work.
 Do not keep transitional layers, compatibility shims, or legacy interfaces unless they are
 explicitly required by the task. If compatibility or migration concerns conflict with a
 clearer design, prefer the clearer design.
 
-Before and after any edit to DESIGN.md, evaluate the document as a reader.
-- Is the structure clear and logically ordered?
-- Does the prose read like it was written by a knowledgeable practitioner, not like generated text?
-- Are there redundant or overlapping sections that should be merged or reordered?
-Apply these standards to every edit.
-
 ## Documentation and Language
 
 Actively write documentation for the program. Make sure *all* public APIs are documented.
-All written documentation must be concise, clear, and accurate.
+All written documentation must be concise, clear, accurate, and written in English unless explicitly stated.
 No emojis unless strictly necessary.
 Add bold text only if it emphasizes truly valuable information.
-All documentation should be written in English unless explicitly stated.
 Prefer direct definitions over defensive framing.
 - Define what the system does before explaining limits or exclusions.
 - Keep definition-by-negation to a minimum; use it only when a nearby confusion is likely and the contrast is genuinely clarifying.
 - Avoid prose that reads like a rebuttal, disclaimer, or argument with an imaginary reviewer.
 - When documenting a constraint, state the positive rule first, then the consequence if needed.
 
-When writing DESIGN.md, follow these style guidelines:
+### DESIGN.md
+
+Before and after any edit to `DESIGN.md`, evaluate the document as a reader.
+- Is the structure clear and logically ordered?
+- Does the prose read like it was written by a knowledgeable practitioner, not like generated text?
+- Are there redundant or overlapping sections that should be merged or reordered?
+Apply these standards to every edit.
+
+When writing `DESIGN.md`, follow these style guidelines:
 - Declarative, dry, precise.
 - Each paragraph does one thing: introduces a concept, states its properties, and stops.
 - No motivational framing, no rhetoric, no "this is important because."
@@ -43,13 +47,7 @@ When writing DESIGN.md, follow these style guidelines:
 - Analogies appear sparingly and only to established PL concepts (well-typedness, nominal binding),
   never to everyday metaphors.
 
-### Canonical Documentation Location
-
-- Prefer inline Rust documentation in `src/**/*.rs`.
-- Keep design rationale near the owning modules and types.
-- Do not rely on a standalone `docs/` tree as the canonical source.
-
-## Rust Code Style Guideline
+## Rust Code Style
 
 Panic fast. If some edge case is not specified by design, log and panic.
 Never attempt to recover from an error path if it's not absolutely correct.
@@ -95,9 +93,6 @@ If build can borrow,
 - Prefer a finalizer `fn build(&self) -> T` so the builder can be reused.
 Expose an associated entry point `fn new(required, ...)`,
 and use `with_*/set_*` names consistently for optional configuration.
-
-Add concise yet critical documentation for structs, fields, and methods.
-Ensure that documentation is clear, concise, and accurate. No emojis unless strictly necessary.
 
 When adding new features, record and observe details with the `tracing` crate.
 Use `trace` level at the beginning and end of major interface calls to record arguments.
