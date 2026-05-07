@@ -2,7 +2,11 @@
 
 *Semantic Intermediate Representation of Nominal Obligations*
 
-Sirno is a graph-shaped knowledge database for codebases. It mediates between abstract design knowledge and concrete code through a structured graph of named, agent-maintained knowledge units. Agents consult and update the graph as part of any code-touching operation, keeping design and implementation in agreement.
+Sirno is a knowledge graph for concept-driven development and anti-drift
+codebase alignment. It stores named concepts and claims about a codebase,
+refines those ideas from broad design to local implementation,
+binds them to repository artifacts,
+and requires re-examination when an upstream concept or claim changes.
 
 <p align="center">
   <picture>
@@ -16,23 +20,60 @@ Sirno is a graph-shaped knowledge database for codebases. It mediates between ab
 
 ## Motivation
 
-Codebases accumulate knowledge that does not appear in their syntax: invariants on valid states, decisions that foreclose design alternatives, and rationale for structural choices. This knowledge governs correctness and evolution. It has no structured representation in the artifacts that version-control systems track.
+Codebases depend on knowledge that their syntax does not encode directly.
+Invariants, design decisions, representation choices, and the concepts that
+compress them govern how changes must be evaluated.
 
-In its absence, knowledge migrates into comments, commit messages, and design documents that are disconnected from each other and from the code they describe. A change to code or to a recorded claim has no mechanism to identify which other claims must be re-examined. Consistency between knowledge and code is unverifiable.
+A system is easier to extend when its implementation is organized around stable
+concepts rather than around isolated local decisions. Concepts keep intent
+compressed and portable across levels of detail. Refinement then unfolds those
+concepts into lower-level design and implementation without discarding the
+meaning that made the system coherent in the first place.
 
-In response, Sirno provides the structured representation. Entries name individual claims. Dependencies record causal relationships among them. Groundings bind entries to code locations. Obligations make the effect of a mutation explicit and propagate it to dependent claims. Coherence then states when the graph and repository view agree after a change.
+When this knowledge remains in comments, design notes, or reviewer memory, it
+is disconnected from both repository state and change propagation. A code edit
+can invalidate a claim without identifying the dependent claims that must be
+re-examined. A design edit can change an upstream commitment without
+identifying the grounded repository artifacts that must be checked.
+
+Sirno gives this knowledge explicit graph structure. Entries name concepts and
+claims. Refinement is the primary organizing relation. It connects broad design
+to concrete realization. Dependency then defines re-examination flow, and
+grounding binds claims to repository artifacts.
 
 ---
 
-## Components
+## Layering
 
 Sirno is defined above two smaller components:
 
-- `eter`, which provides immutable versioned graph storage
-- `mosaika`, which provides anti-drift codebase alignment through
-  delimiter-based analysis of repository text
+- `eter`, which owns immutable snapshots, history, and the write transaction
+  boundary
+- `mosaika`, which owns repository alignment analysis and grounded region
+  discovery
 
-Sirno defines the knowledge semantics that use those components.
+Sirno defines the knowledge semantics that use those components. It introduces
+the design graph, its relations, and the write-acceptance rules that connect
+graph state to repository state.
+
+---
+
+## Design Graph
+
+The Sirno design graph is the intermediate representation between project-scale
+design and repository-scale implementation.
+
+The graph consists of entries together with explicit refinement, dependency, and
+grounding relations. Entry prose may also contain implicit associative links.
+
+The graph is concept-driven in shape. Work begins from concept-bearing entries
+and moves downward by refinement. Higher entries capture the named ideas that
+compress intention. Lower entries unfold those ideas into specifications, work
+items, and code-adjacent detail.
+
+Refinement, dependency, and grounding are load-bearing graph relations. They are
+tracked explicitly because they carry operational consequences. Prose links are
+navigational only.
 
 ---
 
@@ -48,14 +89,37 @@ An entry is the primitive object in Sirno. An entry carries:
 - a full explanation
 
 An entry states one claim about the codebase. The claim may describe an
-invariant, a design decision, a representation choice, a module purpose, or
-another isolated piece of understanding.
+invariant, a design decision, a representation choice, a concept, a
+specification, a work item, or another isolated piece of understanding.
 
-Entries are the only durable owner of explanatory prose in Sirno. When Sirno
-needs narrative text for another object, it refers to an entry.
+An entry owns explanatory prose. Other entry identifiers may appear in that
+prose as links. These links are associative references. They do not create
+propagation edges.
 
-An entry explanation may link to other entries. These links are navigational
-references in prose. They do not create propagation edges.
+Concept-bearing entries are the preferred starting point for work. They carry
+the highest compression of intention. A well-formed concept entry makes
+lower-level specifications and implementation choices more local, more
+predictable, and easier to review against their design purpose.
+
+### Refinement
+
+A refinement connects a more abstract entry to a more concrete one.
+
+Refinement is the vertical structuring rule of the graph and the primary working
+discipline in Sirno. It answers the question: how is this higher-level claim
+elaborated into a lower-level design or implementation commitment.
+
+Refinement does not imply reconsideration under change by itself. It organizes
+the design from slogans and broad architecture down to code-adjacent detail.
+
+Higher entries carry the named concepts and architectural claims that compress
+intent. Lower entries unfold those concepts into specifications, work items, and
+grounded implementation detail without severing the connection to the original
+design meaning.
+
+Work should therefore begin by locating the relevant higher-level entries and
+following refinement downward. Local implementation is the end of this path, not
+the start of it.
 
 ### Dependency
 
@@ -68,11 +132,11 @@ on the source.
 
 A dependency may refer to an additional entry that explains what the dependency
 means. That entry is descriptive metadata. The operational semantics of the
-dependency are determined by the dependency endpoints.
+dependency are determined by the endpoints.
 
 ### Grounding
 
-A grounding binds an entry to repository text. The binding is stored as a
+A grounding binds an entry to repository artifacts. The binding is stored as a
 Sirno grounding specification interpreted through `mosaika`.
 
 A grounding has three components:
@@ -84,80 +148,53 @@ A grounding has three components:
 Sirno uses three grounding interpretations.
 
 An anchor grounding is a one-delimiter region that marks the nominal presence of
-the entry in source text.
+the entry in repository text.
 
 A region grounding is a region associated with the entry for inspection,
 reflection, or actualization. It is not evidentiary by itself.
 
 A witness grounding is a region designated as evidence for the entry's claim.
 
-Groundings are defined over repository artifacts in their textual form.
-
-### Lifting
-
-Lifting is the abstraction from repository observations back into the Sirno
-graph.
-
-Lifting consumes grounded repository regions and produces Sirno field writes. It
-may create entries, revise entry text, revise dependency egress, and revise
-grounding specifications.
-
-Lifting is the primary operation in reflection.
+Groundings operate over repository artifacts in their textual form. `mosaika`
+provides the alignment analysis that discovers the grounded regions.
 
 ### Obligation
 
-An obligation is a proof burden created by a claim-bearing change.
+An obligation is the re-examination burden induced by a claim-bearing change.
 
 A change is claim-bearing when it changes either:
 
 - the text of an entry
 - the dependency egress of an entry
 
-Grounding changes and lock-state changes are not claim-bearing. They change
-repository interpretation or authority. They do not change downstream validity
-by themselves.
+Grounding changes, refinement changes, and lock-state changes are not
+claim-bearing. They change repository interpretation, design organization, or
+authority. They do not change downstream validity by themselves.
 
-If a claim-bearing write changes entry `X`, every dependency `X -> Y` in the
-resulting graph creates an obligation on `Y`.
+Obligations are derived from dependency under change. They are not a separate
+persistent coupling concept in the graph.
 
 ### Lock
 
-A lock is a write-capability boundary on an entry.
+A lock is the authority boundary on claim-bearing writes to an entry.
 
 A locked entry may be read, grounded, and used during propagation. Changing its
 claim-bearing fields requires external approval.
 
+The approval path for a locked write carries the proposed graph write together
+with an argument entry that explains the change. The rationale is therefore part
+of the graph rather than transient review metadata.
+
 Locks protect entries with wide consequences, such as architectural decisions,
 global invariants, and externally promised guarantees.
 
-### Justification
-
-A justification is the review object for a proposed locked-entry change.
-
-It contains the proposed write together with an argument entry that explains the
-change. The rationale is an entry so that it remains part of the graph rather
-than transient review metadata.
-
-### Coherence
-
-A Sirno snapshot is coherent when all of the following hold:
-
-- every obligation induced by the write has been discharged
-- every locked-entry change has been approved
-- every grounding specification is valid under the `mosaika` analysis model
-- every required anchor and witness validates against the repository view used
-  for the write
-
-Coherence is the global well-formedness invariant of Sirno.
-
 ---
 
-## Storage Model
+## Storage and Write Model
 
-Sirno is stored as an `eter` node schema.
-
-Every Sirno entry is an `eter` node. The entry identifier is the `NodeId`. A
-durable Sirno state is an `eter` snapshot identified by an `Eterator`.
+Sirno is stored as an `eter` node schema. Every Sirno entry is an `eter` node.
+The entry identifier is the `NodeId`. A durable Sirno state is an `eter`
+snapshot identified by an `Eterator`.
 
 The logical Sirno fields are:
 
@@ -165,6 +202,7 @@ The logical Sirno fields are:
 - entry name
 - entry description
 - entry explanation
+- refinement egress
 - dependency egress
 - grounding specifications
 - lock state
@@ -176,30 +214,52 @@ Sirno chooses non-reuse of entry identifiers. Once an identifier has existed,
 it remains reserved even after deletion. Nominal identity therefore persists
 across the whole graph history.
 
-Dependency egress is stored on the source entry. Reverse adjacency is derived
-state.
+Refinement and dependency egress are stored on the source entry. Reverse
+adjacency is derived state.
 
 Grounding specifications are stored as typed Sirno data compatible with the
-`mosaika` analysis model.
+`mosaika` analysis model. Lock state is stored on the entry because authority is
+part of graph state.
 
-Locks are stored on entries because authority is part of the graph state.
+Sirno is used in two workflows. In actualization, the graph is authoritative
+and repository artifacts are rewritten to satisfy selected entries. In
+reflection, the repository view is authoritative and grounded observations are
+written back into the graph.
 
-History is `eter` history.
+In both workflows, work begins from graph exploration rather than from local
+code inspection alone. The expected starting point is the relevant concept or
+design entry and its refinement chain.
+
+A write begins from one base `Eterator` and accumulates proposed Sirno field
+writes relative to that snapshot. The write also carries the obligations induced
+by those changes, the repository view used for validation, and any pending
+locked-write approvals.
+
+The durable write boundary is the `eter` transaction. The candidate Sirno state
+is computed first, then validated against the repository view, then written as
+new field rows. If the transaction succeeds, `eter` returns the new `Eterator`.
+
+A write is accepted only when all induced obligations have been discharged, all
+locked-entry changes have been approved, and the resulting grounding
+specifications pass the required repository validation.
+
+Repository analysis occurs before the `eter` transaction. Repository
+materialization, when actualization edits code, also occurs before the `eter`
+transaction. The graph is written only after the repository view and the graph
+view agree.
 
 ---
 
-## Repository Semantics
+## Grounding and Repository Alignment
 
-Sirno uses `mosaika` to define and validate grounded repository regions as part
-of codebase alignment.
-
-The grounding language is delimiter-based. A grounding identifies source files,
-declares delimiter-based log transforms, and interprets the resulting regions as
-anchors, regions, or witnesses.
+The grounding language is delimiter-based because it is interpreted through
+`mosaika`. A grounding identifies source files, declares delimiter-based log
+transforms, and interprets the resulting regions as anchors, regions, or
+witnesses.
 
 `mosaika` replacement actions belong to actualization tooling that rewrites
-repository text to satisfy entries. Sirno grounding uses the analysis side of
-`mosaika`.
+repository artifacts to satisfy entries. Sirno grounding uses the analysis side
+of `mosaika`.
 
 Grounding validation has three layers.
 
@@ -217,60 +277,17 @@ Groundings are evaluated relative to a repository view. In a repository-backed
 deployment, that view is typically a checked-out tree plus any in-progress code
 changes owned by the active task.
 
----
-
-## Operational Model
-
-### Polarity
-
-Sirno uses two reasoning polarities.
-
-In actualization, the graph is authoritative. Repository text is rewritten to
-satisfy the selected entries.
-
-In reflection, the repository is authoritative. Repository observations are
-lifted back into the graph.
-
-Polarity changes the direction of reasoning. Dependency direction, lock rules,
-and storage semantics remain fixed.
-
-### Session
-
-A session is a client-side working interval rooted at one base `Eterator`.
-
-The session holds:
-
-- the base snapshot
-- the proposed Sirno field writes relative to that snapshot
-- the obligations induced by those writes
-- the repository view used for grounding validation
-- any pending justifications for locked entries
-
-The session is not a durable storage primitive. Durability begins when the
-session commits one `eter` write transaction and receives a new `Eterator`.
-
-### Commit
-
-A commit is the `eter` write transaction that materializes the session's field
-writes.
-
-The session computes the resulting Sirno state, validates coherence against the
-repository view, and then writes the accepted field rows. If the write
-succeeds, `eter` returns a new `Eterator`. That snapshot is the new durable
-Sirno state.
-
-Sirno has one write boundary. Repository analysis occurs before the `eter`
-commit. Repository materialization, when actualization edits code, also occurs
-before the `eter` commit. The graph is committed only after the repository view
-and the graph view agree.
+In reflection, grounded repository observations become proposed graph writes.
+Sirno introduces no additional concept for that step beyond the write workflow
+itself.
 
 ---
 
-## Propagation Semantics
+## Propagation
 
 Propagation follows dependency edges in their declared direction.
 
-When a session stages a claim-bearing change to entry `X`, Sirno computes the
+When a write stages a claim-bearing change to entry `X`, Sirno computes the
 dependency egress of `X` in the resulting graph. For each dependency `X -> Y`,
 Sirno creates an obligation on `Y`.
 
@@ -281,30 +298,14 @@ Confirmation records that `Y` remains valid under the new upstream state.
 Revision records new field writes for `Y`. If that revision is claim-bearing,
 propagation continues from `Y`.
 
-Approval records that a previously justified change to a locked `Y` is
-accepted. The approved writes are then applied and propagated in the same way
-as any other revision.
+Approval records that a previously reviewed locked write to `Y` is accepted.
+The approved writes are then applied and propagated in the same way as any
+other revision.
 
 Cycles are handled at the level of strongly connected components. Every entry in
 the component must be re-examined against the same candidate state. The
 component is discharged only when its entries reach a fixed point.
 
----
-
-## Boundary
-
-`eter` provides immutable typed graph storage. `mosaika` provides typed
-repository alignment over delimiter-defined textual regions.
-
-Sirno adds:
-
-- entries as nominal knowledge claims
-- dependency as the causal graph relation
-- grounding interpretation as anchors, regions, and witnesses
-- lifting from repository observations into graph writes
-- obligation propagation over dependency edges
-- locks and justifications for claim-bearing writes
-- coherence as a joint invariant over graph state and repository state
-
-Everything else belongs to `eter`, `mosaika`, or application-specific tooling
-built above them.
+These propagation rules are part of write acceptance. An accepted write records
+that all required reconsideration has been completed rather than deferred
+silently.
