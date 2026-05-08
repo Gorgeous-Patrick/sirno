@@ -6,25 +6,28 @@
 ## Core Principles
 
 Inline Rust documentation is the canonical documentation source for this repository.
-Consolidate key understandings, new findings, invariants, and design rationale close to
-the relevant code with `//!` module docs and `///` item docs.
+Use `//!` module docs and `///` item docs.
+Keep key understandings, new findings, invariants, and design rationale close to the relevant code.
 Write `/// Note: ` to explain why unusual design choices / compromises are made.
 Do not rely on a standalone `docs/` tree as the canonical source.
 
 Prioritize a clean codebase and elegant design over compatibility or migration work.
-Do not keep transitional layers, compatibility shims, or legacy interfaces unless they are
-explicitly required by the task. If compatibility or migration concerns conflict with a
-clearer design, prefer the clearer design.
+Do not keep transitional layers, compatibility shims, or legacy interfaces unless the task explicitly requires them.
+If compatibility or migration concerns conflict with a clearer design, prefer the clearer design.
 
 ## Documentation and Language
 
 Actively write documentation for the program. Make sure *all* public APIs are documented.
 All written documentation must be concise, clear, accurate, and written in English unless explicitly stated.
+Break Markdown prose at natural punctuation boundaries.
+Keep sentences short.
+A line may slightly exceed the line-length budget when that makes the text read better.
 No emojis unless strictly necessary.
 Add bold text only if it emphasizes truly valuable information.
 Prefer direct definitions over defensive framing.
 - Define what the system does before explaining limits or exclusions.
-- Keep definition-by-negation to a minimum; use it only when a nearby confusion is likely and the contrast is genuinely clarifying.
+- Keep definition-by-negation to a minimum;
+  use it only when a nearby confusion is likely and the contrast is genuinely clarifying.
 - Avoid prose that reads like a rebuttal, disclaimer, or argument with an imaginary reviewer.
 - When documenting a constraint, state the positive rule first, then the consequence if needed.
 
@@ -32,7 +35,8 @@ Prefer direct definitions over defensive framing.
 
 Before and after any edit to `DESIGN.md`, evaluate the document as a reader.
 - Is the structure clear and logically ordered?
-- Does the prose read like it was written by a knowledgeable practitioner, not like generated text?
+- Does the prose read like it was written by a knowledgeable practitioner,
+  not like generated text?
 - Are there redundant or overlapping sections that should be merged or reordered?
 Apply these standards to every edit.
 
@@ -41,10 +45,11 @@ When writing `DESIGN.md`, follow these style guidelines:
 - Each paragraph does one thing: introduces a concept, states its properties, and stops.
 - No motivational framing, no rhetoric, no "this is important because."
 - Terms are introduced once and then trusted to carry themselves.
-- The voice is impersonal but not bureaucratic so that it reads closer to
-  a concise mathematical text than to a software README.
+- The voice is impersonal but not bureaucratic.
+- The prose reads closer to a concise mathematical text than to a software README.
 - Sentences are structurally simple, favoring short main clauses over nested subordination.
-- Analogies appear sparingly and only to established PL concepts (well-typedness, nominal binding),
+- Analogies appear sparingly and only to established PL concepts,
+  such as well-typedness or nominal binding,
   never to everyday metaphors.
 
 ## Rust Code Style
@@ -60,21 +65,23 @@ Prefer declaration instead of manual implementation. For example,
 - Prefer `serde` for serialization and deserialization instead of manual parsing and pretty printing.
 - Prefer derive-style `clap` for command-line argument parsing.
 
-Always prefer typed data structures over strings + parsers, and
-Prefer introducing a named type over reusing a generic one (e.g., `String`, `HashMap`)
+Always prefer typed data structures over strings plus parsers.
+Prefer introducing a named type over reusing a generic one, such as `String` or `HashMap`,
 when the type carries domain meaning.
-For examples,
+Examples:
 - Include specific types of errors when creating an error type, not just strings.
 - User input should be parsed to be structured data as soon as possible.
 - Never use strings to represent states in the software's state machine.
 - Never pass strings between internal components when the message could be typed.
-- Whenever a hashmap of strings is created, consider whether the keys represent
-  a closed set of fields -- if so, replace it with a struct or a trait object.
+- Whenever a hashmap of strings is created,
+  consider whether the keys represent a closed set of fields.
+  If so, replace it with a struct or a trait object.
 
-Prefer to use structs to pack a group of useful functions; prefer methods over functions.
+Prefer structs that pack a group of useful functions; prefer methods over functions.
 Rust structs have better namespace-ish features than Rust modules.
-Prefer methods on a struct over free functions. Free functions are acceptable only for
-trait implementations, entry points (`main`), or cases where no meaningful receiver exists.
+Prefer methods on a struct over free functions.
+Free functions are acceptable for trait implementations, entry points (`main`),
+or cases where no meaningful receiver exists.
 When defining methods, abide by the following rules:
 - Mention `self` in the signature if the methods are built around the struct type.
   - Take ownership (`self`) if being the elimination form of the struct type,
@@ -87,7 +94,8 @@ When defining methods, abide by the following rules:
 For builder patterns, pick receivers based on whether the finalizer must move owned fields out.
 If build/finish consumes,
 - Use `fn build(self) -> T` for the builder.
-- Make all setter methods take and return self `fn with_*(mut self, ...) -> Self` for easy chaining.
+- Make all setter methods take and return self,
+  using `fn with_*(mut self, ...) -> Self` for easy chaining.
 If build can borrow,
 - Prefer setters `fn set_*(&mut self, ...) -> &mut Self`, and
 - Prefer a finalizer `fn build(&self) -> T` so the builder can be reused.
@@ -127,7 +135,9 @@ The description should say *what changed*, not *why* (the diff shows what; the d
 
 #### Guidelines
 
-- One logical change per commit. If two things can be reverted independently, they are two commits.
+- One logical change per commit.
+  If two things can be reverted independently, they are two commits.
 - Pair implementation files with their tests in the same commit.
 - Order commits by dependency level: types and utilities first, then logic, then UI, then config.
-- Prefer many small commits over one large commit. Rule of thumb: a reviewer should understand a commit in under 30 seconds.
+- Prefer many small commits over one large commit.
+  Rule of thumb: a reviewer should understand a commit in under 30 seconds.
