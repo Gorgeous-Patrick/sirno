@@ -19,7 +19,7 @@ If compatibility or migration concerns conflict with a clearer design, prefer th
 
 Actively write documentation for the program. Make sure *all* public APIs are documented.
 All written documentation must be concise, clear, accurate, and written in English unless explicitly stated.
-Break Markdown prose at natural punctuation boundaries.
+Break Markdown prose at natural punctuation boundaries or conjunctions.
 Keep sentences short.
 A line may slightly exceed the line-length budget when that makes the text read better.
 No emojis unless strictly necessary.
