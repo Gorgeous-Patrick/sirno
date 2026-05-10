@@ -59,7 +59,7 @@ Reflecting on aforementioned paradigms, concepts serve three roles simultaneousl
 - They keep intent portable across levels of detail.
 - They organize tests so that properties and constraints become easier to see.
 
-## Interactive Narrative
+### Interactive Narrative
 
 Browsing through a collection of documented concepts undoubtedly helps systematic understanding,
 at least more systematic than chatting with a large language model or reading code alone.
@@ -80,7 +80,7 @@ The generated narrative is ephemeral;
 canonical knowledge remains in entries and relations,
 while the narrative provides a reading interface for onboarding and knowledge transfer.
 
-## Clustee of a Clique
+### Clustee of a Clique
 
 Tags, scopes, namespaces, and domains all approximate the same structure:
 a named clique of related entries. Such named clique is an entry itself.
@@ -90,7 +90,7 @@ It groups entries by shared subject, local vocabulary, or design neighborhood,
 and the clique name provides a short route into a region of the graph
 without changing the entries' nominal identities.
 
-## Refinement
+### Refinement: From Specification to Implementation
 
 Refinement unfolds a high-level idea into lower-level design, implementation, and tests.
 The refined entry keeps the meaning of the concept intact,
@@ -107,7 +107,7 @@ then the final step of refinement may be a markdown code block.
 A *refiner* relation is a metadata block field of the refined entry.
 It points to the entry that it refines.
 
-## Witness
+### Mirror Design with Witness
 
 A *witness* relation is a metadata block field of the witnessed entry.
 It points to code in repository that evidences the entry's claim.
