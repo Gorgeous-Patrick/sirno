@@ -223,12 +223,12 @@ while the structural convention remains the marker plus the entry id.
 
 Relations are static. Work between surfaces moves.
 
-Sirno names four directions between its surfaces.
+Sirno names four directions between its surfaces:
 
-- `lower`: `mono -> sirno`
-- `raise`: `sirno -> mono`
-- `realize`: `sirno -> code`
-- `reflect`: `code -> sirno`
+```text
+mono ─────lower───▶ sirno ────realize──▶ code
+mono ◀────raise──── sirno ◀───reflect─── code
+```
 
 The direct names are also useful:
 `mono-to-sirno`, `sirno-to-mono`, `sirno-to-code`, and `code-to-sirno`.
