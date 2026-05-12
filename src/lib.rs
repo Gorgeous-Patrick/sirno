@@ -30,5 +30,7 @@ pub use crate::links::{
     apply_generated_links, generated_links_are_stale, render_generated_links,
     validate_generated_links,
 };
-pub use crate::query::{EntryQuery, EntryTextTerm, query_entries};
+pub use crate::query::{
+    EntryQuery, EntryTextTerm, VagueEntryQuery, query_entries, vague_query_entries,
+};
 pub use crate::store::{SirnoStore, StoreError};

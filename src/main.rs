@@ -3,13 +3,14 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
+use clap_complete::{Shell, generate};
 use sirno::{
     CONFIG_FILE_NAME, CheckMode, CheckSeverity, ConfigError, Entry, EntryDirectoryCheckSettings,
     EntryDirectoryError, EntryDirectoryReport, EntryId, EntryIdError, EntryMetadata,
     EntryParseError, EntryQuery, GeneratedLinkSettings, SirnoConfig, SirnoStore, StoreError,
-    WitnessMarker, check_entry_directory_with_settings, create_entry_file,
-    gen_link_entry_directory, init_entry_directory, query_entries,
+    VagueEntryQuery, WitnessMarker, check_entry_directory_with_settings, create_entry_file,
+    gen_link_entry_directory, init_entry_directory, query_entries, vague_query_entries,
 };
 use thiserror::Error;
 
@@ -19,8 +20,8 @@ use thiserror::Error;
 #[command(about = "Manage Sirno design entries")]
 struct Cli {
     /// Sirno project config file.
-    #[arg(long, global = true, default_value = CONFIG_FILE_NAME)]
-    config: PathBuf,
+    #[arg(long, global = true)]
+    config: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -31,11 +32,11 @@ enum Command {
     /// Create a Sirno config and ordinary seed entries.
     Init {
         /// Monograph path written to Sirno.toml.
-        #[arg(long, default_value = "DESIGN.md")]
-        mono: PathBuf,
+        #[arg(long)]
+        mono: Option<PathBuf>,
         /// Public Markdown entry store path written to Sirno.toml.
-        #[arg(long, default_value = "docs")]
-        store: PathBuf,
+        #[arg(long)]
+        store: Option<PathBuf>,
     },
     /// Create one Markdown entry.
     New {
@@ -68,23 +69,26 @@ enum Command {
     },
     /// Query public Markdown entries.
     Query {
-        /// Text terms matched against id, name, description, and body.
+        /// Vague text terms matched against entries and relation target summaries.
         terms: Vec<String>,
-        /// Category relation target.
+        /// Exact text term matched against id, name, description, and body.
+        #[arg(long = "exact-term")]
+        exact_terms: Vec<String>,
+        /// Exact category relation target.
         #[arg(long)]
-        category: Vec<String>,
-        /// Clique closure relation target.
+        exact_category: Vec<String>,
+        /// Exact clique closure relation target.
         #[arg(long)]
-        clustee: Vec<String>,
-        /// Refined entry relation target.
+        exact_clustee: Vec<String>,
+        /// Exact refined entry relation target.
         #[arg(long)]
-        refiner: Vec<String>,
+        exact_refiner: Vec<String>,
         /// Select only entries with a canonical witness marker.
         #[arg(long)]
-        witness: bool,
+        exact_witness: bool,
         /// Output format.
-        #[arg(long, value_enum, default_value_t = CliQueryFormat::Summary)]
-        format: CliQueryFormat,
+        #[arg(long, value_enum)]
+        format: Option<CliQueryFormat>,
         /// Public Markdown entry directory.
         #[arg(long)]
         entries: Option<PathBuf>,
@@ -98,8 +102,8 @@ enum Command {
         #[arg(long, conflicts_with = "store")]
         entries: Option<PathBuf>,
         /// Check boundary.
-        #[arg(long, value_enum, default_value_t = CliCheckMode::Review)]
-        mode: CliCheckMode,
+        #[arg(long, value_enum)]
+        mode: Option<CliCheckMode>,
     },
     /// Generate Markdown links in entry footers.
     #[command(name = "gen-link")]
@@ -110,6 +114,12 @@ enum Command {
     },
     /// Show the current Sirno project status.
     Status,
+    /// Utility commands.
+    Util {
+        /// Utility command.
+        #[command(subcommand)]
+        command: UtilCommand,
+    },
 }
 
 /// CLI representation of check boundaries.
@@ -132,11 +142,50 @@ enum CliQueryFormat {
     Path,
 }
 
+/// CLI shell target for completion generation.
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CliCompletionShell {
+    /// Bash completion script.
+    Bash,
+    /// Elvish completion script.
+    Elvish,
+    /// Fish completion script.
+    Fish,
+    /// PowerShell completion script.
+    #[value(name = "powershell", alias = "power-shell")]
+    PowerShell,
+    /// Zsh completion script.
+    Zsh,
+}
+
+/// Supported utility commands.
+#[derive(Debug, Subcommand)]
+enum UtilCommand {
+    /// Generate a shell completion script.
+    Completion {
+        /// Shell whose completion script should be generated.
+        #[arg(value_enum)]
+        shell: CliCompletionShell,
+    },
+}
+
 impl From<CliCheckMode> for CheckMode {
     fn from(value: CliCheckMode) -> Self {
         match value {
             | CliCheckMode::Edit => CheckMode::Edit,
             | CliCheckMode::Review => CheckMode::Review,
+        }
+    }
+}
+
+impl From<CliCompletionShell> for Shell {
+    fn from(value: CliCompletionShell) -> Self {
+        match value {
+            | CliCompletionShell::Bash => Shell::Bash,
+            | CliCompletionShell::Elvish => Shell::Elvish,
+            | CliCompletionShell::Fish => Shell::Fish,
+            | CliCompletionShell::PowerShell => Shell::PowerShell,
+            | CliCompletionShell::Zsh => Shell::Zsh,
         }
     }
 }
@@ -152,10 +201,13 @@ fn main() -> ExitCode {
 }
 
 fn run(cli: Cli) -> Result<ExitCode, CliError> {
-    let config_path = cli.config;
+    let config_path = cli.config.unwrap_or_else(default_config_path);
     match cli.command {
         | Command::Init { mono, store } => {
-            let config = SirnoConfig::new(mono, store);
+            let config = SirnoConfig::new(
+                mono.unwrap_or_else(default_mono_path),
+                store.unwrap_or_else(default_store_path),
+            );
             let store_path = config.resolve_store(&config_path);
             config.write_new(&config_path)?;
             let paths = init_entry_directory(&store_path)?;
@@ -200,7 +252,16 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
             println!("created {}", path.display());
             Ok(ExitCode::SUCCESS)
         }
-        | Command::Query { terms, category, clustee, refiner, witness, format, entries } => {
+        | Command::Query {
+            terms,
+            exact_terms,
+            exact_category,
+            exact_clustee,
+            exact_refiner,
+            exact_witness,
+            format,
+            entries,
+        } => {
             let entries = match entries {
                 | Some(entries) => entries,
                 | None => {
@@ -221,17 +282,20 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
                 return Ok(ExitCode::FAILURE);
             }
 
-            let query = EntryQuery::new()
-                .with_text_terms(terms)
-                .with_category(parse_entry_ids(category)?)
-                .with_clustee(parse_entry_ids(clustee)?)
-                .with_refiner(parse_entry_ids(refiner)?)
-                .with_witness(witness);
-            let matches = query_entries(report.entries(), &query);
-            print_query_results(&report, &matches, format)?;
+            let vague_query = VagueEntryQuery::new().with_text_terms(terms);
+            let exact_query = EntryQuery::new()
+                .with_text_terms(exact_terms)
+                .with_category(parse_entry_ids(exact_category)?)
+                .with_clustee(parse_entry_ids(exact_clustee)?)
+                .with_refiner(parse_entry_ids(exact_refiner)?)
+                .with_witness(exact_witness);
+            let vague_matches = vague_query_entries(report.entries(), &vague_query);
+            let matches = query_entries(vague_matches, &exact_query);
+            print_query_results(&report, &matches, format.unwrap_or(CliQueryFormat::Summary))?;
             Ok(ExitCode::SUCCESS)
         }
         | Command::Check { store, entries, mode } => {
+            let mode = mode.unwrap_or(CliCheckMode::Review);
             if let Some(entries) = entries {
                 let settings = explicit_entries_check_settings(&config_path)?;
                 let report = check_entry_directory_with_settings(entries, mode.into(), &settings)?;
@@ -311,7 +375,32 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
             print_status(&config_path, &mono, &config, &report);
             if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
         }
+        | Command::Util { command } => run_util_command(command),
     }
+}
+
+fn run_util_command(command: UtilCommand) -> Result<ExitCode, CliError> {
+    match command {
+        | UtilCommand::Completion { shell } => {
+            let shell = Shell::from(shell);
+            let mut command = Cli::command();
+            let mut stdout = std::io::stdout();
+            generate(shell, &mut command, "sirno", &mut stdout);
+            Ok(ExitCode::SUCCESS)
+        }
+    }
+}
+
+fn default_config_path() -> PathBuf {
+    PathBuf::from(CONFIG_FILE_NAME)
+}
+
+fn default_mono_path() -> PathBuf {
+    PathBuf::from("DESIGN.md")
+}
+
+fn default_store_path() -> PathBuf {
+    PathBuf::from("docs")
 }
 
 fn explicit_entries_link_settings(

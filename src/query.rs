@@ -1,7 +1,9 @@
 //! Query predicates for Sirno entries.
 //!
-//! A query is a typed predicate over parsed Markdown entries.
-//! It selects entries and leaves presentation to the caller.
+//! Queries are typed predicates over parsed Markdown entries.
+//! They select entries and leave presentation to the caller.
+
+use std::collections::BTreeMap;
 
 use tracing::trace;
 
@@ -10,7 +12,7 @@ use crate::id::EntryId;
 
 /// Case-insensitive text term for an entry query.
 ///
-/// Empty terms are ignored by `EntryQuery::with_text_terms`.
+/// Empty terms are ignored when a query stores text terms.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryTextTerm {
     normalized: String,
@@ -36,7 +38,7 @@ impl EntryTextTerm {
     }
 }
 
-/// Predicate over Sirno entries.
+/// Exact predicate over Sirno entries.
 ///
 /// Text terms are conjunctive.
 /// Distinct metadata fields are conjunctive.
@@ -106,7 +108,42 @@ impl EntryQuery {
     }
 }
 
-/// Return entries selected by a query in input order.
+/// Vague predicate over Sirno entries.
+///
+/// Vague text terms match an entry plus the ids, names, and descriptions of its relation targets.
+/// Each text term must match somewhere in that expanded text.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct VagueEntryQuery {
+    text_terms: Vec<EntryTextTerm>,
+}
+
+impl VagueEntryQuery {
+    /// Construct an empty vague query that matches every entry.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set text terms matched against expanded entry text.
+    pub fn with_text_terms(mut self, terms: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.text_terms =
+            terms.into_iter().map(EntryTextTerm::new).filter(|term| !term.is_empty()).collect();
+        self
+    }
+
+    /// Returns true when this query selects the entry.
+    pub fn matches<'a>(
+        &self, entry: &'a Entry, entries_by_id: &BTreeMap<&'a EntryId, &'a Entry>,
+    ) -> bool {
+        if self.text_terms.is_empty() {
+            return true;
+        }
+
+        let haystack = vague_entry_text(entry, entries_by_id);
+        self.text_terms.iter().all(|term| term.matches(&haystack))
+    }
+}
+
+/// Return entries selected by an exact query in input order.
 pub fn query_entries<'a>(
     entries: impl IntoIterator<Item = &'a Entry>, query: &EntryQuery,
 ) -> Vec<&'a Entry> {
@@ -117,6 +154,16 @@ pub fn query_entries<'a>(
     matches
 }
 
+/// Return entries selected by a vague query in input order.
+pub fn vague_query_entries<'a>(entries: &'a [Entry], query: &VagueEntryQuery) -> Vec<&'a Entry> {
+    trace!("vague_query_entries begin: entries={}", entries.len());
+    let entries_by_id = entries.iter().map(|entry| (&entry.id, entry)).collect::<BTreeMap<_, _>>();
+    let matches =
+        entries.iter().filter(|entry| query.matches(entry, &entries_by_id)).collect::<Vec<_>>();
+    trace!("vague_query_entries end: matches={}", matches.len());
+    matches
+}
+
 fn matches_relation(entry_targets: &[EntryId], query_targets: &[EntryId]) -> bool {
     query_targets.is_empty() || query_targets.iter().any(|target| entry_targets.contains(target))
 }
@@ -124,6 +171,21 @@ fn matches_relation(entry_targets: &[EntryId], query_targets: &[EntryId]) -> boo
 fn entry_text(entry: &Entry) -> String {
     format!("{}\n{}\n{}\n{}", entry.id, entry.metadata.name, entry.metadata.description, entry.body)
         .to_lowercase()
+}
+
+fn vague_entry_text(entry: &Entry, entries_by_id: &BTreeMap<&EntryId, &Entry>) -> String {
+    let mut text = entry_text(entry);
+    for target in entry.metadata.relation_targets().map(|(_, target)| target) {
+        text.push('\n');
+        text.push_str(target.as_str());
+        if let Some(target_entry) = entries_by_id.get(target) {
+            text.push('\n');
+            text.push_str(&target_entry.metadata.name);
+            text.push('\n');
+            text.push_str(&target_entry.metadata.description);
+        }
+    }
+    text.to_lowercase()
 }
 
 #[cfg(test)]
@@ -206,5 +268,37 @@ mod tests {
         let matches = query_entries(entries, &EntryQuery::new().with_text_terms(["idea"]));
 
         assert_eq!(matches, vec![&first, &second]);
+    }
+
+    #[test]
+    fn vague_query_matches_relation_target_id() {
+        let meta = entry("meta", "Meta", "A category.", "");
+        let mut concept = entry("concept", "Concept", "A named idea.", "");
+        concept.metadata.category.push(id("meta"));
+        let entries = vec![concept, meta];
+
+        let matches =
+            vague_query_entries(&entries, &VagueEntryQuery::new().with_text_terms(["meta"]));
+
+        assert_eq!(
+            matches.iter().map(|entry| &entry.id).collect::<Vec<_>>(),
+            vec![&id("concept"), &id("meta")]
+        );
+    }
+
+    #[test]
+    fn vague_query_matches_relation_target_metadata() {
+        let meta = entry("meta", "Meta", "Project vocabulary.", "");
+        let mut concept = entry("concept", "Concept", "A named idea.", "");
+        concept.metadata.category.push(id("meta"));
+        let entries = vec![concept, meta];
+
+        let matches =
+            vague_query_entries(&entries, &VagueEntryQuery::new().with_text_terms(["vocabulary"]));
+
+        assert_eq!(
+            matches.iter().map(|entry| &entry.id).collect::<Vec<_>>(),
+            vec![&id("concept"), &id("meta")]
+        );
     }
 }
