@@ -1,5 +1,5 @@
 mono = "DESIGN.md"
-store = "docs"
+store = "sirno-docs"
 
 [check]
 link = true
