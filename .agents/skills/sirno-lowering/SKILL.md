@@ -113,6 +113,7 @@ Use definition by negation only when it prevents a likely confusion.
 Keep paragraphs focused.
 One paragraph should introduce one idea, state its consequence, and stop.
 Prefer short sentences and natural line breaks under the repository line budget.
+Break Markdown prose at natural punctuation boundaries or conjunctions; otherwise don't make linebreaks.
 
 Avoid turning the store into:
 

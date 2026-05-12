@@ -19,8 +19,7 @@ Do not rely on a standalone `docs/` tree as the canonical source.
 Actively write documentation for the program.
 Make sure all public APIs are documented.
 All written documentation must be concise, clear, accurate, and written in English unless instructed otherwise.
-Keep sentences short.
-The line budget is 120 characters.
+Keep sentences short. The line budget is 120 characters.
 Break Markdown prose at natural punctuation boundaries or conjunctions.
 A line may slightly exceed the line-length budget when that makes the text read better.
 Do not use emojis unless strictly necessary.
