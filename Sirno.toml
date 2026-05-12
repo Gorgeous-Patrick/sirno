@@ -1,0 +1,7 @@
+mono = "DESIGN.md"
+store = "docs"
+
+[links]
+category = false
+clustee = true
+refiner = false

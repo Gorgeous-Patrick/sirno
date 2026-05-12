@@ -1,0 +1,343 @@
+//! Command-line interface for Sirno.
+
+use std::path::PathBuf;
+use std::process::ExitCode;
+
+use clap::{Parser, Subcommand, ValueEnum};
+use sirno::{
+    CONFIG_FILE_NAME, CheckMode, CheckSeverity, ConfigError, Entry, EntryDirectoryError,
+    EntryDirectoryReport, EntryId, EntryIdError, EntryMetadata, EntryParseError,
+    GeneratedLinkSettings, SirnoConfig, SirnoStore, StoreError, WitnessMarker,
+    check_entry_directory, create_entry_file, gen_link_entry_directory, init_entry_directory,
+};
+use thiserror::Error;
+
+/// Sirno command-line entry point.
+#[derive(Debug, Parser)]
+#[command(name = "sirno")]
+#[command(about = "Manage Sirno design entries")]
+struct Cli {
+    /// Sirno project config file.
+    #[arg(long, global = true, default_value = CONFIG_FILE_NAME)]
+    config: PathBuf,
+    #[command(subcommand)]
+    command: Command,
+}
+
+/// Supported Sirno commands.
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Create a Sirno config and ordinary seed entries.
+    Init {
+        /// Monograph path written to Sirno.toml.
+        #[arg(long, default_value = "DESIGN.md")]
+        mono: PathBuf,
+        /// Public Markdown entry store path written to Sirno.toml.
+        #[arg(long, default_value = "docs")]
+        store: PathBuf,
+    },
+    /// Create one Markdown entry.
+    New {
+        /// Entry id and filename stem.
+        id: String,
+        /// Human-readable entry name.
+        #[arg(long)]
+        name: Option<String>,
+        /// Short entry description.
+        #[arg(long)]
+        description: String,
+        /// Category relation target.
+        #[arg(long)]
+        category: Vec<String>,
+        /// Clique closure relation target.
+        #[arg(long)]
+        clustee: Vec<String>,
+        /// Refined entry relation target.
+        #[arg(long)]
+        refiner: Vec<String>,
+        /// Add a canonical witness marker.
+        #[arg(long)]
+        witness: bool,
+        /// Initial Markdown body.
+        #[arg(long)]
+        body: Option<String>,
+        /// Public Markdown entry directory.
+        #[arg(long)]
+        entries: Option<PathBuf>,
+    },
+    /// Check current store structure.
+    Check {
+        /// Eter-backed entry store root.
+        #[arg(long, conflicts_with = "entries")]
+        store: Option<PathBuf>,
+        /// Public Markdown entry directory.
+        #[arg(long, conflicts_with = "store")]
+        entries: Option<PathBuf>,
+        /// Check boundary.
+        #[arg(long, value_enum, default_value_t = CliCheckMode::Review)]
+        mode: CliCheckMode,
+    },
+    /// Generate Markdown links in entry footers.
+    #[command(name = "gen-link")]
+    GenLink {
+        /// Public Markdown entry directory.
+        #[arg(long)]
+        entries: Option<PathBuf>,
+    },
+    /// Show the current Sirno project status.
+    Status,
+}
+
+/// CLI representation of check boundaries.
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CliCheckMode {
+    /// Editing boundary: dangling references are warnings.
+    Edit,
+    /// Review boundary: dangling references are errors.
+    Review,
+}
+
+impl From<CliCheckMode> for CheckMode {
+    fn from(value: CliCheckMode) -> Self {
+        match value {
+            | CliCheckMode::Edit => CheckMode::Edit,
+            | CliCheckMode::Review => CheckMode::Review,
+        }
+    }
+}
+
+fn main() -> ExitCode {
+    match run(Cli::parse()) {
+        | Ok(code) => code,
+        | Err(error) => {
+            eprintln!("sirno: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run(cli: Cli) -> Result<ExitCode, CliError> {
+    let config_path = cli.config;
+    match cli.command {
+        | Command::Init { mono, store } => {
+            let config = SirnoConfig::new(mono, store);
+            let store_path = config.resolve_store(&config_path);
+            config.write_new(&config_path)?;
+            let paths = init_entry_directory(&store_path)?;
+            println!(
+                "initialized {} with {} entries in {}",
+                config_path.display(),
+                paths.len(),
+                store_path.display()
+            );
+            Ok(ExitCode::SUCCESS)
+        }
+        | Command::New {
+            id,
+            name,
+            description,
+            category,
+            clustee,
+            refiner,
+            witness,
+            body,
+            entries,
+        } => {
+            let entries = match entries {
+                | Some(entries) => entries,
+                | None => {
+                    let config = SirnoConfig::from_file(&config_path)?;
+                    config.resolve_store(&config_path)
+                }
+            };
+            let id = EntryId::new(&id)?;
+            let mut metadata =
+                EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), description)?;
+            metadata.category = parse_entry_ids(category)?;
+            metadata.clustee = parse_entry_ids(clustee)?;
+            metadata.refiner = parse_entry_ids(refiner)?;
+            if witness {
+                metadata.witness = Some(WitnessMarker::Present);
+            }
+
+            let entry = Entry::new(id, metadata, body.unwrap_or_default());
+            let path = create_entry_file(&entries, &entry)?;
+            println!("created {}", path.display());
+            Ok(ExitCode::SUCCESS)
+        }
+        | Command::Check { store, entries, mode } => {
+            if let Some(entries) = entries {
+                let report = check_entry_directory(entries, mode.into())?;
+                print_entry_directory_report(&report);
+                return if report.has_errors() {
+                    Ok(ExitCode::FAILURE)
+                } else {
+                    Ok(ExitCode::SUCCESS)
+                };
+            }
+
+            let Some(store) = store else {
+                let config = SirnoConfig::from_file(&config_path)?;
+                let report =
+                    check_entry_directory(config.resolve_store(&config_path), mode.into())?;
+                print_entry_directory_report(&report);
+                return if report.has_errors() {
+                    Ok(ExitCode::FAILURE)
+                } else {
+                    Ok(ExitCode::SUCCESS)
+                };
+            };
+
+            let store = SirnoStore::open(store)?;
+            let report = store.check_current(mode.into())?;
+            if report.is_clean() {
+                println!("ok: {}", store.root().display());
+                return Ok(ExitCode::SUCCESS);
+            }
+
+            for diagnostic in report.diagnostics() {
+                println!("{}: {}", severity_label(diagnostic.severity), diagnostic.message());
+            }
+
+            if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
+        }
+        | Command::GenLink { entries } => {
+            let (entries, link_settings) = match entries {
+                | Some(entries) => (entries, explicit_entries_link_settings(&config_path)?),
+                | None => {
+                    let config = SirnoConfig::from_file(&config_path)?;
+                    (config.resolve_store(&config_path), config.links)
+                }
+            };
+
+            let check = check_entry_directory(&entries, CheckMode::Review)?;
+            if check.has_errors() {
+                print_entry_directory_report(&check);
+                return Ok(ExitCode::FAILURE);
+            }
+
+            let report = gen_link_entry_directory(&entries, &link_settings)?;
+            println!(
+                "generated links for {} entries in {} ({} changed)",
+                report.entry_count(),
+                report.root().display(),
+                report.changed_paths().len()
+            );
+            Ok(ExitCode::SUCCESS)
+        }
+        | Command::Status => {
+            let config = SirnoConfig::from_file(&config_path)?;
+            let mono = config.resolve_mono(&config_path);
+            let store = config.resolve_store(&config_path);
+            let report = check_entry_directory(&store, CheckMode::Review)?;
+            print_status(&config_path, &mono, &config, &report);
+            if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
+        }
+    }
+}
+
+fn explicit_entries_link_settings(
+    config_path: &std::path::Path,
+) -> Result<GeneratedLinkSettings, CliError> {
+    if config_path.exists() {
+        Ok(SirnoConfig::from_file(config_path)?.links)
+    } else {
+        Ok(GeneratedLinkSettings::default())
+    }
+}
+
+fn parse_entry_ids(raw: Vec<String>) -> Result<Vec<EntryId>, CliError> {
+    raw.into_iter().map(|value| EntryId::new(&value).map_err(CliError::EntryId)).collect()
+}
+
+fn title_name_from_id(id: &EntryId) -> String {
+    id.as_str()
+        .split('-')
+        .map(|segment| {
+            let mut chars = segment.chars();
+            let Some(first) = chars.next() else {
+                return String::new();
+            };
+            let mut word = first.to_uppercase().to_string();
+            word.push_str(chars.as_str());
+            word
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn print_status(
+    config_path: &std::path::Path, mono: &std::path::Path, config: &SirnoConfig,
+    report: &EntryDirectoryReport,
+) {
+    println!("config: {}", config_path.display());
+    println!("mono: {}", mono.display());
+    println!("store: {}", report.root().display());
+    println!("entries: {}", report.entries().len());
+    println!("links:");
+    println!("  category: {}", config.links.category);
+    println!("  clustee: {}", config.links.clustee);
+    println!("  refiner: {}", config.links.refiner);
+    if report.has_errors() {
+        println!("check: failed");
+        print_entry_directory_report(report);
+    } else {
+        println!("check: ok");
+    }
+}
+
+fn print_entry_directory_report(report: &EntryDirectoryReport) {
+    if report.is_clean() {
+        println!("ok: {}", report.root().display());
+        return;
+    }
+
+    for diagnostic in report.file_diagnostics() {
+        println!(
+            "{}: {}: {}",
+            severity_label(diagnostic.severity),
+            diagnostic.path.display(),
+            diagnostic.message
+        );
+    }
+
+    for diagnostic in report.relation_report().diagnostics() {
+        if let Some(path) = report.entry_path(&diagnostic.entry) {
+            println!(
+                "{}: {}: {}",
+                severity_label(diagnostic.severity),
+                path.display(),
+                diagnostic.message()
+            );
+        } else {
+            println!("{}: {}", severity_label(diagnostic.severity), diagnostic.message());
+        }
+    }
+}
+
+fn severity_label(severity: CheckSeverity) -> &'static str {
+    match severity {
+        | CheckSeverity::Warning => "warning",
+        | CheckSeverity::Error => "error",
+    }
+}
+
+/// Error raised while running the CLI.
+#[derive(Debug, Error)]
+enum CliError {
+    /// Config-backed command failed.
+    #[error(transparent)]
+    Config(#[from] ConfigError),
+    /// Store-backed command failed.
+    #[error(transparent)]
+    Store(#[from] StoreError),
+    /// Public Markdown entry directory command failed.
+    #[error(transparent)]
+    EntryDirectory(#[from] EntryDirectoryError),
+    /// Entry id parsing failed.
+    #[error(transparent)]
+    EntryId(#[from] EntryIdError),
+    /// Entry metadata construction failed.
+    #[error(transparent)]
+    EntryParse(#[from] EntryParseError),
+}
