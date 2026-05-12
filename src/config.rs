@@ -277,6 +277,7 @@ path = "docs"
 [links]
 category = true
 clustee = false
+clique = true
 refiner = true
 "#,
         )
@@ -284,7 +285,7 @@ refiner = true
 
         assert_eq!(
             config.links,
-            GeneratedLinkSettings { category: true, clustee: false, refiner: true }
+            GeneratedLinkSettings { category: true, clustee: false, clique: true, refiner: true }
         );
     }
 

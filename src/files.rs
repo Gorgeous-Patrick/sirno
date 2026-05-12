@@ -16,8 +16,8 @@ use crate::check::{CheckMode, CheckReport, CheckSeverity, check_entries};
 use crate::entry::{Entry, EntryParseError, EntryRenderError, default_seed_entries};
 use crate::id::EntryId;
 use crate::links::{
-    GeneratedLinkError, GeneratedLinkSettings, apply_generated_links, delete_generated_links,
-    generated_links_are_stale, render_generated_links, validate_generated_links,
+    GeneratedLinkError, GeneratedLinkIndex, GeneratedLinkSettings, apply_generated_links,
+    delete_generated_links, generated_links_are_stale, validate_generated_links,
 };
 
 /// Check report for a public Markdown entry directory.
@@ -230,12 +230,13 @@ pub fn gen_link_entry_directory_with_ignored_paths(
     }
 
     let mut changed_paths = Vec::new();
+    let index = GeneratedLinkIndex::from_entries(checked.entries());
     for entry in checked.entries() {
         let path = checked
             .entry_path(&entry.id)
             .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
         let source = fs::read_to_string(path)?;
-        let footer = render_generated_links(entry, settings);
+        let footer = index.render_entry(entry, settings);
         let body = apply_generated_links(&entry.body, &footer)?;
         let rendered = Entry::replace_markdown_body(&source, &body)?;
         if rendered != source {
@@ -413,13 +414,32 @@ fn load_entry_directory(
                 continue;
             }
         };
+        seen_ids.insert(id.clone());
+        paths_by_id.insert(id, path);
+        entries.push(entry);
+    }
+
+    entries.sort_by(|left, right| left.id.cmp(&right.id));
+    add_generated_link_diagnostics(&entries, &paths_by_id, mode, settings, &mut file_diagnostics)?;
+    Ok(LoadedEntryDirectory { entries, paths_by_id, file_diagnostics })
+}
+
+fn add_generated_link_diagnostics(
+    entries: &[Entry], paths_by_id: &BTreeMap<EntryId, PathBuf>, mode: CheckMode,
+    settings: &EntryDirectoryCheckSettings, file_diagnostics: &mut Vec<EntryFileDiagnostic>,
+) -> Result<(), EntryDirectoryError> {
+    let index = GeneratedLinkIndex::from_entries(entries);
+    for entry in entries {
+        let path = paths_by_id
+            .get(&entry.id)
+            .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
         match validate_generated_links(&entry.body) {
             | Ok(()) if settings.link => {
-                let expected = render_generated_links(&entry, &settings.links);
+                let expected = index.render_entry(entry, &settings.links);
                 if generated_links_are_stale(&entry.body, &expected)? {
                     file_diagnostics.push(EntryFileDiagnostic::new(
                         mode_severity(mode),
-                        &path,
+                        path,
                         "generated links are stale; run `sirno gen-link`",
                     ));
                 }
@@ -428,19 +448,13 @@ fn load_entry_directory(
             | Err(source) => {
                 file_diagnostics.push(EntryFileDiagnostic::new(
                     CheckSeverity::Error,
-                    &path,
+                    path,
                     format!("malformed generated links: {source}"),
                 ));
             }
         }
-
-        seen_ids.insert(id.clone());
-        paths_by_id.insert(id, path);
-        entries.push(entry);
     }
-
-    entries.sort_by(|left, right| left.id.cmp(&right.id));
-    Ok(LoadedEntryDirectory { entries, paths_by_id, file_diagnostics })
+    Ok(())
 }
 
 fn mode_severity(mode: CheckMode) -> CheckSeverity {
@@ -732,7 +746,8 @@ category:
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         init_entry_directory(&root).unwrap();
-        let settings = GeneratedLinkSettings { category: true, clustee: true, refiner: true };
+        let settings =
+            GeneratedLinkSettings { category: true, clustee: true, clique: false, refiner: true };
 
         let report = gen_link_entry_directory(&root, &settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
@@ -744,6 +759,64 @@ category:
         assert!(concept.contains("- [meta](meta.md)"));
         assert!(!concept.contains("## Sirno Links"));
         assert!(!concept.contains("category: [meta](meta.md)"));
+    }
+
+    #[test]
+    fn gen_link_expands_cliques_with_store_context() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "core.md",
+            "\
+---
+name: Core
+description: A clique closure.
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
+            "left.md",
+            "\
+---
+name: Left
+description: A clique member.
+clustee:
+  - core
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
+            "right.md",
+            "\
+---
+name: Right
+description: A clique member.
+clustee:
+  - core
+---
+
+Body.
+",
+        );
+        let settings =
+            GeneratedLinkSettings { category: false, clustee: true, clique: true, refiner: false };
+
+        gen_link_entry_directory(temp.path(), &settings).unwrap();
+        let core = fs::read_to_string(temp.path().join("core.md")).unwrap();
+        let left = fs::read_to_string(temp.path().join("left.md")).unwrap();
+
+        assert!(core.contains("- [left](left.md)"));
+        assert!(core.contains("- [right](right.md)"));
+        assert!(!core.contains("[core](core.md)"));
+        assert!(left.contains("- [core](core.md)"));
+        assert!(left.contains("- [right](right.md)"));
+        assert!(!left.contains("[left](left.md)"));
     }
 
     #[test]
@@ -791,7 +864,8 @@ category:
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         init_entry_directory(&root).unwrap();
-        let old_settings = GeneratedLinkSettings { category: true, clustee: true, refiner: true };
+        let old_settings =
+            GeneratedLinkSettings { category: true, clustee: true, clique: false, refiner: true };
         gen_link_entry_directory(&root, &old_settings).unwrap();
 
         let report = check_entry_directory_with_settings(
@@ -815,7 +889,8 @@ category:
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         init_entry_directory(&root).unwrap();
-        let old_settings = GeneratedLinkSettings { category: true, clustee: true, refiner: true };
+        let old_settings =
+            GeneratedLinkSettings { category: true, clustee: true, clique: false, refiner: true };
         gen_link_entry_directory(&root, &old_settings).unwrap();
 
         let report = check_entry_directory_with_settings(
@@ -838,7 +913,8 @@ category:
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         init_entry_directory(&root).unwrap();
-        let old_settings = GeneratedLinkSettings { category: true, clustee: true, refiner: true };
+        let old_settings =
+            GeneratedLinkSettings { category: true, clustee: true, clique: false, refiner: true };
         gen_link_entry_directory(&root, &old_settings).unwrap();
 
         let report = check_entry_directory_with_settings(

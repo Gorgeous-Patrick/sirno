@@ -11,4 +11,5 @@ link = true
 [links]
 category = false
 clustee = true
+clique = false
 refiner = false

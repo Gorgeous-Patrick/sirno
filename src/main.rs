@@ -483,6 +483,7 @@ fn print_status(
     println!("links:");
     println!("  category: {}", config.links.category);
     println!("  clustee: {}", config.links.clustee);
+    println!("  clique: {}", config.links.clique);
     println!("  refiner: {}", config.links.refiner);
     if report.has_errors() {
         println!("check: failed");

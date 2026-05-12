@@ -30,9 +30,9 @@ pub use crate::files::{
 };
 pub use crate::id::{EntryId, EntryIdError};
 pub use crate::links::{
-    BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkError, GeneratedLinkSettings,
-    apply_generated_links, delete_generated_links, generated_links_are_stale,
-    render_generated_links, validate_generated_links,
+    BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkError, GeneratedLinkIndex,
+    GeneratedLinkSettings, apply_generated_links, delete_generated_links,
+    generated_links_are_stale, render_generated_links, validate_generated_links,
 };
 pub use crate::query::{
     EntryQuery, EntryTextTerm, VagueEntryQuery, query_entries, vague_query_entries,
