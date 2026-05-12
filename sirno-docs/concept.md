@@ -30,9 +30,13 @@ It is created by `init` and later operations do not privilege it.
 
 That ordinariness is part of the design.
 Projects may create their own categories and concepts without asking Sirno to recognize special cases.
-Sirno supplies the relation fields and id rules.
+Sirno supplies the structural fields and id rules.
 The project supplies the vocabulary that makes its own design legible.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - none
+
 > **Sirno generated links end.**

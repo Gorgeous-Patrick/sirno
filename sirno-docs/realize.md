@@ -13,7 +13,8 @@ refiner:
 
 Realizing uses entries to guide implementation.
 Before editing code, read the entries that govern the work,
-follow their relations, and inspect any witnessed repository regions.
+follow their category, clustee, refiner, and witness fields,
+and inspect any witnessed repository regions.
 
 A realization step should be able to answer which entry explains a local design commitment.
 Not every line needs its own entry,
@@ -22,7 +23,7 @@ but important commitments need a nominal place.
 Realization is where named design becomes behavior.
 The entry store should tell the implementer what matters:
 which concept is being made concrete,
-which relation or invariant must be preserved,
+which field or invariant must be preserved,
 and which existing witnesses should be inspected before editing.
 
 The code change should stay honest to the entry.
@@ -38,6 +39,10 @@ The important part is that local implementation does not float free of design in
 Future readers should be able to ask why a piece of code exists
 and find the entry that gave the commitment a name.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [direction](direction.md)
+
 > **Sirno generated links end.**

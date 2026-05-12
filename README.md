@@ -38,7 +38,7 @@ Sirno names four directions between its three surfaces.
 These names describe work that a human, an agent, or a skill can perform.
 They are not promises that Sirno understands project semantics by itself.
 Sirno maintains the structure that makes those movements precise:
-entry ids, metadata fields, relation fields, generated footers,
+entry ids, metadata fields, structural fields, generated footers,
 storage conventions, and witness lookup.
 
 ## Entries
@@ -57,11 +57,9 @@ entry id through `mosaika`.
 ```yaml
 ---
 name: Witness
-description: A relation between an entry and repository artifacts.
+description: An entry whose claim is evidenced by repository artifacts.
 category:
   - concept
-refiner:
-  - relation
 witness:
 ---
 ```

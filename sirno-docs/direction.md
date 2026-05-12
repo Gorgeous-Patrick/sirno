@@ -36,6 +36,10 @@ A realization skill should inspect entries before editing code.
 A reflection skill should record durable design facts learned from implementation.
 A raising skill should compose a readable monograph.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - none
+
 > **Sirno generated links end.**

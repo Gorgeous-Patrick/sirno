@@ -39,10 +39,14 @@ A test can witness the concept it protects.
 Implementation can refine a concept when code reveals a clearer representation.
 
 This style helps agents as much as humans.
-An agent with limited context can inspect the concept and its relations,
+An agent with limited context can inspect the concept and its structural fields,
 then work locally without carrying the whole monograph.
 The concept becomes a compact bridge between broad intent and detailed code.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

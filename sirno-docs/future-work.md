@@ -22,7 +22,7 @@ They may use entries to leave durable work artifacts without changing Sirno's co
 
 Future work should remain explicit without becoming speculative architecture.
 The current design is useful because its core is small:
-entries, metadata, relations, generated footers, surfaces, directions, checks, and witnesses.
+entries, metadata, structural fields, generated footers, surfaces, directions, checks, and witnesses.
 New features should preserve that clarity.
 
 The `locked` field is one example.
@@ -43,6 +43,10 @@ but they should remain subordinate to the model they describe.
 If the project learns a clearer vocabulary,
 entries and manuals can reflect that deliberately.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

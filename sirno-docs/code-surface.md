@@ -37,6 +37,10 @@ Entries do not need to duplicate source snippets that will drift.
 Review can move between them by asking which entry explains a code commitment,
 and which repository artifact witnesses an entry.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

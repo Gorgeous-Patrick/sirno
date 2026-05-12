@@ -54,7 +54,7 @@ The `sirno` store is a set of named Markdown documents called *entries*,
 each carrying a YAML metadata block and a body of prose.
 
 The filename stem is the entry id, globally unique within the store and case-sensitive,
-and it serves as the stable nominal handle used by relation fields, generated footers, and witness lookup.
+and it serves as the stable nominal handle used by structural fields, generated footers, and witness lookup.
 In principle, ids can follow the filesystem;
 in practice, they are filename stems in lowercase ASCII kebab-case, possibly with digits,
 reading like `concept-driven-development`.
@@ -121,29 +121,29 @@ An *interactive narrative* presents an entry through dialogue,
 asking positioning questions, observing responses,
 and generating the next paragraph or quiz from the reader's current state.
 The generated narrative is ephemeral;
-canonical knowledge remains in entries and relations,
+canonical knowledge remains in entries and metadata,
 while the narrative serves as a reading interface for onboarding and knowledge transfer.
 
 The initialized `narrative` entry is ordinary, created by `init` and not privileged by the system.
 
 ---
 
-## Relations
+## Structural Fields
 
 Entries connect through their metadata,
-and four named relations carry every connection that Sirno treats as structural.
+and four named fields carry the structure that Sirno treats as operational.
 
 - `category` classifies an entry by other entries.
 - `clustee` groups an entry into a named clique.
 - `refiner` points from a refinement to the broader entries it refines.
 - `witness:` declares that an entry's claim is evidenced in the repository.
 
-Each relation refers to entries by id;
-the first three are list-valued fields, while `witness:` is a canonical marker without a value.
+The first three fields refer to entries by id and are list-valued.
+`witness:` is a canonical marker without a value.
 Operational structure is formed only from metadata,
 and although Markdown links in prose may help readers and external tools, they do not define Sirno structure.
 
-The next four sections introduce each relation in turn.
+The next four sections introduce the fields in turn.
 
 ---
 
@@ -151,7 +151,8 @@ The next four sections introduce each relation in turn.
 
 A project's vocabulary should not be fixed by the tool that records it.
 
-A *category* relation is a metadata field of the classified entry, classifying that entry by other entries.
+`category` is a metadata field of the classified entry.
+It classifies that entry by other entries.
 Categories are themselves entries, so entry kinds form an open, project-defined vocabulary.
 Meta-classification reuses the same mechanism:
 the category id `meta` classifies entries that themselves define categories,
@@ -167,14 +168,14 @@ It may eventually protect entries or regions that a project wants to treat as co
 Tags, scopes, namespaces, and domains all approximate the same structure —
 a named clique of related entries — and that named clique is itself an entry.
 
-A *clustee* relation is a metadata field of the clique member,
-grouping the entry by shared subject, local vocabulary, or design neighborhood.
+`clustee` is a metadata field of the clique member.
+It groups the entry by shared subject, local vocabulary, or design neighborhood.
 The clique name provides a short route into a region of the store
 without changing the entries' nominal identities.
 
 The named entry used in `clustee` is the clique closure,
 an ordinary entry that gives the group a name and a place for explanation.
-The mechanism can describe an undirected relation by a two-member clique closure,
+The mechanism can describe a two-member clique,
 whose entry records why the two members belong together.
 
 ---
@@ -193,7 +194,8 @@ If the programming language itself is expressive and clean enough
 that the design is clearest when expressed in code,
 the final step of refinement may be a Markdown code block.
 
-A *refiner* relation is a metadata field of the refined entry, pointing to the entry it refines.
+`refiner` is a metadata field of the refined entry.
+It points to the entry it refines.
 The field is list-valued,
 so an entry may refine several entries when the local design realizes several broader claims.
 
@@ -201,7 +203,8 @@ so an entry may refine several entries when the local design realizes several br
 
 ## Witness
 
-Design that never meets code drifts. A *witness* relation closes the distance.
+Design that never meets code drifts.
+The `witness:` marker closes the distance.
 
 The `witness:` marker is a metadata field of the witnessed entry,
 declaring that the entry's claim is evidenced in the repository.
@@ -213,7 +216,7 @@ or any repository artifact that `mosaika` can mark and query,
 and a test may witness an entry when the test itself is the relevant code.
 
 Sirno uses the entry id itself as the witness query key,
-which keeps the witness relation nominal and the repository marking separate from entry prose and metadata.
+which keeps the witness convention nominal and the repository marking separate from entry prose and metadata.
 The entry body may describe how to search for or interpret an artifact as fallback guidance,
 while the structural convention remains the marker plus the entry id.
 
@@ -221,7 +224,7 @@ while the structural convention remains the marker plus the entry id.
 
 ## Directions
 
-Relations are static. Work between surfaces moves.
+Metadata is static. Work between surfaces moves.
 
 Sirno names four directions between its surfaces:
 
@@ -256,7 +259,7 @@ invalidates an old explanation, or reveals a clearer local design than the curre
 
 ## Metadata
 
-Relations and directions rest on a small, exact schema.
+Structural fields and directions rest on a small, exact schema.
 Every entry has a YAML metadata block whose required fields are `name` and `description`, both plain strings.
 The optional structural fields are `category`, `clustee`, and `refiner`,
 always lists when present, and their values are entry ids.
@@ -266,16 +269,14 @@ no other witness spelling is accepted.
 ```yaml
 ---
 name: Witness
-description: A relation between an entry and repository artifacts.
+description: An entry whose claim is evidenced by repository artifacts.
 category:
   - concept
-refiner:
-  - relation
 witness:
 ---
 ```
 
-Operational relations are formed only from metadata,
+Operational structure is formed only from metadata,
 and Markdown links in prose may help readers and external tools without defining Sirno structure.
 
 ---
@@ -353,7 +354,7 @@ they may use Sirno entries to leave durable work artifacts without changing Sirn
 This repository uses Sirno's own model.
 
 `DESIGN.md` is the monograph,
-and the future store will contain compact entries for the concepts, relations, interfaces,
+and the future store will contain compact entries for the concepts, structural fields, interfaces,
 and implementation commitments described here.
 The codebase will witness those entries through `mosaika`.
 

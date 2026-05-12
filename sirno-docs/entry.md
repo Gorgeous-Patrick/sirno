@@ -31,15 +31,19 @@ the body should explain the durable design fact rather than narrating the most r
 The metadata block carries structure that tools must read exactly.
 The body carries judgment, examples, and explanation.
 This split lets Sirno stay simple.
-It can validate ids and relation fields without pretending to understand the full meaning of the prose.
+It can validate ids and structural fields without pretending to understand the full meaning of the prose.
 
 Good entries are compact but not cryptic.
 They avoid repeating the entire monograph,
 but they also give enough context that a reader can follow a query result without opening ten files.
 If a concept depends on several other concepts,
-the relation fields should carry the navigational structure,
+the structural fields should carry the navigational structure,
 and the prose should explain the local meaning in ordinary language.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno-store](sirno-store.md)
+
 > **Sirno generated links end.**

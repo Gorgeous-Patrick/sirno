@@ -11,7 +11,7 @@ This repository uses Sirno's own model.
 
 `DESIGN.md` is the monograph.
 The `sirno-docs/` directory is the Sirno store of compact entries for concepts,
-relations, interfaces, and implementation commitments described by the monograph.
+structural fields, interfaces, and implementation commitments described by the monograph.
 
 The codebase can witness entries through `mosaika`.
 
@@ -28,7 +28,7 @@ the repository can reflect that change into the store before the monograph is ra
 
 The store should not merely mirror the design document heading for heading.
 It should name the objects the project expects future work to cite:
-surfaces, entries, relations, directions, metadata,
+surfaces, entries, structural fields, directions, metadata,
 checks, generated footers, witnesses, and storage boundaries.
 Those names become the handles used by code work, documentation work, and review.
 
@@ -41,6 +41,10 @@ Then the repository can answer both sides of the design question:
 what does this entry mean,
 and where does the code witness it?
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

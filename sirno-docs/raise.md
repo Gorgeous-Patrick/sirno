@@ -26,7 +26,7 @@ groups related ideas,
 and explains transitions so the reader can build the model in one pass.
 
 The raised document should preserve the current project model.
-If entries have changed the meaning of a relation,
+If entries have changed the meaning of a structural field,
 introduced a new interface boundary,
 or refined a concept into a clearer local design,
 the monograph should absorb that durable fact.
@@ -34,9 +34,13 @@ It should not copy every detail that belongs in the entry.
 
 Raising is also a review tool.
 When the monograph reads poorly,
-that may reveal missing entries, duplicated concepts, or unclear relations.
+that may reveal missing entries, duplicated concepts, or unclear metadata.
 The fix may belong in the store before the monograph can be made elegant.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [direction](direction.md)
+
 > **Sirno generated links end.**

@@ -87,7 +87,7 @@ The skill also says to:
 - avoid obsolete terminology
 - avoid turning optional workflows into built-in primitives
 - avoid implying semantic understanding when Sirno provides structure
-- document metadata and relation syntax exactly
+- document metadata and structural field syntax exactly
 - keep the three public docs distinct by role
 
 ---
@@ -113,7 +113,7 @@ The names are readable by humans, stable for tools,
 and small enough for agents to inspect without carrying the whole project in context.
 
 Sirno is also described as secretary-like infrastructure.
-It maintains structure, ids, metadata, relation fields, generated footers, storage conventions, and witness lookup.
+It maintains structure, ids, metadata, structural fields, generated footers, storage conventions, and witness lookup.
 
 Sirno does not directly understand project semantics.
 It does not decide whether a design is good.
@@ -296,7 +296,7 @@ The id is globally unique within the store and case-sensitive.
 The id is the stable nominal handle.
 It is used by:
 
-- relation fields
+- structural fields
 - generated footers
 - witness lookup
 
@@ -319,7 +319,7 @@ It may state:
 The prose body carries the design content.
 The metadata block carries structure that tools must read exactly.
 
-Operational relations are formed only from metadata.
+Operational structure is formed only from metadata.
 Markdown links in prose may help readers and external tools, but they do not define Sirno structure.
 
 ---
@@ -385,11 +385,9 @@ Example metadata:
 ```yaml
 ---
 name: Witness
-description: A relation between an entry and repository artifacts.
+description: An entry whose claim is evidenced by repository artifacts.
 category:
   - concept
-refiner:
-  - relation
 witness:
 ---
 ```
@@ -476,7 +474,7 @@ They read the Sirno store, ask positioning questions, observe responses,
 and generate the next paragraph or quiz from the reader's current state.
 
 The generated narrative is ephemeral.
-Canonical knowledge remains in entries and relations.
+Canonical knowledge remains in entries and metadata.
 The narrative provides a reading interface for onboarding and knowledge transfer.
 
 The `narrative` entry is ordinary.
@@ -487,7 +485,7 @@ It is not privileged by the system.
 
 ## Clustee And Clique Closure
 
-`clustee` is an organizational relation.
+`clustee` is an organizational field.
 
 A `clustee` field belongs to a clique member.
 It names a clique closure entry.
@@ -503,7 +501,7 @@ and a place for explanation.
 `clustee` is purely organizational.
 It does not carry hidden semantics.
 
-The mechanism can describe a normal undirected relation by using a two-member clique closure.
+The mechanism can describe a two-member clique by using a clique closure.
 In that case, the closure entry records why the two members belong together.
 There is no extra mechanism for that case.
 
@@ -630,9 +628,9 @@ It is not part of Sirno's core ontology.
 
 ## Removed Or Rejected Framing
 
-The old `obligation` relation is removed.
+The old `obligation` field is removed.
 
-Obligations should not appear as a first-class relation, metadata field, or current methodology primitive.
+Obligations should not appear as a first-class field or current methodology primitive.
 
 The old expansion involving `Nominal Obligations` is obsolete.
 Sirno now means `Semantic Intermediate Representation of Nominal Objects`.
@@ -640,7 +638,7 @@ Sirno now means `Semantic Intermediate Representation of Nominal Objects`.
 The old term `grounding` is replaced by `witness`.
 
 Sirno should avoid frequent use of the word `graph`,
-because `edge` is confusing when there are multiple named relation sets:
+because `edge` is confusing when there are multiple named structural fields:
 
 - `category`
 - `clustee`
@@ -837,7 +835,7 @@ Possible future implementation areas discussed but not selected include:
 
 - entry parsing and schema
 - store management through `eter`
-- relation traversal
+- metadata traversal
 - witness lookup through `mosaika`
 - generated footer management
 - CLI
@@ -860,7 +858,7 @@ Sirno will provide:
 
 These manage entry storage through `eter`.
 
-The codebase witness relation is ensured through `mosaika` as a library.
+The codebase witness convention is ensured through `mosaika` as a library.
 Sirno queries the name/id of the entry directly in the codebase.
 
 For this design stage, `eter` is the durable storage and indexing substrate.
@@ -896,7 +894,7 @@ Future work not yet ordered:
 - entry parser
 - metadata validator
 - generated footer manager
-- relation index
+- metadata index
 - `mosaika` integration
 - `eter` integration
 - `init` command
@@ -946,7 +944,7 @@ The best flow is:
 2. define entries
 3. introduce compression and concept-driven development
 4. introduce narrative
-5. introduce categories and relations
+5. introduce category, clustee, refiner, and witness
 6. introduce directions
 7. introduce metadata and mechanical details
 8. introduce storage, checks, and future work

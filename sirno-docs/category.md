@@ -1,12 +1,8 @@
 ---
 name: Category
-description: A relation that classifies an entry by other entries.
+description: A structural field that classifies an entry by other entries.
 category:
   - concept
-clustee:
-  - relation
-refiner:
-  - relation
 ---
 
 `category` classifies an entry by other entries.
@@ -29,15 +25,19 @@ Because categories are entries,
 their meanings can be documented in the same store they classify.
 This avoids a hidden enum in the implementation becoming the only source of truth.
 The project can grow vocabulary by adding entries,
-and Sirno can still check that relation targets exist.
+and Sirno can still check that referenced entries exist.
 
 Categories should stay semantic rather than decorative.
 If a label only helps browsing by topic,
 `clustee` may be a better fit.
 If an entry makes another entry more concrete,
-`refiner` is the sharper relation.
+`refiner` is the sharper field.
 The category field is most useful when it tells the reader what kind of object they are looking at.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
-- [relation](relation.md)
+
+- none
+
 > **Sirno generated links end.**

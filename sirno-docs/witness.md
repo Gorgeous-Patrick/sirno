@@ -1,12 +1,8 @@
 ---
 name: Witness
-description: A marker relation from a design entry to repository evidence.
+description: A structural marker from a design entry to repository evidence.
 category:
   - concept
-clustee:
-  - relation
-refiner:
-  - relation
 ---
 
 `witness:` declares that an entry's claim is evidenced in the repository.
@@ -26,7 +22,7 @@ The entry states the design claim in project language.
 The repository mark identifies the artifact that should be inspected.
 The entry id ties them together.
 
-This relation is useful when a claim should be reviewable in code.
+This marker is useful when a claim should be reviewable in code.
 An implementation module can witness an interface decision.
 A test can witness a behavioral property.
 A configuration file can witness a storage or tool boundary.
@@ -40,6 +36,10 @@ the entry body can explain what a reviewer should look for.
 The structural key remains simple:
 presence of `witness:` means the entry id is the query key.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
-- [relation](relation.md)
+
+- none
+
 > **Sirno generated links end.**

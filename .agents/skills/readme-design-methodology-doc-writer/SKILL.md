@@ -1,6 +1,10 @@
 ---
 name: readme-design-methodology-doc-writer
-description: Write or reorganize repository documentation split across README.md, DESIGN.md, and METHODOLOGY.md. Use when Codex needs to revise a first-impression README, a full design document, a concentrated methodology guide, or prose that defines a project model, metadata, relations, or writing style.
+description: >-
+  Write or reorganize repository documentation split across README.md, DESIGN.md, and
+  METHODOLOGY.md. Use when Codex needs to revise a first-impression README, a full design document,
+  a concentrated methodology guide, or prose that defines a project model, metadata, structural
+  fields, or writing style.
 ---
 
 # README, Design, Methodology Doc Writer
@@ -62,8 +66,8 @@ Do not use it as a second design document.
 ## Project Model
 
 Extract the project model before rewriting.
-Identify the project's canonical nouns, surfaces, phases, relations, metadata
-fields, and named operations from the current docs and user instructions.
+Identify the project's canonical nouns, surfaces, phases, structural fields,
+metadata fields, and named operations from the current docs and user instructions.
 Use those terms consistently across all three documents.
 
 Prefer the user's latest instructions over older repository prose.
@@ -85,7 +89,7 @@ Typical stable facts include:
 - the intended audience
 - the main artifacts, stores, files, or runtime surfaces
 - required metadata fields and their accepted shapes
-- named relations and their semantics
+- named structural fields and their semantics
 - naming conventions
 - generated regions and ownership boundaries
 - external tools or libraries that provide specific mechanisms
@@ -101,17 +105,16 @@ Avoid these stale or misleading claims:
 
 - Do not preserve obsolete terminology because it appears in an older file.
 - Do not turn an optional workflow into a built-in primitive.
-- Do not use broad structural words when the project has a specific relation
-  name.
+- Do not use broad structural words when the project has a specific field name.
 - Do not imply semantic understanding where the project only provides a
   structural convention.
 - Do not imply automatic validation, checking, or repair unless the project
   explicitly provides it.
 - Do not make `README.md`, `DESIGN.md`, and `METHODOLOGY.md` redundant.
 
-## Metadata And Relations
+## Metadata And Structural Fields
 
-When the project defines metadata, relations, or file conventions,
+When the project defines metadata, structural fields, or file conventions,
 document their shape exactly.
 State required fields, optional fields, accepted value forms, and ownership
 rules.

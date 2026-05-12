@@ -19,14 +19,14 @@ They are always lists when present, and their values are entry ids.
 The optional `witness:` marker is canonical and has no value.
 No other witness spelling is accepted.
 
-Operational relations are formed only from metadata.
+Operational structure is formed only from metadata.
 Prose links may help readers and external tools,
 but they do not define Sirno structure.
 
 The metadata block should be small and stable.
 It is the part of an entry that tools must read without interpretation.
 That is why required fields are plain strings,
-relation fields are lists of ids,
+structural fields are lists of ids,
 and the witness marker has no value.
 
 The body can explain nuance,
@@ -41,11 +41,9 @@ A canonical entry shape looks like this:
 ```yaml
 ---
 name: Witness
-description: A relation between an entry and repository artifacts.
+description: An entry whose claim is evidenced by repository artifacts.
 category:
   - concept
-refiner:
-  - relation
 witness:
 ---
 ```
@@ -54,6 +52,10 @@ The schema is intentionally conservative.
 Adding fields is future design work,
 because every accepted field becomes part of the public structure that readers and tools may rely on.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno-store](sirno-store.md)
+
 > **Sirno generated links end.**

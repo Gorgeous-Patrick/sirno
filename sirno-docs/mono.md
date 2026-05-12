@@ -44,6 +44,10 @@ After lowering, it becomes a composed view over the store.
 In both cases, it should read as a document written for a person,
 not as a mechanical export of every known fact.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

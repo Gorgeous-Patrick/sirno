@@ -23,7 +23,7 @@ The area being changed needs enough entries to make the work accountable.
 Good lowering starts by reading the monograph as a whole.
 The goal is not to chop each heading into a file mechanically.
 The goal is to identify the named objects that will help future work:
-concepts, relations, interfaces, invariants, implementation commitments,
+concepts, structural fields, interfaces, invariants, implementation commitments,
 and narrative routes.
 
 Each lowered entry should stand on its own enough to be useful from a query result.
@@ -38,6 +38,10 @@ Without entries, the source of intent may live in chat context or memory.
 With entries, the next edit can point to the design object that explains it.
 That makes review and future reflection less dependent on remembering the original conversation.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [direction](direction.md)
+
 > **Sirno generated links end.**

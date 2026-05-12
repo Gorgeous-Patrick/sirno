@@ -28,7 +28,7 @@ change.
 The user can ask for the long narrative to be raised from the current store.
 
 Sirno supplies the shared structure for those requests.
-It maintains entry ids, metadata, relation fields, generated footers,
+It maintains entry ids, metadata, structural fields, generated footers,
 storage conventions, and witness lookup.
 It lets humans, LLMs, skills, CLIs, MCP tools, and editors speak about the same
 objects without inventing a new map in every session.
@@ -71,7 +71,7 @@ its filename stem is its id,
 and that id is the stable handle used by other entries and by witnesses.
 
 An entry should be small enough to read locally.
-It should state a concept, relation, refinement, invariant,
+It should state a concept, structural field, refinement, invariant,
 implementation commitment, or narrative route with a name attached.
 
 The required metadata fields are `name` and `description`.
@@ -84,7 +84,7 @@ The `witness:` marker has no value.
 It is either present in canonical form or absent.
 When present, the entry id is the `mosaika` query key.
 
-Operational relations come from metadata.
+Operational structure comes from metadata.
 Prose links may help readers and external tools,
 but they do not carry Sirno structure.
 
@@ -282,7 +282,7 @@ mean the same thing.
 
 ## Treat Planning As A Use, Not A Primitive
 
-Sirno does not define planning as a core relation or phase.
+Sirno does not define planning as a core field or phase.
 It gives people and agents a stable structure that can support planning.
 
 A Sirno-provided skill may represent a worklist as entries.

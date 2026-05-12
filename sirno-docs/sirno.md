@@ -24,7 +24,7 @@ The names are readable by humans, stable for tools,
 and small enough for agents to inspect without carrying the whole project in context.
 
 Sirno maintains structure:
-entry ids, metadata fields, relation fields, generated footers,
+entry ids, metadata fields, structural fields, generated footers,
 storage conventions, and witness lookup.
 People, agents, and other tools still judge design quality and semantic truth.
 
@@ -44,6 +44,10 @@ The store gives the project durable local objects.
 The codebase gives those objects consequences.
 Sirno keeps the edges between those surfaces explicit.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - none
+
 > **Sirno generated links end.**

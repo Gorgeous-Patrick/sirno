@@ -18,7 +18,7 @@ Those entries can use categories, refiners, clustees, and witnesses like any oth
 This keeps the core model small.
 Planning often needs state, priorities, sequencing, ownership, and progress signals.
 Those concerns vary by team and project.
-Sirno provides names, prose, relations, checks, and witnesses;
+Sirno provides names, prose, structural fields, checks, and witnesses;
 a planning skill can decide how to express a worklist using those primitives.
 
 The benefit is continuity.
@@ -34,6 +34,10 @@ If a worklist needs special behavior,
 that behavior belongs in the skill or in future Sirno design,
 not in ad hoc metadata that core tools silently ignore.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [sirno](sirno.md)
+
 > **Sirno generated links end.**

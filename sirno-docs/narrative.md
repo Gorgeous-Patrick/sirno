@@ -16,7 +16,7 @@ They can state prerequisites, choose a base language,
 and point a reader through entries in an intentional order.
 
 Interactive narratives may be generated ephemerally by skills.
-Canonical knowledge remains in entries and relations.
+Canonical knowledge remains in entries and metadata.
 
 The point of narrative is sequencing.
 A concept can be accurate and still arrive too early for the reader.
@@ -38,6 +38,10 @@ and point to the entries that carry durable detail.
 Interactive narratives can be more adaptive,
 but they should still treat entries as the source of durable project knowledge.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - none
+
 > **Sirno generated links end.**

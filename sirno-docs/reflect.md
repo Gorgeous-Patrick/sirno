@@ -38,6 +38,10 @@ Reflection keeps the monograph and store from becoming ceremonial.
 It gives implementation a way to improve the design model,
 not merely comply with it.
 
+---
+
 > **Sirno generated links begin. Do not edit this section.**
+
 - [direction](direction.md)
+
 > **Sirno generated links end.**
