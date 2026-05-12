@@ -40,6 +40,11 @@ presence of `witness:` means the entry id is the query key.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

@@ -43,6 +43,15 @@ and find the entry that gave the commitment a name.
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
 - [direction](direction.md)
+- [lower](lower.md)
+- [raise](raise.md)
+- [reflect](reflect.md)
 
 > **Sirno generated links end.**

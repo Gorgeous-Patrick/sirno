@@ -121,7 +121,7 @@ pub struct GeneratedLinkSettings {
     pub category: GeneratedLinkFieldSettings,
     /// Include `clustee` targets.
     pub clustee: GeneratedLinkFieldSettings,
-    /// Expand enabled clustee links into clique edges.
+    /// Render clique sections derived from clustee closures.
     pub clique: bool,
     /// Include `refiner` targets.
     pub refiner: GeneratedLinkFieldSettings,
@@ -195,43 +195,55 @@ impl GeneratedLinkIndex {
         out.push_str(BEGIN_LINKS_GUARD);
         out.push_str("\n\n");
 
-        let mut rendered = 0_usize;
-        let mut seen = BTreeSet::new();
-        if settings.category.to {
-            rendered += render_links(&mut out, entry.metadata.category.iter(), &mut seen);
-        }
+        let mut sections = Vec::new();
         if settings.category.from {
-            let targets = self.incoming_targets(&self.category_sources_by_target, entry);
-            rendered += render_links(&mut out, targets.iter(), &mut seen);
+            sections.push(GeneratedLinkSection::new(
+                "Category (from)",
+                self.incoming_targets(&self.category_sources_by_target, entry),
+            ));
         }
-        if settings.clustee.to {
-            if settings.clique {
-                let targets = self.outgoing_clique_targets(entry);
-                rendered += render_links(&mut out, targets.iter(), &mut seen);
-            } else {
-                rendered += render_links(&mut out, entry.metadata.clustee.iter(), &mut seen);
-            }
+        if settings.category.to {
+            sections.push(GeneratedLinkSection::new(
+                "Category (to)",
+                entry.metadata.category.iter().cloned().collect(),
+            ));
         }
         if settings.clustee.from {
-            let targets = if settings.clique {
-                self.incoming_clique_targets(entry)
-            } else {
-                self.incoming_targets(&self.clustee_sources_by_target, entry)
-            };
-            rendered += render_links(&mut out, targets.iter(), &mut seen);
+            sections.push(GeneratedLinkSection::new(
+                "Clustee (from)",
+                self.incoming_targets(&self.clustee_sources_by_target, entry),
+            ));
         }
-        if settings.refiner.to {
-            rendered += render_links(&mut out, entry.metadata.refiner.iter(), &mut seen);
+        if settings.clustee.to {
+            sections.push(GeneratedLinkSection::new(
+                "Clustee (to)",
+                entry.metadata.clustee.iter().cloned().collect(),
+            ));
+        }
+        if settings.clique {
+            sections.push(GeneratedLinkSection::new("Clique", self.clique_targets(entry)));
         }
         if settings.refiner.from {
-            let targets = self.incoming_targets(&self.refiner_sources_by_target, entry);
-            rendered += render_links(&mut out, targets.iter(), &mut seen);
+            sections.push(GeneratedLinkSection::new(
+                "Refiner (from)",
+                self.incoming_targets(&self.refiner_sources_by_target, entry),
+            ));
         }
-        if rendered == 0 {
-            out.push_str("- none\n");
+        if settings.refiner.to {
+            sections.push(GeneratedLinkSection::new(
+                "Refiner (to)",
+                entry.metadata.refiner.iter().cloned().collect(),
+            ));
         }
 
-        out.push('\n');
+        if sections.is_empty() {
+            out.push_str("(none)\n\n");
+        } else {
+            for section in &sections {
+                render_section(&mut out, section);
+            }
+        }
+
         out.push_str(END_LINKS_GUARD);
         out
     }
@@ -252,22 +264,29 @@ impl GeneratedLinkIndex {
         sources_by_target.get(&entry.id).cloned().unwrap_or_default()
     }
 
-    fn outgoing_clique_targets(&self, entry: &Entry) -> BTreeSet<crate::EntryId> {
+    fn clique_targets(&self, entry: &Entry) -> BTreeSet<crate::EntryId> {
         let mut targets = BTreeSet::new();
         for closure in &entry.metadata.clustee {
             if let Some(clique) = self.cliques_by_closure.get(closure) {
                 targets.extend(clique.iter().filter(|id| *id != &entry.id).cloned());
             }
         }
-        targets
-    }
-
-    fn incoming_clique_targets(&self, entry: &Entry) -> BTreeSet<crate::EntryId> {
-        let mut targets = BTreeSet::new();
         if let Some(clique) = self.cliques_by_closure.get(&entry.id) {
             targets.extend(clique.iter().filter(|id| *id != &entry.id).cloned());
         }
         targets
+    }
+}
+
+#[derive(Debug)]
+struct GeneratedLinkSection {
+    title: &'static str,
+    targets: BTreeSet<crate::EntryId>,
+}
+
+impl GeneratedLinkSection {
+    fn new(title: &'static str, targets: BTreeSet<crate::EntryId>) -> Self {
+        Self { title, targets }
     }
 }
 
@@ -380,21 +399,21 @@ pub fn delete_generated_links(body: &str) -> Result<String, GeneratedLinkError> 
     Ok(out)
 }
 
-fn render_links<'a>(
-    out: &mut String, ids: impl IntoIterator<Item = &'a crate::EntryId>,
-    seen: &mut BTreeSet<crate::EntryId>,
-) -> usize {
-    let mut rendered = 0_usize;
-    for id in ids {
-        if !seen.insert(id.clone()) {
-            continue;
-        }
+fn render_section(out: &mut String, section: &GeneratedLinkSection) {
+    if section.targets.is_empty() {
+        out.push_str(section.title);
+        out.push_str(": (none)\n\n");
+        return;
+    }
+
+    out.push_str(section.title);
+    out.push('\n');
+    for id in &section.targets {
         out.push_str("- ");
         out.push_str(&format!("[{}]({}.md)", id.as_str(), id.as_str()));
         out.push('\n');
-        rendered += 1;
     }
-    rendered
+    out.push('\n');
 }
 
 fn append_footer(body: &str, footer: &str) -> String {
@@ -486,7 +505,8 @@ mod tests {
         assert!(footer.contains("- [core](core.md)"));
         assert!(!footer.contains("[metadata](metadata.md)"));
         assert!(!footer.contains("## Sirno Links"));
-        assert!(!footer.contains("clustee:"));
+        assert!(footer.contains("Clustee (from): (none)"));
+        assert!(footer.contains("Clustee (to)\n- [core](core.md)"));
         assert!(footer.contains(BEGIN_LINKS_GUARD));
         assert!(footer.contains(END_LINKS_GUARD));
         assert!(footer.contains("> **Sirno generated links begin."));
@@ -496,7 +516,11 @@ mod tests {
     fn quoted_guards_are_separated_from_link_list() {
         let footer = render_generated_links(&entry(), &GeneratedLinkSettings::default());
 
-        assert!(footer.contains(&format!("{BEGIN_LINKS_GUARD}\n\n- [core](core.md)")));
+        assert!(
+            footer.contains(&format!(
+                "{BEGIN_LINKS_GUARD}\n\nClustee (from): (none)\n\nClustee (to)\n"
+            ))
+        );
         assert!(footer.contains(&format!("- [core](core.md)\n\n{END_LINKS_GUARD}")));
     }
 
@@ -513,25 +537,28 @@ mod tests {
         assert!(footer.contains("- [meta](meta.md)"));
         assert!(footer.contains("- [core](core.md)"));
         assert!(footer.contains("- [metadata](metadata.md)"));
-        assert!(!footer.contains("category:"));
-        assert!(!footer.contains("clustee:"));
-        assert!(!footer.contains("refiner:"));
+        assert!(footer.contains("Category (from): (none)"));
+        assert!(footer.contains("Category (to)"));
+        assert!(footer.contains("Clustee (from): (none)"));
+        assert!(footer.contains("Clustee (to)"));
+        assert!(footer.contains("Refiner (from): (none)"));
+        assert!(footer.contains("Refiner (to)"));
     }
 
     #[test]
     fn repeated_targets_render_once() {
         let mut entry = entry();
-        entry.metadata.category.push(id("core"));
+        entry.metadata.category.push(id("meta"));
         let settings = GeneratedLinkSettings {
             category: true.into(),
-            clustee: true.into(),
+            clustee: false.into(),
             clique: false,
             refiner: false.into(),
         };
 
         let footer = render_generated_links(&entry, &settings);
 
-        assert_eq!(footer.matches("[core](core.md)").count(), 1);
+        assert_eq!(footer.matches("[meta](meta.md)").count(), 1);
     }
 
     #[test]
@@ -553,7 +580,11 @@ mod tests {
         let category_footer = index.render_entry(&category, &settings);
         let member_footer = index.render_entry(&member, &settings);
 
+        assert!(category_footer.contains("Category (from)"));
         assert!(category_footer.contains("- [member](member.md)"));
+        assert!(category_footer.contains("Category (to): (none)"));
+        assert!(member_footer.contains("Category (from): (none)"));
+        assert!(member_footer.contains("Category (to)"));
         assert!(member_footer.contains("- [meta](meta.md)"));
     }
 
@@ -576,8 +607,9 @@ mod tests {
         let category_footer = index.render_entry(&category, &settings);
         let member_footer = index.render_entry(&member, &settings);
 
+        assert!(category_footer.contains("Category (from)"));
         assert!(category_footer.contains("- [member](member.md)"));
-        assert!(member_footer.contains("- none"));
+        assert!(member_footer.contains("Category (from): (none)"));
         assert!(!member_footer.contains("[meta](meta.md)"));
     }
 
@@ -585,7 +617,7 @@ mod tests {
     fn clique_setting_expands_clustee_closures_to_edges() {
         let settings = GeneratedLinkSettings {
             category: false.into(),
-            clustee: true.into(),
+            clustee: false.into(),
             clique: true,
             refiner: false.into(),
         };
@@ -610,10 +642,14 @@ mod tests {
         let closure_footer = index.render_entry(&closure, &settings);
         let left_footer = index.render_entry(&left, &settings);
 
+        assert!(closure_footer.contains("Clique"));
+        assert!(!closure_footer.contains("Clustee (from)"));
         assert!(closure_footer.contains("- [left](left.md)"));
         assert!(closure_footer.contains("- [right](right.md)"));
         assert!(!closure_footer.contains("[core](core.md)"));
         assert!(!closure_footer.contains("[outside](outside.md)"));
+        assert!(left_footer.contains("Clique"));
+        assert!(!left_footer.contains("Clustee (to)"));
         assert!(left_footer.contains("- [core](core.md)"));
         assert!(left_footer.contains("- [right](right.md)"));
         assert!(!left_footer.contains("[left](left.md)"));
@@ -621,13 +657,63 @@ mod tests {
     }
 
     #[test]
-    fn renders_none_when_entry_has_no_structural_targets() {
+    fn clustee_sections_remain_direct_when_clique_is_enabled() {
+        let settings = GeneratedLinkSettings {
+            category: false.into(),
+            clustee: true.into(),
+            clique: true,
+            refiner: false.into(),
+        };
+
+        let closure = Entry::new(
+            id("core"),
+            EntryMetadata::new("Core", "A clique closure.").unwrap(),
+            "Body.\n",
+        );
+        let mut left_metadata = EntryMetadata::new("Left", "A clique member.").unwrap();
+        left_metadata.clustee.push(id("core"));
+        let left = Entry::new(id("left"), left_metadata, "Body.\n");
+        let mut right_metadata = EntryMetadata::new("Right", "A clique member.").unwrap();
+        right_metadata.clustee.push(id("core"));
+        let right = Entry::new(id("right"), right_metadata, "Body.\n");
+        let entries = vec![closure, left.clone(), right];
+        let index = GeneratedLinkIndex::from_entries(&entries);
+
+        let left_footer = index.render_entry(&left, &settings);
+
+        assert!(left_footer.contains("Clustee (to)\n- [core](core.md)"));
+        assert!(left_footer.contains("Clique"));
+        assert!(left_footer.contains("- [right](right.md)"));
+    }
+
+    #[test]
+    fn renders_empty_enabled_sections_when_entry_has_no_structural_targets() {
         let metadata = EntryMetadata::new("Meta", "A category.").unwrap();
         let entry = Entry::new(EntryId::new("meta").unwrap(), metadata, "Body.\n");
 
         let footer = render_generated_links(&entry, &GeneratedLinkSettings::default());
 
-        assert!(footer.contains("- none"));
+        assert!(footer.contains("Clustee (from): (none)"));
+        assert!(footer.contains("Clustee (to): (none)"));
+        assert!(!footer.contains(&format!("{BEGIN_LINKS_GUARD}\n\n(none)\n\n{END_LINKS_GUARD}")));
+        assert!(!footer.contains("- none"));
+    }
+
+    #[test]
+    fn renders_region_none_when_no_sections_are_enabled() {
+        let metadata = EntryMetadata::new("Meta", "A category.").unwrap();
+        let entry = Entry::new(EntryId::new("meta").unwrap(), metadata, "Body.\n");
+        let settings = GeneratedLinkSettings {
+            category: false.into(),
+            clustee: false.into(),
+            clique: false,
+            refiner: false.into(),
+        };
+
+        let footer = render_generated_links(&entry, &settings);
+
+        assert_eq!(footer, format!("{BEGIN_LINKS_GUARD}\n\n(none)\n\n{END_LINKS_GUARD}"));
+        assert!(!footer.contains("- none"));
     }
 
     #[test]

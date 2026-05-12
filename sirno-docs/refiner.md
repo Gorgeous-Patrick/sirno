@@ -39,6 +39,11 @@ The prose should explain the combined responsibility so a future reader can tell
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

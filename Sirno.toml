@@ -9,7 +9,7 @@ ignore = [".obsidian"]
 link = true
 
 [links]
-category = false
-clustee = true
-clique = false
+category = true
+clustee = false
+clique = true
 refiner = false

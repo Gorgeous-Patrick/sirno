@@ -42,6 +42,13 @@ but they should still treat entries as the source of durable project knowledge.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from)
+- [mono](mono.md)
+
+Category (to)
+- [concept](concept.md)
+- [meta](meta.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

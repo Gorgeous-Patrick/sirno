@@ -35,6 +35,17 @@ The same selected entries may be printed as summaries, ids, or paths.
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
+- [entry](entry.md)
+- [generated-footer](generated-footer.md)
+- [metadata](metadata.md)
+- [project-config](project-config.md)
 - [sirno-store](sirno-store.md)
+- [structural-check](structural-check.md)
 
 > **Sirno generated links end.**

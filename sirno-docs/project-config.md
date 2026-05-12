@@ -35,12 +35,23 @@ A boolean applies to both directions.
 
 `to` links from the entry to metadata targets.
 `from` links from the entry to entries that name it as a metadata target.
-`links.clique` expands clustee links through named clique closures.
+`links.clique` adds separate clique-derived sections through named clustee closures.
 
 ---
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
+- [entry](entry.md)
+- [generated-footer](generated-footer.md)
+- [metadata](metadata.md)
+- [query](query.md)
 - [sirno-store](sirno-store.md)
+- [structural-check](structural-check.md)
 
 > **Sirno generated links end.**

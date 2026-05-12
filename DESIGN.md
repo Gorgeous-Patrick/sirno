@@ -74,8 +74,9 @@ A boolean applies to both directions.
 `to` renders links from an entry to its metadata targets.
 `from` renders links from an entry to entries that name it as a metadata target.
 
-The default link policy renders only `clustee`.
-`links.clique` is a boolean expansion switch for clustee links.
+The default link policy renders only direct `clustee` links.
+`links.clique` is a boolean policy that adds clique-derived links.
+It does not change direct `clustee` projection.
 When it is enabled, each named clustee closure induces a clique:
 the closure entry links to members,
 and each member links to the closure and the other members.
@@ -350,10 +351,12 @@ so Markdown renderers do not nest the closing sentinel under the list.
 When Sirno appends a generated region to a non-empty entry body,
 it inserts a horizontal divider immediately before the region unless one is already present.
 
-The generated body is a plain list of entry links.
-Each item is rendered directly as the target id and path,
-with no heading, relation label, or direction label.
-If no configured link is present, the list contains `- none`.
+The generated body is grouped by configured structural relation.
+Each enabled group appears in the region.
+A group with links begins with a plain label such as `Category (from)`, `Clustee (to)`,
+or `Clique`, followed by a Markdown list of entry links.
+A group with no links is rendered inline, such as `Clustee (from): (none)`.
+If no generated-link group is enabled, the region contains `(none)`.
 
 The footer format is a projection of metadata-derived structure,
 maintained for external tools that navigate links.

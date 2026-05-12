@@ -29,6 +29,15 @@ and to entries about implementation commitments.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from)
+- [concept](concept.md)
+- [meta](meta.md)
+- [narrative](narrative.md)
+
+Category (to)
+- [concept](concept.md)
+- [meta](meta.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

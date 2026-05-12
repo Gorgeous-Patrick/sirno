@@ -56,12 +56,26 @@ and where implementation evidence should be found when that evidence exists.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- [sirno](sirno.md)
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
+- [code-surface](code-surface.md)
+- [concept-driven-development](concept-driven-development.md)
 - [entry](entry.md)
+- [future-work](future-work.md)
 - [generated-footer](generated-footer.md)
 - [metadata](metadata.md)
+- [mono](mono.md)
+- [planning](planning.md)
 - [project-config](project-config.md)
+- [project-self-application](project-self-application.md)
 - [query](query.md)
+- [sirno](sirno.md)
+- [storage-and-interfaces](storage-and-interfaces.md)
 - [structural-check](structural-check.md)
+- [surface](surface.md)
 
 > **Sirno generated links end.**

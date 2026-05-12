@@ -48,6 +48,12 @@ Sirno keeps the edges between those surfaces explicit.
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
 - [code-surface](code-surface.md)
 - [concept-driven-development](concept-driven-development.md)
 - [future-work](future-work.md)

@@ -15,9 +15,9 @@ The member entries keep their own ids while the clique entry provides a route in
 
 A two-member clique closure can record why two entries belong together.
 
-Generated clustee links can preserve direct target links
-or expand the closure into clique edges.
-With clique expansion enabled,
+Generated clustee links preserve direct target and source links.
+`links.clique` can add separate clique-derived sections.
+With clique sections enabled,
 the closure links to its members
 and each member links to the closure and the other members.
 
@@ -44,6 +44,11 @@ then the closure gives that region a stable front door.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

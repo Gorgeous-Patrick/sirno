@@ -38,6 +38,20 @@ not in ad hoc metadata that core tools silently ignore.
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
+- [code-surface](code-surface.md)
+- [concept-driven-development](concept-driven-development.md)
+- [future-work](future-work.md)
+- [mono](mono.md)
+- [project-self-application](project-self-application.md)
 - [sirno](sirno.md)
+- [sirno-store](sirno-store.md)
+- [storage-and-interfaces](storage-and-interfaces.md)
+- [surface](surface.md)
 
 > **Sirno generated links end.**

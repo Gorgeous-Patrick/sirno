@@ -46,6 +46,20 @@ Code can stay focused on behavior while still having a place to point for intent
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
+- [code-surface](code-surface.md)
+- [concept-driven-development](concept-driven-development.md)
+- [future-work](future-work.md)
+- [mono](mono.md)
+- [planning](planning.md)
+- [project-self-application](project-self-application.md)
 - [sirno](sirno.md)
+- [sirno-store](sirno-store.md)
+- [storage-and-interfaces](storage-and-interfaces.md)
 
 > **Sirno generated links end.**

@@ -42,6 +42,15 @@ That makes review and future reflection less dependent on remembering the origin
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
 - [direction](direction.md)
+- [raise](raise.md)
+- [realize](realize.md)
+- [reflect](reflect.md)
 
 > **Sirno generated links end.**

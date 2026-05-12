@@ -37,6 +37,40 @@ The project supplies the vocabulary that makes its own design legible.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- none
+Category (from)
+- [category](category.md)
+- [clustee](clustee.md)
+- [code-surface](code-surface.md)
+- [concept](concept.md)
+- [concept-driven-development](concept-driven-development.md)
+- [direction](direction.md)
+- [entry](entry.md)
+- [future-work](future-work.md)
+- [generated-footer](generated-footer.md)
+- [lower](lower.md)
+- [meta](meta.md)
+- [metadata](metadata.md)
+- [mono](mono.md)
+- [narrative](narrative.md)
+- [planning](planning.md)
+- [project-config](project-config.md)
+- [project-self-application](project-self-application.md)
+- [query](query.md)
+- [raise](raise.md)
+- [realize](realize.md)
+- [refiner](refiner.md)
+- [reflect](reflect.md)
+- [sirno](sirno.md)
+- [sirno-store](sirno-store.md)
+- [storage-and-interfaces](storage-and-interfaces.md)
+- [structural-check](structural-check.md)
+- [surface](surface.md)
+- [witness](witness.md)
+
+Category (to)
+- [concept](concept.md)
+- [meta](meta.md)
+
+Clique: (none)
 
 > **Sirno generated links end.**

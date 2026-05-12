@@ -41,6 +41,15 @@ The fix may belong in the store before the monograph can be made elegant.
 
 > **Sirno generated links begin. Do not edit this section.**
 
+Category (from): (none)
+
+Category (to)
+- [concept](concept.md)
+
+Clique
 - [direction](direction.md)
+- [lower](lower.md)
+- [realize](realize.md)
+- [reflect](reflect.md)
 
 > **Sirno generated links end.**
