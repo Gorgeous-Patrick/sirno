@@ -1,5 +1,6 @@
 //! Command-line interface for Sirno.
 
+use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -46,6 +47,11 @@ enum Command {
         /// Public Markdown entry store path written to Sirno.toml.
         #[arg(long)]
         store: Option<PathBuf>,
+    },
+    /// Move the configured public Markdown entry store.
+    Mv {
+        /// New public Markdown entry store path written to Sirno.toml.
+        store: PathBuf,
     },
     // sirno:witness:end
     /// Create one Markdown entry.
@@ -224,6 +230,11 @@ enum HistoryCommand {
         #[arg(long)]
         history: Option<PathBuf>,
     },
+    /// Move the configured private history store.
+    Mv {
+        /// New private eter history store path written to Sirno.toml.
+        history: PathBuf,
+    },
     /// Commit the current public Markdown store into history.
     Commit,
     /// Check out one history version into the public Markdown store.
@@ -295,6 +306,16 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
                 paths.len(),
                 store_path.display()
             );
+            Ok(ExitCode::SUCCESS)
+        }
+        | Command::Mv { store } => {
+            let config = SirnoConfig::from_file(&config_path)?;
+            let old_store = config.resolve_store(&config_path);
+            let config = config.with_store(store);
+            config.validate_for_file(&config_path)?;
+            let new_store = config.resolve_store(&config_path);
+            move_configured_path_and_write_config(&old_store, &new_store, &config, &config_path)?;
+            println!("moved store {} to {}", old_store.display(), new_store.display());
             Ok(ExitCode::SUCCESS)
         }
         | Command::New {
@@ -516,6 +537,24 @@ fn run_history_command(
             );
             Ok(ExitCode::SUCCESS)
         }
+        | HistoryCommand::Mv { history } => {
+            let config = SirnoConfig::from_file(config_path)?;
+            let Some(old_history) = config.resolve_history(config_path) else {
+                return Err(CliError::HistoryNotConfigured);
+            };
+            let config = config.with_history(history);
+            config.validate_for_file(config_path)?;
+            let new_history =
+                config.resolve_history(config_path).expect("history path configured by mv");
+            move_configured_path_and_write_config(
+                &old_history,
+                &new_history,
+                &config,
+                config_path,
+            )?;
+            println!("moved history {} to {}", old_history.display(), new_history.display());
+            Ok(ExitCode::SUCCESS)
+        }
         | HistoryCommand::Commit => {
             let context = HistoryContext::load(config_path)?;
             reject_immutable_checkout(&context.lock_path)?;
@@ -558,6 +597,43 @@ fn run_history_command(
             Ok(ExitCode::SUCCESS)
         }
     }
+}
+
+fn move_configured_path_and_write_config(
+    source: &Path, destination: &Path, config: &SirnoConfig, config_path: &Path,
+) -> Result<(), CliError> {
+    let moved = move_configured_path(source, destination)?;
+    if let Err(config_error) = config.write(config_path) {
+        if moved && let Err(rollback) = fs::rename(destination, source) {
+            return Err(CliError::MoveConfigWriteRollback {
+                source_path: source.to_path_buf(),
+                destination_path: destination.to_path_buf(),
+                source: Box::new(config_error),
+                rollback,
+            });
+        }
+        return Err(CliError::Config(config_error));
+    }
+    Ok(())
+}
+
+fn move_configured_path(source: &Path, destination: &Path) -> Result<bool, CliError> {
+    if source == destination {
+        return Ok(false);
+    }
+    match fs::symlink_metadata(destination) {
+        | Ok(_) => return Err(CliError::MoveDestinationExists(destination.to_path_buf())),
+        | Err(source) if source.kind() == ErrorKind::NotFound => {}
+        | Err(source) => {
+            return Err(CliError::ReadMoveDestination { path: destination.to_path_buf(), source });
+        }
+    }
+    fs::rename(source, destination).map_err(|error| CliError::MovePath {
+        source_path: source.to_path_buf(),
+        destination_path: destination.to_path_buf(),
+        source: error,
+    })?;
+    Ok(true)
 }
 
 struct HistoryContext {
@@ -932,6 +1008,44 @@ enum CliError {
     /// Empty history cannot be checked out as a version.
     #[error("history version {0} is not a check-outable snapshot")]
     InvalidHistoryVersion(u64),
+    /// A configured store move cannot replace an existing destination.
+    #[error("move destination already exists: {0}")]
+    MoveDestinationExists(PathBuf),
+    /// A configured store move could not inspect its destination.
+    #[error("failed to inspect move destination {path}")]
+    ReadMoveDestination {
+        /// Destination path that could not be inspected.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A configured store path could not be moved.
+    #[error("failed to move {source_path} to {destination_path}")]
+    MovePath {
+        /// Source path configured before the move.
+        source_path: PathBuf,
+        /// Destination path configured by the move.
+        destination_path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A config write failed after a configured path was moved, and the rollback also failed.
+    #[error(
+        "failed to write config after moving {source_path} to {destination_path}; rollback failed: {rollback}"
+    )]
+    MoveConfigWriteRollback {
+        /// Source path configured before the move.
+        source_path: PathBuf,
+        /// Destination path already moved into place.
+        destination_path: PathBuf,
+        /// Config write error.
+        #[source]
+        source: Box<ConfigError>,
+        /// Rollback rename error.
+        rollback: std::io::Error,
+    },
     /// Witness lookup requires configured code members.
     #[error("code members are not configured; add [code].members to Sirno.toml")]
     CodeMembersNotConfigured,
@@ -963,15 +1077,18 @@ enum CliError {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use std::path::{Path, PathBuf};
 
     use clap::Parser;
 
-    use sirno::{EntryId, WitnessRecord, WitnessSpan};
+    use sirno::{
+        CONFIG_FILE_NAME, EntryId, HistorySettings, SirnoConfig, WitnessRecord, WitnessSpan,
+    };
 
     use crate::{
-        Cli, Command, HistoryCommand, format_gen_link_report, format_witness_record,
-        format_witness_records,
+        Cli, CliError, Command, HistoryCommand, format_gen_link_report, format_witness_record,
+        format_witness_records, run,
     };
 
     #[test]
@@ -993,6 +1110,26 @@ mod tests {
     }
 
     #[test]
+    fn mv_accepts_store_path() {
+        let cli = Cli::parse_from(["sirno", "mv", "sirno-docs"]);
+
+        assert!(
+            matches!(cli.command, Command::Mv { store } if store == PathBuf::from("sirno-docs"))
+        );
+    }
+
+    #[test]
+    fn history_mv_accepts_history_path() {
+        let cli = Cli::parse_from(["sirno", "history", "mv", "sirno-history-2"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::History { command: HistoryCommand::Mv { history } }
+                if history == PathBuf::from("sirno-history-2")
+        ));
+    }
+
+    #[test]
     fn history_checkout_accepts_unsafe_mutable_flag() {
         let cli = Cli::parse_from(["sirno", "history", "checkout", "3", "--unsafe-mutable"]);
 
@@ -1002,6 +1139,82 @@ mod tests {
                 command: HistoryCommand::Checkout { version: 3, unsafe_mutable: true }
             }
         ));
+    }
+
+    #[test]
+    fn mv_moves_store_and_rewrites_config() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let old_store = temp.path().join("docs");
+        let new_store = temp.path().join("sirno-docs");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&old_store).unwrap();
+        fs::write(old_store.join("entry.md"), "entry").unwrap();
+
+        run(Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "mv",
+            "sirno-docs",
+        ]))
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.store.path, PathBuf::from("sirno-docs"));
+        assert!(!old_store.exists());
+        assert!(new_store.join("entry.md").exists());
+    }
+
+    #[test]
+    fn mv_refuses_existing_destination() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let old_store = temp.path().join("docs");
+        let new_store = temp.path().join("sirno-docs");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&old_store).unwrap();
+        fs::create_dir(&new_store).unwrap();
+
+        let error = run(Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "mv",
+            "sirno-docs",
+        ]))
+        .unwrap_err();
+
+        assert!(matches!(error, CliError::MoveDestinationExists(_)));
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.store.path, PathBuf::from("docs"));
+        assert!(old_store.exists());
+    }
+
+    #[test]
+    fn history_mv_moves_history_and_rewrites_config() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let old_history = temp.path().join("sirno-history");
+        let new_history = temp.path().join("history");
+        SirnoConfig::new("docs").with_history("sirno-history").write_new(&config_path).unwrap();
+        fs::create_dir(&old_history).unwrap();
+        fs::write(old_history.join("row"), "history").unwrap();
+
+        run(Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "history",
+            "mv",
+            "history",
+        ]))
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.history, Some(HistorySettings { path: PathBuf::from("history") }));
+        assert!(!old_history.exists());
+        assert!(new_history.join("row").exists());
     }
 
     #[test]

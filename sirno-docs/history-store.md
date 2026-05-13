@@ -14,6 +14,9 @@ The history store is the private `eter` root for committed Sirno snapshots.
 The default convention is `sirno-history`.
 It is optional.
 `sirno history init` adds it to a project and commits the current public store.
+`sirno history mv PATH` renames the configured history root
+and writes the new path back to `[history].path`.
+The move refuses to replace an existing destination.
 
 The public store remains the editable Markdown working form.
 The history store records immutable versions of that form.

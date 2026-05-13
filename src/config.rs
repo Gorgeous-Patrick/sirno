@@ -225,6 +225,12 @@ impl SirnoConfig {
         self
     }
 
+    /// Return this config with a configured public store path.
+    pub fn with_store(mut self, store: impl Into<PathBuf>) -> Self {
+        self.store.path = store.into();
+        self
+    }
+
     /// Return this config with a configured history root.
     pub fn with_history(mut self, history: impl Into<PathBuf>) -> Self {
         self.history = Some(HistorySettings::new(history));

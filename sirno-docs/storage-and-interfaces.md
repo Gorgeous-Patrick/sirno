@@ -33,7 +33,7 @@ without adding version fields to entry metadata.
 
 The CLI is the first operational interface.
 It can initialize stores, create entries, query entries, check structure,
-and maintain generated link footers.
+move configured storage paths, and maintain generated link footers.
 Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
@@ -41,7 +41,12 @@ and stable enough for agents and skills to call.
 It reports the config path, monograph state, store path, optional history path,
 history lock state, entry count, check policy, link policy, and current check result.
 
+`sirno mv PATH` changes the configured public store path
+and renames the current store directory on the filesystem.
+
 `sirno history init` configures the private history root and commits the current public store.
+`sirno history mv PATH` changes the configured history path
+and renames the current history root on the filesystem.
 `sirno history commit` commits the current public store into history
 and writes the resulting current version to `Sirno.lock`.
 `sirno history checkout VERSION` materializes one version into the public store.

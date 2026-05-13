@@ -14,6 +14,9 @@ The Sirno store is the configured directory of Markdown entries.
 The usual convention is `docs/`.
 
 `Sirno.toml` records the store path under `[store].path`.
+`sirno mv PATH` renames the configured store directory
+and writes the new path back to `[store].path`.
+The move refuses to replace an existing destination.
 
 The store is the human-readable intermediate representation:
 text first, structured enough for tools,

@@ -119,5 +119,6 @@ The implementation is expected to expose CLI and MCP interfaces,
 with possible lightweight GUI or Obsidian integration later.
 Entry storage is built around `eter`.
 History is optional and initialized separately with `sirno history init`.
+Configured store paths can be renamed with `sirno mv` and `sirno history mv`.
 `Sirno.lock` records whether the public store is current or checked out to a history version.
 Repository witnesses are built around `mosaika`.

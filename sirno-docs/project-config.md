@@ -26,7 +26,9 @@ Relative paths are resolved from the directory that contains `Sirno.toml`.
 
 A project can use Sirno without a configured monograph, code members, or history.
 `sirno init` creates the config and public entry store.
+`sirno mv PATH` changes `[store].path` and renames the public store directory.
 `sirno history init` adds the history config and commits the current public store.
+`sirno history mv PATH` changes `[history].path` and renames the private history root.
 
 `Sirno.lock` records the public store's history state when history is configured.
 It lives next to `Sirno.toml`.

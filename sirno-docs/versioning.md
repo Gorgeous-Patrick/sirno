@@ -30,6 +30,7 @@ The history root is private storage,
 conventionally `sirno-history`.
 It is not read as part of the entry store,
 and it must not be placed where store discovery can treat it as entries.
+`sirno history mv PATH` renames this root and updates `[history].path`.
 `Sirno.lock` records the public store state relative to that history root.
 It contains one `[history]` table with `status`, `version`,
 and an optional `mutable` flag.
