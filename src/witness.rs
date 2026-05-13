@@ -88,6 +88,7 @@ impl WitnessIndex {
 /// `region` identifies the matched block.
 /// `opening` and `closing` identify the delimiter spans.
 #[derive(Clone, Debug, PartialEq, Eq)]
+// sirno:witness:start witness
 pub struct WitnessRecord {
     /// Entry id captured from `sirno:witness:start <entry-id>`.
     pub entry: EntryId,
@@ -104,12 +105,14 @@ pub struct WitnessRecord {
     /// Full witness block body emitted by `mosaika`.
     pub body: String,
 }
+// sirno:witness:end
 
 /// One source span reported by `mosaika`.
 ///
 /// Invariant: line and column values are one-based.
 /// End columns point after the matched span.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+// sirno:witness:start witness
 pub struct WitnessSpan {
     /// One-based starting line.
     pub start_line: usize,
@@ -120,6 +123,7 @@ pub struct WitnessSpan {
     /// One-based column after the span.
     pub end_column: usize,
 }
+// sirno:witness:end
 
 // sirno:witness:start witness
 /// Scan configured repository members for Sirno witness blocks.
@@ -135,7 +139,9 @@ pub fn scan_witnesses(settings: &WitnessCheckSettings) -> Result<WitnessIndex, W
     trace!(file_count = files.len(), "scan_witnesses end");
     Ok(index)
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn resolve_member_files(settings: &WitnessCheckSettings) -> Result<Vec<PathBuf>, WitnessError> {
     let mut files = BTreeSet::new();
     for member in &settings.members {
@@ -152,7 +158,9 @@ fn resolve_member_files(settings: &WitnessCheckSettings) -> Result<Vec<PathBuf>,
     }
     Ok(files.into_iter().collect())
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn collect_glob_member(
     root: &Path, member: &CodeMember, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -173,7 +181,9 @@ fn collect_glob_member(
     }
     Ok(())
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn collect_path_member(
     member: &CodeMember, path: &Path, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -193,7 +203,9 @@ fn collect_path_member(
         path: path.to_path_buf(),
     })
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn collect_directory_files(
     member: &CodeMember, root: &Path, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -217,7 +229,9 @@ fn collect_directory_files(
     }
     Ok(())
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn run_mosaika_witness_scan(root: &Path, files: &[PathBuf]) -> Result<String, WitnessError> {
     if files.is_empty() {
         return Ok(String::new());
@@ -231,7 +245,9 @@ fn run_mosaika_witness_scan(root: &Path, files: &[PathBuf]) -> Result<String, Wi
         .map_err(WitnessError::Engine)?;
     String::from_utf8(output).map_err(WitnessError::Utf8)
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn witness_projection(files: &[PathBuf]) -> syn::Projection {
     syn::Projection {
         transforms: vec![Transform {
@@ -257,7 +273,9 @@ fn witness_projection(files: &[PathBuf]) -> syn::Projection {
         posts: Vec::new(),
     }
 }
+// sirno:witness:end
 
+// sirno:witness:start witness
 fn parse_witness_output(output: &str) -> Result<WitnessIndex, WitnessError> {
     let mut index = WitnessIndex::new();
     for line in output.lines().filter(|line| !line.trim().is_empty()) {

@@ -32,6 +32,8 @@ Multiple small blocks for one entry are better than one broad block that forces 
 
 Create a more specific entry when the evidence supports a narrower claim.
 Use the specific entry as a `refiner` of the broader entry when that improves navigation.
+Keep it in the same `clustee` when it belongs to the same module-like review unit.
+Create a new `clustee` only when the evidence belongs to a new design/program boundary.
 Avoid ad hoc suffixes such as `entry#parser`; use real entry ids.
 
 Do not duplicate `mosaika` behavior in Sirno.

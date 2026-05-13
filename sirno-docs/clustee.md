@@ -10,6 +10,9 @@ witness:
 
 The named entry is the clique closure.
 It gives the shared subject, local vocabulary, or design neighborhood a place to be named and explained.
+The closure acts as a module-like review unit.
+A local design or program change should often be reviewable by visiting that closure,
+its members, their refiners, and their witnesses.
 
 This field covers the useful part of tags, scopes, namespaces, and domains.
 The member entries keep their own ids while the clique entry provides a route into the group.
@@ -27,7 +30,7 @@ The field says that the member belongs to a named neighborhood,
 not that it is an instance of a kind and not that it refines the clique entry.
 The clique closure can explain the shared theme,
 the local vocabulary,
-or the reason the entries should be considered as a set.
+or the reason the entries should be considered as a review unit.
 
 This is useful for domains that cut across categories.
 For example, a store neighborhood may include concepts, metadata rules,
@@ -40,6 +43,9 @@ If the group name is only a loose tag,
 it may not deserve a `clustee` field yet.
 If the group helps a reader enter a complicated region of the store,
 then the closure gives that region a stable front door.
+When splitting an entry,
+keep the new entries in the same clustee if they belong to the same module.
+Create a new clique closure only when the split creates a real new review boundary.
 
 ---
 

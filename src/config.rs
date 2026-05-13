@@ -105,16 +105,17 @@ impl HistorySettings {
     }
 }
 
-// sirno:witness:start code-form
 /// One repository member that Sirno scans through `mosaika`.
 ///
 /// Invariant: `pattern` is a non-empty config-relative path or glob.
 /// It never names an absolute path or a parent-directory escape.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
+// sirno:witness:start code-form
 pub struct CodeMember {
     pattern: String,
 }
+// sirno:witness:end
 
 impl CodeMember {
     /// Construct one code-member pattern.
@@ -152,10 +153,12 @@ impl CodeMember {
 /// Directory members are scanned recursively by witness lookup.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+// sirno:witness:start code-form
 pub struct CodeSettings {
     /// Config-relative paths or globs scanned through `mosaika`.
     pub members: Vec<CodeMember>,
 }
+// sirno:witness:end
 
 impl CodeSettings {
     fn validate(&self) -> Result<(), ConfigError> {
@@ -165,9 +168,7 @@ impl CodeSettings {
         Ok(())
     }
 }
-// sirno:witness:end
 
-// sirno:witness:start project-config
 /// Sirno project configuration.
 ///
 /// Invariant: `mono.path` points to the configured monograph path.
@@ -180,6 +181,7 @@ impl CodeSettings {
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:start project-config
 pub struct SirnoConfig {
     /// Configured monograph settings.
     pub mono: MonoSettings,
@@ -198,9 +200,11 @@ pub struct SirnoConfig {
     #[serde(default)]
     pub links: GeneratedLinkSettings,
 }
+// sirno:witness:end
 
 impl SirnoConfig {
     /// Construct a config from explicit paths.
+    // sirno:witness:start project-config
     pub fn new(mono: impl Into<PathBuf>, store: impl Into<PathBuf>) -> Self {
         Self {
             mono: MonoSettings::new(mono),
@@ -211,6 +215,7 @@ impl SirnoConfig {
             links: GeneratedLinkSettings::default(),
         }
     }
+    // sirno:witness:end
 
     /// Return this config with a configured history root.
     pub fn with_history(mut self, history: impl Into<PathBuf>) -> Self {
@@ -224,6 +229,7 @@ impl SirnoConfig {
     }
 
     /// Load a config from a specific file path.
+    // sirno:witness:start project-config
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let path = path.as_ref();
         trace!("sirno config load begin: path={}", path.display());
@@ -235,10 +241,12 @@ impl SirnoConfig {
         trace!("sirno config load end");
         Ok(config)
     }
+    // sirno:witness:end
 
     /// Write this config to a new file.
     ///
     /// Existing files are never overwritten.
+    // sirno:witness:start project-config
     pub fn write_new(&self, path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let path = path.as_ref();
         trace!("sirno config write begin: path={}", path.display());
@@ -254,8 +262,10 @@ impl SirnoConfig {
         trace!("sirno config write end");
         Ok(())
     }
+    // sirno:witness:end
 
     /// Write this config to an existing or new file.
+    // sirno:witness:start project-config
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let path = path.as_ref();
         trace!("sirno config write replace begin: path={}", path.display());
@@ -272,8 +282,10 @@ impl SirnoConfig {
         trace!("sirno config write replace end");
         Ok(())
     }
+    // sirno:witness:end
 
     /// Resolve the monograph path relative to a config file path.
+    // sirno:witness:start project-config
     pub fn resolve_mono(&self, config_path: impl AsRef<Path>) -> PathBuf {
         resolve_config_relative(config_path.as_ref(), &self.mono.path)
     }
@@ -289,8 +301,10 @@ impl SirnoConfig {
             .as_ref()
             .map(|history| resolve_config_relative(config_path.as_ref(), &history.path))
     }
+    // sirno:witness:end
 
     /// Validate this config as it would be used from a specific config file path.
+    // sirno:witness:start project-config
     pub fn validate_for_file(&self, config_path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let config_path = config_path.as_ref();
         self.store.validate()?;

@@ -68,19 +68,21 @@ impl Field for WitnessField {
     type Content = WitnessMarker;
 }
 
-// sirno:witness:start history-store
 /// Store facade for Sirno entries.
 ///
 /// Invariant: all entries written through this type are represented through
 /// typed metadata fields and a Markdown body in the configured `eter` backend.
 #[derive(Debug)]
+// sirno:witness:start history-store
 pub struct SirnoStore {
     root: PathBuf,
     backend: SirnoBackend,
 }
+// sirno:witness:end
 
 impl SirnoStore {
     /// Open or initialize a history store rooted at `root`.
+    // sirno:witness:start history-store
     pub fn open(root: impl Into<PathBuf>) -> Result<Self, StoreError> {
         trace!("sirno store open begin");
         let root = root.into();
@@ -88,6 +90,7 @@ impl SirnoStore {
         trace!("sirno store open end");
         Ok(Self { root, backend })
     }
+    // sirno:witness:end
 
     /// The root path used by this store.
     pub fn root(&self) -> &Path {
@@ -95,11 +98,14 @@ impl SirnoStore {
     }
 
     /// Return the current backend snapshot version.
+    // sirno:witness:start history-store
     pub fn current_version(&self) -> Result<Eterator, StoreError> {
         Ok(self.backend.current_version()?)
     }
+    // sirno:witness:end
 
     /// Write or replace one entry.
+    // sirno:witness:start history-store
     pub fn put_entry(&mut self, entry: &Entry) -> Result<Eterator, StoreError> {
         trace!("sirno put_entry begin: id={}", entry.id);
         let fs_id = entry.id.to_filesystem_id()?;
@@ -108,6 +114,7 @@ impl SirnoStore {
         trace!("sirno put_entry end: version={}", version.version());
         Ok(version)
     }
+    // sirno:witness:end
 
     /// Read one entry at the current snapshot.
     pub fn read_entry(&self, id: &EntryId) -> Result<Option<Entry>, StoreError> {
@@ -115,6 +122,7 @@ impl SirnoStore {
     }
 
     /// Read one entry at a selected history snapshot.
+    // sirno:witness:start history-store
     pub fn read_entry_at_version(
         &self, at: Eterator, id: &EntryId,
     ) -> Result<Option<Entry>, StoreError> {
@@ -128,6 +136,7 @@ impl SirnoStore {
         trace!("sirno read_entry_at end: present");
         Ok(Some(entry))
     }
+    // sirno:witness:end
 
     /// Read every active entry at the current snapshot.
     pub fn read_all_entries(&self) -> Result<Vec<Entry>, StoreError> {
@@ -135,6 +144,7 @@ impl SirnoStore {
     }
 
     /// Read every active entry at a selected history snapshot.
+    // sirno:witness:start history-store
     pub fn read_all_entries_at_version(&self, at: Eterator) -> Result<Vec<Entry>, StoreError> {
         trace!("sirno read_all_entries begin: at={}", at.version());
         let mut entries = Vec::new();
@@ -147,6 +157,7 @@ impl SirnoStore {
         trace!("sirno read_all_entries end: entries={}", entries.len());
         Ok(entries)
     }
+    // sirno:witness:end
 
     /// Check current entries at the selected boundary.
     pub fn check_current(&self, mode: CheckMode) -> Result<CheckReport, StoreError> {
@@ -158,6 +169,7 @@ impl SirnoStore {
     ///
     /// The directory must pass review-mode checks before any history row is written.
     /// Generated-link regions are stripped from the committed snapshot.
+    // sirno:witness:start history-store
     pub fn commit_entry_directory(
         &mut self, root: impl Into<PathBuf>, settings: &EntryDirectoryCheckSettings,
     ) -> Result<Eterator, StoreError> {
@@ -172,8 +184,10 @@ impl SirnoStore {
         trace!("sirno commit_entry_directory end: version={}", version.version());
         Ok(version)
     }
+    // sirno:witness:end
 
     /// Materialize a history snapshot into a public Markdown entry directory.
+    // sirno:witness:start history-store
     pub fn checkout_entry_directory(
         &self, at: Eterator, root: impl Into<PathBuf>, policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, StoreError> {
@@ -184,11 +198,13 @@ impl SirnoStore {
         trace!("sirno checkout_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
+    // sirno:witness:end
 
     /// Initialize ordinary seed entries.
     ///
     /// The initialized entries are ordinary Sirno entries.
     /// They are created together and are not privileged by later operations.
+    // sirno:witness:start history-store
     pub fn init_default_entries(&mut self) -> Result<Eterator, StoreError> {
         trace!("sirno init_default_entries begin");
         let entries = default_seed_entries()?;
@@ -202,7 +218,9 @@ impl SirnoStore {
         trace!("sirno init_default_entries end: version={}", version.version());
         Ok(version)
     }
+    // sirno:witness:end
 
+    // sirno:witness:start history-store
     fn commit_entries(&mut self, entries: &[Entry]) -> Result<Eterator, StoreError> {
         let current = self.current_version()?;
         if self.read_all_entries_at_version(current)? == entries {
@@ -228,8 +246,8 @@ impl SirnoStore {
         }
         Ok(txn.commit()?)
     }
+    // sirno:witness:end
 }
-// sirno:witness:end
 
 fn entries_without_generated_links(entries: &[Entry]) -> Result<Vec<Entry>, StoreError> {
     entries

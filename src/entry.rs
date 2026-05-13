@@ -34,34 +34,42 @@ pub struct Entry {
     /// Markdown body after the metadata block.
     pub body: String,
 }
+// sirno:witness:end
 
 impl Entry {
     /// Construct an entry from already typed parts.
+    // sirno:witness:start entry
     pub fn new(id: EntryId, metadata: EntryMetadata, body: impl Into<String>) -> Self {
         Self { id, metadata, body: body.into() }
     }
+    // sirno:witness:end
 
     /// Parse an entry from canonical Markdown source.
+    // sirno:witness:start entry
     pub fn from_markdown(id: EntryId, source: &str) -> Result<Self, EntryParseError> {
         let (metadata_source, body) = split_frontmatter(source)?;
         let metadata = EntryMetadata::from_yaml_source(metadata_source)?;
         Ok(Self::new(id, metadata, body))
     }
+    // sirno:witness:end
 
     /// Render this entry to canonical Markdown source.
+    // sirno:witness:start entry
     pub fn to_markdown(&self) -> Result<String, EntryRenderError> {
         Ok(format!("---\n{}---\n\n{}", self.metadata.to_yaml_source()?, self.body))
     }
+    // sirno:witness:end
 
     /// Replace the Markdown body in an existing entry source.
     ///
     /// The frontmatter region and its separator are preserved exactly.
+    // sirno:witness:start entry
     pub fn replace_markdown_body(source: &str, body: &str) -> Result<String, EntryParseError> {
         let body_start = frontmatter_body_start(source)?;
         Ok(format!("{}{}", &source[..body_start], body))
     }
+    // sirno:witness:end
 }
-// sirno:witness:end
 
 /// Metadata for one Sirno entry.
 ///
@@ -89,9 +97,9 @@ pub struct EntryMetadata {
     pub witness: Option<WitnessMarker>,
 }
 
-// sirno:witness:start metadata
 impl EntryMetadata {
     /// Construct metadata with required fields and no structural field values.
+    // sirno:witness:start metadata
     pub fn new(
         name: impl Into<String>, description: impl Into<String>,
     ) -> Result<Self, EntryParseError> {
@@ -108,8 +116,10 @@ impl EntryMetadata {
             witness: None,
         })
     }
+    // sirno:witness:end
 
     /// Parse metadata from YAML source without surrounding `---` sentinels.
+    // sirno:witness:start metadata
     pub fn from_yaml_source(source: &str) -> Result<Self, EntryParseError> {
         let canonical_witness = has_canonical_witness_marker(source);
         let value: Value = serde_yaml::from_str(source).map_err(EntryParseError::Yaml)?;
@@ -132,8 +142,10 @@ impl EntryMetadata {
 
         Ok(Self { name, description, category, clustee, refiner, witness })
     }
+    // sirno:witness:end
 
     /// Render this metadata block to canonical YAML source.
+    // sirno:witness:start metadata
     pub fn to_yaml_source(&self) -> Result<String, EntryRenderError> {
         validate_plain_string(NAME_FIELD, &self.name)?;
         validate_plain_string(DESCRIPTION_FIELD, &self.description)?;
@@ -149,8 +161,10 @@ impl EntryMetadata {
         }
         Ok(out)
     }
+    // sirno:witness:end
 
     /// Returns every entry id mentioned by structural metadata.
+    // sirno:witness:start metadata
     pub fn structural_targets(&self) -> impl Iterator<Item = (&'static str, &EntryId)> {
         self.category
             .iter()
@@ -158,8 +172,8 @@ impl EntryMetadata {
             .chain(self.clustee.iter().map(|id| (CLUSTEE_FIELD, id)))
             .chain(self.refiner.iter().map(|id| (REFINER_FIELD, id)))
     }
+    // sirno:witness:end
 }
-// sirno:witness:end
 
 /// Marker for the canonical `witness:` metadata field.
 ///

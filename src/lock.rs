@@ -21,29 +21,35 @@ const LOCK_FILE_HEADER: &str = "\
 
 ";
 
-// sirno:witness:start sirno-lock
 /// Project-local history state.
 ///
 /// Invariant: `history.version` names the `eter` snapshot represented by the public store.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:start sirno-lock
 pub struct SirnoLock {
     /// Current public-store history state.
     pub history: HistoryLock,
 }
+// sirno:witness:end
 
 impl SirnoLock {
     /// Construct a lock for the current editable public store.
+    // sirno:witness:start sirno-lock
     pub fn current(version: Eterator) -> Self {
         Self { history: HistoryLock::current(version) }
     }
+    // sirno:witness:end
 
     /// Construct a lock for a checked-out history snapshot.
+    // sirno:witness:start sirno-lock
     pub fn checked_out(version: Eterator, mutable: bool) -> Self {
         Self { history: HistoryLock::checked_out(version, mutable) }
     }
+    // sirno:witness:end
 
     /// Load a lock from a specific file path.
+    // sirno:witness:start sirno-lock
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, LockError> {
         let path = path.as_ref();
         trace!("sirno lock load begin: path={}", path.display());
@@ -55,8 +61,10 @@ impl SirnoLock {
         trace!("sirno lock load end");
         Ok(lock)
     }
+    // sirno:witness:end
 
     /// Write this lock to an existing or new file.
+    // sirno:witness:start sirno-lock
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), LockError> {
         let path = path.as_ref();
         trace!("sirno lock write begin: path={}", path.display());
@@ -72,7 +80,9 @@ impl SirnoLock {
         trace!("sirno lock write end");
         Ok(())
     }
+    // sirno:witness:end
 
+    // sirno:witness:start sirno-lock
     fn validate(&self) -> Result<(), LockError> {
         self.history.validate()
     }
@@ -83,15 +93,15 @@ impl SirnoLock {
         source.push_str(&toml::to_string_pretty(self).map_err(LockError::Render)?);
         Ok(source)
     }
+    // sirno:witness:end
 }
-// sirno:witness:end
 
-// sirno:witness:start versioning
 /// History state recorded in `Sirno.lock`.
 ///
 /// Invariant: `mutable` is true only for checked-out snapshots created with `--unsafe-mutable`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:start versioning
 pub struct HistoryLock {
     /// Public store status relative to the configured history root.
     pub status: HistoryLockStatus,
@@ -101,24 +111,32 @@ pub struct HistoryLock {
     #[serde(default, skip_serializing_if = "is_false")]
     pub mutable: bool,
 }
+// sirno:witness:end
 
 impl HistoryLock {
     /// Construct state for the current editable public store.
+    // sirno:witness:start versioning
     pub fn current(version: Eterator) -> Self {
         Self { status: HistoryLockStatus::Current, version: version.version(), mutable: false }
     }
+    // sirno:witness:end
 
     /// Construct state for a checked-out history snapshot.
+    // sirno:witness:start versioning
     pub fn checked_out(version: Eterator, mutable: bool) -> Self {
         Self { status: HistoryLockStatus::CheckedOut, version: version.version(), mutable }
     }
+    // sirno:witness:end
 
     /// Return the stored version as an `Eterator`.
+    // sirno:witness:start versioning
     pub fn eterator(&self) -> Eterator {
         Eterator(self.version)
     }
+    // sirno:witness:end
 
     /// Returns true when the public store is a historical checkout.
+    // sirno:witness:start versioning
     pub fn is_checked_out(&self) -> bool {
         self.status == HistoryLockStatus::CheckedOut
     }
@@ -127,18 +145,22 @@ impl HistoryLock {
     pub fn is_unsafe_mutable_checkout(&self) -> bool {
         self.is_checked_out() && self.mutable
     }
+    // sirno:witness:end
 
+    // sirno:witness:start versioning
     fn validate(&self) -> Result<(), LockError> {
         if self.status == HistoryLockStatus::Current && self.mutable {
             return Err(LockError::CurrentMutable);
         }
         Ok(())
     }
+    // sirno:witness:end
 }
 
 /// Public-store status relative to history.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+// sirno:witness:start versioning
 pub enum HistoryLockStatus {
     /// The public store is the current editable version.
     Current,

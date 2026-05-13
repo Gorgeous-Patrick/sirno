@@ -225,6 +225,12 @@ without changing the entries' nominal identities.
 
 The named entry used in `clustee` is the clique closure,
 an ordinary entry that gives the group a name and a place for explanation.
+The clique closure is a module-like review unit.
+A local design or program change should often be reviewable by visiting that closure,
+its members, their refiners, and their witnesses.
+Splitting an entry should preserve the same `clustee` when the new entries remain in that unit.
+Creating a new clique closure means creating a new review boundary,
+not just a smaller tag.
 The mechanism can describe a two-member clique,
 whose entry records why the two members belong together.
 

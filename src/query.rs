@@ -10,14 +10,15 @@ use tracing::trace;
 use crate::entry::Entry;
 use crate::id::EntryId;
 
-// sirno:witness:start query
 /// Case-insensitive text term for an entry query.
 ///
 /// Empty terms are ignored when a query stores text terms.
 #[derive(Clone, Debug, PartialEq, Eq)]
+// sirno:witness:start query
 pub struct EntryTextTerm {
     normalized: String,
 }
+// sirno:witness:end
 
 impl EntryTextTerm {
     /// Construct a text term using Unicode lowercase conversion.
@@ -45,6 +46,7 @@ impl EntryTextTerm {
 /// Distinct metadata fields are conjunctive.
 /// Repeated values inside one metadata field are disjunctive.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+// sirno:witness:start query
 pub struct EntryQuery {
     text_terms: Vec<EntryTextTerm>,
     category: Vec<EntryId>,
@@ -52,6 +54,7 @@ pub struct EntryQuery {
     refiner: Vec<EntryId>,
     witness: bool,
 }
+// sirno:witness:end
 
 impl EntryQuery {
     /// Construct an empty query that matches every entry.
@@ -91,6 +94,7 @@ impl EntryQuery {
     }
 
     /// Returns true when this query selects the entry.
+    // sirno:witness:start query
     pub fn matches(&self, entry: &Entry) -> bool {
         self.matches_text(entry)
             && matches_targets(&entry.metadata.category, &self.category)
@@ -98,6 +102,7 @@ impl EntryQuery {
             && matches_targets(&entry.metadata.refiner, &self.refiner)
             && (!self.witness || entry.metadata.witness.is_some())
     }
+    // sirno:witness:end
 
     fn matches_text(&self, entry: &Entry) -> bool {
         if self.text_terms.is_empty() {
@@ -114,9 +119,11 @@ impl EntryQuery {
 /// Vague text terms match an entry plus the ids, names, and descriptions of structural targets.
 /// Each text term must match somewhere in that expanded text.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+// sirno:witness:start query
 pub struct VagueEntryQuery {
     text_terms: Vec<EntryTextTerm>,
 }
+// sirno:witness:end
 
 impl VagueEntryQuery {
     /// Construct an empty vague query that matches every entry.
@@ -132,6 +139,7 @@ impl VagueEntryQuery {
     }
 
     /// Returns true when this query selects the entry.
+    // sirno:witness:start query
     pub fn matches<'a>(
         &self, entry: &'a Entry, entries_by_id: &BTreeMap<&'a EntryId, &'a Entry>,
     ) -> bool {
@@ -142,9 +150,11 @@ impl VagueEntryQuery {
         let haystack = vague_entry_text(entry, entries_by_id);
         self.text_terms.iter().all(|term| term.matches(&haystack))
     }
+    // sirno:witness:end
 }
 
 /// Return entries selected by an exact query in input order.
+// sirno:witness:start query
 pub fn query_entries<'a>(
     entries: impl IntoIterator<Item = &'a Entry>, query: &EntryQuery,
 ) -> Vec<&'a Entry> {
@@ -154,8 +164,10 @@ pub fn query_entries<'a>(
     trace!("query_entries end: matches={}", matches.len());
     matches
 }
+// sirno:witness:end
 
 /// Return entries selected by a vague query in input order.
+// sirno:witness:start query
 pub fn vague_query_entries<'a>(entries: &'a [Entry], query: &VagueEntryQuery) -> Vec<&'a Entry> {
     trace!("vague_query_entries begin: entries={}", entries.len());
     let entries_by_id = entries.iter().map(|entry| (&entry.id, entry)).collect::<BTreeMap<_, _>>();
