@@ -1,6 +1,3 @@
-[mono]
-path = "DESIGN.md"
-
 [store]
 path = "sirno-docs"
 ignore = [".obsidian"]

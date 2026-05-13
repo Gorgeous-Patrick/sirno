@@ -42,7 +42,7 @@ a reviewer can ask for the witness of an entry,
 and an agent can inspect a bounded set of related entries before editing code.
 
 The result should feel like a project with good names for its important ideas.
-The monograph gives the reader a route through the whole design.
+Narratives give the reader routes through the design.
 The store gives the project durable local objects.
 The codebase gives those objects consequences.
 Sirno keeps the edges between those forms explicit.

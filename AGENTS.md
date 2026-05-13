@@ -24,15 +24,12 @@ Prefer direct definitions over defensive framing.
 - Avoid prose that reads like a rebuttal, disclaimer, or argument with an imaginary reviewer.
 - When documenting a constraint, state the positive rule first, then the consequence if needed.
 
-### DESIGN.md
+### Sirno Store
 
-Whenever anything changes about the project design, keep `DESIGN.md` in sync.
-When editing `DESIGN.md`, use the `design-doc-writer` skill.
-The skill carries the detailed structure, reader-evaluation, and prose-style standards.
-
-### Sirno
-
-Whenever `DESIGN.md` changes, update `sirno-docs/` to match.
+The authoritative project design lives in `sirno-docs/`.
+Whenever anything changes about the project design, keep the Sirno store in sync.
+Use the `sirno-lowering` skill when moving or reorganizing design knowledge in the store.
+Run generated-link maintenance after changing store metadata.
 
 ### Rust
 

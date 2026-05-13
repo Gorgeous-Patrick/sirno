@@ -12,7 +12,8 @@ witness:
 ---
 
 `mono` is the optional configured long-form Markdown document.
-The usual convention is `DESIGN.md`.
+A common convention is `DESIGN.md`.
+This repository currently keeps its first narrative route inside the store as `introduction`.
 
 It is the project monograph:
 one readable narrative for a person who wants the whole design in one sitting.
@@ -20,7 +21,7 @@ one readable narrative for a person who wants the whole design in one sitting.
 The monograph is normal Markdown outside the Sirno store.
 It does not carry Sirno entry metadata.
 
-When the store exists, the monograph becomes the raised narrative view of the current entries.
+When configured, the monograph becomes a raised narrative view of the current entries.
 It should preserve a route through the project,
 not become a directory listing of entry prose.
 

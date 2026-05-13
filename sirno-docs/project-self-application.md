@@ -8,24 +8,22 @@ clustee:
   - sirno
 ---
 
-Sirno can describe its own design through its own model.
+Sirno describes its own design through its own model.
 
-A monograph can explain Sirno as one continuous document.
-A store can make the same design addressable in smaller pieces.
+The store makes Sirno's design addressable in small entries.
+A materialized introduction entry gives the store a first narrative route.
 An optional history root can preserve committed store snapshots.
 Repository artifacts can witness entries through `mosaika`.
 
-The monograph may grow long,
-but it should remain ordered as one narrative.
-Local details that become dense should be lowered into entries,
-and raised back only when the monograph needs them.
+The introduction should stay readable as one route.
+Local details that become dense should stay in entries
+and be linked through categories, clustees, refiners, and witnesses.
 
 This self-application exercises the design under its own constraints.
 When implementation work changes the model,
-that change can be reflected into the store before the monograph is raised again.
+that change can be reflected into the store before any narrative route is revised.
 
-The store should not merely mirror the design document heading for heading.
-It should name the objects the project expects future work to cite:
+The store should name the objects the project expects future work to cite:
 forms, entries, structural fields, transforms, metadata,
 checks, generated footers, witnesses, and storage boundaries.
 Those names become the handles used by code work, documentation work, and review.

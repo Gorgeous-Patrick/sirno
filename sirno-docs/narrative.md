@@ -17,6 +17,7 @@ It introduces terms once and trusts them afterward.
 Materialized narratives may also live in the store as guides.
 They can state prerequisites, choose a base language,
 and point a reader through entries in an intentional order.
+This store's `introduction` entry is such a narrative.
 
 Interactive narratives may be generated ephemerally by skills.
 Canonical knowledge remains in entries and metadata.

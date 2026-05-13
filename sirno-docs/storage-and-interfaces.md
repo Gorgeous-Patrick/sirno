@@ -38,7 +38,7 @@ Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
 `sirno status` summarizes the configured repository.
-It reports the config path, monograph path, store path, optional history path,
+It reports the config path, monograph state, store path, optional history path,
 history lock state, entry count, check policy, link policy, and current check result.
 
 `sirno history init` configures the private history root and commits the current public store.

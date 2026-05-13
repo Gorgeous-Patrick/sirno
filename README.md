@@ -2,10 +2,10 @@
 
 *Semantic Intermediate Representation of Nominal Objects*
 
-Sirno compiles between design forms for design-aware programming work.
-It lowers a single long-form project narrative into compact Markdown entries,
-helps users and agents realize those entries in code,
-and helps code changes reflect back into the entry store.
+Sirno gives design a compact named form for design-aware programming work.
+It keeps project knowledge in Markdown entries that humans can read,
+tools can query,
+and agents can inspect before changing code.
 
 <p align="center">
   <picture>
@@ -17,8 +17,8 @@ and helps code changes reflect back into the entry store.
 
 Sirno works through three forms:
 
-- `mono`: one configured Markdown narrative, often `DESIGN.md`
 - `sirno`: a configured store of named Markdown entries, often `docs/`
+- `mono`: an optional configured Markdown narrative, often raised from the store
 - `code`: the repository implementation form
 
 The `sirno` store is the human-readable intermediate representation.
@@ -87,10 +87,10 @@ with `sirno:witness:end` inside paths selected by `[code].members`.
 ## Narratives
 
 A narrative records a cognitive route through concepts.
-The monograph is the primary narrative form:
-one readable document that states the project in a single pass.
+This repository keeps its first route in the store as
+[`introduction`](sirno-docs/introduction.md).
 
-Other narratives may be materialized guides in the Sirno store.
+Narratives may be materialized guides in the Sirno store.
 They can state prerequisites,
 choose a base language,
 and link to the concepts they traverse.
@@ -110,7 +110,8 @@ leave that region untouched.
 ## Status
 
 This repository is the design and implementation workspace for Sirno.
-`DESIGN.md` is the current monograph for the project.
+`sirno-docs/` is the current design source for the project.
+Start with [`sirno-docs/introduction.md`](sirno-docs/introduction.md).
 `METHODOLOGY.md` is the compact working guide for the project model.
 
 The implementation is expected to expose CLI and MCP interfaces,
