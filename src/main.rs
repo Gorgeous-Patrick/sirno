@@ -10,11 +10,11 @@ use eter::Eterator;
 use sirno::{
     CONFIG_FILE_NAME, CheckMode, CheckSeverity, ConfigError, Entry, EntryDirectoryCheckSettings,
     EntryDirectoryError, EntryDirectoryReport, EntryDirectoryWritePolicy, EntryId, EntryIdError,
-    EntryMetadata, EntryParseError, EntryQuery, GeneratedLinkSettings, HistoryLockStatus,
-    LockError, SirnoConfig, SirnoLock, SirnoStore, StoreError, VagueEntryQuery,
+    EntryMetadata, EntryParseError, EntryQuery, GenLinkDirectoryReport, GeneratedLinkSettings,
+    HistoryLockStatus, LockError, SirnoConfig, SirnoLock, SirnoStore, StoreError, VagueEntryQuery,
     WitnessCheckSettings, WitnessError, WitnessMarker, add_readonly_checkout_warnings,
-    check_entry_directory_with_settings, create_entry_file,
-    delete_gen_link_entry_directory_with_ignored_paths,
+    check_entry_directory_with_settings, check_gen_link_entry_directory_with_ignored_paths,
+    create_entry_file, delete_gen_link_entry_directory_with_ignored_paths,
     gen_link_entry_directory_with_ignored_paths, init_entry_directory, query_entries,
     resolve_lock_path, scan_witnesses, set_entry_directory_readonly, set_entry_directory_writable,
     vague_query_entries,
@@ -115,6 +115,9 @@ enum Command {
     /// Generate Markdown links in entry footers.
     #[command(name = "gen-link")]
     GenLink {
+        /// Report generated-link changes without writing files.
+        #[arg(long)]
+        dry: bool,
         /// Generated-link command.
         #[command(subcommand)]
         command: Option<GenLinkCommand>,
@@ -378,7 +381,7 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
 
             if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
         }
-        | Command::GenLink { command, entries } => match command {
+        | Command::GenLink { command, entries, dry } => match command {
             | None => {
                 let (entries, mut settings) = resolve_entry_directory(entries, &config_path)?;
                 settings.link = false;
@@ -391,32 +394,35 @@ fn run(cli: Cli) -> Result<ExitCode, CliError> {
                     return Ok(ExitCode::FAILURE);
                 }
 
+                if dry {
+                    let report = check_gen_link_entry_directory_with_ignored_paths(
+                        &entries,
+                        &settings.links,
+                        settings.ignore.clone(),
+                    )?;
+                    print_gen_link_report(&report);
+                    return Ok(ExitCode::SUCCESS);
+                }
+
                 let report = gen_link_entry_directory_with_ignored_paths(
                     &entries,
                     &settings.links,
                     settings.ignore.clone(),
                 )?;
-                println!(
-                    "generated links for {} entries in {} ({} changed)",
-                    report.entry_count(),
-                    report.root().display(),
-                    report.changed_paths().len()
-                );
+                print_gen_link_report(&report);
                 Ok(ExitCode::SUCCESS)
             }
             | Some(GenLinkCommand::Delete { entries: delete_entries }) => {
+                if dry {
+                    return Err(CliError::DryWithGenLinkSubcommand);
+                }
                 let (entries, mut settings) =
                     resolve_entry_directory(delete_entries.or(entries), &config_path)?;
                 settings.witness = None;
 
                 let report =
                     delete_gen_link_entry_directory_with_ignored_paths(&entries, settings.ignore)?;
-                println!(
-                    "deleted generated links from {} entries in {} ({} changed)",
-                    report.entry_count(),
-                    report.root().display(),
-                    report.changed_paths().len()
-                );
+                print_gen_link_report(&report);
                 Ok(ExitCode::SUCCESS)
             }
         },
@@ -727,6 +733,30 @@ fn history_state_label(lock: Option<&SirnoLock>) -> String {
     }
 }
 
+fn print_gen_link_report(report: &GenLinkDirectoryReport) {
+    println!(
+        "{}",
+        format_gen_link_report(report.root(), report.entry_count(), report.changed_paths())
+    );
+}
+
+fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[PathBuf]) -> String {
+    if changed_paths.is_empty() {
+        return format!("No changes in {}", root.display());
+    }
+
+    let mut report = format!("Changes in {}:", root.display());
+    for path in changed_paths {
+        report.push_str("\n- ");
+        report.push_str(&path.display().to_string());
+    }
+    report.push_str("\nTotal changes: ");
+    report.push_str(&changed_paths.len().to_string());
+    report.push('/');
+    report.push_str(&entry_count.to_string());
+    report
+}
+
 fn print_query_results(
     report: &EntryDirectoryReport, entries: &[&Entry], format: CliQueryFormat,
 ) -> Result<(), CliError> {
@@ -803,6 +833,9 @@ enum CliError {
     /// Witness lookup requires configured code members.
     #[error("code members are not configured; add [code].members to Sirno.toml")]
     CodeMembersNotConfigured,
+    /// Dry-run mode applies only to generated-link writing.
+    #[error("`--dry` only applies to `sirno gen-link` without a subcommand")]
+    DryWithGenLinkSubcommand,
     /// Config-backed command failed.
     #[error(transparent)]
     Config(#[from] ConfigError),
@@ -828,9 +861,11 @@ enum CliError {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+
     use clap::Parser;
 
-    use crate::{Cli, Command, HistoryCommand};
+    use crate::{Cli, Command, HistoryCommand, format_gen_link_report};
 
     #[test]
     fn init_does_not_accept_history_path() {
@@ -874,5 +909,33 @@ mod tests {
         let error = Cli::try_parse_from(["sirno", "gen-link", "--no-check"]).unwrap_err();
 
         assert!(error.to_string().contains("unexpected argument"));
+    }
+
+    #[test]
+    fn gen_link_accepts_dry_flag() {
+        let cli = Cli::parse_from(["sirno", "gen-link", "--dry"]);
+
+        assert!(matches!(cli.command, Command::GenLink { dry: true, command: None, .. }));
+    }
+
+    #[test]
+    fn format_gen_link_report_lists_changed_paths() {
+        let report = format_gen_link_report(
+            Path::new("sirno-docs"),
+            31,
+            &[PathBuf::from("sirno-docs/concept.md"), PathBuf::from("sirno-docs/entry.md")],
+        );
+
+        assert_eq!(
+            report,
+            "Changes in sirno-docs:\n- sirno-docs/concept.md\n- sirno-docs/entry.md\nTotal changes: 2/31"
+        );
+    }
+
+    #[test]
+    fn format_gen_link_report_summarizes_no_changes() {
+        let report = format_gen_link_report(Path::new("sirno-docs"), 31, &[]);
+
+        assert_eq!(report, "No changes in sirno-docs.");
     }
 }

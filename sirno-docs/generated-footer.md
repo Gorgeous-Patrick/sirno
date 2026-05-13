@@ -58,6 +58,7 @@ When disabled, only configured structural field sections are rendered.
 
 `sirno check` reports stale generated footer regions when link checking is enabled.
 `sirno gen-link` creates or replaces generated footer regions.
+`sirno gen-link --dry` reports generated footer regions that would change without writing files.
 `sirno gen-link delete` removes them.
 The mutating commands leave prose outside the guard-bounded region under user ownership.
 

@@ -55,6 +55,7 @@ Exact structural predicates live behind explicit exact flags.
 and reports repository markers for the selected entry id.
 
 `sirno gen-link` creates or replaces Sirno-owned generated footer regions.
+`sirno gen-link --dry` reports generated footer regions that would change without writing files.
 `sirno gen-link delete` removes those regions.
 Generated-link commands operate on the configured store unless an explicit entry directory is given.
 

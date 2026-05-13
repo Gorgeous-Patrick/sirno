@@ -386,6 +386,7 @@ so history stores canonical metadata and prose rather than navigation projection
 
 `sirno check` reports stale generated regions when link checking is enabled.
 `sirno gen-link` creates or replaces the generated region.
+`sirno gen-link --dry` reports the generated regions that would change without writing files.
 `sirno gen-link delete` removes the generated region.
 Deleting generated links does not edit prose outside the guard-bounded region.
 
