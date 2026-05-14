@@ -80,25 +80,43 @@ Use lowercase ASCII kebab-case ids.
 Keep existing ids stable unless the user explicitly asks for a rename.
 Use human-readable names and concise descriptions.
 
-## Structural Field Heuristics
+## Structural Field Model
 
 Use `category` for kind.
 An entry categorized by `concept` should define a compressed idea.
 An entry categorized by `narrative` should record a route, story, or motivation through project ideas.
 An entry categorized by `meta` should define project vocabulary.
 
-Use `clustee` for structural clearness.
-The target is a clique closure entry that gives a shared subject or design region a front door.
-Use it when entries of different kinds should be visited and reviewed together.
-The field is list-valued and not exclusive.
-An entry may belong to several clustees when that makes its structural position clearer.
-Prefer the smallest set of clustees that improves navigation, review, or accountability.
+Use `clustee` for review locality.
+A clustee target is a clique closure entry that gives a shared subject or design region a front door.
+It says that entries should be visited together because they live in the same working neighborhood.
+The relation is horizontal.
+It supports scanning, review, accountability, and local navigation across entries of different kinds.
+
+Use `refiner` for semantic narrowing.
+A refiner target is the broader entry that the current entry makes more specific.
+It says that the current entry is a local, concrete, or testable version of another design claim.
+The relation is vertical.
+It preserves why an implementation detail, invariant, interface, route, or test belongs under a broader idea.
+
+Prefer choosing either `clustee` or `refiner` for a new entry.
+They are suggested to be mutually exclusive because they answer different questions.
+`clustee` answers "which review neighborhood contains this entry?"
+`refiner` answers "which broader claim does this entry specialize?"
+Using both can blur locality and specificity,
+so add both only when the entry truly sits in a review neighborhood
+and also concretizes a broader design claim that should be followed separately.
+
+When choosing `clustee`,
+prefer the smallest set of clustees that improves navigation, review, or accountability.
+An entry may belong to several clustees only when each clustee is a real review perspective.
 Keep split entries in the same clustee when a small design change should be checked inside that unit.
 Create a new clustee only when there is a real new review boundary.
 
-Use `refiner` for specificity.
-The more specific entry points to the broader entry it makes local or concrete.
-Use it to preserve the reason behind implementation detail, invariants, interfaces, or tests.
+When choosing `refiner`,
+prefer the nearest broader entry that explains the current entry's design pressure.
+Do not use `refiner` to say that two entries are merely related or commonly edited together.
+Create a more specific entry when a paragraph, code region, test, or policy needs a stable handle.
 
 Use `witness:` only when repository evidence exists or the task explicitly asks to declare it.
 The entry id is the witness query key.
