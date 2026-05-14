@@ -16,7 +16,7 @@ use crate::entry::Entry;
 ///
 /// `to` includes links from the current entry to metadata targets.
 /// `from` includes links from the current entry to entries that point at it.
-// sirno:witness:start generated-link-policy
+// sirno:witness:generated-link-policy:begin
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GeneratedLinkFieldSettings {
     /// Include outgoing metadata targets.
@@ -24,9 +24,9 @@ pub struct GeneratedLinkFieldSettings {
     /// Include incoming metadata sources.
     pub from: bool,
 }
-// sirno:witness:end
+// sirno:witness:generated-link-policy:end
 
-// sirno:witness:start generated-link-policy
+// sirno:witness:generated-link-policy:begin
 impl GeneratedLinkFieldSettings {
     /// Construct structural-field link settings from explicit sides.
     pub fn new(to: bool, from: bool) -> Self {
@@ -48,7 +48,7 @@ impl GeneratedLinkFieldSettings {
         Self::from_bool(false)
     }
 }
-// sirno:witness:end
+// sirno:witness:generated-link-policy:end
 
 impl Default for GeneratedLinkFieldSettings {
     fn default() -> Self {
@@ -72,7 +72,7 @@ impl fmt::Display for GeneratedLinkFieldSettings {
     }
 }
 
-// sirno:witness:start generated-link-policy
+// sirno:witness:generated-link-policy:begin
 impl Serialize for GeneratedLinkFieldSettings {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -115,12 +115,12 @@ struct GeneratedLinkSides {
     to: bool,
     from: bool,
 }
-// sirno:witness:end
+// sirno:witness:generated-link-policy:end
 
 /// Settings that choose which metadata fields become generated links.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
-// sirno:witness:start generated-link-policy
+// sirno:witness:generated-link-policy:begin
 pub struct GeneratedLinkSettings {
     /// Include `category` targets.
     pub category: GeneratedLinkFieldSettings,
@@ -131,7 +131,7 @@ pub struct GeneratedLinkSettings {
     /// Include `refiner` targets.
     pub refiner: GeneratedLinkFieldSettings,
 }
-// sirno:witness:end
+// sirno:witness:generated-link-policy:end
 
 impl Default for GeneratedLinkSettings {
     fn default() -> Self {
@@ -148,18 +148,18 @@ impl Default for GeneratedLinkSettings {
 ///
 /// Invariant: each clustee closure maps to the closure id and every parsed entry that names it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub struct GeneratedLinkIndex {
     category_sources_by_target: BTreeMap<crate::EntryId, BTreeSet<crate::EntryId>>,
     cliques_by_closure: BTreeMap<crate::EntryId, BTreeSet<crate::EntryId>>,
     clustee_sources_by_target: BTreeMap<crate::EntryId, BTreeSet<crate::EntryId>>,
     refiner_sources_by_target: BTreeMap<crate::EntryId, BTreeSet<crate::EntryId>>,
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
 impl GeneratedLinkIndex {
     /// Construct a generated-link index from parsed entries.
-    // sirno:witness:start generated-footer
+    // sirno:witness:generated-footer:begin
     pub fn from_entries(entries: &[Entry]) -> Self {
         let mut category_sources_by_target =
             BTreeMap::<crate::EntryId, BTreeSet<crate::EntryId>>::new();
@@ -184,15 +184,15 @@ impl GeneratedLinkIndex {
                 &entry.id,
                 &entry.metadata.refiner,
             );
-            // sirno:witness:end
-            // sirno:witness:start clustee
+            // sirno:witness:generated-footer:end
+            // sirno:witness:clustee:begin
             for closure in &entry.metadata.clustee {
                 let clique = cliques_by_closure.entry(closure.clone()).or_default();
                 clique.insert(closure.clone());
                 clique.insert(entry.id.clone());
             }
-            // sirno:witness:end
-            // sirno:witness:start generated-footer
+            // sirno:witness:clustee:end
+            // sirno:witness:generated-footer:begin
         }
         Self {
             category_sources_by_target,
@@ -201,17 +201,17 @@ impl GeneratedLinkIndex {
             refiner_sources_by_target,
         }
     }
-    // sirno:witness:end
+    // sirno:witness:generated-footer:end
 
     /// Render the generated-link footer for one entry using this store-wide index.
     pub fn render_entry(&self, entry: &Entry, settings: &GeneratedLinkSettings) -> String {
-        // sirno:witness:start generated-footer
+        // sirno:witness:generated-footer:begin
         let mut out = String::new();
         out.push_str(BEGIN_LINKS_GUARD);
         out.push_str("\n\n");
-        // sirno:witness:end
+        // sirno:witness:generated-footer:end
 
-        // sirno:witness:start generated-footer
+        // sirno:witness:generated-footer:begin
         let mut sections = Vec::new();
         if settings.category.from {
             sections.push(GeneratedLinkSection::new(
@@ -252,9 +252,9 @@ impl GeneratedLinkIndex {
                 entry.metadata.refiner.iter().cloned().collect(),
             ));
         }
-        // sirno:witness:end
+        // sirno:witness:generated-footer:end
 
-        // sirno:witness:start generated-footer
+        // sirno:witness:generated-footer:begin
         if sections.is_empty() {
             out.push_str("(none)\n\n");
         } else {
@@ -265,7 +265,7 @@ impl GeneratedLinkIndex {
 
         out.push_str(END_LINKS_GUARD);
         out
-        // sirno:witness:end
+        // sirno:witness:generated-footer:end
     }
 
     fn insert_sources(
@@ -284,7 +284,7 @@ impl GeneratedLinkIndex {
         sources_by_target.get(&entry.id).cloned().unwrap_or_default()
     }
 
-    // sirno:witness:start clustee
+    // sirno:witness:clustee:begin
     fn clique_targets(&self, entry: &Entry) -> BTreeSet<crate::EntryId> {
         let mut targets = BTreeSet::new();
         for closure in &entry.metadata.clustee {
@@ -297,7 +297,7 @@ impl GeneratedLinkIndex {
         }
         targets
     }
-    // sirno:witness:end
+    // sirno:witness:clustee:end
 }
 
 #[derive(Debug)]
@@ -313,43 +313,43 @@ impl GeneratedLinkSection {
 }
 
 /// Opening guard for Sirno-owned generated links.
-// sirno:witness:start generated-footer-ownership
+// sirno:witness:generated-footer-ownership:begin
 pub const BEGIN_LINKS_GUARD: &str = "> **Sirno generated links begin. Do not edit this section.**";
 /// Closing guard for Sirno-owned generated links.
 pub const END_LINKS_GUARD: &str = "> **Sirno generated links end.**";
-// sirno:witness:end
+// sirno:witness:generated-footer-ownership:end
 
 const GENERATED_LINK_DIVIDER: &str = "---";
 
 /// Render the generated-link footer for one entry using only that entry as context.
 ///
 /// Use `GeneratedLinkIndex::from_entries` when clique expansion needs the full store.
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub fn render_generated_links(entry: &Entry, settings: &GeneratedLinkSettings) -> String {
     GeneratedLinkIndex::from_entries(std::slice::from_ref(entry)).render_entry(entry, settings)
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
 /// Validate generated-link guard boundaries in an entry body.
-// sirno:witness:start generated-footer-ownership
+// sirno:witness:generated-footer-ownership:begin
 pub fn validate_generated_links(body: &str) -> Result<(), GeneratedLinkError> {
     validate_generated_link_bounds(body).map(|_| ())
 }
-// sirno:witness:end
+// sirno:witness:generated-footer-ownership:end
 
 /// Returns true when an existing generated-link region differs from `expected`.
 ///
 /// Entries without a generated-link region are not stale.
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub fn generated_links_are_stale(body: &str, expected: &str) -> Result<bool, GeneratedLinkError> {
     let Some(bounds) = validate_generated_link_bounds(body)? else {
         return Ok(false);
     };
     Ok(&body[bounds.region_start..bounds.region_end] != expected)
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
-// sirno:witness:start generated-footer-ownership
+// sirno:witness:generated-footer-ownership:begin
 fn validate_generated_link_bounds(
     body: &str,
 ) -> Result<Option<GeneratedLinkBounds>, GeneratedLinkError> {
@@ -375,13 +375,13 @@ fn validate_generated_link_bounds(
     let end = end[0] + END_LINKS_GUARD.len();
     Ok(Some(GeneratedLinkBounds { region_start: line_start(body, begin), region_end: end }))
 }
-// sirno:witness:end
+// sirno:witness:generated-footer-ownership:end
 
 /// Apply generated links to an entry body.
 ///
 /// If no generated-link region exists, one is appended.
 /// If one valid generated-link region exists, only that region is replaced.
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub fn apply_generated_links(body: &str, footer: &str) -> Result<String, GeneratedLinkError> {
     validate_generated_links(body)?;
     let Some(bounds) = validate_generated_link_bounds(body)? else {
@@ -404,12 +404,12 @@ pub fn apply_generated_links(body: &str, footer: &str) -> Result<String, Generat
     }
     Ok(out)
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
 /// Delete generated links from an entry body.
 ///
 /// If no generated-link region exists, the body is returned unchanged.
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub fn delete_generated_links(body: &str) -> Result<String, GeneratedLinkError> {
     let Some(bounds) = validate_generated_link_bounds(body)? else {
         return Ok(body.to_owned());
@@ -433,9 +433,9 @@ pub fn delete_generated_links(body: &str) -> Result<String, GeneratedLinkError> 
     }
     Ok(out)
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 fn render_section(out: &mut String, section: &GeneratedLinkSection) {
     if section.targets.is_empty() {
         out.push_str(section.title);
@@ -452,9 +452,9 @@ fn render_section(out: &mut String, section: &GeneratedLinkSection) {
     }
     out.push('\n');
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 fn append_footer(body: &str, footer: &str) -> String {
     let before = body.trim_end_matches('\n');
     let mut out = String::new();
@@ -470,7 +470,7 @@ fn append_footer(body: &str, footer: &str) -> String {
     out.push('\n');
     out
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
 fn ends_with_divider(body: &str) -> bool {
     body.lines()
@@ -499,7 +499,7 @@ fn next_line_start(body: &str, index: usize) -> usize {
 
 /// Error raised by generated-link footer handling.
 #[derive(Debug, Error, PartialEq, Eq)]
-// sirno:witness:start generated-footer
+// sirno:witness:generated-footer:begin
 pub enum GeneratedLinkError {
     /// A closing guard appears without an opening guard.
     #[error("generated-link footer is missing its opening guard")]
@@ -520,7 +520,7 @@ pub enum GeneratedLinkError {
     #[error("generated-link footer boundaries are malformed")]
     Malformed,
 }
-// sirno:witness:end
+// sirno:witness:generated-footer:end
 
 #[cfg(test)]
 mod tests {

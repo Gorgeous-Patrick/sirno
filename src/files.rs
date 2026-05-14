@@ -32,7 +32,7 @@ const READONLY_CHECKOUT_WARNING: &str = "\
 
 /// Check report for a public Markdown entry directory.
 #[derive(Debug)]
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub struct EntryDirectoryReport {
     root: PathBuf,
     entries: Vec<Entry>,
@@ -40,11 +40,11 @@ pub struct EntryDirectoryReport {
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 /// Settings for checking a public Markdown entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub struct EntryDirectoryCheckSettings {
     /// Check generated-link footer freshness.
     pub link: bool,
@@ -55,7 +55,7 @@ pub struct EntryDirectoryCheckSettings {
     /// Repository witness scan settings.
     pub witness: Option<WitnessCheckSettings>,
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
@@ -70,14 +70,14 @@ impl Default for EntryDirectoryCheckSettings {
 
 impl EntryDirectoryCheckSettings {
     /// Return true when a root-relative path is ignored.
-    // sirno:witness:start sirno-store
+    // sirno:witness:sirno-store:begin
     pub fn ignores(&self, relative_path: &Path) -> bool {
         self.ignore.iter().any(|ignored| {
             !ignored.as_os_str().is_empty()
                 && (relative_path == ignored || relative_path.starts_with(ignored))
         })
     }
-    // sirno:witness:end
+    // sirno:witness:sirno-store:end
 }
 
 impl EntryDirectoryReport {
@@ -183,7 +183,7 @@ pub fn check_entry_directory(
 }
 
 /// Check one public Markdown entry directory with explicit settings.
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub fn check_entry_directory_with_settings(
     root: impl Into<PathBuf>, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
 ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
@@ -205,12 +205,12 @@ pub fn check_entry_directory_with_settings(
         structural_report,
     })
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 /// Initialize a public Markdown entry directory with ordinary seed entries.
 ///
 /// Existing entry files are never overwritten.
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub fn init_entry_directory(root: impl Into<PathBuf>) -> Result<Vec<PathBuf>, EntryDirectoryError> {
     let root = root.into();
     trace!("init_entry_directory begin: root={}", root.display());
@@ -223,13 +223,13 @@ pub fn init_entry_directory(root: impl Into<PathBuf>) -> Result<Vec<PathBuf>, En
     trace!("init_entry_directory end: entries={}", paths.len());
     Ok(paths)
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 /// Create one public Markdown entry file.
 ///
 /// The entry directory is created if needed.
 /// Existing entry files are never overwritten.
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub fn create_entry_file(
     root: impl Into<PathBuf>, entry: &Entry,
 ) -> Result<PathBuf, EntryDirectoryError> {
@@ -240,12 +240,12 @@ pub fn create_entry_file(
     trace!("create_entry_file end: path={}", path.display());
     Ok(path)
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 /// Write a complete public Markdown entry directory.
 ///
 /// The write policy controls how existing target contents are handled.
-// sirno:witness:start sirno-store
+// sirno:witness:sirno-store:begin
 pub fn write_entry_directory(
     root: impl Into<PathBuf>, entries: &[Entry], policy: EntryDirectoryWritePolicy,
 ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
@@ -259,7 +259,7 @@ pub fn write_entry_directory(
     trace!("write_entry_directory end: entries={}", paths.len());
     Ok(paths)
 }
-// sirno:witness:end
+// sirno:witness:sirno-store:end
 
 /// Mark the public Markdown entry directory as read-only.
 ///
@@ -930,9 +930,13 @@ mod tests {
         }
     }
 
+    // sirno:witness:witness-fixture-isolation:begin
     fn witness_block(id: &str) -> String {
-        format!("// sirno:witness:start {id}\nbody\n// sirno:witness:end\n")
+        let opening = format!("{}{}{}{}", "// sirno", ":witness:", id, ":begin");
+        let closing = format!("{}{}{}{}", "// sirno", ":witness:", id, ":end");
+        format!("{opening}\nbody\n{closing}\n")
     }
+    // sirno:witness:witness-fixture-isolation:end
 
     #[test]
     fn checks_clean_markdown_entry_directory() {

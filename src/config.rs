@@ -17,7 +17,7 @@ use crate::links::GeneratedLinkSettings;
 /// Canonical Sirno project config filename.
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
 
-// sirno:witness:start mono
+// sirno:witness:mono:begin
 /// Optional configured monograph settings.
 ///
 /// Invariant: `path` points to the configured monograph.
@@ -34,7 +34,7 @@ impl MonoSettings {
         Self { path: path.into() }
     }
 }
-// sirno:witness:end
+// sirno:witness:mono:end
 
 /// Settings for structural checks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -111,11 +111,11 @@ impl HistorySettings {
 /// It never names an absolute path or a parent-directory escape.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
-// sirno:witness:start code-form
+// sirno:witness:code-form:begin
 pub struct CodeMember {
     pattern: String,
 }
-// sirno:witness:end
+// sirno:witness:code-form:end
 
 impl CodeMember {
     /// Construct one code-member pattern.
@@ -153,13 +153,13 @@ impl CodeMember {
 /// Directory members are scanned recursively by witness lookup.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-// sirno:witness:start code-form
+// sirno:witness:code-form:begin
 pub struct CodeSettings {
     /// Config-relative paths or globs scanned through `mosaika`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub members: Vec<CodeMember>,
 }
-// sirno:witness:end
+// sirno:witness:code-form:end
 
 impl CodeSettings {
     fn validate(&self) -> Result<(), ConfigError> {
@@ -182,7 +182,7 @@ impl CodeSettings {
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-// sirno:witness:start project-config
+// sirno:witness:project-config:begin
 pub struct SirnoConfig {
     /// Configured monograph settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -202,11 +202,11 @@ pub struct SirnoConfig {
     #[serde(default)]
     pub links: GeneratedLinkSettings,
 }
-// sirno:witness:end
+// sirno:witness:project-config:end
 
 impl SirnoConfig {
     /// Construct a config from the required store path.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn new(store: impl Into<PathBuf>) -> Self {
         Self {
             mono: None,
@@ -217,7 +217,7 @@ impl SirnoConfig {
             links: GeneratedLinkSettings::default(),
         }
     }
-    // sirno:witness:end
+    // sirno:witness:project-config:end
 
     /// Return this config with a configured monograph path.
     pub fn with_mono(mut self, mono: impl Into<PathBuf>) -> Self {
@@ -243,7 +243,7 @@ impl SirnoConfig {
     }
 
     /// Load a config from a specific file path.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let path = path.as_ref();
         trace!("sirno config load begin: path={}", path.display());
@@ -255,12 +255,12 @@ impl SirnoConfig {
         trace!("sirno config load end");
         Ok(config)
     }
-    // sirno:witness:end
+    // sirno:witness:project-config:end
 
     /// Write this config to a new file.
     ///
     /// Existing files are never overwritten.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn write_new(&self, path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let path = path.as_ref();
         trace!("sirno config write begin: path={}", path.display());
@@ -276,10 +276,10 @@ impl SirnoConfig {
         trace!("sirno config write end");
         Ok(())
     }
-    // sirno:witness:end
+    // sirno:witness:project-config:end
 
     /// Write this config to an existing or new file.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let path = path.as_ref();
         trace!("sirno config write replace begin: path={}", path.display());
@@ -296,10 +296,10 @@ impl SirnoConfig {
         trace!("sirno config write replace end");
         Ok(())
     }
-    // sirno:witness:end
+    // sirno:witness:project-config:end
 
     /// Resolve the monograph path relative to a config file path when configured.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn resolve_mono(&self, config_path: impl AsRef<Path>) -> Option<PathBuf> {
         self.mono.as_ref().map(|mono| resolve_config_relative(config_path.as_ref(), &mono.path))
     }
@@ -315,10 +315,10 @@ impl SirnoConfig {
             .as_ref()
             .map(|history| resolve_config_relative(config_path.as_ref(), &history.path))
     }
-    // sirno:witness:end
+    // sirno:witness:project-config:end
 
     /// Validate this config as it would be used from a specific config file path.
-    // sirno:witness:start project-config
+    // sirno:witness:project-config:begin
     pub fn validate_for_file(&self, config_path: impl AsRef<Path>) -> Result<(), ConfigError> {
         let config_path = config_path.as_ref();
         self.store.validate()?;
@@ -336,7 +336,7 @@ impl SirnoConfig {
         Ok(())
     }
 }
-// sirno:witness:end
+// sirno:witness:project-config:end
 
 fn resolve_config_relative(config_path: &Path, configured_path: &Path) -> PathBuf {
     if configured_path.is_absolute() {

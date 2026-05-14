@@ -22,8 +22,9 @@ keeping design names and witness blocks connected without embedding block syntax
 `[code].members` defines the repository artifact surface that Sirno scans when configured.
 File members are scanned directly,
 and directory members are scanned recursively.
-Witness blocks open with `sirno:witness:start <entry-id>`
-and close with `sirno:witness:end`.
+Witness blocks open with `sirno:witness:<entry-id>:begin`
+and close with `sirno:witness:<entry-id>:end`.
+Both sentinels name the same entry id.
 
 The code form is where design becomes costly in the useful sense.
 Names, invariants, parser choices, storage boundaries, user interfaces,

@@ -39,7 +39,7 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Create a Sirno config and ordinary seed entries.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Init {
         /// Monograph path written to Sirno.toml.
         #[arg(long)]
@@ -53,9 +53,9 @@ enum Command {
         /// New public Markdown entry store path written to Sirno.toml.
         store: PathBuf,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Create one Markdown entry.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     New {
         /// Entry id and filename stem.
         id: String,
@@ -84,9 +84,9 @@ enum Command {
         #[arg(long)]
         entries: Option<PathBuf>,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Query public Markdown entries.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Query {
         /// Vague text terms matched against entries and structural target summaries.
         terms: Vec<String>,
@@ -112,9 +112,9 @@ enum Command {
         #[arg(long)]
         entries: Option<PathBuf>,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Check current store structure.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Check {
         /// Eter-backed entry store root.
         #[arg(long, conflicts_with = "entries")]
@@ -126,9 +126,9 @@ enum Command {
         #[arg(long, value_enum)]
         mode: Option<CliCheckMode>,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Generate Markdown links in entry footers.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     #[command(name = "gen-link")]
     GenLink {
         /// Report generated-link changes without writing files.
@@ -141,13 +141,13 @@ enum Command {
         #[arg(long)]
         entries: Option<PathBuf>,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Show the current Sirno project status.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Status,
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Show repository witness blocks for one entry id.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Witness {
         /// Entry id used as the witness query key.
         id: String,
@@ -155,23 +155,23 @@ enum Command {
         #[arg(long)]
         full: bool,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Manage optional eter-backed history.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     History {
         /// History command.
         #[command(subcommand)]
         command: HistoryCommand,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
     /// Utility commands.
-    // sirno:witness:start storage-and-interfaces
+    // sirno:witness:storage-and-interfaces:begin
     Util {
         /// Utility command.
         #[command(subcommand)]
         command: UtilCommand,
     },
-    // sirno:witness:end
+    // sirno:witness:storage-and-interfaces:end
 }
 
 /// CLI representation of check boundaries.
@@ -1231,6 +1231,7 @@ mod tests {
         assert!(matches!(cli.command, Command::Witness { id, full: true } if id == "witness"));
     }
 
+    // sirno:witness:witness-fixture-isolation:begin
     #[test]
     fn format_witness_record_prints_range_and_dedents_body() {
         let record = WitnessRecord {
@@ -1239,27 +1240,27 @@ mod tests {
             region: witness_span(10, 5, 14, 25),
             opening: witness_span(10, 5, 10, 33),
             closing: witness_span(14, 5, 14, 25),
-            marker: "    // sirno:witness:start entry".to_owned(),
+            marker: "    // sample:start entry".to_owned(),
             body: concat!(
-                "    // sirno:witness:start entry\n",
+                "    // sample:start entry\n",
                 "        fn main() {}\n",
-                "    // sirno:witness:end"
+                "    // sample:end"
             )
             .to_owned(),
         };
 
         assert_eq!(
             format_witness_record(&record, false),
-            "src/lib.rs:10:5-33 :: 14:5-25\t// sirno:witness:start entry\n"
+            "src/lib.rs:10:5-33 :: 14:5-25\t// sample:start entry\n"
         );
         assert_eq!(
             format_witness_record(&record, true),
             concat!(
                 "src/lib.rs:10:5-33 :: 14:5-25\n",
                 "\n",
-                "// sirno:witness:start entry\n",
+                "// sample:start entry\n",
                 "    fn main() {}\n",
-                "// sirno:witness:end\n",
+                "// sample:end\n",
                 "\n",
             )
         );
@@ -1273,11 +1274,11 @@ mod tests {
             region: witness_span(10, 5, 14, 25),
             opening: witness_span(10, 5, 10, 33),
             closing: witness_span(14, 5, 14, 25),
-            marker: "    // sirno:witness:start entry".to_owned(),
+            marker: "    // sample:start entry".to_owned(),
             body: concat!(
-                "    // sirno:witness:start entry\n",
+                "    // sample:start entry\n",
                 "        fn main() {}\n",
-                "    // sirno:witness:end"
+                "    // sample:end"
             )
             .to_owned(),
         };
@@ -1287,13 +1288,14 @@ mod tests {
         second.closing = witness_span(24, 5, 24, 25);
 
         assert!(format_witness_records(&[first, second], true).contains(concat!(
-            "// sirno:witness:end\n",
+            "// sample:end\n",
             "\n",
             "---\n",
             "\n",
             "src/lib.rs:20:5-33 :: 24:5-25\n",
         )));
     }
+    // sirno:witness:witness-fixture-isolation:end
 
     fn witness_span(
         start_line: usize, start_column: usize, end_line: usize, end_column: usize,

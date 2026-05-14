@@ -58,8 +58,8 @@ They make the relevant design objects easier to name and inspect.
 
 Repository witnesses close the loop with implementation.
 A witness block lives in a configured code member,
-opens with `sirno:witness:start <entry-id>`,
-and closes with `sirno:witness:end`.
+opens with `sirno:witness:<entry-id>:begin`,
+and closes with `sirno:witness:<entry-id>:end`.
 Sirno asks `mosaika` to locate those regions by entry id.
 The entry states the claim.
 The repository region shows where that claim can be inspected.

@@ -2,7 +2,7 @@
 name: sirno-witnessing
 description: >-
   Create, refine, or review Sirno repository witnesses. Use when Codex adds `witness:` metadata,
-  inserts or splits `sirno:witness:start <entry-id>` blocks, links code/tests/config to Sirno store
+  inserts or splits `sirno:witness:<entry-id>:begin` blocks, links code/tests/config to Sirno store
   entries, interprets `sirno witness` output, or checks whether a Sirno entry has precise repository
   evidence.
 ---
@@ -61,9 +61,9 @@ Add the repository block inside configured `[code].members` paths.
 If no code members are configured, configure the intended repository artifact surface first:
 
 ```rust
-// sirno:witness:start entry-id
+// sirno:witness:entry-id:begin
 // witnessed repository region
-// sirno:witness:end
+// sirno:witness:entry-id:end
 ```
 
 For Rust, place witness comments around stable items or focused implementation spans.

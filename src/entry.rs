@@ -14,14 +14,14 @@ use crate::id::{EntryId, EntryIdError};
 
 const NAME_FIELD: &str = "name";
 const DESCRIPTION_FIELD: &str = "description";
-// sirno:witness:start structural-field
+// sirno:witness:structural-field:begin
 const CATEGORY_FIELD: &str = "category";
 const CLUSTEE_FIELD: &str = "clustee";
 const REFINER_FIELD: &str = "refiner";
 const WITNESS_FIELD: &str = "witness";
-// sirno:witness:end
+// sirno:witness:structural-field:end
 
-// sirno:witness:start entry
+// sirno:witness:entry:begin
 /// One Sirno entry.
 ///
 /// Invariant: `id` is a valid entry id.
@@ -36,41 +36,41 @@ pub struct Entry {
     /// Markdown body after the metadata block.
     pub body: String,
 }
-// sirno:witness:end
+// sirno:witness:entry:end
 
 impl Entry {
     /// Construct an entry from already typed parts.
-    // sirno:witness:start entry
+    // sirno:witness:entry:begin
     pub fn new(id: EntryId, metadata: EntryMetadata, body: impl Into<String>) -> Self {
         Self { id, metadata, body: body.into() }
     }
-    // sirno:witness:end
+    // sirno:witness:entry:end
 
     /// Parse an entry from canonical Markdown source.
-    // sirno:witness:start entry
+    // sirno:witness:entry:begin
     pub fn from_markdown(id: EntryId, source: &str) -> Result<Self, EntryParseError> {
         let (metadata_source, body) = split_frontmatter(source)?;
         let metadata = EntryMetadata::from_yaml_source(metadata_source)?;
         Ok(Self::new(id, metadata, body))
     }
-    // sirno:witness:end
+    // sirno:witness:entry:end
 
     /// Render this entry to canonical Markdown source.
-    // sirno:witness:start entry
+    // sirno:witness:entry:begin
     pub fn to_markdown(&self) -> Result<String, EntryRenderError> {
         Ok(format!("---\n{}---\n\n{}", self.metadata.to_yaml_source()?, self.body))
     }
-    // sirno:witness:end
+    // sirno:witness:entry:end
 
     /// Replace the Markdown body in an existing entry source.
     ///
     /// The frontmatter region and its separator are preserved exactly.
-    // sirno:witness:start entry
+    // sirno:witness:entry:begin
     pub fn replace_markdown_body(source: &str, body: &str) -> Result<String, EntryParseError> {
         let body_start = frontmatter_body_start(source)?;
         Ok(format!("{}{}", &source[..body_start], body))
     }
-    // sirno:witness:end
+    // sirno:witness:entry:end
 }
 
 /// Metadata for one Sirno entry.
@@ -83,25 +83,25 @@ pub struct EntryMetadata {
     pub name: String,
     /// Short prose description of the entry.
     pub description: String,
-    // sirno:witness:start category
+    // sirno:witness:category:begin
     /// Categories that classify this entry.
     pub category: Vec<EntryId>,
-    // sirno:witness:end
-    // sirno:witness:start clustee
+    // sirno:witness:category:end
+    // sirno:witness:clustee:begin
     /// Clique closures that group this entry.
     pub clustee: Vec<EntryId>,
-    // sirno:witness:end
-    // sirno:witness:start refiner
+    // sirno:witness:clustee:end
+    // sirno:witness:refiner:begin
     /// Broader entries refined by this entry.
     pub refiner: Vec<EntryId>,
-    // sirno:witness:end
+    // sirno:witness:refiner:end
     /// Witness marker declaring that this entry has repository evidence.
     pub witness: Option<WitnessMarker>,
 }
 
 impl EntryMetadata {
     /// Construct metadata with required fields and no structural field values.
-    // sirno:witness:start metadata
+    // sirno:witness:metadata:begin
     pub fn new(
         name: impl Into<String>, description: impl Into<String>,
     ) -> Result<Self, EntryParseError> {
@@ -118,10 +118,10 @@ impl EntryMetadata {
             witness: None,
         })
     }
-    // sirno:witness:end
+    // sirno:witness:metadata:end
 
     /// Parse metadata from YAML source without surrounding `---` sentinels.
-    // sirno:witness:start metadata
+    // sirno:witness:metadata:begin
     pub fn from_yaml_source(source: &str) -> Result<Self, EntryParseError> {
         let canonical_witness = has_canonical_witness_marker(source);
         let value: Value = serde_yaml::from_str(source).map_err(EntryParseError::Yaml)?;
@@ -144,10 +144,10 @@ impl EntryMetadata {
 
         Ok(Self { name, description, category, clustee, refiner, witness })
     }
-    // sirno:witness:end
+    // sirno:witness:metadata:end
 
     /// Render this metadata block to canonical YAML source.
-    // sirno:witness:start metadata
+    // sirno:witness:metadata:begin
     pub fn to_yaml_source(&self) -> Result<String, EntryRenderError> {
         validate_plain_string(NAME_FIELD, &self.name)?;
         validate_plain_string(DESCRIPTION_FIELD, &self.description)?;
@@ -163,10 +163,10 @@ impl EntryMetadata {
         }
         Ok(out)
     }
-    // sirno:witness:end
+    // sirno:witness:metadata:end
 
     /// Returns every entry id mentioned by structural metadata.
-    // sirno:witness:start metadata
+    // sirno:witness:metadata:begin
     pub fn structural_targets(&self) -> impl Iterator<Item = (&'static str, &EntryId)> {
         self.category
             .iter()
@@ -174,7 +174,7 @@ impl EntryMetadata {
             .chain(self.clustee.iter().map(|id| (CLUSTEE_FIELD, id)))
             .chain(self.refiner.iter().map(|id| (REFINER_FIELD, id)))
     }
-    // sirno:witness:end
+    // sirno:witness:metadata:end
 }
 
 /// Marker for the canonical `witness:` metadata field.
@@ -193,23 +193,23 @@ pub enum WitnessMarker {
 /// The entries are normal entries.
 /// Later operations do not privilege them.
 pub fn default_seed_entries() -> Result<Vec<Entry>, EntryParseError> {
-    // sirno:witness:start meta
+    // sirno:witness:meta:begin
     let mut meta =
         EntryMetadata::new("Meta", "A category for entries that define project vocabulary.")?;
     meta.category.push(seed_id("meta"));
     meta.witness = None;
-    // sirno:witness:end
+    // sirno:witness:meta:end
 
-    // sirno:witness:start concept
+    // sirno:witness:concept:begin
     let mut concept =
         EntryMetadata::new("Concept", "A named idea that compresses project knowledge.")?;
     concept.category.push(seed_id("meta"));
-    // sirno:witness:end
+    // sirno:witness:concept:end
 
-    // sirno:witness:start narrative
+    // sirno:witness:narrative:begin
     let mut narrative = EntryMetadata::new("Narrative", "A route through concepts for a reader.")?;
     narrative.category.push(seed_id("meta"));
-    // sirno:witness:end
+    // sirno:witness:narrative:end
 
     Ok(vec![
         Entry::new(seed_id("meta"), meta, "Defines entries that classify other entries.\n"),

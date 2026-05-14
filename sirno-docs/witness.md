@@ -23,8 +23,9 @@ A test may witness an entry when the test itself is the relevant code.
 
 Repository artifacts are selected by `[code].members`.
 Directory members are scanned recursively.
-The repository witness block opens with `sirno:witness:start <entry-id>`
-and closes with `sirno:witness:end`.
+The repository witness block opens with `sirno:witness:<entry-id>:begin`
+and closes with `sirno:witness:<entry-id>:end`.
+The opening and closing entry ids must match.
 
 The entry body may explain how to find or interpret evidence as fallback guidance.
 The structural convention remains the metadata marker plus the witness block.

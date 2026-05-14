@@ -22,8 +22,8 @@ use crate::config::CodeMember;
 use crate::id::{EntryId, EntryIdError};
 
 const WITNESS_TRANSFORM: &str = "sirno-witness";
-const WITNESS_START_REGEX: &str = r"(?m)^[ \t]*//[ \t]*sirno:witness:start ([A-Za-z0-9_-]+)";
-const WITNESS_END_REGEX: &str = r"(?m)^[ \t]*//[ \t]*sirno:witness:end";
+const WITNESS_BEGIN_REGEX: &str = r"(?m)^[ \t]*//[ \t]*sirno:witness:([A-Za-z0-9_-]+):begin";
+const WITNESS_END_REGEX: &str = r"(?m)^[ \t]*//[ \t]*sirno:witness:([A-Za-z0-9_-]+):end";
 
 /// Settings for a witness scan.
 ///
@@ -88,9 +88,9 @@ impl WitnessIndex {
 /// `region` identifies the matched block.
 /// `opening` and `closing` identify the delimiter spans.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:start witness
+// sirno:witness:witness:begin
 pub struct WitnessRecord {
-    /// Entry id captured from `sirno:witness:start <entry-id>`.
+    /// Entry id captured from `sirno:witness:<entry-id>:begin`.
     pub entry: EntryId,
     /// Repository file that contains the witness block.
     pub path: PathBuf,
@@ -105,14 +105,14 @@ pub struct WitnessRecord {
     /// Full witness block body emitted by `mosaika`.
     pub body: String,
 }
-// sirno:witness:end
+// sirno:witness:witness:end
 
 /// One source span reported by `mosaika`.
 ///
 /// Invariant: line and column values are one-based.
 /// End columns point after the matched span.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-// sirno:witness:start witness
+// sirno:witness:witness:begin
 pub struct WitnessSpan {
     /// One-based starting line.
     pub start_line: usize,
@@ -123,9 +123,9 @@ pub struct WitnessSpan {
     /// One-based column after the span.
     pub end_column: usize,
 }
-// sirno:witness:end
+// sirno:witness:witness:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 /// Scan configured repository members for Sirno witness blocks.
 pub fn scan_witnesses(settings: &WitnessCheckSettings) -> Result<WitnessIndex, WitnessError> {
     trace!(
@@ -139,9 +139,9 @@ pub fn scan_witnesses(settings: &WitnessCheckSettings) -> Result<WitnessIndex, W
     trace!(file_count = files.len(), "scan_witnesses end");
     Ok(index)
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn resolve_member_files(settings: &WitnessCheckSettings) -> Result<Vec<PathBuf>, WitnessError> {
     let mut files = BTreeSet::new();
     for member in &settings.members {
@@ -158,9 +158,9 @@ fn resolve_member_files(settings: &WitnessCheckSettings) -> Result<Vec<PathBuf>,
     }
     Ok(files.into_iter().collect())
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn collect_glob_member(
     root: &Path, member: &CodeMember, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -181,9 +181,9 @@ fn collect_glob_member(
     }
     Ok(())
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn collect_path_member(
     member: &CodeMember, path: &Path, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -203,9 +203,9 @@ fn collect_path_member(
         path: path.to_path_buf(),
     })
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn collect_directory_files(
     member: &CodeMember, root: &Path, files: &mut BTreeSet<PathBuf>,
 ) -> Result<(), WitnessError> {
@@ -229,9 +229,9 @@ fn collect_directory_files(
     }
     Ok(())
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn run_mosaika_witness_scan(root: &Path, files: &[PathBuf]) -> Result<String, WitnessError> {
     if files.is_empty() {
         return Ok(String::new());
@@ -245,15 +245,15 @@ fn run_mosaika_witness_scan(root: &Path, files: &[PathBuf]) -> Result<String, Wi
         .map_err(WitnessError::Engine)?;
     String::from_utf8(output).map_err(WitnessError::Utf8)
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn witness_projection(files: &[PathBuf]) -> syn::Projection {
     syn::Projection {
         transforms: vec![Transform {
             name: WITNESS_TRANSFORM.to_owned(),
             delimiters: vec![
-                Delimiter::Regex(RegexDelimiter { regex: WITNESS_START_REGEX.to_owned() }),
+                Delimiter::Regex(RegexDelimiter { regex: WITNESS_BEGIN_REGEX.to_owned() }),
                 Delimiter::Regex(RegexDelimiter { regex: WITNESS_END_REGEX.to_owned() }),
             ],
             effects: vec![Effect::Log { log: true }],
@@ -273,9 +273,9 @@ fn witness_projection(files: &[PathBuf]) -> syn::Projection {
         posts: Vec::new(),
     }
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
-// sirno:witness:start witness-lookup
+// sirno:witness:witness-lookup:begin
 fn parse_witness_output(output: &str) -> Result<WitnessIndex, WitnessError> {
     let mut index = WitnessIndex::new();
     for line in output.lines().filter(|line| !line.trim().is_empty()) {
@@ -292,6 +292,17 @@ fn parse_witness_output(output: &str) -> Result<WitnessIndex, WitnessError> {
             .captures
             .first()
             .ok_or_else(|| WitnessError::MissingCapture { line: line.to_owned() })?;
+        let raw_closing_entry = closing
+            .captures
+            .first()
+            .ok_or_else(|| WitnessError::MissingCapture { line: line.to_owned() })?;
+        if raw_entry != raw_closing_entry {
+            return Err(WitnessError::MismatchedEntryId {
+                path: PathBuf::from(&record.file),
+                opening: raw_entry.clone(),
+                closing: raw_closing_entry.clone(),
+            });
+        }
         let entry = EntryId::new(raw_entry).map_err(|source| WitnessError::InvalidEntryId {
             path: PathBuf::from(&record.file),
             marker: raw_entry.clone(),
@@ -309,7 +320,7 @@ fn parse_witness_output(output: &str) -> Result<WitnessIndex, WitnessError> {
     }
     Ok(index)
 }
-// sirno:witness:end
+// sirno:witness:witness-lookup:end
 
 fn has_glob_meta(value: &str) -> bool {
     value.contains('*') || value.contains('?') || value.contains('[')
@@ -419,6 +430,16 @@ pub enum WitnessError {
         /// Raw JSONL line.
         line: String,
     },
+    /// A witness block opened and closed with different entry ids.
+    #[error("witness block in {path} opens for `{opening}` but closes for `{closing}`")]
+    MismatchedEntryId {
+        /// Repository path containing the block.
+        path: PathBuf,
+        /// Entry id captured from the opening delimiter.
+        opening: String,
+        /// Entry id captured from the closing delimiter.
+        closing: String,
+    },
     /// A witness block captured an invalid Sirno entry id.
     #[error("witness block `{marker}` in {path} is not a valid Sirno entry id")]
     InvalidEntryId {
@@ -436,9 +457,28 @@ pub enum WitnessError {
 mod tests {
     use super::*;
 
-    fn witness_block(id: &str) -> String {
-        format!("// sirno:witness:start {id}\nbody\n// sirno:witness:end\n")
+    // sirno:witness:witness-fixture-isolation:begin
+    const WITNESS_COMMENT_PREFIX: &str = "// sirno";
+    const WITNESS_FIELD_PREFIX: &str = ":witness:";
+    const WITNESS_BEGIN_SUFFIX: &str = ":begin";
+    const WITNESS_END_SUFFIX: &str = ":end";
+
+    fn witness_begin(id: &str) -> String {
+        format!("{WITNESS_COMMENT_PREFIX}{WITNESS_FIELD_PREFIX}{id}{WITNESS_BEGIN_SUFFIX}")
     }
+
+    fn witness_end(id: &str) -> String {
+        format!("{WITNESS_COMMENT_PREFIX}{WITNESS_FIELD_PREFIX}{id}{WITNESS_END_SUFFIX}")
+    }
+
+    fn witness_block_with_end(id: &str, end_id: &str) -> String {
+        format!("{}\nbody\n{}\n", witness_begin(id), witness_end(end_id))
+    }
+
+    fn witness_block(id: &str) -> String {
+        witness_block_with_end(id, id)
+    }
+    // sirno:witness:witness-fixture-isolation:end
 
     #[test]
     fn scans_recursive_directory_members_with_mosaika() {
@@ -452,13 +492,10 @@ mod tests {
         let records = index.records_for(&EntryId::new("witness-lookup").unwrap());
 
         assert!(index.contains_entry(&EntryId::new("witness-lookup").unwrap()));
-        assert_eq!(
-            records[0].body,
-            "// sirno:witness:start witness-lookup\nbody\n// sirno:witness:end"
-        );
+        assert_eq!(records[0].body, witness_block("witness-lookup").trim_end());
         assert_eq!(
             records[0].region,
-            WitnessSpan { start_line: 1, start_column: 1, end_line: 3, end_column: 21 }
+            WitnessSpan { start_line: 1, start_column: 1, end_line: 3, end_column: 36 }
         );
         assert_eq!(
             records[0].opening,
@@ -466,7 +503,7 @@ mod tests {
         );
         assert_eq!(
             records[0].closing,
-            WitnessSpan { start_line: 3, start_column: 1, end_line: 3, end_column: 21 }
+            WitnessSpan { start_line: 3, start_column: 1, end_line: 3, end_column: 36 }
         );
     }
 
@@ -482,5 +519,23 @@ mod tests {
         let index = scan_witnesses(&settings).unwrap();
 
         assert!(index.contains_entry(&EntryId::new("code-member").unwrap()));
+    }
+
+    #[test]
+    fn rejects_mismatched_witness_sentinel_ids() {
+        let temp = tempfile::tempdir().unwrap();
+        let src = temp.path().join("src");
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::write(src.join("lib.rs"), witness_block_with_end("witness-lookup", "query"))
+            .unwrap();
+        let settings = WitnessCheckSettings::new(temp.path(), [CodeMember::new("src").unwrap()]);
+
+        let error = scan_witnesses(&settings).unwrap_err();
+
+        assert!(matches!(
+            error,
+            WitnessError::MismatchedEntryId { opening, closing, .. }
+                if opening == "witness-lookup" && closing == "query"
+        ));
     }
 }

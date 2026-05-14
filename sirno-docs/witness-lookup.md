@@ -18,8 +18,8 @@ Directory members are scanned recursively.
 Glob members expand to matching files.
 
 Sirno projects each member file into a `mosaika` transform that logs witness blocks.
-The opening delimiter captures the entry id.
-The closing delimiter bounds the evidence block.
+The opening and closing delimiters both capture the entry id.
+Sirno rejects a witness block when the delimiter ids differ.
 Sirno parses the log stream into witness records keyed by entry id.
 
 The lookup path keeps witness syntax out of entry prose.
