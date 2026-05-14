@@ -1,4 +1,0 @@
-interface:
-  display_name: "Rust Code Style"
-  short_description: "Apply local Rust style and docs rules"
-  default_prompt: "Use $rust-code-style to update Rust code and inline docs according to the local style."

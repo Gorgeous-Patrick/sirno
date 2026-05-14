@@ -1,18 +1,21 @@
 ---
-name: sirno-lowering
+name: sirno-editor
 description: >-
-  Lower a Sirno monograph or design document into a Sirno entry store. Use when Codex transforms
-  DESIGN.md or another mono form into compact Markdown entries, chooses entry ids and structural
-  metadata, expands lowered entries, or validates generated Sirno links.
+  Edit a Sirno entry store. Use when Codex creates, revises, or reorganizes compact Markdown
+  entries, moves design knowledge from DESIGN.md or another mono form into the store, chooses entry
+  ids and structural metadata, expands entries, or validates generated Sirno links.
 ---
 
-# Sirno Lowering
+# Sirno Editor
 
 ## Purpose
 
-Use this skill when moving design knowledge from `mono` to `sirno`.
+Use this skill when editing `sirno` entries
+or moving design knowledge from `mono` to `sirno`.
+Editing keeps the store precise, structured, and useful for future work.
 Lowering gives a long-form narrative compact nominal form.
-It preserves the design route while creating entries future work can cite, query, realize, and reflect.
+It preserves the design route while creating or revising entries
+future work can cite, query, realize, and reflect.
 
 Apply repository instructions first.
 When the work also edits `README.md`, `DESIGN.md`, or `METHODOLOGY.md`,
@@ -20,9 +23,12 @@ use the repository documentation-writing skills for prose style and document rol
 
 ## Core Judgment
 
-Lowering is not a heading split.
-Read the monograph as a whole,
+Sirno store editing is not a heading split or metadata shuffle.
+When lowering from a monograph,
+read the monograph as a whole,
 then name the durable objects that make future work easier to address.
+When revising existing entries,
+preserve stable ids and improve the structure that future work will cite.
 
 Look for:
 
@@ -39,7 +45,7 @@ Avoid entries that only restate a paragraph without creating a useful handle.
 
 ## Authority
 
-Before lowering, decide which form currently carries authority.
+Before editing, decide which form currently carries authority.
 If the store is already established and maintained,
 treat it as the structured design source.
 If the store is absent or skeletal,
@@ -183,10 +189,10 @@ Report the blocker and still validate entry parsing and metadata references as f
 
 ## Git Hygiene
 
-When asked to commit lowering work,
+When asked to commit Sirno store editing work,
 stage only the configured store, the config change that points to it,
 and directly related documentation.
 Leave unrelated code or generated editor state alone.
 
 Use the repository commit convention.
-For documentation-only lowering, `docs: lower design into sirno store` is an appropriate shape.
+For documentation-only store editing, `docs: revise sirno store entries` is an appropriate shape.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sirno Witness"
+  short_description: "Create and link precise Sirno witnesses"
+  default_prompt: "Use $sirno-witness to add or refine Sirno witness markers and store links."

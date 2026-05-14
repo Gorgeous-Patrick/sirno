@@ -1,5 +1,5 @@
 ---
-name: sirno-witnessing
+name: sirno-witness
 description: >-
   Create, refine, or review Sirno repository witnesses. Use when Codex adds `witness:` metadata,
   inserts or splits `sirno:witness:<entry-id>:begin` blocks, links code/tests/config to Sirno store
@@ -7,7 +7,7 @@ description: >-
   evidence.
 ---
 
-# Sirno Witnessing
+# Sirno Witness
 
 ## Purpose
 

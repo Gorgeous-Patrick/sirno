@@ -28,14 +28,14 @@ Prefer direct definitions over defensive framing.
 
 The authoritative project design lives in `sirno-docs/`.
 Whenever anything changes about the project design, keep the Sirno store in sync.
-Use the `sirno-lowering` skill when moving or reorganizing design knowledge in the store.
+Use the `sirno-editor` skill when editing, moving, or reorganizing design knowledge in the store.
 Run generated-link maintenance after changing store metadata.
 Use `sirno-docs/introduction.md` as the first narrative route.
 Use `sirno-docs/methodology.md` as the working guide.
 
 ### Rust
 
-When editing Rust code or inline Rust documentation, use the `rust-code-style` skill.
+When editing Rust code or inline Rust documentation, use the `rust-programmer` skill.
 The skill carries the detailed Rust standards.
 
 ## Version Control

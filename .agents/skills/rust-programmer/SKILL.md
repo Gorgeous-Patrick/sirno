@@ -1,12 +1,12 @@
 ---
-name: rust-code-style
+name: rust-programmer
 description: >-
-  Apply this repository's Rust code and inline documentation style. Use when Codex edits Rust code,
-  public Rust APIs, Rust module or item docs, domain types, errors, builders, parsers, state
-  machines, tracing instrumentation, Cargo formatting, or Rust lint cleanup.
+  Program in Rust for this repository. Use when Codex edits Rust code, public Rust APIs, Rust module
+  or item docs, domain types, errors, builders, parsers, state machines, tracing instrumentation,
+  Cargo formatting, or Rust lint cleanup.
 ---
 
-# Rust Code Style
+# Rust Programmer
 
 ## Inline Documentation
 
