@@ -7,45 +7,72 @@ refines:
   - versioning
 ---
 
-Sirno Frost is the private `eter` root for frozen Sirno snapshots.
+Sirno Frost is the optional private `eter` root for immutable Sirno Lake snapshots.
 The default convention is `sirno-frost`.
-It is optional.
-`sirno frost init` adds it to a project and freezes the current public lake.
+`[frost].path` in `Sirno.toml` names the root,
+and the path must stay separate from the public Markdown lake.
+The public lake remains the editable working form.
+Frost is the durable snapshot substrate behind that form.
+
+The `SirnoFrost` facade opens the configured filesystem backend
+and exposes frozen data as ordinary typed Sirno entries.
+Each entry is stored under its stable id.
+The backend records `name`, `description`, `category`, `belongs`, `refines`,
+`witness`, and Markdown body as typed fields.
+Entry presence is represented through the `eter` lifecycle field.
+This keeps versioning in the storage layer
+while preserving the public entry schema.
+
+`sirno frost init` configures Frost when needed
+and freezes the current public lake into the first snapshot.
 `sirno frost mv PATH` renames the configured Frost root
 and writes the new path back to `[frost].path`.
 The move refuses to replace an existing destination.
 
-The public lake remains the editable Markdown working form.
-Sirno Frost records immutable versions of that form.
-It is not read as part of the public entry lake,
-and it should not live under a path that Sirno scans for entries.
-
-A freeze imports the selected public entry set into Sirno Frost.
-It writes one `eter` transaction and returns a `SnapshotRef`.
+A Frost commit imports the selected public entry set.
+The public directory must pass review-mode checks before any snapshot is written.
+Sirno strips generated-link regions from committed bodies,
+because generated footers are public-lake projections.
+The commit writes one `eter` transaction and returns a `SnapshotRef`.
 That snapshot reference names the whole committed lake state.
-Before writing the transaction,
-Sirno removes generated-link regions from committed entry bodies.
 If the public lake is unchanged,
-the freeze returns the current snapshot reference without writing.
+the commit returns the current snapshot reference without writing.
 If a previously live entry is missing from the public lake,
-the freeze records an `eter` lifecycle deletion marker.
+the commit records an `eter` lifecycle deletion marker.
 
-Checkout reads a selected frozen snapshot and writes its live entries as Markdown files.
-The conservative checkout policy writes only into an absent or empty target directory.
+Frost read operations reconstruct entries from a selected snapshot.
+They can read one entry,
+all live entries at the current snapshot,
+or all live entries at a specific `SnapshotRef`.
+A CLI version coordinate is paired with the current `eter` GC generation
+before the snapshot is read.
+
+Checkout materializes one frozen snapshot as Markdown files.
+The conservative write policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public lake
 and preserves ignored paths.
+Normal checkout writes a visible read-only blockquote
+and removes write permission from the lake root and managed entry files.
+`--unsafe-mutable` leaves the checkout writable.
 
-`Sirno.lock` records whether the public lake is current
-or checked out to a frozen snapshot.
-A normal checkout is made read-only through file permissions.
-The checked-out entry body also starts with a visible Markdown blockquote
-that says not to edit the file by hand.
-`--unsafe-mutable` leaves the checkout writable and records that choice in the lock.
+`Sirno.lock` records the public lake state relative to Frost.
+`status = "current"` means the public lake is the editable current version.
+`status = "checked-out"` means the public lake materializes a selected frozen version.
+The lock stores the snapshot generation and version,
+plus `mutable = true` only for unsafe mutable checkouts.
+Sirno refuses to commit an immutable checkout.
+Committing an unsafe mutable checkout creates a new current snapshot.
 
 Sirno Frost is private substrate.
 Users and tools may inspect it when debugging storage,
 but normal Sirno work should read and edit the public lake
 or use version-aware Sirno interfaces.
+The witness regions for this entry show the facade,
+snapshot reads,
+commit path,
+checkout path,
+seed initialization,
+and deletion handling in `src/frost.rs`.
 
 ---
 
