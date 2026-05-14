@@ -7,13 +7,12 @@ use std::process::ExitCode;
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
-use eter::Eterator;
 use sirno::{
     CONFIG_FILE_NAME, CheckMode, CheckSeverity, ConfigError, Entry, EntryDirectoryCheckSettings,
     EntryDirectoryError, EntryDirectoryReport, EntryDirectoryWritePolicy, EntryId, EntryIdError,
-    EntryMetadata, EntryParseError, EntryQuery, GenLinkDirectoryReport, GeneratedLinkSettings,
-    HistoryLockStatus, LockError, SirnoConfig, SirnoLock, SirnoStore, StoreError, VagueEntryQuery,
-    WitnessCheckSettings, WitnessError, WitnessMarker, WitnessRecord,
+    EntryMetadata, EntryParseError, EntryQuery, Eterator, GenLinkDirectoryReport,
+    GeneratedLinkSettings, HistoryLockStatus, LockError, SirnoConfig, SirnoLock, SirnoStore,
+    StoreError, VagueEntryQuery, WitnessCheckSettings, WitnessError, WitnessMarker, WitnessRecord,
     add_readonly_checkout_warnings, check_entry_directory_with_settings,
     check_gen_link_entry_directory_with_ignored_paths, create_entry_file,
     delete_gen_link_entry_directory_with_ignored_paths,
@@ -239,7 +238,7 @@ enum HistoryCommand {
     Commit,
     /// Check out one history version into the public Markdown lake.
     Checkout {
-        /// Raw Eterator version to materialize.
+        /// Version coordinate to materialize in the current history generation.
         version: u64,
         /// Leave the checked-out version writable.
         #[arg(long)]
@@ -573,8 +572,9 @@ fn run_history_command(
             let context = HistoryContext::load(config_path)?;
             let version = history_version(version)?;
             let store = SirnoStore::open(&context.history_root)?;
+            let snapshot = store.snapshot_for_version(version)?;
             let paths = store.checkout_entry_directory(
-                version,
+                snapshot,
                 &context.lake_path,
                 EntryDirectoryWritePolicy::ReplaceDirectory {
                     ignore: context.settings.ignore.clone(),
@@ -586,10 +586,10 @@ fn run_history_command(
                 add_readonly_checkout_warnings(&paths)?;
                 set_entry_directory_readonly(&context.lake_path, &context.settings)?;
             }
-            SirnoLock::checked_out(version, unsafe_mutable).write(&context.lock_path)?;
+            SirnoLock::checked_out(snapshot, unsafe_mutable).write(&context.lock_path)?;
             println!(
                 "checked out history version {} into {} ({} entries, {})",
-                version.version(),
+                snapshot.version(),
                 context.lake_path.display(),
                 paths.len(),
                 if unsafe_mutable { "unsafe mutable" } else { "immutable" }
@@ -901,12 +901,23 @@ fn history_state_label(lock: Option<&SirnoLock>) -> String {
         return "(unlocked)".to_owned();
     };
     match lock.history.status {
-        | HistoryLockStatus::Current => format!("current version {}", lock.history.version),
+        | HistoryLockStatus::Current => {
+            format!(
+                "current version {} (generation {})",
+                lock.history.version, lock.history.generation
+            )
+        }
         | HistoryLockStatus::CheckedOut if lock.history.mutable => {
-            format!("checked-out version {} (unsafe mutable)", lock.history.version)
+            format!(
+                "checked-out version {} (generation {}, unsafe mutable)",
+                lock.history.version, lock.history.generation
+            )
         }
         | HistoryLockStatus::CheckedOut => {
-            format!("checked-out version {} (immutable)", lock.history.version)
+            format!(
+                "checked-out version {} (generation {}, immutable)",
+                lock.history.version, lock.history.generation
+            )
         }
     }
 }

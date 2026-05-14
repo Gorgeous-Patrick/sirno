@@ -1,13 +1,13 @@
 //! Project-local lock state for Sirno history.
 //!
 //! `Sirno.toml` configures paths and policy.
-//! `Sirno.lock` records the history snapshot represented by the public lake.
+//! `Sirno.lock` records the history snapshot reference represented by the public lake.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use eter::Eterator;
+use eter::{Eterator, GcGeneration, SnapshotRef};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
@@ -23,7 +23,8 @@ const LOCK_FILE_HEADER: &str = "\
 
 /// Project-local history state.
 ///
-/// Invariant: `history.version` names the `eter` snapshot represented by the public lake.
+/// Invariant: `history.generation` and `history.version` name the `eter` snapshot represented
+/// by the public lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:sirno-lock:begin
@@ -36,15 +37,15 @@ pub struct SirnoLock {
 impl SirnoLock {
     /// Construct a lock for the current editable public lake.
     // sirno:witness:sirno-lock:begin
-    pub fn current(version: Eterator) -> Self {
-        Self { history: HistoryLock::current(version) }
+    pub fn current(snapshot: SnapshotRef) -> Self {
+        Self { history: HistoryLock::current(snapshot) }
     }
     // sirno:witness:sirno-lock:end
 
     /// Construct a lock for a checked-out history snapshot.
     // sirno:witness:sirno-lock:begin
-    pub fn checked_out(version: Eterator, mutable: bool) -> Self {
-        Self { history: HistoryLock::checked_out(version, mutable) }
+    pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
+        Self { history: HistoryLock::checked_out(snapshot, mutable) }
     }
     // sirno:witness:sirno-lock:end
 
@@ -105,7 +106,9 @@ impl SirnoLock {
 pub struct HistoryLock {
     /// Public lake status relative to the configured history root.
     pub status: HistoryLockStatus,
-    /// Raw `Eterator` version represented by the public lake.
+    /// GC generation for the represented snapshot.
+    pub generation: u64,
+    /// Raw `Eterator` coordinate represented by the public lake.
     pub version: u64,
     /// Whether a checked-out historical snapshot was intentionally left writable.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -116,22 +119,32 @@ pub struct HistoryLock {
 impl HistoryLock {
     /// Construct state for the current editable public lake.
     // sirno:witness:versioning:begin
-    pub fn current(version: Eterator) -> Self {
-        Self { status: HistoryLockStatus::Current, version: version.version(), mutable: false }
+    pub fn current(snapshot: SnapshotRef) -> Self {
+        Self {
+            status: HistoryLockStatus::Current,
+            generation: snapshot.generation.number(),
+            version: snapshot.version(),
+            mutable: false,
+        }
     }
     // sirno:witness:versioning:end
 
     /// Construct state for a checked-out history snapshot.
     // sirno:witness:versioning:begin
-    pub fn checked_out(version: Eterator, mutable: bool) -> Self {
-        Self { status: HistoryLockStatus::CheckedOut, version: version.version(), mutable }
+    pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
+        Self {
+            status: HistoryLockStatus::CheckedOut,
+            generation: snapshot.generation.number(),
+            version: snapshot.version(),
+            mutable,
+        }
     }
     // sirno:witness:versioning:end
 
-    /// Return the stored version as an `Eterator`.
+    /// Return the stored snapshot reference.
     // sirno:witness:versioning:begin
-    pub fn eterator(&self) -> Eterator {
-        Eterator(self.version)
+    pub fn snapshot_ref(&self) -> SnapshotRef {
+        SnapshotRef::new(GcGeneration(self.generation), Eterator(self.version))
     }
     // sirno:witness:versioning:end
 
@@ -231,7 +244,7 @@ mod tests {
 
     #[test]
     fn renders_current_history_lock() {
-        let lock = SirnoLock::current(Eterator(7));
+        let lock = SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(7)));
         let rendered = lock.to_toml().unwrap();
 
         assert_eq!(
@@ -242,6 +255,7 @@ mod tests {
 
 [history]
 status = \"current\"
+generation = 0
 version = 7
 "
         );
@@ -249,7 +263,7 @@ version = 7
 
     #[test]
     fn renders_mutable_checkout_lock() {
-        let lock = SirnoLock::checked_out(Eterator(3), true);
+        let lock = SirnoLock::checked_out(SnapshotRef::new(GcGeneration(2), Eterator(3)), true);
         let rendered = lock.to_toml().unwrap();
 
         assert_eq!(
@@ -260,6 +274,7 @@ version = 7
 
 [history]
 status = \"checked-out\"
+generation = 2
 version = 3
 mutable = true
 "
@@ -272,6 +287,7 @@ mutable = true
             r#"
 [history]
 status = "current"
+generation = 0
 version = 3
 mutable = true
 "#,

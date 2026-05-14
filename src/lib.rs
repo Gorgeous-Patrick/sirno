@@ -16,6 +16,8 @@ pub mod query;
 pub mod store;
 pub mod witness;
 
+pub use eter::{Eterator, GcGeneration, SnapshotRef};
+
 pub use crate::check::{CheckDiagnostic, CheckMode, CheckReport, CheckSeverity};
 pub use crate::config::{
     CONFIG_FILE_NAME, CheckSettings, CodeMember, CodeSettings, ConfigError, HistorySettings,

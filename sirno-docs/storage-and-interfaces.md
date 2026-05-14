@@ -48,7 +48,7 @@ and renames the current lake directory on the filesystem.
 `sirno history mv PATH` changes the configured history path
 and renames the current history root on the filesystem.
 `sirno history commit` commits the current public lake into history
-and writes the resulting current version to `Sirno.lock`.
+and writes the resulting current snapshot reference to `Sirno.lock`.
 `sirno history checkout VERSION` materializes one version into the public lake.
 The checkout is immutable unless `--unsafe-mutable` is supplied.
 

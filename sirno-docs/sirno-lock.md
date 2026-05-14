@@ -17,7 +17,8 @@ It is written only when history is configured.
 The lock contains one `[history]` table.
 `status = "current"` means the public lake represents the current editable history version.
 `status = "checked-out"` means the public lake materializes a selected historical version.
-The `version` field stores the raw `Eterator` value for that state.
+The `generation` and `version` fields store the `eter` `SnapshotRef` for that state.
+`version` is the raw `Eterator` coordinate inside the stored GC generation.
 
 A normal checkout is immutable.
 Sirno removes write permission from the public lake root and managed entry files.

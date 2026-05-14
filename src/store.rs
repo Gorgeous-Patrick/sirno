@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use eter::filesystem::{FilesystemBackend, FilesystemEntryId, FilesystemError, FilesystemWriteTxn};
 use eter::{
     EntryFacet, EntryFacetStoreExt, Eter, Eterator, Field, Lifecycle, LiveEntries, Resolution,
-    WriteTxn,
+    SnapshotRef, WriteTxn,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -97,34 +97,51 @@ impl SirnoStore {
         &self.root
     }
 
-    /// Return the current backend snapshot version.
+    /// Return the current backend snapshot reference.
+    // sirno:witness:history-store:begin
+    pub fn current_snapshot(&self) -> Result<SnapshotRef, StoreError> {
+        Ok(self.backend.current_snapshot()?)
+    }
+    // sirno:witness:history-store:end
+
+    /// Return the current backend snapshot version coordinate.
     // sirno:witness:history-store:begin
     pub fn current_version(&self) -> Result<Eterator, StoreError> {
         Ok(self.backend.current_version()?)
     }
     // sirno:witness:history-store:end
 
+    /// Pair a version coordinate with the current backend GC generation.
+    ///
+    /// `eter` rejects stale snapshot references.
+    /// Sirno exposes version coordinates at the CLI and resolves them against the current generation.
+    // sirno:witness:history-store:begin
+    pub fn snapshot_for_version(&self, version: Eterator) -> Result<SnapshotRef, StoreError> {
+        Ok(SnapshotRef::new(self.backend.gc_generation()?, version))
+    }
+    // sirno:witness:history-store:end
+
     /// Write or replace one entry.
     // sirno:witness:history-store:begin
-    pub fn put_entry(&mut self, entry: &Entry) -> Result<Eterator, StoreError> {
+    pub fn put_entry(&mut self, entry: &Entry) -> Result<SnapshotRef, StoreError> {
         trace!("sirno put_entry begin: id={}", entry.id);
         let fs_id = entry.id.to_filesystem_id()?;
         let facet = StoredEntryFacet::from_entry(entry);
-        let version = self.backend.write_facet(&fs_id, &facet)?;
-        trace!("sirno put_entry end: version={}", version.version());
-        Ok(version)
+        let snapshot = self.backend.write_facet(&fs_id, &facet)?;
+        trace!("sirno put_entry end: version={}", snapshot.version());
+        Ok(snapshot)
     }
     // sirno:witness:history-store:end
 
     /// Read one entry at the current snapshot.
     pub fn read_entry(&self, id: &EntryId) -> Result<Option<Entry>, StoreError> {
-        self.read_entry_at_version(self.current_version()?, id)
+        self.read_entry_at_snapshot(self.current_snapshot()?, id)
     }
 
     /// Read one entry at a selected history snapshot.
     // sirno:witness:history-store:begin
-    pub fn read_entry_at_version(
-        &self, at: Eterator, id: &EntryId,
+    pub fn read_entry_at_snapshot(
+        &self, at: SnapshotRef, id: &EntryId,
     ) -> Result<Option<Entry>, StoreError> {
         trace!("sirno read_entry_at begin: id={id} at={}", at.version());
         let fs_id = id.to_filesystem_id()?;
@@ -140,17 +157,17 @@ impl SirnoStore {
 
     /// Read every active entry at the current snapshot.
     pub fn read_all_entries(&self) -> Result<Vec<Entry>, StoreError> {
-        self.read_all_entries_at_version(self.current_version()?)
+        self.read_all_entries_at_snapshot(self.current_snapshot()?)
     }
 
     /// Read every active entry at a selected history snapshot.
     // sirno:witness:history-store:begin
-    pub fn read_all_entries_at_version(&self, at: Eterator) -> Result<Vec<Entry>, StoreError> {
+    pub fn read_all_entries_at_snapshot(&self, at: SnapshotRef) -> Result<Vec<Entry>, StoreError> {
         trace!("sirno read_all_entries begin: at={}", at.version());
         let mut entries = Vec::new();
         for fs_id in self.backend.live_entries(at)? {
             let id = EntryId::try_from(fs_id)?;
-            if let Some(entry) = self.read_entry_at_version(at, &id)? {
+            if let Some(entry) = self.read_entry_at_snapshot(at, &id)? {
                 entries.push(entry);
             }
         }
@@ -172,7 +189,7 @@ impl SirnoStore {
     // sirno:witness:history-store:begin
     pub fn commit_entry_directory(
         &mut self, root: impl Into<PathBuf>, settings: &EntryDirectoryCheckSettings,
-    ) -> Result<Eterator, StoreError> {
+    ) -> Result<SnapshotRef, StoreError> {
         let root = root.into();
         trace!("sirno commit_entry_directory begin: root={}", root.display());
         let report = check_entry_directory_with_settings(&root, CheckMode::Review, settings)?;
@@ -189,11 +206,11 @@ impl SirnoStore {
     /// Materialize a history snapshot into a public Markdown entry directory.
     // sirno:witness:history-store:begin
     pub fn checkout_entry_directory(
-        &self, at: Eterator, root: impl Into<PathBuf>, policy: EntryDirectoryWritePolicy,
+        &self, at: SnapshotRef, root: impl Into<PathBuf>, policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, StoreError> {
         let root = root.into();
         trace!("sirno checkout_entry_directory begin: at={} root={}", at.version(), root.display());
-        let entries = self.read_all_entries_at_version(at)?;
+        let entries = self.read_all_entries_at_snapshot(at)?;
         let paths = write_entry_directory(&root, &entries, policy)?;
         trace!("sirno checkout_entry_directory end: entries={}", paths.len());
         Ok(paths)
@@ -205,7 +222,7 @@ impl SirnoStore {
     /// The initialized entries are ordinary Sirno entries.
     /// They are created together and are not privileged by later operations.
     // sirno:witness:history-store:begin
-    pub fn init_default_entries(&mut self) -> Result<Eterator, StoreError> {
+    pub fn init_default_entries(&mut self) -> Result<SnapshotRef, StoreError> {
         trace!("sirno init_default_entries begin");
         let entries = default_seed_entries()?;
         for entry in &entries {
@@ -221,9 +238,9 @@ impl SirnoStore {
     // sirno:witness:history-store:end
 
     // sirno:witness:history-store:begin
-    fn commit_entries(&mut self, entries: &[Entry]) -> Result<Eterator, StoreError> {
-        let current = self.current_version()?;
-        if self.read_all_entries_at_version(current)? == entries {
+    fn commit_entries(&mut self, entries: &[Entry]) -> Result<SnapshotRef, StoreError> {
+        let current = self.current_snapshot()?;
+        if self.read_all_entries_at_snapshot(current)? == entries {
             return Ok(current);
         }
 
@@ -319,7 +336,7 @@ impl StoredEntryFacet {
 
 impl EntryFacet<SirnoBackend> for StoredEntryFacet {
     fn load_from(
-        store: &SirnoBackend, at: Eterator, id: &FilesystemEntryId,
+        store: &SirnoBackend, at: SnapshotRef, id: &FilesystemEntryId,
     ) -> Result<Option<Self>, FilesystemError> {
         if !store.entry_exists(at, id)? {
             return Ok(None);
@@ -363,7 +380,7 @@ impl EntryFacet<SirnoBackend> for StoredEntryFacet {
 }
 
 fn resolve_optional_text<F: Field<Content = String>>(
-    store: &SirnoBackend, at: Eterator, id: &FilesystemEntryId,
+    store: &SirnoBackend, at: SnapshotRef, id: &FilesystemEntryId,
 ) -> Result<Option<String>, FilesystemError> {
     match store.resolve::<F>(at, id)? {
         | Resolution::Content(value) => Ok(Some(value)),
@@ -372,7 +389,7 @@ fn resolve_optional_text<F: Field<Content = String>>(
 }
 
 fn resolve_optional_list<F: Field<Content = Vec<EntryId>>>(
-    store: &SirnoBackend, at: Eterator, id: &FilesystemEntryId,
+    store: &SirnoBackend, at: SnapshotRef, id: &FilesystemEntryId,
 ) -> Result<Vec<EntryId>, FilesystemError> {
     match store.resolve::<F>(at, id)? {
         | Resolution::Content(value) => Ok(value),
@@ -487,7 +504,7 @@ mod tests {
         let version = store
             .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        let read = store.read_entry_at_version(version, &entry.id).unwrap();
+        let read = store.read_entry_at_snapshot(version, &entry.id).unwrap();
 
         assert_eq!(read, Some(entry));
     }
@@ -506,14 +523,14 @@ mod tests {
         let version = store
             .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        let read = store.read_entry_at_version(version, &entry.id).unwrap().unwrap();
+        let read = store.read_entry_at_snapshot(version, &entry.id).unwrap().unwrap();
 
         assert!(entry.body.contains(crate::BEGIN_LINKS_GUARD));
         assert_eq!(read.body, "Alpha body.\n");
     }
 
     #[test]
-    fn multi_entry_commit_uses_one_eterator() {
+    fn multi_entry_commit_uses_one_snapshot() {
         let public = tempfile::tempdir().unwrap();
         let history = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
@@ -526,13 +543,13 @@ mod tests {
             .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
-        assert_eq!(store.current_version().unwrap(), version);
+        assert_eq!(store.current_snapshot().unwrap(), version);
         assert_entry_snapshot_file(history.path(), &alpha.id, version);
         assert_entry_snapshot_file(history.path(), &beta.id, version);
     }
 
     #[test]
-    fn no_op_commit_returns_current_version() {
+    fn no_op_commit_returns_current_snapshot() {
         let public = tempfile::tempdir().unwrap();
         let history = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
@@ -547,7 +564,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(first, second);
-        assert_eq!(store.current_version().unwrap(), first);
+        assert_eq!(store.current_snapshot().unwrap(), first);
     }
 
     #[test]
@@ -569,9 +586,9 @@ mod tests {
             .unwrap();
 
         assert_ne!(first, second);
-        assert!(store.read_entry_at_version(first, &beta.id).unwrap().is_some());
-        assert!(store.read_entry_at_version(second, &alpha.id).unwrap().is_some());
-        assert_eq!(store.read_entry_at_version(second, &beta.id).unwrap(), None);
+        assert!(store.read_entry_at_snapshot(first, &beta.id).unwrap().is_some());
+        assert!(store.read_entry_at_snapshot(second, &alpha.id).unwrap().is_some());
+        assert_eq!(store.read_entry_at_snapshot(second, &beta.id).unwrap(), None);
     }
 
     #[test]
@@ -620,13 +637,13 @@ mod tests {
         fs::write(path, entry.to_markdown().expect("render entry")).expect("write entry");
     }
 
-    fn assert_entry_snapshot_file(root: &Path, id: &EntryId, version: Eterator) {
+    fn assert_entry_snapshot_file(root: &Path, id: &EntryId, snapshot: SnapshotRef) {
         let dir = root.join(id.as_str());
         let paths = fs::read_dir(dir)
             .unwrap()
             .map(|entry| entry.unwrap().file_name().to_string_lossy().to_string())
             .collect::<Vec<_>>();
         assert_eq!(paths.len(), 1);
-        assert!(paths[0].starts_with(&format!("{:016x}-", version.version())));
+        assert!(paths[0].starts_with(&format!("{:016x}-", snapshot.version())));
     }
 }
