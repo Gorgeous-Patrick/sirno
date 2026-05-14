@@ -25,6 +25,14 @@ They cluster behavioral specifications under one named object.
 They keep intent portable across levels of detail.
 They organize tests so properties and constraints become easier to see.
 
+Concept-driven development concludes the other three practices by asking what named idea
+their work should preserve.
+Spec-driven development says what must hold.
+Intent-driven development says why the work matters.
+Test-driven development makes one claim executable.
+The concept gathers those pressures into a durable project object
+that future work can inspect, refine, realize, and witness.
+
 The method is practical.
 Before local work begins,
 the project asks which named idea explains the work.
@@ -33,9 +41,10 @@ the design should be lowered or reflected until the idea has an entry.
 That entry does not need to solve the whole problem.
 It only needs to give the work a stable handle and enough prose to keep the reason visible.
 
-Concept-driven development is not a rejection of specifications, tests, or implementation-first learning.
-It gives those practices a shared dictionary.
+Concept-driven development does not replace specifications, intent, or tests.
+It gives those practices a shared conclusion.
 A specification can point to the concept it sharpens.
+Intent can name the concept it is trying to keep alive.
 A test can witness the concept it protects.
 Implementation can refine a concept when code reveals a clearer representation.
 
@@ -54,7 +63,10 @@ Belongs (to):
 - [sirno](sirno.md)
 
 Refines (from):
+- [intent-driven-development](intent-driven-development.md)
 - [methodology](methodology.md)
+- [spec-driven-development](spec-driven-development.md)
+- [test-driven-development](test-driven-development.md)
 
 Refines (to):
 - [concept](concept.md)

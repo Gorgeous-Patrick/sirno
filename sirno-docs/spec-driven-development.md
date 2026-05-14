@@ -1,0 +1,42 @@
+---
+name: Spec-Driven Development
+description: A development style that starts from explicit behavioral commitments.
+category:
+  - concept
+refines:
+  - concept-driven-development
+---
+
+Spec-driven development starts from explicit behavioral commitments.
+
+A specification says what must be true before code chooses how to make it true.
+It can describe an interface, state transition, invariant, file shape, command contract,
+or observable behavior.
+The useful part is precision:
+the work has a named claim that implementation can satisfy, revise, or reject.
+
+In concept-driven development,
+a specification sharpens a concept.
+The concept gives the specification a stable place in the project vocabulary.
+The specification gives the concept a local behavioral edge.
+
+Spec-driven work should stay small enough to test or inspect.
+If a specification becomes a broad essay,
+lower it into smaller entries or refine it under the concept it makes concrete.
+If implementation reveals a better boundary,
+reflect that boundary back into the lake so the specification remains a living design object.
+
+---
+
+> **Sirno generated links begin. Do not edit this section.**
+
+Belongs (from): (none)
+
+Belongs (to): (none)
+
+Refines (from): (none)
+
+Refines (to):
+- [concept-driven-development](concept-driven-development.md)
+
+> **Sirno generated links end.**
