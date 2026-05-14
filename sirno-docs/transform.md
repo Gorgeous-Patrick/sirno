@@ -45,13 +45,4 @@ Belongs (from): (none)
 
 Belongs (to): (none)
 
-Refines (from):
-- [lower](lower.md)
-- [methodology](methodology.md)
-- [raise](raise.md)
-- [realize](realize.md)
-- [reflect](reflect.md)
-
-Refines (to): (none)
-
 > **Sirno generated links end.**

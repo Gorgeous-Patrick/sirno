@@ -20,4 +20,4 @@ belongs = true
 # Add clique sections derived from belongs targets.
 clique = false
 # Include refines links; use a boolean or { to = bool, from = bool }.
-refines = true
+refines = false

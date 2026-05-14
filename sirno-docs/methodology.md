@@ -107,11 +107,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno](sirno.md)
 
-Refines (from): (none)
-
-Refines (to):
-- [concept-driven-development](concept-driven-development.md)
-- [transform](transform.md)
-- [witness](witness.md)
-
 > **Sirno generated links end.**

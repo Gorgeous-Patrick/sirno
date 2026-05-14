@@ -35,9 +35,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno-lake](sirno-lake.md)
 
-Refines (from): (none)
-
-Refines (to):
-- [versioning](versioning.md)
-
 > **Sirno generated links end.**

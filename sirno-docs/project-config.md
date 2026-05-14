@@ -68,10 +68,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno-lake](sirno-lake.md)
 
-Refines (from):
-- [project-config-comments](project-config-comments.md)
-
-Refines (to):
-- [storage-and-interfaces](storage-and-interfaces.md)
-
 > **Sirno generated links end.**

@@ -67,10 +67,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno-lake](sirno-lake.md)
 
-Refines (from):
-- [generated-footer-ownership](generated-footer-ownership.md)
-- [generated-link-policy](generated-link-policy.md)
-
-Refines (to): (none)
-
 > **Sirno generated links end.**

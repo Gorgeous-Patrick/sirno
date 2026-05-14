@@ -52,9 +52,4 @@ Belongs (from): (none)
 Belongs (to):
 - [witness](witness.md)
 
-Refines (from): (none)
-
-Refines (to):
-- [form](form.md)
-
 > **Sirno generated links end.**

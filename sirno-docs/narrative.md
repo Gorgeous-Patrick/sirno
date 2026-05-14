@@ -54,10 +54,4 @@ Belongs (from): (none)
 Belongs (to):
 - [meta](meta.md)
 
-Refines (from):
-- [interactive-narrative-session](interactive-narrative-session.md)
-- [introduction](introduction.md)
-
-Refines (to): (none)
-
 > **Sirno generated links end.**

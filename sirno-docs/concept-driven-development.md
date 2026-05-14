@@ -62,13 +62,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno](sirno.md)
 
-Refines (from):
-- [intent-driven-development](intent-driven-development.md)
-- [methodology](methodology.md)
-- [spec-driven-development](spec-driven-development.md)
-- [test-driven-development](test-driven-development.md)
-
-Refines (to):
-- [concept](concept.md)
-
 > **Sirno generated links end.**

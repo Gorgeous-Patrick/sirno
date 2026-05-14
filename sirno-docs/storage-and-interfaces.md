@@ -98,11 +98,4 @@ Belongs (from): (none)
 Belongs (to):
 - [sirno](sirno.md)
 
-Refines (from):
-- [project-config](project-config.md)
-- [query](query.md)
-- [versioning](versioning.md)
-
-Refines (to): (none)
-
 > **Sirno generated links end.**

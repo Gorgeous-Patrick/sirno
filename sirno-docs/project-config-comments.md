@@ -37,9 +37,4 @@ Belongs (from): (none)
 
 Belongs (to): (none)
 
-Refines (from): (none)
-
-Refines (to):
-- [project-config](project-config.md)
-
 > **Sirno generated links end.**

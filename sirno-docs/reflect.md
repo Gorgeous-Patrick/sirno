@@ -45,9 +45,4 @@ Belongs (from): (none)
 
 Belongs (to): (none)
 
-Refines (from): (none)
-
-Refines (to):
-- [transform](transform.md)
-
 > **Sirno generated links end.**
