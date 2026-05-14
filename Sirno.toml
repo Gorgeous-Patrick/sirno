@@ -1,15 +1,23 @@
 [store]
+# Markdown entry store path, resolved relative to this config file.
 path = "sirno-docs"
+# Store-root paths Sirno skips while reading, checking, querying, and generating links.
 ignore = [".obsidian"]
 
 [code]
+# Repository files, directories, or globs scanned for witness blocks.
 members = ["src"]
 
 [check]
+# Require generated footers to match current metadata during checks.
 link = true
 
 [links]
+# Include category links; use a boolean or { to = bool, from = bool }.
 category = false
+# Include clustee links; use a boolean or { to = bool, from = bool }.
 clustee = { from = false, to = true }
+# Add clique sections derived from clustee closures.
 clique = false
+# Include refiner links; use a boolean or { to = bool, from = bool }.
 refiner = false

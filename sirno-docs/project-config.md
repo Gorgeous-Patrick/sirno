@@ -17,6 +17,7 @@ and the operational policies that Sirno applies to the store.
 It may also configure a monograph,
 repository witness members,
 and a private history root.
+Generated config files include concise comments that describe how each written field is used.
 
 `[mono].path` optionally names the monograph.
 `[store].path` names the Markdown entry store.

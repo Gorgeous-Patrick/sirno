@@ -265,7 +265,7 @@ impl SirnoConfig {
         let path = path.as_ref();
         trace!("sirno config write begin: path={}", path.display());
         self.validate_for_file(path)?;
-        let source = toml::to_string_pretty(self).map_err(ConfigError::Render)?;
+        let source = self.to_toml()?;
         let mut file = OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -284,7 +284,7 @@ impl SirnoConfig {
         let path = path.as_ref();
         trace!("sirno config write replace begin: path={}", path.display());
         self.validate_for_file(path)?;
-        let source = toml::to_string_pretty(self).map_err(ConfigError::Render)?;
+        let source = self.to_toml()?;
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
@@ -335,6 +335,10 @@ impl SirnoConfig {
         }
         Ok(())
     }
+
+    fn to_toml(&self) -> Result<String, ConfigError> {
+        render_config(self).map_err(ConfigError::Render)
+    }
 }
 // sirno:witness:project-config:end
 
@@ -343,6 +347,134 @@ fn resolve_config_relative(config_path: &Path, configured_path: &Path) -> PathBu
         return configured_path.to_path_buf();
     }
     config_path.parent().unwrap_or_else(|| Path::new(".")).join(configured_path)
+}
+
+fn render_config(config: &SirnoConfig) -> Result<String, toml::ser::Error> {
+    let mut out = String::new();
+
+    if let Some(mono) = &config.mono {
+        push_table(&mut out, "mono");
+        // sirno:witness:project-config-comments:begin
+        push_field(
+            &mut out,
+            "path",
+            &mono.path,
+            "Markdown monograph path, resolved relative to this config file.",
+        )?;
+        // sirno:witness:project-config-comments:end
+        out.push('\n');
+    }
+
+    push_table(&mut out, "store");
+    // sirno:witness:project-config-comments:begin
+    push_field(
+        &mut out,
+        "path",
+        &config.store.path,
+        "Markdown entry store path, resolved relative to this config file.",
+    )?;
+    if !config.store.ignore.is_empty() {
+        push_field(
+            &mut out,
+            "ignore",
+            &config.store.ignore,
+            "Store-root paths Sirno skips while reading, checking, querying, and generating links.",
+        )?;
+    }
+    // sirno:witness:project-config-comments:end
+
+    if let Some(history) = &config.history {
+        out.push('\n');
+        push_table(&mut out, "history");
+        // sirno:witness:project-config-comments:begin
+        push_field(
+            &mut out,
+            "path",
+            &history.path,
+            "Private eter history root, kept outside the public store.",
+        )?;
+        // sirno:witness:project-config-comments:end
+    }
+
+    if let Some(code) = &config.code
+        && !code.members.is_empty()
+    {
+        out.push('\n');
+        push_table(&mut out, "code");
+        // sirno:witness:project-config-comments:begin
+        push_field(
+            &mut out,
+            "members",
+            &code.members,
+            "Repository files, directories, or globs scanned for witness blocks.",
+        )?;
+        // sirno:witness:project-config-comments:end
+    }
+
+    out.push('\n');
+    push_table(&mut out, "check");
+    // sirno:witness:project-config-comments:begin
+    push_field(
+        &mut out,
+        "link",
+        &config.check.link,
+        "Require generated footers to match current metadata during checks.",
+    )?;
+    // sirno:witness:project-config-comments:end
+
+    out.push('\n');
+    push_table(&mut out, "links");
+    // sirno:witness:project-config-comments:begin
+    push_field(
+        &mut out,
+        "category",
+        &config.links.category,
+        "Include category links; use a boolean or { to = bool, from = bool }.",
+    )?;
+    push_field(
+        &mut out,
+        "clustee",
+        &config.links.clustee,
+        "Include clustee links; use a boolean or { to = bool, from = bool }.",
+    )?;
+    push_field(
+        &mut out,
+        "clique",
+        &config.links.clique,
+        "Add clique sections derived from clustee closures.",
+    )?;
+    push_field(
+        &mut out,
+        "refiner",
+        &config.links.refiner,
+        "Include refiner links; use a boolean or { to = bool, from = bool }.",
+    )?;
+    // sirno:witness:project-config-comments:end
+
+    Ok(out)
+}
+
+fn push_table(out: &mut String, name: &str) {
+    out.push('[');
+    out.push_str(name);
+    out.push_str("]\n");
+}
+
+fn push_field<T: Serialize + ?Sized>(
+    out: &mut String, name: &str, value: &T, comment: &str,
+) -> Result<(), toml::ser::Error> {
+    out.push_str("# ");
+    out.push_str(comment);
+    out.push('\n');
+    out.push_str(name);
+    out.push_str(" = ");
+    out.push_str(&toml_value(value)?);
+    out.push('\n');
+    Ok(())
+}
+
+fn toml_value<T: Serialize + ?Sized>(value: &T) -> Result<String, toml::ser::Error> {
+    Ok(toml::Value::try_from(value)?.to_string())
 }
 
 /// Error raised by Sirno config operations.
@@ -679,11 +811,49 @@ members = ["../outside"]
 
     #[test]
     fn default_project_omits_optional_tables_when_rendered() {
-        let source = toml::to_string_pretty(&SirnoConfig::default_project()).unwrap();
+        let source = SirnoConfig::default_project().to_toml().unwrap();
 
         assert!(source.contains("[store]"));
+        assert!(source.contains("# Markdown entry store path"));
+        assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("# Include clustee links"));
         assert!(!source.contains("[mono]"));
         assert!(!source.contains("[code]"));
+    }
+
+    #[test]
+    fn rendered_config_comments_each_written_field() {
+        let config = SirnoConfig {
+            mono: Some(MonoSettings::new("DESIGN.md")),
+            store: StoreSettings {
+                path: PathBuf::from("docs"),
+                ignore: vec![PathBuf::from(".obsidian")],
+            },
+            history: Some(HistorySettings::new("sirno-history")),
+            code: Some(CodeSettings { members: vec![CodeMember::new("src").unwrap()] }),
+            check: CheckSettings { link: false },
+            links: GeneratedLinkSettings {
+                category: true.into(),
+                clustee: crate::links::GeneratedLinkFieldSettings::new(true, false),
+                clique: true,
+                refiner: false.into(),
+            },
+        };
+
+        let source = config.to_toml().unwrap();
+        let read: SirnoConfig = toml::from_str(&source).unwrap();
+
+        assert_eq!(read, config);
+        assert!(source.contains("# Markdown monograph path"));
+        assert!(source.contains("# Markdown entry store path"));
+        assert!(source.contains("# Store-root paths Sirno skips"));
+        assert!(source.contains("# Private eter history root"));
+        assert!(source.contains("# Repository files, directories, or globs"));
+        assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("# Include category links"));
+        assert!(source.contains("# Include clustee links"));
+        assert!(source.contains("# Add clique sections"));
+        assert!(source.contains("# Include refiner links"));
     }
 
     #[test]
