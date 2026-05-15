@@ -38,6 +38,7 @@ The printable fields are `id`, `name`, `path`, and `desc`.
 Fields print in the requested order as tab-separated columns.
 When no format is supplied,
 query prints `id,path,name`.
+`--human` prints the same selected fields as an aligned table for interactive use.
 
 ---
 

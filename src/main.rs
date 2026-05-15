@@ -106,6 +106,9 @@ enum Command {
         /// Comma-separated output fields: id, name, path, desc.
         #[arg(long, value_name = "FIELDS")]
         format: Option<CliQueryFormat>,
+        /// Print query results as a human-readable table.
+        #[arg(long)]
+        human: bool,
     },
     // sirno:witness:storage-and-interfaces:end
     /// Check current entry structure.
@@ -228,6 +231,17 @@ impl FromStr for CliQueryField {
             | "path" => Ok(Self::Path),
             | "desc" => Ok(Self::Desc),
             | field => Err(CliQueryFormatParseError::UnknownField(field.to_owned())),
+        }
+    }
+}
+
+impl CliQueryField {
+    fn label(self) -> &'static str {
+        match self {
+            | Self::Id => "id",
+            | Self::Name => "name",
+            | Self::Path => "path",
+            | Self::Desc => "desc",
         }
     }
 }
@@ -436,7 +450,7 @@ impl Cli {
                 println!("melted entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | Command::Query { terms, exact_terms, exact, format } => {
+            | Command::Query { terms, exact_terms, exact, format, human } => {
                 let (lake, mut settings) =
                     resolve_lake_directory(lake_path.as_deref(), &config_path)?;
                 settings.link = false;
@@ -457,7 +471,7 @@ impl Cli {
                 let vague_matches = vague_query.select_entries(report.entries());
                 let matches = exact_query.select_entries(vague_matches);
                 let format = format.unwrap_or_default();
-                print_query_results(&report, &matches, &format)?;
+                print_query_results(&report, &matches, &format, human)?;
                 Ok(ExitCode::SUCCESS)
             }
             | Command::Check { frost_root, mode } => {
@@ -1030,17 +1044,33 @@ fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[Path
 }
 
 fn print_query_results(
-    report: &EntryDirectoryReport, entries: &[&Entry], format: &CliQueryFormat,
+    report: &EntryDirectoryReport, entries: &[&Entry], format: &CliQueryFormat, human: bool,
 ) -> Result<(), CliError> {
-    for entry in entries {
-        let fields = format
-            .fields
-            .iter()
-            .map(|field| format_query_field(report, entry, *field))
-            .collect::<Result<Vec<_>, _>>()?;
-        println!("{}", fields.join("\t"));
+    let rows = query_result_rows(report, entries, format)?;
+    if human {
+        print!("{}", format_query_table(format, &rows));
+        return Ok(());
+    }
+
+    for row in rows {
+        println!("{}", row.join("\t"));
     }
     Ok(())
+}
+
+fn query_result_rows(
+    report: &EntryDirectoryReport, entries: &[&Entry], format: &CliQueryFormat,
+) -> Result<Vec<Vec<String>>, CliError> {
+    entries
+        .iter()
+        .map(|entry| {
+            format
+                .fields
+                .iter()
+                .map(|field| format_query_field(report, entry, *field))
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .collect()
 }
 
 fn format_query_field(
@@ -1057,6 +1087,51 @@ fn format_query_field(
         }
         | CliQueryField::Desc => Ok(entry.metadata.description.clone()),
     }
+}
+
+fn format_query_table(format: &CliQueryFormat, rows: &[Vec<String>]) -> String {
+    let headers = format.fields.iter().map(|field| field.label()).collect::<Vec<_>>();
+    let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
+    for row in rows {
+        for (index, cell) in row.iter().enumerate() {
+            widths[index] = widths[index].max(cell_width(cell));
+        }
+    }
+
+    let mut table = String::new();
+    push_query_table_row(&mut table, headers.iter().copied(), &widths);
+    push_query_table_separator(&mut table, &widths);
+    for row in rows {
+        push_query_table_row(&mut table, row.iter().map(String::as_str), &widths);
+    }
+    table
+}
+
+fn push_query_table_row<'a>(
+    table: &mut String, cells: impl IntoIterator<Item = &'a str>, widths: &[usize],
+) {
+    table.push('|');
+    for (cell, width) in cells.into_iter().zip(widths) {
+        table.push(' ');
+        table.push_str(cell);
+        table.push_str(&" ".repeat(width.saturating_sub(cell_width(cell))));
+        table.push_str(" |");
+    }
+    table.push('\n');
+}
+
+fn push_query_table_separator(table: &mut String, widths: &[usize]) {
+    table.push('|');
+    for width in widths {
+        table.push(' ');
+        table.push_str(&"-".repeat(*width));
+        table.push_str(" |");
+    }
+    table.push('\n');
+}
+
+fn cell_width(cell: &str) -> usize {
+    cell.chars().count()
 }
 
 fn print_entry_directory_report(report: &EntryDirectoryReport) {
@@ -1192,9 +1267,9 @@ mod tests {
     };
 
     use crate::{
-        Cli, CliError, CliExactPredicate, CliQueryField, Command, FrostCommand,
-        exact_query_from_predicates, format_gen_link_report, format_witness_record,
-        format_witness_records,
+        Cli, CliError, CliExactPredicate, CliQueryField, CliQueryFormat, Command, FrostCommand,
+        exact_query_from_predicates, format_gen_link_report, format_query_table,
+        format_witness_record, format_witness_records,
     };
 
     #[test]
@@ -1323,6 +1398,13 @@ mod tests {
     }
 
     #[test]
+    fn query_accepts_human_table_flag() {
+        let cli = Cli::parse_from(["sirno", "query", "--human"]);
+
+        assert!(matches!(cli.command, Command::Query { human: true, .. }));
+    }
+
+    #[test]
     fn query_rejects_unknown_format_field() {
         let error = Cli::try_parse_from(["sirno", "query", "--format", "id,summary"]).unwrap_err();
 
@@ -1334,6 +1416,22 @@ mod tests {
         let error = Cli::try_parse_from(["sirno", "query", "--format", "id,,desc"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
+    }
+
+    #[test]
+    fn query_table_uses_selected_field_headers_and_widths() {
+        let format = "id,desc".parse::<CliQueryFormat>().unwrap();
+        let table =
+            format_query_table(&format, &[vec!["query".to_owned(), "Selection".to_owned()]]);
+
+        assert_eq!(
+            table,
+            "\
+| id    | desc      |
+| ----- | --------- |
+| query | Selection |
+"
+        );
     }
 
     #[test]
