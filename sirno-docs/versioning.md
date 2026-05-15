@@ -36,7 +36,7 @@ conventionally `sirno-frost`.
 It is not read as part of the *entry lake*,
 and it must not be placed where *lake* discovery can treat it as *entries*.
 `sirno frost mv PATH` renames this root and updates `[frost].path`.
-`Sirno.lock` records the public *lake* state relative to that *frost* root.
+`Sirno.lock.toml` records the public *lake* state relative to that *frost* root.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.
 
@@ -54,7 +54,7 @@ the commit returns the current snapshot reference without writing a new snapshot
 If an *entry* exists in the current frozen snapshot but is absent from the public *lake*,
 the commit writes an `eter` lifecycle deletion marker for that *entry*.
 After a commit,
-`Sirno.lock` records `status = "current"` and the committed snapshot reference.
+`Sirno.lock.toml` records `status = "current"` and the committed snapshot reference.
 
 Direct edits to the public *lake* are working-state edits.
 They become frozen versions only after a *frost* commit.
@@ -70,7 +70,7 @@ The conservative policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
 while preserving ignored paths.
 After checkout,
-`Sirno.lock` records `status = "checked-out"` and the selected snapshot reference.
+`Sirno.lock.toml` records `status = "checked-out"` and the selected snapshot reference.
 
 A normal checkout is immutable.
 Sirno removes write permission from the public *lake* root and managed *entry* files.

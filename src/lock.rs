@@ -1,11 +1,13 @@
 //! Project-local lock state for Sirno Frost.
 //!
 //! `Sirno.toml` configures paths and policy.
-//! `Sirno.lock` records the Frost snapshot reference represented by the public lake.
+//! `Sirno.lock.toml` records the Frost snapshot reference represented by the public lake.
 
+use std::ffi::{OsStr, OsString};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use eter::{Eterator, GcGeneration, SnapshotRef};
 use serde::{Deserialize, Serialize};
@@ -13,7 +15,7 @@ use thiserror::Error;
 use tracing::trace;
 
 /// Canonical Sirno project lock filename.
-pub const LOCK_FILE_NAME: &str = "Sirno.lock";
+pub const LOCK_FILE_NAME: &str = "Sirno.lock.toml";
 
 const LOCK_FILE_HEADER: &str = "\
 # This file is generated and managed by Sirno.
@@ -70,19 +72,34 @@ impl SirnoLock {
     // sirno:witness:sirno-lock:end
 
     /// Write this lock to an existing or new file.
+    ///
+    /// The lock is first written to a sibling temporary file.
+    /// A rename then publishes the complete TOML file as one filesystem replacement.
     // sirno:witness:sirno-lock:begin
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), LockError> {
         let path = path.as_ref();
         trace!("sirno lock write begin: path={}", path.display());
         let source = self.to_toml()?;
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .map_err(|source| LockError::Create { path: path.to_path_buf(), source })?;
-        file.write_all(source.as_bytes())
-            .map_err(|source| LockError::Write { path: path.to_path_buf(), source })?;
+        let temporary_path = temporary_lock_path(path);
+        let mut file =
+            OpenOptions::new().write(true).create_new(true).open(&temporary_path).map_err(
+                |source| LockError::CreateTemporary { path: temporary_path.clone(), source },
+            )?;
+        if let Err(source) = file.write_all(source.as_bytes()) {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(LockError::WriteTemporary { path: temporary_path, source });
+        }
+        if let Err(source) = file.sync_all() {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(LockError::WriteTemporary { path: temporary_path, source });
+        }
+        drop(file);
+        if let Err(source) = fs::rename(&temporary_path, path) {
+            let _ = fs::remove_file(&temporary_path);
+            return Err(LockError::Replace { path: path.to_path_buf(), temporary_path, source });
+        }
         trace!("sirno lock write end");
         Ok(())
     }
@@ -102,7 +119,20 @@ impl SirnoLock {
     // sirno:witness:sirno-lock:end
 }
 
-/// Frost state recorded in `Sirno.lock`.
+fn temporary_lock_path(path: &Path) -> PathBuf {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let file_name = path.file_name().unwrap_or_else(|| OsStr::new(LOCK_FILE_NAME));
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let mut temporary_name = OsString::from(".");
+    temporary_name.push(file_name);
+    temporary_name.push(format!(".{}.{}.tmp", std::process::id(), nonce));
+    parent.join(temporary_name)
+}
+
+/// Frost state recorded in `Sirno.lock.toml`.
 ///
 /// Invariant: `mutable` is true only for checked-out snapshots created with `--unsafe-mutable`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -218,20 +248,31 @@ pub enum LockError {
     /// Current public-lake state must be editable.
     #[error("current frost state cannot be marked mutable")]
     CurrentMutable,
-    /// The lock file could not be created.
-    #[error("failed to create lock file {path}")]
-    Create {
-        /// Path that could not be created.
+    /// The temporary lock file could not be created.
+    #[error("failed to create temporary lock file {path}")]
+    CreateTemporary {
+        /// Temporary path that could not be created.
         path: PathBuf,
         /// Underlying I/O error.
         #[source]
         source: std::io::Error,
     },
-    /// The lock file could not be written.
-    #[error("failed to write lock file {path}")]
-    Write {
-        /// Path that could not be written.
+    /// The temporary lock file could not be written.
+    #[error("failed to write temporary lock file {path}")]
+    WriteTemporary {
+        /// Temporary path that could not be written.
         path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary lock file could not replace the public lock file.
+    #[error("failed to replace lock file {path} with temporary lock file {temporary_path}")]
+    Replace {
+        /// Lock path that could not be replaced.
+        path: PathBuf,
+        /// Complete temporary lock path.
+        temporary_path: PathBuf,
         /// Underlying I/O error.
         #[source]
         source: std::io::Error,
@@ -259,6 +300,13 @@ generation = 0
 version = 7
 "
         );
+    }
+
+    #[test]
+    fn lock_path_uses_toml_suffix() {
+        let path = SirnoLock::path_for_config("/project/Sirno.toml");
+
+        assert_eq!(path, PathBuf::from("/project/Sirno.lock.toml"));
     }
 
     #[test]
@@ -297,5 +345,24 @@ mutable = true
         .unwrap_err();
 
         assert!(matches!(error, LockError::CurrentMutable));
+    }
+
+    #[test]
+    fn lock_write_replaces_existing_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join(LOCK_FILE_NAME);
+        SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(1)))
+            .write(&path)
+            .unwrap();
+
+        SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(2)))
+            .write(&path)
+            .unwrap();
+
+        let rendered = fs::read_to_string(&path).unwrap();
+        assert!(rendered.contains("version = 2"));
+        assert!(!rendered.contains("version = 1"));
+        let paths = fs::read_dir(temp.path()).unwrap().count();
+        assert_eq!(paths, 1);
     }
 }

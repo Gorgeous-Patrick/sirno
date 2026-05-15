@@ -32,7 +32,7 @@ A project can use Sirno without a configured *monograph*, repo members, or Sirno
 `sirno frost init` adds the Sirno Frost config and freezes the current public *lake*.
 `sirno frost mv PATH` changes `[frost].path` and renames the private *frost* root.
 
-`Sirno.lock` records the public *lake*'s *frost* state when Sirno Frost is configured.
+`Sirno.lock.toml` records the public *lake*'s *frost* state when Sirno Frost is configured.
 It lives next to `Sirno.toml`.
 The lock says whether the *lake* is current
 or checked out to a frozen version.

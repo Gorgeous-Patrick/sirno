@@ -61,7 +61,7 @@ Normal checkout writes a visible read-only blockquote
 and removes write permission from the *lake* root and managed *entry* files.
 `--unsafe-mutable` leaves the checkout writable.
 
-`Sirno.lock` records the public *lake* state relative to *frost*.
+`Sirno.lock.toml` records the public *lake* state relative to *frost*.
 `status = "current"` means the public *lake* is the editable current version.
 `status = "checked-out"` means the public *lake* materializes a selected frozen version.
 The lock stores the snapshot generation and version,

@@ -49,7 +49,7 @@ and renames the current *lake* directory on the filesystem.
 `sirno frost mv PATH` changes the configured *frost* path
 and renames the current *frost* root on the filesystem.
 `sirno frost commit` freezes the current public *lake*
-and writes the resulting current snapshot reference to `Sirno.lock`.
+and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 `sirno frost checkout VERSION` materializes one version into the public *lake*.
 The checkout is immutable unless `--unsafe-mutable` is supplied.
 
