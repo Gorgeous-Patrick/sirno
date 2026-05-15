@@ -179,12 +179,12 @@ This repository keeps its current design source in `sirno-docs/`.
 
 ```sh
 cargo run -- check --mode review
-cargo run -- query --format id
+cargo run -- query --format id,desc
 cargo run -- witness readme --full
 ```
 
 The first command checks the *lake* as a coherent design graph.
-The second lists entry ids.
+The second lists entry ids and descriptions.
 The third shows how this README witnesses its own Sirno-facing intention.
 
 ## Status

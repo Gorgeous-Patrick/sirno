@@ -33,7 +33,11 @@ Two `--exact category=...` values mean either category.
 A `category` exact predicate plus a `refines` exact predicate requires both fields to match.
 
 Query output is presentation.
-The same selected *entries* may be printed as summaries, ids, or paths.
+`sirno query --format` accepts a comma-separated list of fields.
+The printable fields are `id`, `name`, `path`, and `desc`.
+Fields print in the requested order as tab-separated columns.
+When no format is supplied,
+query prints `id,path,name`.
 
 ---
 

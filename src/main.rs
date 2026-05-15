@@ -103,8 +103,8 @@ enum Command {
         /// Exact structural predicate as FIELD=ENTRY_ID.
         #[arg(long, value_name = "FIELD=ENTRY_ID")]
         exact: Vec<CliExactPredicate>,
-        /// Output format.
-        #[arg(long, value_enum)]
+        /// Comma-separated output fields: id, name, path, desc.
+        #[arg(long, value_name = "FIELDS")]
         format: Option<CliQueryFormat>,
     },
     // sirno:witness:storage-and-interfaces:end
@@ -172,15 +172,78 @@ enum CliCheckMode {
     Review,
 }
 
-/// CLI query output shape.
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliQueryFormat {
-    /// Print id, path, and name.
-    Summary,
-    /// Print only entry ids.
+/// CLI query output field list.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct CliQueryFormat {
+    fields: Vec<CliQueryField>,
+}
+
+impl Default for CliQueryFormat {
+    fn default() -> Self {
+        Self { fields: vec![CliQueryField::Id, CliQueryField::Path, CliQueryField::Name] }
+    }
+}
+
+impl FromStr for CliQueryFormat {
+    type Err = CliQueryFormatParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        if raw.trim().is_empty() {
+            return Err(CliQueryFormatParseError::Empty);
+        }
+
+        let mut fields = Vec::new();
+        for raw_field in raw.split(',') {
+            let field = raw_field.trim();
+            if field.is_empty() {
+                return Err(CliQueryFormatParseError::EmptyField);
+            }
+            fields.push(field.parse()?);
+        }
+
+        Ok(Self { fields })
+    }
+}
+
+/// One field printable by `sirno query`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CliQueryField {
+    /// Entry id.
     Id,
-    /// Print only Markdown paths.
+    /// Human-readable entry name.
+    Name,
+    /// Markdown path.
     Path,
+    /// Short entry description.
+    Desc,
+}
+
+impl FromStr for CliQueryField {
+    type Err = CliQueryFormatParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        match raw {
+            | "id" => Ok(Self::Id),
+            | "name" => Ok(Self::Name),
+            | "path" => Ok(Self::Path),
+            | "desc" => Ok(Self::Desc),
+            | field => Err(CliQueryFormatParseError::UnknownField(field.to_owned())),
+        }
+    }
+}
+
+/// Error raised while parsing one `--format` field list.
+#[derive(Debug, Error)]
+enum CliQueryFormatParseError {
+    /// The list contains no fields.
+    #[error("query format must include at least one field")]
+    Empty,
+    /// The list contains a separator without a field.
+    #[error("query format contains an empty field")]
+    EmptyField,
+    /// The list contains an unknown output field.
+    #[error("unknown query format field `{0}`; expected id, name, path, or desc")]
+    UnknownField(String),
 }
 
 /// Exact structural query predicate parsed from `FIELD=ENTRY_ID`.
@@ -393,7 +456,8 @@ impl Cli {
                 )?;
                 let vague_matches = vague_query.select_entries(report.entries());
                 let matches = exact_query.select_entries(vague_matches);
-                print_query_results(&report, &matches, format.unwrap_or(CliQueryFormat::Summary))?;
+                let format = format.unwrap_or_default();
+                print_query_results(&report, &matches, &format)?;
                 Ok(ExitCode::SUCCESS)
             }
             | Command::Check { frost_root, mode } => {
@@ -966,25 +1030,33 @@ fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[Path
 }
 
 fn print_query_results(
-    report: &EntryDirectoryReport, entries: &[&Entry], format: CliQueryFormat,
+    report: &EntryDirectoryReport, entries: &[&Entry], format: &CliQueryFormat,
 ) -> Result<(), CliError> {
     for entry in entries {
-        let path = report
-            .entry_path(&entry.id)
-            .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
-        match format {
-            | CliQueryFormat::Summary => {
-                println!("{}\t{}\t{}", entry.id, path.display(), entry.metadata.name);
-            }
-            | CliQueryFormat::Id => {
-                println!("{}", entry.id);
-            }
-            | CliQueryFormat::Path => {
-                println!("{}", path.display());
-            }
-        }
+        let fields = format
+            .fields
+            .iter()
+            .map(|field| format_query_field(report, entry, *field))
+            .collect::<Result<Vec<_>, _>>()?;
+        println!("{}", fields.join("\t"));
     }
     Ok(())
+}
+
+fn format_query_field(
+    report: &EntryDirectoryReport, entry: &Entry, field: CliQueryField,
+) -> Result<String, CliError> {
+    match field {
+        | CliQueryField::Id => Ok(entry.id.to_string()),
+        | CliQueryField::Name => Ok(entry.metadata.name.clone()),
+        | CliQueryField::Path => {
+            let path = report
+                .entry_path(&entry.id)
+                .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
+            Ok(path.display().to_string())
+        }
+        | CliQueryField::Desc => Ok(entry.metadata.description.clone()),
+    }
 }
 
 fn print_entry_directory_report(report: &EntryDirectoryReport) {
@@ -1120,8 +1192,9 @@ mod tests {
     };
 
     use crate::{
-        Cli, CliError, CliExactPredicate, Command, FrostCommand, exact_query_from_predicates,
-        format_gen_link_report, format_witness_record, format_witness_records,
+        Cli, CliError, CliExactPredicate, CliQueryField, Command, FrostCommand,
+        exact_query_from_predicates, format_gen_link_report, format_witness_record,
+        format_witness_records,
     };
 
     #[test]
@@ -1234,6 +1307,33 @@ mod tests {
                     target: EntryId::new("concept").unwrap(),
                 }]
         ));
+    }
+
+    #[test]
+    fn query_accepts_comma_separated_format_fields() {
+        let cli = Cli::parse_from(["sirno", "query", "--format", "id,name,path,desc"]);
+        let Command::Query { format: Some(format), .. } = cli.command else {
+            panic!("expected query command with format");
+        };
+
+        assert_eq!(
+            format.fields,
+            vec![CliQueryField::Id, CliQueryField::Name, CliQueryField::Path, CliQueryField::Desc,]
+        );
+    }
+
+    #[test]
+    fn query_rejects_unknown_format_field() {
+        let error = Cli::try_parse_from(["sirno", "query", "--format", "id,summary"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
+    }
+
+    #[test]
+    fn query_rejects_empty_format_field() {
+        let error = Cli::try_parse_from(["sirno", "query", "--format", "id,,desc"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
     }
 
     #[test]
