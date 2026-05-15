@@ -22,13 +22,8 @@ The generated comments are:
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+)`
-- `Opening witness delimiter regex.`
-- `Closing witness delimiter regex.`
 - `Require generated footers to match current metadata during checks.`
-- `Include category links; use a boolean or { to = bool, from = bool }.`
-- `Include belongs links; use a boolean or { to = bool, from = bool }.`
-- `Add clique sections derived from belongs targets.`
-- `Include refines links; use a boolean or { to = bool, from = bool }.`
+- `Structural metadata field; link.to, link.from, and link.clique default to false.`
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.

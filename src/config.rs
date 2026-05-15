@@ -581,7 +581,7 @@ impl ConfigRenderer {
             self.push_field(
                 field,
                 settings,
-                "Structural metadata field; link.from, link.to, and link.clique default to false.",
+                "Structural metadata field; link.to, link.from, and link.clique default to false.",
             )?;
         }
         // sirno:witness:project-config-comments:end
@@ -623,12 +623,22 @@ impl ConfigRenderer {
                 self.out.push('\n');
             }
             self.push_array_table("witness.delimiters");
-            self.push_field("begin", &delimiter.begin, "Opening witness delimiter regex.")?;
-            self.push_field("end", &delimiter.end, "Closing witness delimiter regex.")?;
+            self.push_bare_field("begin", &delimiter.begin)?;
+            self.push_bare_field("end", &delimiter.end)?;
         }
         Ok(())
     }
     // sirno:witness:project-config-comments:end
+
+    fn push_bare_field<T: Serialize + ?Sized>(
+        &mut self, name: &str, value: &T,
+    ) -> Result<(), toml::ser::Error> {
+        self.out.push_str(name);
+        self.out.push_str(" = ");
+        self.out.push_str(&Self::toml_value(value)?);
+        self.out.push('\n');
+        Ok(())
+    }
 
     fn push_array_table(&mut self, name: &str) {
         self.out.push_str("[[");
@@ -1279,17 +1289,18 @@ delimiters = []
         assert!(source.contains(&format!(
             "# Canonical filename entry-id capture: {WITNESS_ENTRY_ID_CAPTURE_REGEX}"
         )));
-        assert!(source.contains("# Opening witness delimiter regex."));
-        assert!(source.contains("# Closing witness delimiter regex."));
+        assert!(!source.contains("# Opening witness delimiter regex."));
+        assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural metadata field"));
+        assert!(source.contains("belongs = { link = { to = true, from = true } }"));
         assert!(!source.contains("[mono]"));
         assert!(!source.contains("[repo]"));
     }
 
     #[test]
-    fn rendered_config_comments_each_written_field() {
+    fn rendered_config_keeps_selected_comments_and_structural_link_order() {
         let config = SirnoConfig {
             mono: Some(MonoSettings::new("DESIGN.md")),
             lake: LakeSettings {
@@ -1310,7 +1321,7 @@ delimiters = []
                 (
                     "belongs",
                     crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(true, false, true),
+                        crate::links::StructuralLinkSettings::new(true, true, true),
                     ),
                 ),
                 ("refines", crate::links::StructuralFieldSettings::default()),
@@ -1330,16 +1341,13 @@ delimiters = []
         assert!(source.contains(&format!(
             "# Canonical filename entry-id capture: {WITNESS_ENTRY_ID_CAPTURE_REGEX}"
         )));
-        assert!(source.contains("# Opening witness delimiter regex."));
-        assert!(source.contains("# Closing witness delimiter regex."));
+        assert!(!source.contains("# Opening witness delimiter regex."));
+        assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural metadata field"));
-        assert!(source.contains("category = { link = {"));
-        assert!(source.contains("belongs = { link = {"));
-        assert!(source.contains("to = true"));
-        assert!(source.contains("from = true"));
-        assert!(source.contains("clique = true"));
+        assert!(source.contains("category = { link = { to = true, from = true } }"));
+        assert!(source.contains("belongs = { link = { to = true, from = true, clique = true } }"));
     }
 
     #[test]

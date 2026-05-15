@@ -70,11 +70,11 @@ impl From<bool> for StructuralLinkSettings {
 impl fmt::Display for StructuralLinkSettings {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
-        if self.from {
-            parts.push("from=true");
-        }
         if self.to {
             parts.push("to=true");
+        }
+        if self.from {
+            parts.push("from=true");
         }
         if self.clique {
             parts.push("clique=true");
