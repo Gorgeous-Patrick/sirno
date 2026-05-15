@@ -8,6 +8,8 @@ refines:
 ---
 
 The *witness* lookup resolves repository evidence by scanning configured repo members with `mosaika`.
+The CLI resolves the requested *entry* id in the active *lake* before scanning.
+Missing *entries* fail before repo members are read.
 
 `[repo].members` defines the repository artifact surface when witness lookup is configured.
 File members are scanned directly.

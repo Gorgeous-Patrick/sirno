@@ -485,7 +485,9 @@ impl Cli {
                 );
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
-            | Command::Witness { id, full } => run_witness_command(&config_path, &id, full),
+            | Command::Witness { id, full } => {
+                run_witness_command(&config_path, lake_path.as_deref(), &id, full)
+            }
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
         }
@@ -678,9 +680,15 @@ fn frost_version(version: u64) -> Result<Eterator, CliError> {
     Ok(Eterator(version))
 }
 
-fn run_witness_command(config_path: &Path, raw_id: &str, full: bool) -> Result<ExitCode, CliError> {
+fn run_witness_command(
+    config_path: &Path, lake_path: Option<&Path>, raw_id: &str, full: bool,
+) -> Result<ExitCode, CliError> {
     let config = SirnoConfig::from_file(config_path)?;
     let id = EntryId::new(raw_id)?;
+    let lake = resolve_lake_path(lake_path, config_path, &config);
+    if !EntryDirectory::new(&lake).entry_exists(&id)? {
+        return Err(CliError::MissingWitnessEntry(id));
+    }
     let Some(settings) = witness_check_settings(config_path, &config) else {
         return Err(CliError::RepoMembersNotConfigured);
     };
@@ -1025,6 +1033,9 @@ enum CliError {
     /// Witness lookup requires configured repo members.
     #[error("repo members are not configured; add [repo].members to Sirno.toml")]
     RepoMembersNotConfigured,
+    /// Witness lookup requires an existing entry id.
+    #[error("entry `{0}` does not exist")]
+    MissingWitnessEntry(EntryId),
     /// Lake path override does not apply to checking a Frost root directly.
     #[error("`--lake-path` cannot be used with `check --frost-root`")]
     LakePathWithFrostRoot,
@@ -1062,7 +1073,8 @@ mod tests {
     use clap::Parser;
 
     use sirno::{
-        CONFIG_FILE_NAME, EntryId, FrostSettings, SirnoConfig, WitnessRecord, WitnessSpan,
+        CONFIG_FILE_NAME, EntryId, FrostSettings, RepoMember, RepoSettings, SirnoConfig,
+        WitnessRecord, WitnessSpan,
     };
 
     use crate::{
@@ -1350,6 +1362,33 @@ Body.
         let cli = Cli::parse_from(["sirno", "witness", "witness", "--full"]);
 
         assert!(matches!(cli.command, Command::Witness { id, full: true } if id == "witness"));
+    }
+
+    #[test]
+    fn witness_rejects_missing_entry_before_repo_scan() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        fs::create_dir(temp.path().join("docs")).unwrap();
+        SirnoConfig {
+            repo: Some(RepoSettings { members: vec![RepoMember::new("missing-src").unwrap()] }),
+            ..SirnoConfig::new("docs")
+        }
+        .write_new(&config_path)
+        .unwrap();
+
+        let error = Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "witness",
+            "missing-entry",
+        ])
+        .run()
+        .unwrap_err();
+
+        assert!(
+            matches!(error, CliError::MissingWitnessEntry(id) if id.as_str() == "missing-entry")
+        );
     }
 
     // sirno:witness:witness-fixture-isolation:begin

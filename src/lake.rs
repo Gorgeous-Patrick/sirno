@@ -195,6 +195,23 @@ impl EntryDirectory {
         &self.root
     }
 
+    /// Returns true when this directory contains the file for `id`.
+    pub fn entry_exists(&self, id: &EntryId) -> Result<bool, EntryDirectoryError> {
+        if !self.root.exists() {
+            return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
+        }
+        if !self.root.is_dir() {
+            return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
+        }
+
+        let path = self.entry_file_path(id);
+        match fs::symlink_metadata(path) {
+            | Ok(metadata) => Ok(metadata.file_type().is_file()),
+            | Err(source) if source.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            | Err(source) => Err(source.into()),
+        }
+    }
+
     /// Check this public Markdown entry directory.
     pub fn check(&self, mode: CheckMode) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         self.check_with_settings(mode, &EntryDirectoryCheckSettings::default())
@@ -472,7 +489,7 @@ impl EntryDirectory {
     }
 
     fn write_new_entry_file(&self, entry: &Entry) -> Result<PathBuf, EntryDirectoryError> {
-        let path = self.root.join(format!("{}.md", entry.id.as_str()));
+        let path = self.entry_file_path(&entry.id);
         let source = entry.to_markdown()?;
         let mut file = OpenOptions::new()
             .write(true)
@@ -492,7 +509,7 @@ impl EntryDirectory {
             return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
         }
 
-        let path = self.root.join(format!("{}.md", id.as_str()));
+        let path = self.entry_file_path(id);
         let source = fs::read_to_string(&path)?;
         let mut entry = Entry::from_markdown(id.clone(), &source)?;
         entry.metadata.frozen = frozen.then_some(FrozenMarker::Present);
@@ -631,6 +648,10 @@ impl EntryDirectory {
             }
         }
         Ok(())
+    }
+
+    fn entry_file_path(&self, id: &EntryId) -> PathBuf {
+        self.root.join(format!("{}.md", id.as_str()))
     }
 }
 
@@ -1032,6 +1053,30 @@ Body.
         assert!(report.is_clean());
         assert_eq!(report.entries().len(), 2);
         assert!(report.entry_path(&EntryId::new("concept").unwrap()).is_some());
+    }
+
+    #[test]
+    fn entry_exists_checks_entry_file_presence() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "concept.md",
+            "\
+---
+name: Concept
+description: A named idea.
+---
+
+Body.
+",
+        );
+
+        assert!(
+            entry_directory(temp.path()).entry_exists(&EntryId::new("concept").unwrap()).unwrap()
+        );
+        assert!(
+            !entry_directory(temp.path()).entry_exists(&EntryId::new("missing").unwrap()).unwrap()
+        );
     }
 
     #[test]

@@ -68,6 +68,8 @@ Exact structural predicates live behind explicit exact flags.
 
 `sirno witness ENTRY_ID` scans configured repo members through `mosaika`
 and reports repository *witness* blocks for the selected *entry* id.
+It first resolves `ENTRY_ID` in the active *lake*.
+Missing *entries* fail before repo members are scanned.
 `sirno witness ENTRY_ID --full` also prints the full matched repository regions.
 The *witness* output reports the opening and closing delimiter ranges.
 Delimiter ranges start at the sentinel text and exclude leading indentation.
