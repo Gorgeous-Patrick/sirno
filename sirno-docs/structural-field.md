@@ -29,12 +29,12 @@ and the config settings that define the active structural field set.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from):
+belongs (to):
+- [sirno](sirno.md)
+
+belongs (from):
 - [belongs](belongs.md)
 - [category](category.md)
 - [refines](refines.md)
-
-Belongs (to):
-- [sirno](sirno.md)
 
 > **Sirno generated links end.**

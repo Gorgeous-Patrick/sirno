@@ -49,9 +49,9 @@ but they should still treat entries as the source of durable project knowledge.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [meta](meta.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**

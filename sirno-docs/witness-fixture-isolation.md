@@ -29,9 +29,9 @@ or formatter.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [witness](witness.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**

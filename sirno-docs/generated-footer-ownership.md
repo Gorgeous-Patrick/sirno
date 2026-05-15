@@ -22,8 +22,8 @@ so Sirno Frost keeps canonical metadata and prose rather than navigation project
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
+belongs (to): (none)
 
-Belongs (to): (none)
+belongs (from): (none)
 
 > **Sirno generated links end.**

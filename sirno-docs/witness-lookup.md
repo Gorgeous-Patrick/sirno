@@ -35,8 +35,8 @@ Repository artifacts carry the precise source spans that witness those claims.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
+belongs (to): (none)
 
-Belongs (to): (none)
+belongs (from): (none)
 
 > **Sirno generated links end.**

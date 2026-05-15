@@ -52,9 +52,9 @@ and how the terms keep it readable.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [sirno](sirno.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**

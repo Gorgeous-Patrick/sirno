@@ -39,9 +39,9 @@ The project supplies the vocabulary that makes its own design legible.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [meta](meta.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**

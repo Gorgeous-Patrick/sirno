@@ -30,8 +30,8 @@ reflect that discovery into the lake instead of leaving it trapped in test code.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
+belongs (to): (none)
 
-Belongs (to): (none)
+belongs (from): (none)
 
 > **Sirno generated links end.**

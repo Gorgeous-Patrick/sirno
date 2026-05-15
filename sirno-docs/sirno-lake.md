@@ -72,7 +72,10 @@ and where implementation evidence should be found when that evidence exists.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from):
+belongs (to):
+- [sirno](sirno.md)
+
+belongs (from):
 - [entry](entry.md)
 - [entry-freeze](entry-freeze.md)
 - [generated-footer](generated-footer.md)
@@ -81,8 +84,5 @@ Belongs (from):
 - [query](query.md)
 - [ripple](ripple.md)
 - [structural-check](structural-check.md)
-
-Belongs (to):
-- [sirno](sirno.md)
 
 > **Sirno generated links end.**

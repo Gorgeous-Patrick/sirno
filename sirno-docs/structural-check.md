@@ -62,9 +62,9 @@ That distinction keeps Sirno useful without pretending to solve judgment.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [sirno-lake](sirno-lake.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**

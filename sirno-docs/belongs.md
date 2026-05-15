@@ -56,9 +56,9 @@ Create a new `belongs` target only when the split creates a real new review boun
 
 > **Sirno generated links begin. Do not edit this section.**
 
-Belongs (from): (none)
-
-Belongs (to):
+belongs (to):
 - [structural-field](structural-field.md)
+
+belongs (from): (none)
 
 > **Sirno generated links end.**
