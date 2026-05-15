@@ -35,7 +35,8 @@ The *frost* root is private storage,
 conventionally `sirno-frost`.
 It is not read as part of the *entry lake*,
 and it must not be placed where *lake* discovery can treat it as *entries*.
-`sirno frost mv PATH` renames this root and updates `[frost].path`.
+`sirno frost move PATH` renames this root and updates `[frost].path`.
+`sirno frost mv PATH` is its short form.
 `Sirno.lock.toml` records the public *lake* state relative to that *frost* root.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.

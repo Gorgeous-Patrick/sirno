@@ -25,8 +25,9 @@ while preserving the public *entry* schema.
 
 `sirno frost init` configures Sirno Frost when needed
 and freezes the current public *lake* into the first snapshot.
-`sirno frost mv PATH` renames the configured *frost* root
+`sirno frost move PATH` renames the configured *frost* root
 and writes the new path back to `[frost].path`.
+`sirno frost mv PATH` is its short form.
 The move refuses to replace an existing destination.
 
 A *frost* commit imports the selected public *entry* set.

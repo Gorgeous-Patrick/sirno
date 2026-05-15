@@ -34,7 +34,7 @@ struct Cli {
     #[arg(short = 'C', long, global = true)]
     config: Option<PathBuf>,
     /// Public Markdown lake path override.
-    #[arg(long = "lake-path", global = true)]
+    #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
@@ -54,7 +54,8 @@ enum Command {
         lake: Option<PathBuf>,
     },
     /// Move the configured public Markdown entry lake.
-    Mv {
+    #[command(visible_alias = "mv")]
+    Move {
         /// New public Markdown entry lake path written to Sirno.toml.
         lake: PathBuf,
     },
@@ -65,10 +66,10 @@ enum Command {
         /// Entry id and filename stem.
         id: String,
         /// Human-readable entry name.
-        #[arg(long)]
+        #[arg(short = 'n', long)]
         name: Option<String>,
         /// Short entry description.
-        #[arg(long)]
+        #[arg(short = 'd', long)]
         description: String,
         /// Category target.
         #[arg(long)]
@@ -80,7 +81,7 @@ enum Command {
         #[arg(long)]
         refines: Vec<String>,
         /// Initial Markdown body.
-        #[arg(long)]
+        #[arg(short = 'b', long)]
         body: Option<String>,
     },
     // sirno:witness:storage-and-interfaces:end
@@ -101,6 +102,7 @@ enum Command {
     // sirno:witness:storage-and-interfaces:end
     /// Query public Markdown entries.
     // sirno:witness:storage-and-interfaces:begin
+    #[command(visible_alias = "q")]
     Query {
         /// Vague text terms matched against entries and structural target summaries.
         terms: Vec<String>,
@@ -108,13 +110,13 @@ enum Command {
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
         /// Exact structural predicate as FIELD=ENTRY_ID.
-        #[arg(long, value_name = "FIELD=ENTRY_ID")]
+        #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
         exact: Vec<CliExactPredicate>,
         /// Comma-separated output fields: id, name, path, desc.
-        #[arg(long, value_name = "FIELDS")]
+        #[arg(short = 'f', long, value_name = "FIELDS")]
         fields: Option<CliQueryFields>,
         /// Output format.
-        #[arg(long, value_enum)]
+        #[arg(short = 'o', long, value_enum)]
         format: Option<CliQueryOutputFormat>,
     },
     // sirno:witness:storage-and-interfaces:end
@@ -136,7 +138,7 @@ enum Command {
         #[arg(long = "frost-root", conflicts_with = "lake_path")]
         frost_root: Option<PathBuf>,
         /// Check boundary.
-        #[arg(long, value_enum)]
+        #[arg(short = 'm', long, value_enum)]
         mode: Option<CliCheckMode>,
     },
     // sirno:witness:storage-and-interfaces:end
@@ -145,7 +147,7 @@ enum Command {
     #[command(name = "gen-link")]
     GenLink {
         /// Report generated-link changes without writing files.
-        #[arg(long)]
+        #[arg(short = 'n', long, visible_alias = "dry-run")]
         dry: bool,
         /// Generated-link command.
         #[command(subcommand)]
@@ -154,15 +156,17 @@ enum Command {
     // sirno:witness:storage-and-interfaces:end
     /// Show the current Sirno project status.
     // sirno:witness:storage-and-interfaces:begin
+    #[command(visible_alias = "st")]
     Status,
     // sirno:witness:storage-and-interfaces:end
     /// Show repository witness blocks for one entry id.
     // sirno:witness:storage-and-interfaces:begin
+    #[command(visible_aliases = ["w", "wit"])]
     Witness {
         /// Entry id used as the witness query key.
         id: String,
         /// Print full witness regions instead of only their locations.
-        #[arg(long)]
+        #[arg(short = 'f', long)]
         full: bool,
     },
     // sirno:witness:storage-and-interfaces:end
@@ -360,7 +364,8 @@ enum FrostCommand {
         frost: Option<PathBuf>,
     },
     /// Move the configured Sirno Frost root.
-    Mv {
+    #[command(visible_alias = "mv")]
+    Move {
         /// New Sirno Frost root path written to Sirno.toml.
         frost: PathBuf,
     },
@@ -447,7 +452,7 @@ impl Cli {
                 );
                 Ok(ExitCode::SUCCESS)
             }
-            | Command::Mv { lake } => {
+            | Command::Move { lake } => {
                 let config = SirnoConfig::from_file(&config_path)?;
                 let old_lake = config.resolve_lake(&config_path);
                 let config = config.with_lake(lake);
@@ -678,7 +683,7 @@ impl FrostCommand {
                 );
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Mv { frost } => {
+            | FrostCommand::Move { frost } => {
                 let config = SirnoConfig::from_file(config_path)?;
                 let Some(old_frost) = config.resolve_frost(config_path) else {
                     return Err(CliError::FrostNotConfigured);
@@ -686,7 +691,7 @@ impl FrostCommand {
                 let config = config.with_frost(frost);
                 config.validate_for_file(config_path)?;
                 let new_frost =
-                    config.resolve_frost(config_path).expect("frost path configured by mv");
+                    config.resolve_frost(config_path).expect("frost path configured by move");
                 move_configured_path_and_write_config(
                     &old_frost,
                     &new_frost,
@@ -1492,10 +1497,10 @@ mod tests {
     };
 
     use crate::{
-        Cli, CliError, CliExactPredicate, CliQueryField, CliQueryFields, CliQueryOutputFormat,
-        Command, FrostCommand, exact_query_from_predicates, format_gen_link_report,
-        format_query_json, format_query_table, format_witness_record, format_witness_records,
-        rg_args_include_preprocessor,
+        Cli, CliCheckMode, CliError, CliExactPredicate, CliQueryField, CliQueryFields,
+        CliQueryOutputFormat, Command, FrostCommand, exact_query_from_predicates,
+        format_gen_link_report, format_query_json, format_query_table, format_witness_record,
+        format_witness_records, rg_args_include_preprocessor,
     };
 
     #[test]
@@ -1536,6 +1541,14 @@ mod tests {
     }
 
     #[test]
+    fn short_lake_path_matches_global_lake_path() {
+        let cli = Cli::parse_from(["sirno", "-L", "scratch-docs", "status"]);
+
+        assert_eq!(cli.lake_path.as_deref(), Some(Path::new("scratch-docs")));
+        assert!(matches!(cli.command, Command::Status));
+    }
+
+    #[test]
     fn frost_init_accepts_frost_path() {
         let cli = Cli::parse_from(["sirno", "frost", "init", "--frost", "sirno-frost"]);
 
@@ -1546,19 +1559,37 @@ mod tests {
     }
 
     #[test]
-    fn mv_accepts_lake_path() {
-        let cli = Cli::parse_from(["sirno", "mv", "sirno-docs"]);
+    fn move_accepts_lake_path() {
+        let cli = Cli::parse_from(["sirno", "move", "sirno-docs"]);
 
-        assert!(matches!(cli.command, Command::Mv { lake } if lake == Path::new("sirno-docs")));
+        assert!(matches!(cli.command, Command::Move { lake } if lake == Path::new("sirno-docs")));
     }
 
     #[test]
-    fn frost_mv_accepts_frost_path() {
+    fn mv_alias_accepts_lake_path() {
+        let cli = Cli::parse_from(["sirno", "mv", "sirno-docs"]);
+
+        assert!(matches!(cli.command, Command::Move { lake } if lake == Path::new("sirno-docs")));
+    }
+
+    #[test]
+    fn frost_move_accepts_frost_path() {
+        let cli = Cli::parse_from(["sirno", "frost", "move", "sirno-frost-2"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::Frost { command: FrostCommand::Move { frost } }
+                if frost == Path::new("sirno-frost-2")
+        ));
+    }
+
+    #[test]
+    fn frost_mv_alias_accepts_frost_path() {
         let cli = Cli::parse_from(["sirno", "frost", "mv", "sirno-frost-2"]);
 
         assert!(matches!(
             cli.command,
-            Command::Frost { command: FrostCommand::Mv { frost } }
+            Command::Frost { command: FrostCommand::Move { frost } }
                 if frost == Path::new("sirno-frost-2")
         ));
     }
@@ -1578,6 +1609,30 @@ mod tests {
         let cli = Cli::parse_from(["sirno", "freeze", "alpha"]);
 
         assert!(matches!(cli.command, Command::Freeze { id, .. } if id == "alpha"));
+    }
+
+    #[test]
+    fn new_accepts_short_metadata_flags() {
+        let cli = Cli::parse_from([
+            "sirno",
+            "new",
+            "alpha",
+            "-n",
+            "Alpha",
+            "-d",
+            "Alpha description.",
+            "-b",
+            "Alpha body.",
+        ]);
+
+        assert!(matches!(
+            cli.command,
+            Command::New { id, name: Some(name), description, body: Some(body), .. }
+                if id == "alpha"
+                    && name == "Alpha"
+                    && description == "Alpha description."
+                    && body == "Alpha body."
+        ));
     }
 
     #[test]
@@ -1616,6 +1671,34 @@ mod tests {
                     target: EntryId::new("concept").unwrap(),
                 }]
         ));
+    }
+
+    #[test]
+    fn query_accepts_short_alias_and_options() {
+        let cli = Cli::parse_from([
+            "sirno",
+            "q",
+            "-x",
+            "category=concept",
+            "-f",
+            "id,path",
+            "-o",
+            "human",
+        ]);
+        let Command::Query { exact, fields: Some(fields), format: Some(format), .. } = cli.command
+        else {
+            panic!("expected query command with short options");
+        };
+
+        assert_eq!(
+            exact,
+            vec![CliExactPredicate {
+                field: "category".to_owned(),
+                target: EntryId::new("concept").unwrap(),
+            }]
+        );
+        assert_eq!(fields.fields, vec![CliQueryField::Id, CliQueryField::Path]);
+        assert!(matches!(format, CliQueryOutputFormat::Human));
     }
 
     #[test]
@@ -1724,6 +1807,13 @@ mod tests {
     }
 
     #[test]
+    fn check_accepts_short_mode() {
+        let cli = Cli::parse_from(["sirno", "check", "-m", "review"]);
+
+        assert!(matches!(cli.command, Command::Check { mode: Some(CliCheckMode::Review), .. }));
+    }
+
+    #[test]
     fn rg_accepts_forwarded_arguments() {
         let cli = Cli::parse_from(["sirno", "rg", "--json", "metadata"]);
 
@@ -1810,7 +1900,7 @@ mod tests {
     }
 
     #[test]
-    fn mv_moves_lake_and_rewrites_config() {
+    fn move_moves_lake_and_rewrites_config() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_lake = temp.path().join("docs");
@@ -1819,7 +1909,7 @@ mod tests {
         fs::create_dir(&old_lake).unwrap();
         fs::write(old_lake.join("entry.md"), "entry").unwrap();
 
-        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "mv", "sirno-docs"])
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "move", "sirno-docs"])
             .run()
             .unwrap();
 
@@ -1830,7 +1920,7 @@ mod tests {
     }
 
     #[test]
-    fn mv_refuses_existing_destination() {
+    fn move_refuses_existing_destination() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_lake = temp.path().join("docs");
@@ -1843,7 +1933,7 @@ mod tests {
             "sirno",
             "--config",
             config_path.to_str().unwrap(),
-            "mv",
+            "move",
             "sirno-docs",
         ])
         .run()
@@ -1856,7 +1946,7 @@ mod tests {
     }
 
     #[test]
-    fn frost_mv_moves_frost_and_rewrites_config() {
+    fn frost_move_moves_frost_and_rewrites_config() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_frost = temp.path().join("sirno-frost");
@@ -1870,7 +1960,7 @@ mod tests {
             "--config",
             config_path.to_str().unwrap(),
             "frost",
-            "mv",
+            "move",
             "frost",
         ])
         .run()
@@ -1970,8 +2060,31 @@ Body.
     }
 
     #[test]
+    fn status_accepts_short_alias() {
+        let cli = Cli::parse_from(["sirno", "st"]);
+
+        assert!(matches!(cli.command, Command::Status));
+    }
+
+    #[test]
+    fn witness_accepts_short_aliases() {
+        let short = Cli::parse_from(["sirno", "w", "alpha"]);
+        let mnemonic = Cli::parse_from(["sirno", "wit", "beta"]);
+
+        assert!(matches!(short.command, Command::Witness { id, full: false } if id == "alpha"));
+        assert!(matches!(mnemonic.command, Command::Witness { id, full: false } if id == "beta"));
+    }
+
+    #[test]
     fn witness_accepts_full_flag() {
         let cli = Cli::parse_from(["sirno", "witness", "witness", "--full"]);
+
+        assert!(matches!(cli.command, Command::Witness { id, full: true } if id == "witness"));
+    }
+
+    #[test]
+    fn witness_accepts_short_full_flag() {
+        let cli = Cli::parse_from(["sirno", "witness", "witness", "-f"]);
 
         assert!(matches!(cli.command, Command::Witness { id, full: true } if id == "witness"));
     }
@@ -2087,6 +2200,15 @@ Body.
         let cli = Cli::parse_from(["sirno", "gen-link", "--dry"]);
 
         assert!(matches!(cli.command, Command::GenLink { dry: true, command: None, .. }));
+    }
+
+    #[test]
+    fn gen_link_accepts_dry_run_aliases() {
+        let short = Cli::parse_from(["sirno", "gen-link", "-n"]);
+        let long = Cli::parse_from(["sirno", "gen-link", "--dry-run"]);
+
+        assert!(matches!(short.command, Command::GenLink { dry: true, command: None, .. }));
+        assert!(matches!(long.command, Command::GenLink { dry: true, command: None, .. }));
     }
 
     #[test]
