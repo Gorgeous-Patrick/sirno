@@ -29,7 +29,7 @@ It reports the config path, *monograph* state, *lake* path, optional *frost* pat
 and renames the current *lake* directory on the filesystem.
 `sirno mv PATH` is its short form.
 
-`sirno frost init` configures the private *frost* root and freezes the current public *lake*.
+`sirno frost init` configures the private *frost* root and records empty version `0`.
 `sirno frost move PATH` changes the configured *frost* path
 and renames the current *frost* root on the filesystem.
 `sirno frost mv PATH` is its short form.

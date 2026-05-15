@@ -24,7 +24,8 @@ This keeps versioning in the storage layer
 while preserving the public *entry* schema.
 
 `sirno frost init` configures Sirno Frost when needed
-and freezes the current public *lake* into the first snapshot.
+and records the empty snapshot as version `0`.
+It does not immediately import or commit the public *lake*.
 `sirno frost move PATH` renames the configured *frost* root
 and writes the new path back to `[frost].path`.
 `sirno frost mv PATH` is its short form.

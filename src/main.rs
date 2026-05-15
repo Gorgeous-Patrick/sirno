@@ -665,21 +665,16 @@ impl FrostCommand {
 
                 let frost_root =
                     config.resolve_frost(config_path).expect("frost path configured by init");
-                let lake_path = resolve_lake_path(lake_path, config_path, &config);
-                let mut frost = SirnoFrost::open(&frost_root)?;
-                let version = frost.commit_entry_directory(
-                    &lake_path,
-                    &entry_directory_check_settings(config_path, &config),
-                )?;
+                let frost = SirnoFrost::open(&frost_root)?;
+                let version = frost.current_snapshot()?;
                 if needs_config_write {
                     config.write(config_path)?;
                 }
                 SirnoLock::current(version).write(SirnoLock::path_for_config(config_path))?;
                 println!(
-                    "initialized frost {} at version {} from {}",
+                    "initialized frost {} at version {}",
                     frost_root.display(),
                     version.version(),
-                    lake_path.display()
                 );
                 Ok(ExitCode::SUCCESS)
             }
@@ -1495,8 +1490,9 @@ mod tests {
     use clap::Parser;
 
     use sirno::{
-        CATEGORY_FIELD, CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, FrostSettings,
-        RepoMember, RepoSettings, SirnoConfig, StructuralSettings, WitnessRecord, WitnessSpan,
+        CATEGORY_FIELD, CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator,
+        FrostLockStatus, FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig,
+        SirnoFrost, SirnoLock, StructuralSettings, WitnessRecord, WitnessSpan,
     };
 
     use crate::{
@@ -1559,6 +1555,48 @@ mod tests {
             cli.command,
             Command::Frost { command: FrostCommand::Init { frost: Some(_) } }
         ));
+    }
+
+    #[test]
+    fn frost_init_creates_empty_version_zero_store() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        let frost_root = temp.path().join("sirno-frost");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+description: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "init"])
+            .run()
+            .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
+        let frost = SirnoFrost::open(&frost_root).unwrap();
+        let mut frost_paths = fs::read_dir(&frost_root)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<Vec<_>>();
+        frost_paths.sort();
+
+        assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("sirno-frost") }));
+        assert_eq!(lock.frost.status, FrostLockStatus::Current);
+        assert_eq!(lock.frost.version, Eterator::EMPTY.version());
+        assert_eq!(frost.current_version().unwrap(), Eterator::EMPTY);
+        assert!(frost.read_all_entries().unwrap().is_empty());
+        assert_eq!(frost_paths, [OsString::from("Eter.lock.toml")]);
     }
 
     #[test]

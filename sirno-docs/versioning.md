@@ -41,7 +41,8 @@ and it must not be placed where *lake* discovery can treat it as *entries*.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.
 
-`sirno frost init` configures the *frost* root and creates the first frozen snapshot.
+`sirno frost init` configures the *frost* root and records empty version `0`.
+The first *frost* commit creates the first frozen snapshot.
 A *frost* commit imports the selected public *entry* set and writes one `eter` transaction.
 The transaction may touch one *entry* or many *entries*.
 All changed rows receive the same snapshot coordinate.

@@ -30,7 +30,7 @@ A project can use Sirno without a configured *monograph*, repo members, or Sirno
 `sirno init` creates the config and public *entry lake*.
 `sirno move PATH` changes `[lake].path` and renames the public *lake* directory.
 `sirno mv PATH` is its short form.
-`sirno frost init` adds the Sirno Frost config and freezes the current public *lake*.
+`sirno frost init` adds the Sirno Frost config and records empty version `0`.
 `sirno frost move PATH` changes `[frost].path` and renames the private *frost* root.
 `sirno frost mv PATH` is its short form.
 
