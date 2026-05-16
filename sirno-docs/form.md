@@ -3,7 +3,6 @@ name: Form
 desc: A shape project knowledge takes inside Sirno.
 category:
   - concept
-  - narrative
 belongs:
   - sirno
 ---

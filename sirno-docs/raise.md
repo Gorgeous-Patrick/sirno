@@ -3,7 +3,6 @@ name: Raise
 desc: The movement from Sirno entries into a readable monograph.
 category:
   - concept
-  - narrative
 belongs:
   - transform-cycle
 refines:

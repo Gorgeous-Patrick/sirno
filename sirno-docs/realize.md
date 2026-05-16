@@ -3,7 +3,6 @@ name: Realize
 desc: The movement from Sirno entries into repository implementation.
 category:
   - concept
-  - narrative
 belongs:
   - transform-cycle
 refines:

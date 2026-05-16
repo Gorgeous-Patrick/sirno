@@ -1,6 +1,6 @@
 ---
 name: Narrative
-desc: A route, story, or motivation through concepts for a reader.
+desc: The storytelling layer that gives concepts a motivated route a reader can follow.
 category:
   - category
   - meta
@@ -9,42 +9,47 @@ belongs:
   - category
 ---
 
-A narrative records a cognitive route, story, or motivation through concepts.
+A narrative is the storytelling layer over the *lake*.
 
-The monograph is the primary narrative form.
+*Entries* are addressable but unordered.
+A reader who meets them in arbitrary order gets facts without understanding.
+A narrative supplies the missing thing:
+an intentional route that makes one concept lead to the next.
+
+A narrative does three jobs at once.
+It sequences, so accurate concepts arrive when the reader can use them.
+It motivates, so the reader wants the next concept before it is explained.
+It glues, so a set of separate *entries* reads as one deliberate movement.
+
+The motivating job is a pitch.
+Before a concept is made complete, the route makes it worth moving toward.
+The pull may be practical, aesthetic, playful, urgent, or clarifying.
+A narrative that only orders concepts is a table of contents;
+a narrative that also creates pull is a reason to keep reading.
+
+The *monograph* is the primary narrative form.
 It introduces terms once and trusts them afterward.
 
-Materialized narratives may also live in the lake as guides.
-They can state prerequisites, choose a base language,
-and point a reader through entries in an intentional order.
-This lake's `introduction` entry is such a narrative.
-The `methodology` entry is another narrative:
-it gives the working route for acting inside the lake.
+Materialized narratives may also live in the *lake* as guides.
+They state useful prerequisites,
+choose a base language,
+and move a reader through *entries* in an intentional order.
+This *lake*'s `introduction` is the first route through the model.
+The `methodology` is the working route for acting inside the *lake*.
+The `bootstrap-resolution` route walks the self-application problem to its answer.
 
 Interactive narratives may be generated ephemerally by skills.
-Canonical knowledge remains in entries and metadata.
+They adapt the route to one reader or task,
+but canonical knowledge still lives in *entries* and metadata.
 
-The point of narrative is sequencing.
-A concept can be accurate and still arrive too early for the reader.
-A narrative chooses what must be understood first,
-what can be named and deferred,
-and what local detail should be saved for later.
-It may also explain why a route matters,
-so the reader sees the pressure that makes the concepts useful.
-
-This matters for onboarding and review.
-An experienced maintainer may query directly for an entry.
-A new contributor may need a route that builds the model gradually.
-Sirno lets both routes exist:
-the lake keeps named objects stable,
-and narratives arrange those objects for a particular reader or task.
-
-Materialized narratives should avoid duplicating the entire lake.
-They should explain why the route matters,
-state useful prerequisites,
-and point to the entries that carry durable detail.
-Interactive narratives can be more adaptive,
-but they should still treat entries as the source of durable project knowledge.
+A narrative is judged by reader understanding, not by coverage.
+It should explain why the route matters,
+state the prerequisites that unlock it,
+keep the sequence tight,
+and point to the *entries* that carry durable detail
+instead of restating them.
+A good narrative leaves an aftertaste:
+a phrase or handle the reader keeps after the prose is gone.
 
 ---
 

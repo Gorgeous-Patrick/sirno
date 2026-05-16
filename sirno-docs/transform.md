@@ -3,7 +3,6 @@ name: Transform
 desc: A concept that names movement between Sirno forms.
 category:
   - concept
-  - narrative
 ---
 
 A *transform* names a kind of work between Sirno *forms*.

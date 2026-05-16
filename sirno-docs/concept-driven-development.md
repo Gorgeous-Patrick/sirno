@@ -3,7 +3,6 @@ name: Concept-Driven Development
 desc: A working style that uses named concepts to compress project knowledge.
 category:
   - concept
-  - narrative
 belongs:
   - development-style
 refines:

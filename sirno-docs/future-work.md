@@ -2,7 +2,7 @@
 name: Future Work
 desc: Reserved design areas that may be refined later.
 category:
-  - narrative
+  - concept
 belongs:
   - sirno
 ---

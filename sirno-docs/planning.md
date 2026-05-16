@@ -3,7 +3,6 @@ name: Planning
 desc: A use of Sirno entries for durable work artifacts.
 category:
   - concept
-  - narrative
 belongs:
   - sirno
 ---

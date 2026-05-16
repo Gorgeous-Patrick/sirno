@@ -3,7 +3,6 @@ name: Lower
 desc: The movement from the monograph into the Sirno Lake.
 category:
   - concept
-  - narrative
 belongs:
   - transform-cycle
 refines:

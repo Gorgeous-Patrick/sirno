@@ -3,7 +3,6 @@ name: Sirno
 desc: The project model that gives design a nominal intermediate form.
 category:
   - concept
-  - narrative
 ---
 
 Sirno is the Semantic Intermediate Representation of Nominal Objects.

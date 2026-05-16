@@ -3,7 +3,6 @@ name: Mono
 desc: The configured monograph that carries the whole design narrative.
 category:
   - concept
-  - narrative
 belongs:
   - sirno
 refines:
