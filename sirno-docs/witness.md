@@ -70,7 +70,6 @@ and accepted delimiter styles after `mosaika` finds the delimited *repository* r
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [repo](repo.md)
   - [witness-fixture-isolation](witness-fixture-isolation.md)
 
 > **Sirno generated links end.**

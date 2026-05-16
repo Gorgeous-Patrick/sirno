@@ -4,8 +4,6 @@ desc: The configured directory of compact named design entries.
 category:
   - concept
 belongs:
-  - sirno
-refines:
   - form
 ---
 
@@ -76,7 +74,7 @@ and where implementation evidence should be found when that evidence exists.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno](sirno.md)
+  - [form](form.md)
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)

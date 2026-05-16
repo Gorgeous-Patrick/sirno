@@ -4,8 +4,6 @@ desc: The repository artifacts that realize and witness design entries.
 category:
   - concept
 belongs:
-  - witness
-refines:
   - form
 ---
 
@@ -52,7 +50,7 @@ and which *repository* artifact *witnesses* an *entry*.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [witness](witness.md)
+  - [form](form.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

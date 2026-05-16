@@ -53,6 +53,9 @@ Repository artifacts can stay focused on behavior while still having a place to 
 
 - belongs (to):
   - [sirno](sirno.md)
-- belongs (from): (none)
+- belongs (from):
+  - [mono](mono.md)
+  - [repo](repo.md)
+  - [sirno-lake](sirno-lake.md)
 
 > **Sirno generated links end.**

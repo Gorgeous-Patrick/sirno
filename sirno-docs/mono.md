@@ -4,8 +4,6 @@ desc: The configured monograph that carries the whole design narrative.
 category:
   - concept
 belongs:
-  - sirno
-refines:
   - form
 ---
 
@@ -49,7 +47,7 @@ not as a mechanical export of every known fact.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno](sirno.md)
+  - [form](form.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
