@@ -29,9 +29,9 @@ and narrative routes.
 
 Each lowered entry should stand on its own enough to be useful from a query result.
 It should also preserve its place in the larger design through metadata.
-Categories describe the kind of object.
-Belongss give local neighborhoods.
-Refiness connect local entries back to broader design.
+`category` describes the kind of object.
+`belongs` gives local neighborhoods.
+`refines` connects local entries back to broader design.
 Repository *witnesses* are added only when repository evidence exists.
 
 Lowering is especially valuable before implementation work becomes local.
