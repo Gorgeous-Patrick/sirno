@@ -18,10 +18,13 @@ The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
 Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, and `w` or `wit` for `witness`.
-Lake operations also live under `sirno lake`.
-The grouped spelling uses the same subcommands and aliases as the top-level spelling.
-For example, `sirno query`, `sirno q`, `sirno lake query`, and `sirno lake q`
-select the same operation.
+Storage-wide lake operations also live under `sirno lake`.
+Entry-centric operations also live under `sirno entry`.
+The grouped spellings use the same subcommands and aliases as the top-level spellings.
+For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
+select the same entry operation.
+Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
+select the same lake operation.
 Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
@@ -45,6 +48,7 @@ and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.
+`sirno entry new` is its grouped form.
 The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.
 The `--structural FIELD=ENTRY_ID` option adds configured structural metadata targets.
 It refuses to overwrite an existing *entry* file.
@@ -54,8 +58,10 @@ and removes write permission from that file.
 `sirno melt ENTRY_ID` removes `frozen:` from one public *entry*
 and restores write permission.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
+The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
 
 `sirno query` reads the configured Markdown *lake*.
+`sirno entry query` is its grouped form.
 Its default mode is vague text query.
 Exact structural predicates use `-x, --exact FIELD=ENTRY_ID`.
 The `-f, --fields` option selects output fields.
@@ -65,6 +71,7 @@ The `-o, --format` option selects the output format.
 The `-m, --mode` option selects the check boundary.
 
 `sirno rg` runs `rg` against the active *lake* path.
+`sirno entry rg` is its grouped form.
 It forwards its arguments to the `rg` binary,
 then appends the resolved *lake* path.
 It preserves `rg` exit codes.
@@ -77,6 +84,7 @@ it searches the full Markdown files including generated links.
 
 `sirno witness ENTRY_ID` scans configured repo members through `mosaika`
 and reports *repository witness* blocks for the selected *entry* id.
+`sirno entry witness ENTRY_ID` is its grouped form.
 It first resolves `ENTRY_ID` in the active *lake*.
 Missing *entries* fail before repo members are scanned.
 `sirno witness ENTRY_ID -f, --full` also prints the full matched *repository* regions.

@@ -47,11 +47,20 @@ enum Command {
     // sirno:witness:interfaces:begin
     #[command(flatten)]
     TopLevelLake(LakeCommand),
-    /// Manage public Markdown lake entries.
+    /// Run an entry operation at the top level.
+    #[command(flatten)]
+    TopLevelEntry(EntryCommand),
+    /// Manage public Markdown lake storage.
     Lake {
         /// Lake command.
         #[command(subcommand)]
         command: LakeCommand,
+    },
+    /// Manage public Markdown lake entries.
+    Entry {
+        /// Entry command.
+        #[command(subcommand)]
+        command: EntryCommand,
     },
     // sirno:witness:interfaces:end
     /// Manage optional Sirno Frost snapshots.
@@ -92,6 +101,39 @@ enum LakeCommand {
         lake: PathBuf,
     },
     // sirno:witness:interfaces:end
+    /// Check current entry structure.
+    // sirno:witness:interfaces:begin
+    Check {
+        /// Sirno Frost path.
+        #[arg(long = "frost-path", conflicts_with = "lake_path")]
+        frost_path: Option<PathBuf>,
+        /// Check boundary.
+        #[arg(short = 'm', long, value_enum)]
+        mode: Option<CliCheckMode>,
+    },
+    // sirno:witness:interfaces:end
+    /// Generate Markdown links in entry footers.
+    // sirno:witness:interfaces:begin
+    #[command(name = "gen-link")]
+    GenLink {
+        /// Report generated-link changes without writing files.
+        #[arg(short = 'n', long, visible_alias = "dry-run")]
+        dry: bool,
+        /// Generated-link command.
+        #[command(subcommand)]
+        command: Option<GenLinkCommand>,
+    },
+    // sirno:witness:interfaces:end
+    /// Show the current Sirno project status.
+    // sirno:witness:interfaces:begin
+    #[command(visible_alias = "st")]
+    Status,
+    // sirno:witness:interfaces:end
+}
+
+/// Supported public entry commands.
+#[derive(Debug, Subcommand)]
+enum EntryCommand {
     /// Create one Markdown entry.
     // sirno:witness:interfaces:begin
     New {
@@ -156,34 +198,6 @@ enum LakeCommand {
         #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
-    // sirno:witness:interfaces:end
-    /// Check current entry structure.
-    // sirno:witness:interfaces:begin
-    Check {
-        /// Sirno Frost path.
-        #[arg(long = "frost-path", conflicts_with = "lake_path")]
-        frost_path: Option<PathBuf>,
-        /// Check boundary.
-        #[arg(short = 'm', long, value_enum)]
-        mode: Option<CliCheckMode>,
-    },
-    // sirno:witness:interfaces:end
-    /// Generate Markdown links in entry footers.
-    // sirno:witness:interfaces:begin
-    #[command(name = "gen-link")]
-    GenLink {
-        /// Report generated-link changes without writing files.
-        #[arg(short = 'n', long, visible_alias = "dry-run")]
-        dry: bool,
-        /// Generated-link command.
-        #[command(subcommand)]
-        command: Option<GenLinkCommand>,
-    },
-    // sirno:witness:interfaces:end
-    /// Show the current Sirno project status.
-    // sirno:witness:interfaces:begin
-    #[command(visible_alias = "st")]
-    Status,
     // sirno:witness:interfaces:end
     /// Show repository witness blocks for one entry id.
     // sirno:witness:interfaces:begin
@@ -451,6 +465,9 @@ impl Cli {
             | Command::TopLevelLake(command) | Command::Lake { command } => {
                 command.run(&config_path, lake_path.as_deref())
             }
+            | Command::TopLevelEntry(command) | Command::Entry { command } => {
+                command.run(&config_path, lake_path.as_deref())
+            }
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
         }
@@ -488,63 +505,6 @@ impl LakeCommand {
                 move_configured_path_and_write_config(&old_lake, &new_lake, &config, config_path)?;
                 println!("moved lake {} to {}", old_lake.display(), new_lake.display());
                 Ok(ExitCode::SUCCESS)
-            }
-            | LakeCommand::New { id, name, desc, structural, body } => {
-                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
-                let id = EntryId::new(&id)?;
-                let mut metadata =
-                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
-                for (field, targets) in
-                    structural_targets_by_field(structural, &settings.structural)?
-                {
-                    metadata.set_structural_targets(field, targets);
-                }
-
-                let entry = Entry::new(id, metadata, body.unwrap_or_default());
-                let path = EntryDirectory::new(&lake).create_entry(&entry)?;
-                println!("created {}", path.display());
-                Ok(ExitCode::SUCCESS)
-            }
-            | LakeCommand::Freeze { id } => {
-                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
-                let id = EntryId::new(&id)?;
-                let path = EntryDirectory::new(&lake).freeze_entry(&id)?;
-                println!("froze entry {id} at {}", path.display());
-                Ok(ExitCode::SUCCESS)
-            }
-            | LakeCommand::Melt { id } => {
-                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
-                let id = EntryId::new(&id)?;
-                let path = EntryDirectory::new(&lake).melt_entry(&id)?;
-                println!("melted entry {id} at {}", path.display());
-                Ok(ExitCode::SUCCESS)
-            }
-            | LakeCommand::Query { terms, exact_terms, exact, fields, format } => {
-                let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
-                settings.link = false;
-                settings.witness = None;
-                let report =
-                    EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
-                if report.has_errors() {
-                    print_entry_directory_report(&report);
-                    return Ok(ExitCode::FAILURE);
-                }
-
-                let vague_query = VagueEntryQuery::new().with_text_terms(terms);
-                let exact_query = exact_query_from_predicates(
-                    EntryQuery::new().with_text_terms(exact_terms),
-                    exact,
-                    &settings.structural,
-                )?;
-                let vague_matches = vague_query.select_entries(report.entries());
-                let matches = exact_query.select_entries(vague_matches);
-                let fields = fields.unwrap_or_default();
-                let format = format.unwrap_or(CliQueryOutputFormat::Json);
-                print_query_results(&report, &matches, &fields, format)?;
-                Ok(ExitCode::SUCCESS)
-            }
-            | LakeCommand::Rg { with_generated_footer, args } => {
-                run_rg_command(lake_path, config_path, with_generated_footer, args)
             }
             | LakeCommand::Check { frost_path, mode } => {
                 if lake_path.is_some() && frost_path.is_some() {
@@ -656,7 +616,71 @@ impl LakeCommand {
                 );
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
-            | LakeCommand::Witness { id, full } => {
+        }
+    }
+}
+
+impl EntryCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+        match self {
+            | EntryCommand::New { id, name, desc, structural, body } => {
+                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
+                let id = EntryId::new(&id)?;
+                let mut metadata =
+                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
+                for (field, targets) in
+                    structural_targets_by_field(structural, &settings.structural)?
+                {
+                    metadata.set_structural_targets(field, targets);
+                }
+
+                let entry = Entry::new(id, metadata, body.unwrap_or_default());
+                let path = EntryDirectory::new(&lake).create_entry(&entry)?;
+                println!("created {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | EntryCommand::Freeze { id } => {
+                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
+                let id = EntryId::new(&id)?;
+                let path = EntryDirectory::new(&lake).freeze_entry(&id)?;
+                println!("froze entry {id} at {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | EntryCommand::Melt { id } => {
+                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
+                let id = EntryId::new(&id)?;
+                let path = EntryDirectory::new(&lake).melt_entry(&id)?;
+                println!("melted entry {id} at {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | EntryCommand::Query { terms, exact_terms, exact, fields, format } => {
+                let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
+                settings.link = false;
+                settings.witness = None;
+                let report =
+                    EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
+                if report.has_errors() {
+                    print_entry_directory_report(&report);
+                    return Ok(ExitCode::FAILURE);
+                }
+
+                let vague_query = VagueEntryQuery::new().with_text_terms(terms);
+                let exact_query = exact_query_from_predicates(
+                    EntryQuery::new().with_text_terms(exact_terms),
+                    exact,
+                    &settings.structural,
+                )?;
+                let vague_matches = vague_query.select_entries(report.entries());
+                let matches = exact_query.select_entries(vague_matches);
+                let fields = fields.unwrap_or_default();
+                let format = format.unwrap_or(CliQueryOutputFormat::Json);
+                print_query_results(&report, &matches, &fields, format)?;
+                Ok(ExitCode::SUCCESS)
+            }
+            | EntryCommand::Rg { with_generated_footer, args } => {
+                run_rg_command(lake_path, config_path, with_generated_footer, args)
+            }
+            | EntryCommand::Witness { id, full } => {
                 run_witness_command(config_path, lake_path, &id, full)
             }
         }
@@ -1543,9 +1567,9 @@ mod tests {
 
     use crate::{
         Cli, CliCheckMode, CliError, CliQueryField, CliQueryFields, CliQueryOutputFormat,
-        CliStructuralPredicate, Command, FrostCommand, LakeCommand, exact_query_from_predicates,
-        format_gen_link_report, format_query_json, format_query_table, format_witness_record,
-        format_witness_records, rg_args_include_preprocessor,
+        CliStructuralPredicate, Command, EntryCommand, FrostCommand, LakeCommand,
+        exact_query_from_predicates, format_gen_link_report, format_query_json, format_query_table,
+        format_witness_record, format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -1822,7 +1846,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Freeze { id, .. }) if id == "alpha"
+            Command::TopLevelEntry(EntryCommand::Freeze { id, .. }) if id == "alpha"
         ));
     }
 
@@ -1842,7 +1866,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::New {
+            Command::TopLevelEntry(EntryCommand::New {
                 id,
                 name: Some(name),
                 desc,
@@ -1872,7 +1896,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::New { structural, .. })
+            Command::TopLevelEntry(EntryCommand::New { structural, .. })
                 if structural == vec![
                     CliStructuralPredicate {
                         field: "topic".to_owned(),
@@ -1887,7 +1911,7 @@ Body.
     }
 
     #[test]
-    fn lake_new_creates_entry() {
+    fn entry_new_creates_entry() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let docs = temp.path().join("docs");
@@ -1898,7 +1922,7 @@ Body.
             "sirno",
             "--config",
             config_path.to_str().unwrap(),
-            "lake",
+            "entry",
             "new",
             "alpha",
             "--desc",
@@ -1933,7 +1957,7 @@ Body.
         assert_eq!(cli.lake_path.as_deref(), Some(Path::new("scratch-docs")));
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Freeze { id }) if id == "alpha"
+            Command::TopLevelEntry(EntryCommand::Freeze { id }) if id == "alpha"
         ));
     }
 
@@ -1967,7 +1991,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Query { exact, .. })
+            Command::TopLevelEntry(EntryCommand::Query { exact, .. })
                 if exact == vec![CliStructuralPredicate {
                     field: "topic".to_owned(),
                     target: EntryId::new("concept").unwrap(),
@@ -1979,7 +2003,7 @@ Body.
     fn query_accepts_short_alias_and_options() {
         let cli =
             Cli::parse_from(["sirno", "q", "-x", "topic=concept", "-f", "id,path", "-o", "human"]);
-        let Command::TopLevelLake(LakeCommand::Query {
+        let Command::TopLevelEntry(EntryCommand::Query {
             exact,
             fields: Some(fields),
             format: Some(format),
@@ -2001,10 +2025,10 @@ Body.
     }
 
     #[test]
-    fn lake_query_accepts_short_alias_and_options() {
+    fn entry_query_accepts_short_alias_and_options() {
         let cli = Cli::parse_from([
             "sirno",
-            "lake",
+            "entry",
             "q",
             "-x",
             "topic=concept",
@@ -2013,8 +2037,8 @@ Body.
             "-o",
             "human",
         ]);
-        let Command::Lake {
-            command: LakeCommand::Query { exact, fields: Some(fields), format: Some(format), .. },
+        let Command::Entry {
+            command: EntryCommand::Query { exact, fields: Some(fields), format: Some(format), .. },
         } = cli.command
         else {
             panic!("expected grouped query command with short options");
@@ -2034,7 +2058,7 @@ Body.
     #[test]
     fn query_accepts_comma_separated_fields() {
         let cli = Cli::parse_from(["sirno", "query", "--fields", "id,name,path,desc"]);
-        let Command::TopLevelLake(LakeCommand::Query { fields: Some(fields), .. }) = cli.command
+        let Command::TopLevelEntry(EntryCommand::Query { fields: Some(fields), .. }) = cli.command
         else {
             panic!("expected query command with fields");
         };
@@ -2051,7 +2075,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Query {
+            Command::TopLevelEntry(EntryCommand::Query {
                 format: Some(CliQueryOutputFormat::Json),
                 ..
             })
@@ -2064,7 +2088,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Query {
+            Command::TopLevelEntry(EntryCommand::Query {
                 format: Some(CliQueryOutputFormat::Human),
                 ..
             })
@@ -2159,7 +2183,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Rg { with_generated_footer: false, args })
+            Command::TopLevelEntry(EntryCommand::Rg { with_generated_footer: false, args })
                 if args == vec![OsString::from("--json"), OsString::from("metadata")]
         ));
     }
@@ -2170,7 +2194,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Rg { with_generated_footer: true, args })
+            Command::TopLevelEntry(EntryCommand::Rg { with_generated_footer: true, args })
                 if args == vec![OsString::from("metadata")]
         ));
     }
@@ -2239,11 +2263,11 @@ Body.
 
         assert!(matches!(
             melt.command,
-            Command::TopLevelLake(LakeCommand::Melt { id, .. }) if id == "alpha"
+            Command::TopLevelEntry(EntryCommand::Melt { id, .. }) if id == "alpha"
         ));
         assert!(matches!(
             unfreeze.command,
-            Command::TopLevelLake(LakeCommand::Melt { id, .. }) if id == "alpha"
+            Command::TopLevelEntry(EntryCommand::Melt { id, .. }) if id == "alpha"
         ));
     }
 
@@ -2431,7 +2455,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Witness { id, full: false }) if id == "witness"
+            Command::TopLevelEntry(EntryCommand::Witness { id, full: false }) if id == "witness"
         ));
     }
 
@@ -2449,29 +2473,47 @@ Body.
 
         assert!(matches!(
             short.command,
-            Command::TopLevelLake(LakeCommand::Witness { id, full: false }) if id == "alpha"
+            Command::TopLevelEntry(EntryCommand::Witness { id, full: false }) if id == "alpha"
         ));
         assert!(matches!(
             mnemonic.command,
-            Command::TopLevelLake(LakeCommand::Witness { id, full: false }) if id == "beta"
+            Command::TopLevelEntry(EntryCommand::Witness { id, full: false }) if id == "beta"
         ));
     }
 
     #[test]
-    fn lake_subcommand_accepts_common_aliases() {
+    fn lake_subcommand_accepts_status_alias() {
         let status = Cli::parse_from(["sirno", "lake", "st"]);
-        let short_witness = Cli::parse_from(["sirno", "lake", "w", "alpha"]);
-        let mnemonic_witness = Cli::parse_from(["sirno", "lake", "wit", "beta"]);
 
         assert!(matches!(status.command, Command::Lake { command: LakeCommand::Status }));
+    }
+
+    #[test]
+    fn lake_subcommand_rejects_entry_aliases() {
+        let error = Cli::try_parse_from(["sirno", "lake", "q"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
+    }
+
+    #[test]
+    fn entry_subcommand_accepts_common_aliases() {
+        let short_query = Cli::parse_from(["sirno", "entry", "q", "alpha"]);
+        let short_witness = Cli::parse_from(["sirno", "entry", "w", "alpha"]);
+        let mnemonic_witness = Cli::parse_from(["sirno", "entry", "wit", "beta"]);
+
+        assert!(matches!(
+            short_query.command,
+            Command::Entry { command: EntryCommand::Query { terms, .. } }
+                if terms == vec!["alpha"]
+        ));
         assert!(matches!(
             short_witness.command,
-            Command::Lake { command: LakeCommand::Witness { id, full: false } }
+            Command::Entry { command: EntryCommand::Witness { id, full: false } }
                 if id == "alpha"
         ));
         assert!(matches!(
             mnemonic_witness.command,
-            Command::Lake { command: LakeCommand::Witness { id, full: false } }
+            Command::Entry { command: EntryCommand::Witness { id, full: false } }
                 if id == "beta"
         ));
     }
@@ -2482,7 +2524,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Witness { id, full: true }) if id == "witness"
+            Command::TopLevelEntry(EntryCommand::Witness { id, full: true }) if id == "witness"
         ));
     }
 
@@ -2492,7 +2534,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Witness { id, full: true }) if id == "witness"
+            Command::TopLevelEntry(EntryCommand::Witness { id, full: true }) if id == "witness"
         ));
     }
 
