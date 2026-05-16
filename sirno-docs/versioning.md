@@ -45,8 +45,10 @@ and an optional `mutable` flag.
 `sirno frost init --frost-path PATH` chooses a non-default *frost* path.
 The first *frost* commit creates the first frozen snapshot.
 A *frost* commit imports the selected public *entry* set and writes one `eter` transaction.
-The transaction may touch one *entry* or many *entries*.
-All changed rows receive the same snapshot coordinate.
+The transaction contains changed *entries* and lifecycle deletions.
+Unchanged live *entries* do not receive new version files.
+They remain part of the new *lake* snapshot through `eter` snapshot reads.
+All rows written by the transaction receive the same snapshot coordinate.
 Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
 Generated links remain a public *lake* projection.

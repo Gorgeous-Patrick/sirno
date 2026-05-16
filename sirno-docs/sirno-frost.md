@@ -43,6 +43,8 @@ Frost refuses to commit them until `sirno melt ENTRY_ID` removes the marker.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are public *lake* projections.
 The commit writes one `eter` transaction and returns a `SnapshotRef`.
+The transaction contains only changed *entries* and lifecycle deletion markers.
+Unchanged live *entries* are inherited from earlier version files at read time.
 That snapshot reference names the whole committed *lake* state.
 For the filesystem backend,
 `Eter.lock.toml` stores the committed version boundary.

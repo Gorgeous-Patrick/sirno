@@ -4,7 +4,7 @@
 //! The current backend uses `eter` filesystem snapshots as durable storage.
 //! That layout is private to this module.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use eter::filesystem::{FilesystemBackend, FilesystemEntryId, FilesystemError, FilesystemWriteTxn};
@@ -225,24 +225,35 @@ impl SirnoFrost {
     fn commit_entries(&mut self, entries: &[Entry]) -> Result<SnapshotRef, FrostError> {
         Self::reject_frozen_entries(entries)?;
         let current = self.current_snapshot()?;
-        if self.read_all_entries_at_snapshot(current)? == entries {
+        let previous_entries = self
+            .read_all_entries_at_snapshot(current)?
+            .into_iter()
+            .map(|entry| (entry.id.clone(), entry))
+            .collect::<BTreeMap<_, _>>();
+        let changed_entries = entries
+            .iter()
+            .filter(|entry| match previous_entries.get(&entry.id) {
+                | Some(previous) => previous != *entry,
+                | None => true,
+            })
+            .collect::<Vec<_>>();
+        let public_ids = entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
+        let deleted_ids = previous_entries
+            .keys()
+            .filter(|id| !public_ids.contains(*id))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if changed_entries.is_empty() && deleted_ids.is_empty() {
             return Ok(current);
         }
 
-        let public_ids = entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
-        let previous_ids = self
-            .backend
-            .live_entries(current)?
-            .into_iter()
-            .map(EntryId::try_from)
-            .collect::<Result<BTreeSet<_>, _>>()?;
-
         let mut txn = self.backend.write();
-        for entry in entries {
+        for entry in changed_entries {
             let fs_id = entry.id.to_filesystem_id()?;
             txn = StoredEntryFacet::from_entry(entry).apply_to(txn, &fs_id);
         }
-        for id in previous_ids.difference(&public_ids) {
+        for id in deleted_ids {
             let fs_id = id.to_filesystem_id()?;
             txn = txn.delete::<Lifecycle<EntryLifecycle>>(&fs_id);
         }
@@ -579,6 +590,33 @@ mod tests {
     }
 
     #[test]
+    fn changed_entry_commit_writes_only_changed_entry_snapshot() {
+        let public = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let alpha = test_entry("alpha", "Alpha");
+        let beta = test_entry("beta", "Beta");
+        write_public_entry(public.path(), &alpha);
+        write_public_entry(public.path(), &beta);
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let first = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        let mut changed_alpha = alpha.clone();
+        changed_alpha.body = "Alpha changed body.\n".to_owned();
+        write_public_entry(public.path(), &changed_alpha);
+        let second = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+
+        assert_ne!(first, second);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &alpha.id), [first, second]);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &beta.id), [first]);
+        assert_eq!(frost.read_entry_at_snapshot(second, &alpha.id).unwrap(), Some(changed_alpha));
+        assert_eq!(frost.read_entry_at_snapshot(second, &beta.id).unwrap(), Some(beta));
+    }
+
+    #[test]
     fn no_op_commit_returns_current_snapshot() {
         let public = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
@@ -619,6 +657,8 @@ mod tests {
         assert!(frost.read_entry_at_snapshot(first, &beta.id).unwrap().is_some());
         assert!(frost.read_entry_at_snapshot(second, &alpha.id).unwrap().is_some());
         assert_eq!(frost.read_entry_at_snapshot(second, &beta.id).unwrap(), None);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &alpha.id), [first]);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &beta.id), [first, second]);
     }
 
     #[test]
@@ -664,12 +704,21 @@ mod tests {
     }
 
     fn assert_entry_snapshot_file(root: &Path, id: &EntryId, snapshot: SnapshotRef) {
+        let versions = entry_snapshot_versions(root, id);
+        assert_eq!(versions, [snapshot]);
+    }
+
+    fn entry_snapshot_versions(root: &Path, id: &EntryId) -> Vec<SnapshotRef> {
         let dir = root.join(id.as_str());
-        let paths = fs::read_dir(dir)
+        let mut versions = fs::read_dir(dir)
             .unwrap()
-            .map(|entry| entry.unwrap().file_name().to_string_lossy().to_string())
+            .map(|entry| {
+                let name = entry.unwrap().file_name().to_string_lossy().to_string();
+                let version = u64::from_str_radix(&name[..16], 16).unwrap();
+                SnapshotRef::new(eter::GcGeneration::INITIAL, Eterator(version))
+            })
             .collect::<Vec<_>>();
-        assert_eq!(paths.len(), 1);
-        assert!(paths[0].starts_with(&format!("{:016x}-", snapshot.version())));
+        versions.sort();
+        versions
     }
 }
