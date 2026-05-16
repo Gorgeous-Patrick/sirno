@@ -1,6 +1,6 @@
 ---
 name: Sirno
-description: The project model that gives design a nominal intermediate form.
+desc: The project model that gives design a nominal intermediate form.
 category:
   - concept
   - narrative

@@ -1,6 +1,6 @@
 ---
 name: Lower
-description: The movement from the monograph into the Sirno Lake.
+desc: The movement from the monograph into the Sirno Lake.
 category:
   - concept
   - narrative

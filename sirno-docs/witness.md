@@ -1,6 +1,6 @@
 ---
 name: Witness
-description: Repository evidence for a design entry.
+desc: Repository evidence for a design entry.
 category:
   - concept
 belongs:

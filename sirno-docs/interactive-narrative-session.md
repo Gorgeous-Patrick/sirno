@@ -1,6 +1,6 @@
 ---
 name: Interactive Narrative Session
-description: A user-shaped route through Sirno concepts that can be saved as a narrative entry.
+desc: A user-shaped route through Sirno concepts that can be saved as a narrative entry.
 category:
   - narrative
 belongs:

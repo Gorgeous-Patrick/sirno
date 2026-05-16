@@ -15,7 +15,7 @@ from typing import Any
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 FIELD_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 WRAP_WIDTH = 96
-RESERVED_FIELDS = {"name", "description", "frozen"}
+RESERVED_FIELDS = {"name", "desc", "frozen"}
 
 
 def fail(message: str) -> None:
@@ -93,7 +93,7 @@ def render_entry(data: dict[str, Any]) -> str:
         fail("id must be lowercase kebab-case")
 
     name = required_string(data, "name")
-    description = required_string(data, "description")
+    desc = required_string(data, "desc")
     body = data.get("body")
     if not isinstance(body, list) or not all(isinstance(item, str) for item in body):
         fail("body must be a list of paragraph strings")
@@ -101,7 +101,7 @@ def render_entry(data: dict[str, Any]) -> str:
     lines = [
         "---",
         f"name: {scalar(name)}",
-        f"description: {scalar(description)}",
+        f"desc: {scalar(desc)}",
     ]
     for field, targets in structural_fields(data).items():
         lines.extend(render_list_field(field, targets))

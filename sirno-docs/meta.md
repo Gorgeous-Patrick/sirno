@@ -1,6 +1,6 @@
 ---
 name: Meta
-description: A category for entries that define the project's Sirno-facing documentation method.
+desc: A category for entries that define the project's Sirno-facing documentation method.
 category:
   - meta
   - concept

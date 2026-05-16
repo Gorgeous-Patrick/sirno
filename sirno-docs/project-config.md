@@ -1,6 +1,6 @@
 ---
 name: Project Config
-description: The Sirno.toml file that marks and configures a Sirno-managed repository.
+desc: The Sirno.toml file that marks and configures a Sirno-managed repository.
 category:
   - concept
 belongs:

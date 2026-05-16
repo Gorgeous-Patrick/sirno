@@ -99,7 +99,7 @@ cargo run -- witness readme --full
 ```
 
 The first command checks the *lake* as a coherent design graph.
-The second lists entry ids and descriptions as a table.
+The second lists entry ids and `desc` values as a table.
 The third shows how this README witnesses its own Sirno-facing intention.
 
 ## Status

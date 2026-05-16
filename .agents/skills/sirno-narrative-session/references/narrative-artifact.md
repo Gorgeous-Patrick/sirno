@@ -31,7 +31,7 @@ Recommended fields:
   "artifact": {
     "id": "new-contributor-route",
     "name": "New Contributor Route",
-    "description": "A narrative route for a new contributor learning Sirno."
+    "desc": "A narrative route for a new contributor learning Sirno."
   }
 }
 ```
@@ -43,7 +43,7 @@ Use this shape for a materialized narrative entry:
 ```yaml
 ---
 name: New Contributor Route
-description: A narrative route for a new contributor learning Sirno.
+desc: A narrative route for a new contributor learning Sirno.
 category:
   - narrative
 belongs:
@@ -83,7 +83,7 @@ Name the entries and explain why they appear in that order.
 {
   "id": "new-contributor-route",
   "name": "New Contributor Route",
-  "description": "A narrative route for a new contributor learning Sirno.",
+  "desc": "A narrative route for a new contributor learning Sirno.",
   "structural": {
     "category": ["narrative"],
     "belongs": ["sirno"],

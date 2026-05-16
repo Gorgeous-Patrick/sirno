@@ -1,6 +1,6 @@
 ---
 name: Test-Driven Development
-description: A development style that lets tests state and protect expected behavior.
+desc: A development style that lets tests state and protect expected behavior.
 category:
   - concept
 refines:

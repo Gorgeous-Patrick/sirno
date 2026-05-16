@@ -1,6 +1,6 @@
 ---
 name: Sirno Lock
-description: The TOML file that records the frost state of the public lake.
+desc: The TOML file that records the frost state of the public lake.
 category:
   - concept
 refines:

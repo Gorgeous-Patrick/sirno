@@ -1046,7 +1046,7 @@ mod tests {
             "\
 ---
 name: Meta
-description: A metadata entry.
+desc: A metadata entry.
 ---
 
 Body.
@@ -1058,7 +1058,7 @@ Body.
             "\
 ---
 name: Concept
-description: A named idea.
+desc: A named idea.
 ---
 
 Body.
@@ -1081,7 +1081,7 @@ Body.
             "\
 ---
 name: Concept
-description: A named idea.
+desc: A named idea.
 ---
 
 Body.
@@ -1142,7 +1142,7 @@ Body.
             "\
 ---
 name: Meta
-description: A metadata entry.
+desc: A metadata entry.
 ---
 
 Body.
@@ -1172,7 +1172,7 @@ Body.
             "\
 ---
 name: Concept
-description: A named idea.
+desc: A named idea.
 kind:
   - meta
 ---
@@ -1209,7 +1209,7 @@ kind:
             "\
 ---
 name: Witnessed
-description: A witnessed entry.
+desc: A witnessed entry.
 ---
 
 Body.
@@ -1237,7 +1237,7 @@ Body.
             "\
 ---
 name: Concept
-description: A concept.
+desc: A concept.
 ---
 
 Body.
@@ -1325,7 +1325,7 @@ Body.
             "\
 ---
 name: Alpha
-description: Alpha entry.
+desc: Alpha entry.
 ---
 
 Body.
@@ -1349,7 +1349,7 @@ Body.
             "\
 ---
 name: Alpha
-description: Alpha entry.
+desc: Alpha entry.
 frozen:
 ---
 
@@ -1372,7 +1372,7 @@ Body.
         let root = temp.path().join("docs");
         fs::create_dir_all(root.join(".obsidian")).unwrap();
         fs::write(root.join(".obsidian/state.json"), "{}").unwrap();
-        fs::write(root.join("old.md"), "---\nname: Old\ndescription: Old.\n---\n").unwrap();
+        fs::write(root.join("old.md"), "---\nname: Old\ndesc: Old.\n---\n").unwrap();
         let metadata = EntryMetadata::new("New", "New entry.").unwrap();
         let entry = Entry::new(EntryId::new("new").unwrap(), metadata, "Body.\n");
 
@@ -1474,7 +1474,7 @@ Body.
             "\
 ---
 name: Core
-description: A review neighborhood.
+desc: A review neighborhood.
 ---
 
 Body.
@@ -1486,7 +1486,7 @@ Body.
             "\
 ---
 name: Left
-description: A neighborhood member.
+desc: A neighborhood member.
 area:
   - core
 ---
@@ -1500,7 +1500,7 @@ Body.
             "\
 ---
 name: Right
-description: A neighborhood member.
+desc: A neighborhood member.
 area:
   - core
 ---
@@ -1661,7 +1661,7 @@ Body.
             "\
 ---
 name: Concept
-description: A named idea.
+desc: A named idea.
 ---
 
 Body.

@@ -1,6 +1,6 @@
 ---
 name: Category
-description: A structural field that classifies an entry by other entries.
+desc: A structural field that classifies an entry by other entries.
 category:
   - concept
 belongs:

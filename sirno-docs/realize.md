@@ -1,6 +1,6 @@
 ---
 name: Realize
-description: The movement from Sirno entries into repository implementation.
+desc: The movement from Sirno entries into repository implementation.
 category:
   - concept
   - narrative

@@ -1,6 +1,6 @@
 ---
 name: Repo
-description: The repository artifacts that realize and witness design entries.
+desc: The repository artifacts that realize and witness design entries.
 category:
   - concept
 belongs:

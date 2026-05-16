@@ -1,6 +1,6 @@
 ---
 name: Generated Link Policy
-description: Configuration that chooses which structural links appear in generated footers.
+desc: Configuration that chooses which structural links appear in generated footers.
 category:
   - concept
 refines:

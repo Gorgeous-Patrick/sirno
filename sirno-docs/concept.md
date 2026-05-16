@@ -1,6 +1,6 @@
 ---
 name: Concept
-description: A named idea that compresses project knowledge.
+desc: A named idea that compresses project knowledge.
 category:
   - meta
   - concept

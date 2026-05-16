@@ -41,8 +41,8 @@ impl Field for NameField {
     type Content = String;
 }
 
-struct DescriptionField;
-impl Field for DescriptionField {
+struct DescField;
+impl Field for DescField {
     type Content = String;
 }
 
@@ -278,7 +278,7 @@ impl SirnoFrost {
     fn registry() -> eter::filesystem::FilesystemFieldRegistry {
         eter::filesystem::builtins_registry::<EntryLifecycle>()
             .with_field::<NameField>("name")
-            .with_field::<DescriptionField>("description")
+            .with_field::<DescField>("desc")
             .with_field::<StructuralField>("structural")
     }
     // sirno:witness:sirno-frost:end
@@ -287,7 +287,7 @@ impl SirnoFrost {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct StoredEntryFacet {
     name: Option<String>,
-    description: Option<String>,
+    desc: Option<String>,
     structural: BTreeMap<String, Vec<EntryId>>,
     body: Option<String>,
 }
@@ -296,7 +296,7 @@ impl StoredEntryFacet {
     fn from_entry(entry: &Entry) -> Self {
         Self {
             name: Some(entry.metadata.name.clone()),
-            description: Some(entry.metadata.description.clone()),
+            desc: Some(entry.metadata.desc.clone()),
             structural: entry.metadata.structural.clone(),
             body: Some(entry.body.clone()),
         }
@@ -305,12 +305,11 @@ impl StoredEntryFacet {
     fn into_entry(self, id: EntryId) -> Result<Entry, FrostError> {
         let name =
             self.name.ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "name" })?;
-        let description = self
-            .description
-            .ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "description" })?;
+        let desc =
+            self.desc.ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "desc" })?;
         let body =
             self.body.ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "body" })?;
-        let mut metadata = EntryMetadata::new(name, description)?;
+        let mut metadata = EntryMetadata::new(name, desc)?;
         metadata.structural = self.structural;
         Ok(Entry::new(id, metadata, body))
     }
@@ -360,7 +359,7 @@ impl EntryFacet<SirnoBackend> for StoredEntryFacet {
 
         Ok(Some(Self {
             name: Self::resolve_optional_text::<NameField>(backend, at, id)?,
-            description: Self::resolve_optional_text::<DescriptionField>(backend, at, id)?,
+            desc: Self::resolve_optional_text::<DescField>(backend, at, id)?,
             structural: Self::resolve_optional_structural(backend, at, id)?,
             body: match backend.resolve_body(at, id)? {
                 | Resolution::Content(body) => Some(body),
@@ -376,7 +375,7 @@ impl EntryFacet<SirnoBackend> for StoredEntryFacet {
         let txn = txn
             .set::<Lifecycle<EntryLifecycle>>(id, EntryLifecycle::Active)
             .set::<NameField>(id, Self::required_text(&self.name, "name"))
-            .set::<DescriptionField>(id, Self::required_text(&self.description, "description"));
+            .set::<DescField>(id, Self::required_text(&self.desc, "desc"));
 
         let txn = Self::apply_structural(txn, id, &self.structural);
         txn.set_body(id, Self::required_text(&self.body, "body"))
@@ -626,8 +625,7 @@ mod tests {
     }
 
     fn test_entry(id: &str, name: &str) -> Entry {
-        let metadata =
-            EntryMetadata::new(name, format!("{name} description.")).expect("valid metadata");
+        let metadata = EntryMetadata::new(name, format!("{name} desc.")).expect("valid metadata");
         Entry::new(EntryId::new(id).expect("valid id"), metadata, format!("{name} body.\n"))
     }
 

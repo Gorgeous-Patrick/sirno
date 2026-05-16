@@ -1,6 +1,6 @@
 ---
 name: Interfaces
-description: The CLI and MCP surfaces that operate on Sirno project storage.
+desc: The CLI and MCP surfaces that operate on Sirno project storage.
 category:
   - concept
 belongs:
@@ -39,7 +39,7 @@ and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 The checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.
-The `-d`, `-n`, and `-b` flags are short forms for `--description`, `--name`, and `--body`.
+The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.
 The `--structural FIELD=ENTRY_ID` option adds configured structural metadata targets.
 It refuses to overwrite an existing *entry* file.
 

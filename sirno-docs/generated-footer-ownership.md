@@ -1,6 +1,6 @@
 ---
 name: Generated Footer Ownership
-description: The guard-bounded boundary between Sirno-owned navigation and user-owned prose.
+desc: The guard-bounded boundary between Sirno-owned navigation and user-owned prose.
 category:
   - concept
 refines:

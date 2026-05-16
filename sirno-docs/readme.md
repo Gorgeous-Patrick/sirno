@@ -1,6 +1,6 @@
 ---
 name: README
-description: The first-impression route that demonstrates Sirno's documentation principles.
+desc: The first-impression route that demonstrates Sirno's documentation principles.
 category:
   - meta
   - narrative

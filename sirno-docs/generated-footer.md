@@ -1,6 +1,6 @@
 ---
 name: Generated Footer
-description: A Sirno-owned footer that projects selected metadata fields as links.
+desc: A Sirno-owned footer that projects selected metadata fields as links.
 category:
   - concept
 belongs:

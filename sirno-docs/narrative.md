@@ -1,6 +1,6 @@
 ---
 name: Narrative
-description: A route, story, or motivation through concepts for a reader.
+desc: A route, story, or motivation through concepts for a reader.
 category:
   - meta
   - concept

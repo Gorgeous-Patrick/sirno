@@ -1,6 +1,6 @@
 ---
 name: Reflect
-description: The movement from changed repository artifacts back into Sirno entries.
+desc: The movement from changed repository artifacts back into Sirno entries.
 category:
   - concept
   - narrative

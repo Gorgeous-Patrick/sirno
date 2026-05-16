@@ -1,6 +1,6 @@
 ---
 name: Perspective and Terms
-description: The reader-facing distinction between Sirno as tool and this self-hosted lake.
+desc: The reader-facing distinction between Sirno as tool and this self-hosted lake.
 category:
   - meta
   - concept

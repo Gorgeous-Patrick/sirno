@@ -1,6 +1,6 @@
 ---
 name: Bootstrap Resolution Route
-description: A narrative route through Sirno's self-application problem and its resolution.
+desc: A narrative route through Sirno's self-application problem and its resolution.
 category:
   - narrative
 belongs:

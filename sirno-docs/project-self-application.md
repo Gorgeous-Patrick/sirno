@@ -1,6 +1,6 @@
 ---
 name: Project Self-Application
-description: The use of Sirno's own model to describe Sirno itself.
+desc: The use of Sirno's own model to describe Sirno itself.
 category:
   - concept
   - narrative

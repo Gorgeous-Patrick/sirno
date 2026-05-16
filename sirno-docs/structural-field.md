@@ -1,6 +1,6 @@
 ---
 name: Structural Field
-description: A metadata field that carries operational Sirno structure.
+desc: A metadata field that carries operational Sirno structure.
 category:
   - concept
 belongs:

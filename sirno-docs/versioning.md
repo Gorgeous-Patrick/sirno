@@ -1,6 +1,6 @@
 ---
 name: Versioning
-description: Lake-wide immutable snapshots of Sirno entries through eter.
+desc: Lake-wide immutable snapshots of Sirno entries through eter.
 category:
   - concept
 belongs:

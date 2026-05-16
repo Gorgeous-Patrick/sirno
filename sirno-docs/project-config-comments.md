@@ -1,6 +1,6 @@
 ---
 name: Project Config Comments
-description: The exact comments Sirno writes beside generated project config fields.
+desc: The exact comments Sirno writes beside generated project config fields.
 category:
   - concept
 refines:

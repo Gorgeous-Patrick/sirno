@@ -1,6 +1,6 @@
 ---
 name: Metadata
-description: The exact YAML schema that carries Sirno entry structure.
+desc: The exact YAML schema that carries Sirno entry structure.
 category:
   - concept
 belongs:
@@ -10,7 +10,7 @@ belongs:
 Metadata is the exact schema that carries Sirno structure.
 
 Every entry has a YAML metadata block.
-The required fields are `name` and `description`,
+The required fields are `name` and `desc`,
 both plain strings.
 
 Configured structural fields are optional.
@@ -43,7 +43,7 @@ A canonical entry shape looks like this:
 ```yaml
 ---
 name: Concept
-description: A named idea that compresses project knowledge.
+desc: A named idea that compresses project knowledge.
 category:
   - concept
 ---

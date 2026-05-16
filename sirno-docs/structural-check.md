@@ -1,6 +1,6 @@
 ---
 name: Structural Check
-description: Validation of entry shape, structural targets, footers, and witnesses.
+desc: Validation of entry shape, structural targets, footers, and witnesses.
 category:
   - concept
 belongs:

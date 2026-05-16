@@ -1,6 +1,6 @@
 ---
 name: Belongs
-description: A structural field that places an entry in a review neighborhood.
+desc: A structural field that places an entry in a review neighborhood.
 category:
   - concept
 belongs:

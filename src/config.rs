@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
 
-use crate::entry::{DESCRIPTION_FIELD, FROZEN_FIELD, NAME_FIELD};
+use crate::entry::{DESC_FIELD, FROZEN_FIELD, NAME_FIELD};
 use crate::links::StructuralSettings;
 
 /// Canonical Sirno project config filename.
@@ -472,7 +472,7 @@ impl SirnoConfig {
             if field.is_empty() || field.contains('\n') || field.contains('\r') {
                 return Err(ConfigError::StructuralFieldName(field.to_owned()));
             }
-            if matches!(field, NAME_FIELD | DESCRIPTION_FIELD | FROZEN_FIELD) {
+            if matches!(field, NAME_FIELD | DESC_FIELD | FROZEN_FIELD) {
                 return Err(ConfigError::ReservedStructuralField(field.to_owned()));
             }
         }

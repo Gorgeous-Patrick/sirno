@@ -1,6 +1,6 @@
 ---
 name: Intent-Driven Development
-description: A development style that keeps implementation aligned with named purpose.
+desc: A development style that keeps implementation aligned with named purpose.
 category:
   - concept
 refines:

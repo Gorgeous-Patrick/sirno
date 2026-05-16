@@ -1,6 +1,6 @@
 ---
 name: Sirno Frost
-description: The private eter root that freezes immutable snapshots of the public Sirno Lake.
+desc: The private eter root that freezes immutable snapshots of the public Sirno Lake.
 category:
   - concept
 refines:
@@ -17,7 +17,7 @@ The *frost* layer is the durable snapshot substrate behind that form.
 The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries*.
 Each *entry* is stored under its stable id.
-The backend records `name`, `description`, `category`, `belongs`, `refines`,
+The backend records `name`, `desc`, `category`, `belongs`, `refines`,
 and Markdown body as typed fields.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer

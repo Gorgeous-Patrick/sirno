@@ -1,6 +1,6 @@
 ---
 name: Witness Lookup
-description: The mosaika-backed scan that resolves witness blocks by entry id.
+desc: The mosaika-backed scan that resolves witness blocks by entry id.
 category:
   - concept
 refines:

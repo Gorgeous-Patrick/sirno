@@ -1,6 +1,6 @@
 ---
 name: Witness Fixture Isolation
-description: Test fixtures for witness lookup avoid depending on their own delimiter text.
+desc: Test fixtures for witness lookup avoid depending on their own delimiter text.
 category:
   - concept
 belongs:

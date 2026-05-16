@@ -1,6 +1,6 @@
 ---
 name: Introduction
-description: A first narrative route through Sirno's project model.
+desc: A first narrative route through Sirno's project model.
 category:
   - narrative
 belongs:

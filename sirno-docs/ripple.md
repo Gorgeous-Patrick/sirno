@@ -1,6 +1,6 @@
 ---
 name: Ripple
-description: The named delta between two Sirno Lake states.
+desc: The named delta between two Sirno Lake states.
 category:
   - concept
 belongs:

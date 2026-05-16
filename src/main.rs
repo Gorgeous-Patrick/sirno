@@ -68,9 +68,9 @@ enum Command {
         /// Human-readable entry name.
         #[arg(short = 'n', long)]
         name: Option<String>,
-        /// Short entry description.
+        /// Short entry desc.
         #[arg(short = 'd', long)]
-        description: String,
+        desc: String,
         /// Structural metadata target as FIELD=ENTRY_ID.
         #[arg(long = "structural", value_name = "FIELD=ENTRY_ID")]
         structural: Vec<CliStructuralPredicate>,
@@ -100,7 +100,7 @@ enum Command {
     Query {
         /// Vague text terms matched against entries and structural target summaries.
         terms: Vec<String>,
-        /// Exact text term matched against id, name, description, and body.
+        /// Exact text term matched against id, name, desc, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
         /// Exact structural predicate as FIELD=ENTRY_ID.
@@ -242,7 +242,7 @@ enum CliQueryField {
     Name,
     /// Markdown path.
     Path,
-    /// Short entry description.
+    /// Short entry desc.
     Desc,
 }
 
@@ -456,13 +456,11 @@ impl Cli {
                 println!("moved lake {} to {}", old_lake.display(), new_lake.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | Command::New { id, name, description, structural, body } => {
+            | Command::New { id, name, desc, structural, body } => {
                 let (lake, settings) = resolve_lake_directory(lake_path.as_deref(), &config_path)?;
                 let id = EntryId::new(&id)?;
-                let mut metadata = EntryMetadata::new(
-                    name.unwrap_or_else(|| title_name_from_id(&id)),
-                    description,
-                )?;
+                let mut metadata =
+                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
                 for (field, targets) in
                     structural_targets_by_field(structural, &settings.structural)?
                 {
@@ -1246,7 +1244,7 @@ fn format_query_field(
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
             Ok(path.display().to_string())
         }
-        | CliQueryField::Desc => Ok(entry.metadata.description.clone()),
+        | CliQueryField::Desc => Ok(entry.metadata.desc.clone()),
     }
 }
 
@@ -1568,7 +1566,7 @@ mod tests {
             "\
 ---
 name: Alpha
-description: Alpha entry.
+desc: Alpha entry.
 ---
 
 Body.
@@ -1659,17 +1657,17 @@ Body.
             "-n",
             "Alpha",
             "-d",
-            "Alpha description.",
+            "Alpha desc.",
             "-b",
             "Alpha body.",
         ]);
 
         assert!(matches!(
             cli.command,
-            Command::New { id, name: Some(name), description, body: Some(body), .. }
+            Command::New { id, name: Some(name), desc, body: Some(body), .. }
                 if id == "alpha"
                     && name == "Alpha"
-                    && description == "Alpha description."
+                    && desc == "Alpha desc."
                     && body == "Alpha body."
         ));
     }
@@ -1681,7 +1679,7 @@ Body.
             "new",
             "alpha",
             "-d",
-            "Alpha description.",
+            "Alpha desc.",
             "--structural",
             "topic=concept",
             "--structural",
@@ -1711,7 +1709,7 @@ Body.
             "new",
             "alpha",
             "-d",
-            "Alpha description.",
+            "Alpha desc.",
             "-x",
             "topic=concept",
         ])
@@ -2063,7 +2061,7 @@ Body.
             "\
 ---
 name: Alpha
-description: Alpha entry.
+desc: Alpha entry.
 ---
 
 Body.
@@ -2098,7 +2096,7 @@ Body.
         let entry = "\
 ---
 name: Alpha
-description: Alpha entry.
+desc: Alpha entry.
 ---
 
 Body.
@@ -2124,9 +2122,16 @@ Body.
 
     #[test]
     fn new_rejects_witness_flag() {
+        let error = Cli::try_parse_from(["sirno", "new", "alpha", "--desc", "Alpha.", "--witness"])
+            .unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn new_rejects_old_description_flag() {
         let error =
-            Cli::try_parse_from(["sirno", "new", "alpha", "--description", "Alpha.", "--witness"])
-                .unwrap_err();
+            Cli::try_parse_from(["sirno", "new", "alpha", "--description", "Alpha."]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
     }

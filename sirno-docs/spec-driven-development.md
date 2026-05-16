@@ -1,6 +1,6 @@
 ---
 name: Spec-Driven Development
-description: A development style that starts from explicit behavioral commitments.
+desc: A development style that starts from explicit behavioral commitments.
 category:
   - concept
 refines:

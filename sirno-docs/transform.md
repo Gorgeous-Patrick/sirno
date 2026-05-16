@@ -1,6 +1,6 @@
 ---
 name: Transform
-description: A concept that names movement between Sirno forms.
+desc: A concept that names movement between Sirno forms.
 category:
   - concept
   - narrative

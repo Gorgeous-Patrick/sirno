@@ -59,7 +59,7 @@ impl EntryQuery {
         Self::default()
     }
 
-    /// Set text terms matched against id, name, description, and body.
+    /// Set text terms matched against id, name, desc, and body.
     pub fn with_text_terms(mut self, terms: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.text_terms =
             terms.into_iter().map(EntryTextTerm::new).filter(|term| !term.is_empty()).collect();
@@ -117,7 +117,7 @@ impl EntryQuery {
 
 /// Vague predicate over Sirno entries.
 ///
-/// Vague text terms match an entry plus the ids, names, and descriptions of structural targets.
+/// Vague text terms match an entry plus the ids, names, and desc values of structural targets.
 /// Each text term must match somewhere in that expanded text.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:query:begin
@@ -169,7 +169,7 @@ impl VagueEntryQuery {
 
 impl Entry {
     fn query_text(&self) -> String {
-        format!("{}\n{}\n{}\n{}", self.id, self.metadata.name, self.metadata.description, self.body)
+        format!("{}\n{}\n{}\n{}", self.id, self.metadata.name, self.metadata.desc, self.body)
             .to_lowercase()
     }
 
@@ -182,7 +182,7 @@ impl Entry {
                 text.push('\n');
                 text.push_str(&target_entry.metadata.name);
                 text.push('\n');
-                text.push_str(&target_entry.metadata.description);
+                text.push_str(&target_entry.metadata.desc);
             }
         }
         text.to_lowercase()
@@ -201,8 +201,8 @@ mod tests {
         EntryId::new(raw).unwrap()
     }
 
-    fn entry(raw_id: &str, name: &str, description: &str, body: &str) -> Entry {
-        Entry::new(id(raw_id), EntryMetadata::new(name, description).unwrap(), body)
+    fn entry(raw_id: &str, name: &str, desc: &str, body: &str) -> Entry {
+        Entry::new(id(raw_id), EntryMetadata::new(name, desc).unwrap(), body)
     }
 
     #[test]

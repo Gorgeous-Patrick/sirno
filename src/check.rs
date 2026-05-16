@@ -174,7 +174,7 @@ mod tests {
     const FIELD_TOPIC: &str = "topic";
 
     fn entry(id: &str) -> Entry {
-        Entry::new(EntryId::new(id).unwrap(), EntryMetadata::new(id, "description").unwrap(), "")
+        Entry::new(EntryId::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
     }
 
     fn structural_settings() -> StructuralSettings {

@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::id::{EntryId, EntryIdError};
 
 pub const NAME_FIELD: &str = "name";
-pub const DESCRIPTION_FIELD: &str = "description";
+pub const DESC_FIELD: &str = "desc";
 pub const FROZEN_FIELD: &str = "frozen";
 
 // sirno:witness:entry:begin
@@ -103,14 +103,14 @@ impl Entry {
 
 /// Metadata for one Sirno entry.
 ///
-/// Invariant: `name` and `description` are single-line plain strings.
+/// Invariant: `name` and `desc` are single-line plain strings.
 /// Structural fields map metadata field names to entry-id targets.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryMetadata {
     /// Human-readable entry name.
     pub name: String,
-    /// Short prose description of the entry.
-    pub description: String,
+    /// Short prose summary of the entry.
+    pub desc: String,
     // sirno:witness:structural-field:begin
     /// Structural metadata fields keyed by their Markdown metadata field name.
     pub structural: BTreeMap<String, Vec<EntryId>>,
@@ -122,14 +122,12 @@ pub struct EntryMetadata {
 impl EntryMetadata {
     /// Construct metadata with required fields and no structural field values.
     // sirno:witness:metadata:begin
-    pub fn new(
-        name: impl Into<String>, description: impl Into<String>,
-    ) -> Result<Self, EntryParseError> {
+    pub fn new(name: impl Into<String>, desc: impl Into<String>) -> Result<Self, EntryParseError> {
         let name = name.into();
-        let description = description.into();
+        let desc = desc.into();
         validate_plain_string(NAME_FIELD, &name)?;
-        validate_plain_string(DESCRIPTION_FIELD, &description)?;
-        Ok(Self { name, description, structural: BTreeMap::new(), frozen: None })
+        validate_plain_string(DESC_FIELD, &desc)?;
+        Ok(Self { name, desc, structural: BTreeMap::new(), frozen: None })
     }
     // sirno:witness:metadata:end
 
@@ -144,14 +142,14 @@ impl EntryMetadata {
         };
 
         let name = take_required_string(&mut mapping, NAME_FIELD)?;
-        let description = take_required_string(&mut mapping, DESCRIPTION_FIELD)?;
+        let desc = take_required_string(&mut mapping, DESC_FIELD)?;
         validate_plain_string(NAME_FIELD, &name)?;
-        validate_plain_string(DESCRIPTION_FIELD, &description)?;
+        validate_plain_string(DESC_FIELD, &desc)?;
 
         let frozen = take_frozen_marker(&mut mapping, canonical_frozen)?;
         let structural = take_structural_fields(mapping)?;
 
-        Ok(Self { name, description, structural, frozen })
+        Ok(Self { name, desc, structural, frozen })
     }
     // sirno:witness:metadata:end
 
@@ -159,11 +157,11 @@ impl EntryMetadata {
     // sirno:witness:metadata:begin
     pub fn to_yaml_source(&self) -> Result<String, EntryRenderError> {
         validate_plain_string(NAME_FIELD, &self.name)?;
-        validate_plain_string(DESCRIPTION_FIELD, &self.description)?;
+        validate_plain_string(DESC_FIELD, &self.desc)?;
 
         let mut out = String::new();
         out.push_str(&format!("name: {}\n", render_yaml_scalar(&self.name)?));
-        out.push_str(&format!("description: {}\n", render_yaml_scalar(&self.description)?));
+        out.push_str(&format!("desc: {}\n", render_yaml_scalar(&self.desc)?));
         render_structural_fields(&mut out, &self.structural)?;
         if self.frozen.is_some() {
             out.push_str("frozen:\n");
@@ -420,7 +418,7 @@ mod tests {
         let source = "\
 ---
 name: Witness
-description: An entry whose claim is evidenced by repository artifacts.
+desc: An entry whose claim is evidenced by repository artifacts.
 topic:
   - concept
 ---
@@ -442,7 +440,7 @@ Body.
         let source = "\
 ---
 name: Bad
-description: Bad structural metadata.
+desc: Bad structural metadata.
 topic: concept
 ---
 ";
@@ -456,7 +454,7 @@ topic: concept
         let source = "\
 ---
 name: Evidence
-description: Metadata with a project-defined structural field.
+desc: Metadata with a project-defined structural field.
 witness:
   - repository-evidence
 ---
@@ -489,7 +487,7 @@ witness:
         let source = "\
 ---
 name: Frozen
-description: A protected entry.
+desc: A protected entry.
 frozen:
 ---
 
@@ -506,7 +504,7 @@ Body.
         let source = "\
 ---
 name: Bad
-description: Bad frozen marker.
+desc: Bad frozen marker.
 frozen: true
 ---
 ";
@@ -521,7 +519,7 @@ frozen: true
         let source = "\
 ---
 name: Bad
-description: Bad frozen marker.
+desc: Bad frozen marker.
 frozen: null
 ---
 ";
@@ -549,7 +547,7 @@ frozen: null
         let source = "\
 ---
 name: Old
-description: Existing description.
+desc: Existing desc.
 ---
 
 Old body.
@@ -557,9 +555,7 @@ Old body.
 
         let replaced = Entry::replace_markdown_body(source, "New body.\n").unwrap();
 
-        assert!(
-            replaced.starts_with("---\nname: Old\ndescription: Existing description.\n---\n\n")
-        );
+        assert!(replaced.starts_with("---\nname: Old\ndesc: Existing desc.\n---\n\n"));
         assert!(replaced.ends_with("New body.\n"));
         assert!(!replaced.contains("Old body."));
     }

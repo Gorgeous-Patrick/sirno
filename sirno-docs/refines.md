@@ -1,6 +1,6 @@
 ---
 name: Refines
-description: A structural field from a specific entry to the broader entries it makes concrete.
+desc: A structural field from a specific entry to the broader entries it makes concrete.
 category:
   - concept
 belongs:

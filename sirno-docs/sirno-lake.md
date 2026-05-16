@@ -1,6 +1,6 @@
 ---
 name: Sirno Lake
-description: The configured directory of compact named design entries.
+desc: The configured directory of compact named design entries.
 category:
   - concept
 belongs:

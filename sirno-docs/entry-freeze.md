@@ -1,6 +1,6 @@
 ---
 name: Entry Freeze
-description: A read-only entry marker that keeps protected Markdown out of Frost commits.
+desc: A read-only entry marker that keeps protected Markdown out of Frost commits.
 category:
   - concept
 belongs:

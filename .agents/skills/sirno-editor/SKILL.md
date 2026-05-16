@@ -163,7 +163,7 @@ but more durable than a plan item.
 1. Read repository instructions, `Sirno.toml`, the configured monograph when present, and the existing lake.
 2. Inspect the current Sirno CLI before assuming which commands exist.
 3. Map candidate entries before editing:
-   ids, names, descriptions, structural targets, and witness status.
+   id, name, desc, structural fields, and witness status.
 4. Create missing entries through Sirno's current entry-creation command when available.
 5. Expand or revise bodies with direct, reader-friendly prose.
 6. Leave generated footer regions untouched.

@@ -1,6 +1,6 @@
 ---
 name: Query
-description: Selection of Sirno entries through vague text and exact structural predicates.
+desc: Selection of Sirno entries through vague text and exact structural predicates.
 category:
   - concept
 belongs:
@@ -20,8 +20,8 @@ When no version is supplied,
 query reads the public *lake*.
 
 The default query mode is vague text query.
-It matches an *entry*'s id, name, description, and body.
-It also matches the ids, names, and descriptions of *entries* named by the *entry*'s *structural fields*.
+It matches an *entry*'s id, name, desc, and body.
+It also matches the ids, names, and `desc` values of entries named by structural fields.
 
 Vague query is for recall.
 A user can search for nearby language without choosing the exact *structural field* first.
