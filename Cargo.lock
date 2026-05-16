@@ -175,6 +175,7 @@ dependencies = [
 [[package]]
 name = "eter"
 version = "0.1.0"
+source = "git+https://github.com/LighghtEeloo/eter#7110f71ce52c28c9561458de186aba978efbf4eb"
 dependencies = [
  "serde",
  "serde_json",
@@ -314,6 +315,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 [[package]]
 name = "mosaika"
 version = "0.0.0"
+source = "git+https://github.com/LighghtEeloo/mosaika#521ae10b787ea78dfc3740b415cdfeebf9f91045"
 dependencies = [
  "clap",
  "glob",
