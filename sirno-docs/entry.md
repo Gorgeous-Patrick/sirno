@@ -12,7 +12,7 @@ An *entry* is a Markdown file in the Sirno Lake.
 The filename stem is the *entry* id.
 The id is globally unique inside the *lake*,
 case-sensitive, and validated as a cross-platform filename stem.
-Write entry ids as lowercase ASCII kebab-case by default.
+Write *entry* ids as lowercase ASCII kebab-case by default.
 That style is easy to type, quote, link, and compare across tools.
 It may use spaces, uppercase letters, punctuation, and Unicode when those characters are safe in common filesystems.
 It must not use path separators, control characters, Windows-reserved punctuation,
@@ -24,7 +24,7 @@ Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
-The `frozen:` field makes the entry file read-only through `sirno freeze ENTRY_ID`.
+The `frozen:` field makes the *entry* file read-only through `sirno freeze ENTRY_ID`.
 
 An *entry* should be focused enough to read in place.
 It can state a concept, category, review neighborhood, refinement, invariant,
@@ -49,7 +49,7 @@ If a concept depends on several other concepts,
 the *structural fields* should carry the navigational structure,
 and the prose should explain the local meaning in ordinary language.
 
-When an *entry* has repository evidence,
+When an *entry* has *repository* evidence,
 its prose may briefly say what the *witness* is expected to demonstrate.
 
 ---

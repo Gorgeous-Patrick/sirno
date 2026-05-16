@@ -30,7 +30,7 @@ that says the file is read-only and should not be edited by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable
 and records `mutable = true`.
 
-Committing a mutable lake writes a new current *frost* version
+Committing a mutable *lake* writes a new current *frost* version
 and rewrites the lock to `status = "current"`.
 Sirno refuses to commit an immutable checkout.
 

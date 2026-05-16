@@ -25,7 +25,7 @@ the target links to its members,
 and members link to the target and to one another.
 When disabled, only configured direct structural field sections are rendered.
 
-This policy is configuration, not entry data.
+This policy is configuration, not *entry* data.
 Changing it alters generated navigation surfaces without changing structural metadata.
 
 ---

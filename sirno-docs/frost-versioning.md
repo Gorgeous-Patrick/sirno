@@ -14,7 +14,7 @@ The subsystem has several parts:
 and `entry-freeze` protects one *entry* from Frost commits.
 
 These parts are reviewed together.
-A change to the snapshot model, the frost path, the lock file, or entry protection
+A change to the snapshot model, the frost path, the lock file, or *entry* protection
 usually constrains the others, so this *entry* gives them one neighborhood.
 
 `versioning` and `storage` remain the broader claims these parts `refines`.

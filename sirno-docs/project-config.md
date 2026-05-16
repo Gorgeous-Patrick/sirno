@@ -9,19 +9,19 @@ refines:
   - storage
 ---
 
-`Sirno.toml` marks a repository as Sirno-managed.
+`Sirno.toml` marks a *repository* as Sirno-managed.
 
 The file configures the public *entry lake*
 and the operational policies that Sirno applies to the *lake*.
 It may also configure a *monograph*,
-repository *witness* members,
+*repository witness* members,
 and Sirno Frost.
 Generated config files include concise comments that describe how each written field is used.
 
 `[mono].path` optionally names the *monograph*.
 `[lake].path` names the Markdown *entry lake*.
 `[frost].path` optionally names the private Sirno Frost path.
-`[repo].members` optionally lists repository paths or globs scanned for *witness* blocks.
+`[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
 `[witness]` configures the delimiter regexes used to find *witness* blocks.
 Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
@@ -53,7 +53,7 @@ Glob members may match files or directories.
 Each delimiter table has `begin` and `end` regex fields.
 Each regex should capture the *entry* id as its first capture group.
 Sirno rejects empty, invalid, captureless, or empty-matching delimiter regexes.
-At least one delimiter table is required so the repository syntax is explicit.
+At least one delimiter table is required so the *repository* syntax is explicit.
 Generated configs write the standard syntax,
 which accepts `//` line comments and hidden Markdown HTML comments.
 The standard regexes use one canonical capture for filename-like *entry* ids.

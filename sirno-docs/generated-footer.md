@@ -9,7 +9,7 @@ belongs:
 
 Sirno may generate and maintain a footer at the bottom of *entries*.
 
-The *generated footer* entry is the front door for generated navigation regions.
+The *generated footer* *entry* is the front door for generated navigation regions.
 Its local refinements define ownership boundaries and link selection policy.
 
 The footer is bounded by sentinels that state Sirno owns the region.

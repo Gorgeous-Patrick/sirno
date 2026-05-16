@@ -40,7 +40,7 @@ People, agents, and other tools still judge design quality and semantic truth.
 This division is important.
 Sirno does not claim to know whether an architecture is elegant,
 whether a test proves the right property,
-or whether a repository path truly satisfies a design claim.
+or whether a *repository* path truly satisfies a design claim.
 It gives those claims stable handles.
 That makes the conversation around design more precise:
 a person can ask for an *entry* to be realized,

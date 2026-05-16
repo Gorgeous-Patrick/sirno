@@ -53,7 +53,7 @@ The point is to preserve the design object that a later edit or review should be
 
 Sirno also names movements between forms.
 `lower` moves narrative design into *lake entries*.
-`realize` uses *entries* to guide repository work.
+`realize` uses *entries* to guide *repository* work.
 `reflect` records durable design facts learned from the *repository* back into the *lake*.
 `raise` composes *lake entries* into a readable *monograph* when a project wants one.
 These *transforms* are vocabulary for work.
@@ -61,12 +61,12 @@ They do not make Sirno a judge of design quality.
 They make the relevant design objects easier to name and inspect.
 
 Repository *witnesses* close the loop with implementation.
-A *witness* block lives in a configured repository member,
+A *witness* block lives in a configured *repository* member,
 opens with `sirno:witness:<entry-id>:begin`,
 and closes with `sirno:witness:<entry-id>:end`.
 Sirno asks `mosaika` to locate those regions by *entry* id.
 The *entry* states the claim.
-The repository region shows where that claim can be inspected.
+The *repository* region shows where that claim can be inspected.
 
 The *generated footers* are an interoperability layer.
 Sirno can project selected metadata fields as Markdown links at the bottom of *entries*.

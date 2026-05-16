@@ -8,18 +8,18 @@ belongs:
   - sirno-lake
 ---
 
-Before editing a lake, decide which form currently carries design authority.
+Before editing a *lake*, decide which form currently carries design authority.
 
-An established and maintained lake is the authoritative structured design source.
-When the lake is absent or skeletal,
-the configured monograph is the source of intended design.
+An established and maintained *lake* is the authoritative structured design source.
+When the *lake* is absent or skeletal,
+the configured *monograph* is the source of intended design.
 Code is authoritative only when the user says so.
 This ladder keeps an edit from inventing design that no form actually commits to.
 
-When the lake is authoritative, preserve its stable facts even while rewriting prose.
+When the *lake* is authoritative, preserve its stable facts even while rewriting prose.
 Stable facts include the central definition and scope,
 the configured `lake` path and optional `mono` path,
-entry id rules and the metadata schema,
+*entry* id rules and the metadata schema,
 the configured structural-field and witness-lookup meanings,
 generated-footer ownership,
 and future-work items that are intentionally reserved.

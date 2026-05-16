@@ -84,7 +84,7 @@ It also writes a visible Markdown blockquote at the start of each checked-out *e
 that marks the file as read-only and says not to edit it by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable
 and records `mutable = true`.
-Committing a mutable lake creates a new current version.
+Committing a mutable *lake* creates a new current version.
 Sirno refuses to commit an immutable checkout.
 
 Versioning is field-level in `eter` and *entry*-level in Sirno.
@@ -96,7 +96,7 @@ Restoring a version is checkout followed by a later *frost* commit.
 Checkout writes a snapshot back to the public *lake*.
 Committing the restored public *lake* creates a new current frozen snapshot,
 so later work stays ordered and old snapshots remain immutable.
-Undo-tree branching belongs to git or another outer repository mechanism.
+Undo-tree branching belongs to git or another outer *repository* mechanism.
 Sirno's own version line is linear.
 
 Retention is policy.

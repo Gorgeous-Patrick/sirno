@@ -21,11 +21,11 @@ query reads the public *lake*.
 
 The default query mode is vague text query.
 It matches an *entry*'s id, name, desc, and body.
-It also matches the ids, names, and `desc` values of entries named by structural fields.
+It also matches the ids, names, and `desc` values of *entries* named by structural fields.
 
 Vague query is for recall.
 A user can search for nearby language without choosing the exact *structural field* first.
-Each text term must match somewhere in the expanded entry text.
+Each text term must match somewhere in the expanded *entry* text.
 
 Exact query uses repeated `--exact field=entry-id` flags.
 Exact *structural fields* are conjunctive across fields and disjunctive inside one field.

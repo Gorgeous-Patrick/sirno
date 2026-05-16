@@ -25,7 +25,7 @@ The intent keeps the concept from becoming a detached label.
 Intent-driven work should be reflected when code teaches a clearer purpose.
 A rename, abstraction, or test may be small,
 but the reason behind it can be the design fact future work needs.
-The entry should keep that reason available without forcing readers to reconstruct it from commits.
+The *entry* should keep that reason available without forcing readers to reconstruct it from commits.
 
 ---
 

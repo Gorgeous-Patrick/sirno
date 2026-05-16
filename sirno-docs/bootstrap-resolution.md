@@ -43,7 +43,7 @@ The `meta` category gives that question an address.
 A `meta` *entry* can define vocabulary,
 term styling,
 narrative habits,
-entry splitting rules,
+*entry* splitting rules,
 and agent-facing documentation method.
 
 That made the recursion productive.
@@ -63,14 +63,14 @@ The route through the resolution is:
 5. Read `structural-check` for the configured-reference boundary.
 6. Return to `methodology` for the habit contributors should follow.
 
-The implementation keeps the same conclusion in the lake,
+The implementation keeps the same conclusion in the *lake*,
 not in field-specific code.
 `sirno check` validates configured structural references
 without knowing the recommended field names.
 
 The detail intentionally deferred is local wording.
 This narrative names the sequence.
-The entries named above carry the durable definitions.
+The *entries* named above carry the durable definitions.
 
 Carry this aftertaste:
 the bootstrap surface is ordinary *entries* categorized by `meta`,

@@ -33,7 +33,7 @@ so one version names one immutable set of *entries*.
 Each *entry* is an ordinary Markdown file with a YAML metadata block and prose body.
 The filename stem is the stable id used by *structural fields*, *generated footers*, and *witness* lookup.
 The id is filename-like by definition.
-Lowercase kebab-case is a convention for readable lakes, not a validation boundary.
+Lowercase kebab-case is a convention for readable *lakes*, not a validation boundary.
 
 Once established, the *lake* is the preferred structured design source.
 

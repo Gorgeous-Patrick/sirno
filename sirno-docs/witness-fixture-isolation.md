@@ -9,19 +9,19 @@ refines:
   - witness-lookup
 ---
 
-Witness fixture isolation keeps tests for witness lookup from satisfying themselves through source literals.
+Witness fixture isolation keeps tests for *witness* lookup from satisfying themselves through source literals.
 
-Tests that need an actual repository witness fixture assemble the delimiter text from smaller parts
+Tests that need an actual *repository witness* fixture assemble the delimiter text from smaller parts
 before writing temporary files.
-The scanner still sees a real witness block in the fixture file.
+The scanner still sees a real *witness* block in the fixture file.
 The Rust test source does not expose that fixture block as a standalone string literal.
 
-Tests that only format witness records use neutral comment text.
+Tests that only format *witness* records use neutral comment text.
 They verify range rendering, marker selection, body preservation,
-and record spacing without depending on witness syntax.
+and record spacing without depending on *witness* syntax.
 
-Repository witness comments remain valid evidence in test modules.
-They are repository metadata, not fixture data.
+Repository *witness* comments remain valid evidence in test modules.
+They are *repository* metadata, not fixture data.
 The isolation rule applies to strings and generated files that a test creates for the scanner
 or formatter.
 

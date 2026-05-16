@@ -11,20 +11,20 @@ A structural field is a configured metadata field that Sirno reads as project st
 
 This repository recommends `category`, `belongs`, and `refines`.
 `Sirno.toml` defines the active set under `[structural]`.
-Configured fields are ordinary entry metadata,
+Configured fields are ordinary *entry* metadata,
 but Sirno treats their values as the graph that powers query, checking, and generated links.
 
-Structural fields refer to entries by id.
+Structural fields refer to *entries* by id.
 They are list-valued and may name several targets.
 Their configured order is user-managed.
 Sirno uses that order when rendering configured structural surfaces.
-Agents should discover witness regions mechanically with `sirno witness ENTRY_ID --full`.
+Agents should discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.
 
-This entry is the review front door for the structural field entries.
-It gives the field set one review front door while leaving each field entry free
+This *entry* is the review front door for the structural field *entries*.
+It gives the field set one review front door while leaving each field *entry* free
 to carry its own meaning and other `belongs` targets.
 
-The repository witness for this entry should show the generic structural metadata map.
+The *repository witness* for this *entry* should show the generic structural metadata map.
 The active field set is defined by `Sirno.toml`.
 
 ---

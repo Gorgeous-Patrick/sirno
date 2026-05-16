@@ -16,12 +16,12 @@ The README is the first-impression route for Sirno.
 
 It should state a precise compiler-flavored definition at the top before the mascot image.
 The definition should explain `nominal objects` concisely:
-each design object is identified first by its entry id.
+each design object is identified first by its *entry* id.
 
 It should make the reader want the project model before it names every mechanism in detail.
 The opening pressure is documentation drift:
 design begins as a clear explanation,
-then scatters across repository artifacts and memory.
+then scatters across *repository* artifacts and memory.
 Sirno answers by giving design a named intermediate form.
 The opening motivation is titled `Minute Motivation`.
 The phrase is intentionally small and literary.
@@ -45,10 +45,10 @@ because the joke makes the invitation memorable without changing the design clai
 
 The README should not become the whole design document.
 It should give the reader the motivation,
-show concrete commands for trying the lake,
+show concrete commands for trying the *lake*,
 and point into the *lake* for durable detail.
 
-The repository *witnesses* for this *entry* are hidden Markdown comments in `README.md`.
+The *repository witnesses* for this *entry* are hidden Markdown comments in `README.md`.
 They mark the motivation and the four principle sections.
 
 ---

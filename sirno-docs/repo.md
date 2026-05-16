@@ -17,7 +17,7 @@ and other artifacts that realize design decisions.
 Repository artifacts can witness *entries* through `mosaika`.
 Sirno uses the *entry* id as the *witness* query key,
 keeping design names and *witness* blocks connected without embedding block syntax in *entry* prose.
-`[repo].members` defines the repository artifact surface that Sirno scans when configured.
+`[repo].members` defines the *repository* artifact surface that Sirno scans when configured.
 File members are scanned directly,
 and directory members are scanned recursively.
 A *witness* block opens with `sirno:witness:<entry-id>:begin`
@@ -37,15 +37,15 @@ It asks important commitments to have a name that can survive beyond the edit th
 Repository *witnesses* make that name concrete.
 An *entry* can state a claim,
 and *witness* blocks can show where the claim is implemented, tested, configured, or generated.
-The *witness* block belongs to the repository artifact.
+The *witness* block belongs to the *repository* artifact.
 The *entry* keeps the design language.
 The shared key is the *entry* id.
 
-This keeps repository artifacts and documentation coupled without making either one awkward.
+This keeps *repository* artifacts and documentation coupled without making either one awkward.
 Source code does not need long narrative comments for every design concept.
 The *entries* do not need to duplicate source snippets that will drift.
 Review can move between them by asking which *entry* explains a code commitment,
-and which repository artifact witnesses an *entry*.
+and which *repository* artifact *witnesses* an *entry*.
 
 ---
 

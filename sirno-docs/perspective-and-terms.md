@@ -34,6 +34,14 @@ and *repository*.
 Generic words stay plain when they are not carrying Sirno structure:
 project, documentation, reader, history, change, review, and work.
 
+Agent-procedure entries are exempt from the italic rule.
+The discipline entries that `belongs` to `agent-skills`,
+and the `agent-skills` roster itself,
+are written as terse operational instructions.
+There the markup adds noise instead of clarity,
+so they name Sirno terms in plain prose.
+The exemption is for instructional procedure, not for concept or narrative *entries*.
+
 This distinction lets ordinary project prose stay ordinary.
 When a document says "the project documentation",
 it can mean documentation in a normal repository.

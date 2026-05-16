@@ -21,7 +21,7 @@ so one *lake* version names one immutable *entry* set.
 `repo` is the *repository*.
 It contains source, tests, configuration, generated files, assets,
 and any artifact that can realize or witness design.
-Sirno scans repository *witnesses* only when `[repo].members` is configured.
+Sirno scans *repository witnesses* only when `[repo].members` is configured.
 
 The *forms* are not just storage locations.
 They are roles in a design workflow.

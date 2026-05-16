@@ -42,7 +42,7 @@ Use `category` for kind.
 A category target must itself be categorized by `category`.
 Use `belongs` for review locality.
 Use `refines` for semantic narrowing.
-Use repository *witness* blocks when the *repository* contains evidence for the *entry* claim.
+Use *repository witness* blocks when the *repository* contains evidence for the *entry* claim.
 Leave a *structural field* out when it does not improve navigation, review, or accountability.
 Run `sirno witness ENTRY_ID --full` and read the *entry* prose for what the evidence should mean.
 
@@ -61,7 +61,7 @@ read the *entries* that govern the work.
 Inspect their `belongs`, `refines`, and *witnesses*.
 Implementation should be able to answer which *entry* explains an important commitment.
 
-Reflect while the repository change is fresh.
+Reflect while the *repository* change is fresh.
 Reflect when implementation changes a representation,
 narrows an invariant,
 introduces a boundary,
@@ -81,8 +81,8 @@ Witness important claims.
 The *witness* may be source code, tests, configuration, generated files, or assets.
 Sirno queries *witnesses* by *entry* id through `mosaika`.
 The *entry* states the design claim.
-The *witness* block identifies the repository region to inspect.
-The *entry* prose should briefly say what that repository region is expected to demonstrate.
+The *witness* block identifies the *repository* region to inspect.
+The *entry* prose should briefly say what that *repository* region is expected to demonstrate.
 
 Let Sirno maintain *generated footers*.
 The generated region is bounded by sentinels and Sirno-owned.
@@ -105,7 +105,7 @@ Write the *entry*.
 Classify it only when classification helps.
 Place it in a review neighborhood when the shared subject deserves a front door.
 Refine it when broad design needs local form.
-Witness it when the repository contains its evidence.
+Witness it when the *repository* contains its evidence.
 
 Sirno keeps the structure ready.
 People and agents keep the meaning alive.

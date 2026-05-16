@@ -5,7 +5,7 @@ category:
   - concept
 ---
 
-The transform cycle is the review front door for the four movements between Sirno *forms*.
+The *transform* cycle is the review front door for the four movements between Sirno *forms*.
 
 `lower`, `realize`, `reflect`, and `raise` are not independent.
 They form one loop: narrative becomes *lake entries*, *entries* guide the *repository*,

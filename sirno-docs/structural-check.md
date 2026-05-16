@@ -11,10 +11,10 @@ Sirno checks structure.
 
 Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
-and witness lookup validity when requested.
+and *witness* lookup validity when requested.
 They check references through fields configured under `[structural]`.
 When `[repo].members` is configured,
-review checks report repository witness blocks that name missing entries.
+review checks report *repository witness* blocks that name missing *entries*.
 
 Generated-link checking has two parts.
 Sentinel shape is always checked.
@@ -29,27 +29,27 @@ Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
 
 The check boundary matters because editing and review have different needs.
-During editing, a person may create an entry before creating every related target.
+During editing, a person may create an *entry* before creating every related target.
 Warnings keep that work visible without blocking movement.
 At review time, dangling references should be fixed,
-because the lake is being treated as a coherent design form.
+because the *lake* is being treated as a coherent design form.
 
-File checks keep the public lake shape predictable.
-An entry directory contains Markdown entry files with valid ids.
+File checks keep the public *lake* shape predictable.
+An *entry* directory contains Markdown *entry* files with valid ids.
 Each file starts with accepted frontmatter.
 Generated footer sentinels must be well formed.
 Malformed structural values are errors because tools cannot safely infer target ids from them.
-Unconfigured structural fields are warnings because the entry names structure the project config does not enable.
+Unconfigured structural fields are warnings because the *entry* names structure the project config does not enable.
 
 Metadata target checks keep the graph navigable.
-If an entry names a target through configured structural metadata,
-that target should exist by the time the lake is reviewed.
-This lets query results, generated footers, and reader navigation agree about the same set of entries.
+If an *entry* names a target through configured structural metadata,
+that target should exist by the time the *lake* is reviewed.
+This lets query results, generated footers, and reader navigation agree about the same set of *entries*.
 
 Semantic review remains human and agent work.
-The checker can say that a witness block is shaped correctly.
-It can report configured witness blocks that refer to missing entry ids.
-It cannot say that the witnessed repository artifact is a good implementation of the claim.
+The checker can say that a *witness* block is shaped correctly.
+It can report configured *witness* blocks that refer to missing *entry* ids.
+It cannot say that the witnessed *repository* artifact is a good implementation of the claim.
 That distinction keeps Sirno useful without pretending to solve judgment.
 
 ---

@@ -25,7 +25,7 @@ select the same operation.
 Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
-`sirno status` summarizes the configured repository.
+`sirno status` summarizes the configured *repository*.
 It reports the config path, *monograph* state, *lake* path, optional *frost* path,
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
@@ -76,10 +76,10 @@ With `--with-generated-footer`,
 it searches the full Markdown files including generated links.
 
 `sirno witness ENTRY_ID` scans configured repo members through `mosaika`
-and reports repository *witness* blocks for the selected *entry* id.
+and reports *repository witness* blocks for the selected *entry* id.
 It first resolves `ENTRY_ID` in the active *lake*.
 Missing *entries* fail before repo members are scanned.
-`sirno witness ENTRY_ID -f, --full` also prints the full matched repository regions.
+`sirno witness ENTRY_ID -f, --full` also prints the full matched *repository* regions.
 The *witness* output reports the opening and closing delimiter ranges.
 Delimiter ranges start at the sentinel text and exclude leading indentation.
 In full mode, the summary line contains only the range.

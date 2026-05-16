@@ -37,8 +37,8 @@ The method is practical.
 Before local work begins,
 the project asks which named idea explains the work.
 If the answer is missing or vague,
-the design should be lowered or reflected until the idea has an entry.
-That entry does not need to solve the whole problem.
+the design should be lowered or reflected until the idea has an *entry*.
+That *entry* does not need to solve the whole problem.
 It only needs to give the work a stable handle and enough prose to keep the reason visible.
 
 Concept-driven development does not replace specifications, intent, or tests.
@@ -50,7 +50,7 @@ Implementation can refine a concept when code reveals a clearer representation.
 
 This style helps agents as much as humans.
 An agent with limited context can inspect the concept and its structural fields,
-then work locally without carrying the whole monograph.
+then work locally without carrying the whole *monograph*.
 The concept becomes a compact bridge between broad intent and detailed code.
 
 ---
