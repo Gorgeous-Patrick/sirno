@@ -448,7 +448,7 @@ mod tests {
         let entries = frost.read_all_entries().unwrap();
         let ids = entries.iter().map(|entry| entry.id.as_str()).collect::<Vec<_>>();
 
-        assert_eq!(ids, ["concept", "meta", "narrative"]);
+        assert_eq!(ids, ["category", "concept", "meta", "narrative"]);
         assert!(frost.check_current(CheckMode::Review).unwrap().is_clean());
     }
 

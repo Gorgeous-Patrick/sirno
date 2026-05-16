@@ -1271,7 +1271,7 @@ Body.
         let paths = entry_directory(&root).init().unwrap();
         let report = entry_directory(&root).check(CheckMode::Review).unwrap();
 
-        assert_eq!(paths.len(), 3);
+        assert_eq!(paths.len(), 4);
         assert!(root.join("concept.md").exists());
         assert!(report.is_clean());
     }
@@ -1456,8 +1456,8 @@ Body.
         let report = entry_directory(&root).generate_links(&settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 3);
-        assert_eq!(report.changed_paths().len(), 3);
+        assert_eq!(report.entry_count(), 4);
+        assert_eq!(report.changed_paths().len(), 4);
         assert!(concept.contains(crate::links::BEGIN_LINKS_GUARD));
         assert!(concept.contains("\n---\n\n> **Sirno generated links begin."));
         assert!(concept.contains("- kind (to): (none)"));
@@ -1546,8 +1546,8 @@ Body.
         let report = entry_directory(&root).check_generated_links(&settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 3);
-        assert_eq!(report.changed_paths().len(), 3);
+        assert_eq!(report.entry_count(), 4);
+        assert_eq!(report.changed_paths().len(), 4);
         assert!(!concept.contains(crate::links::BEGIN_LINKS_GUARD));
 
         entry_directory(&root).generate_links(&settings).unwrap();
@@ -1566,8 +1566,8 @@ Body.
         let report = entry_directory(&root).delete_generated_links().unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 3);
-        assert_eq!(report.changed_paths().len(), 3);
+        assert_eq!(report.entry_count(), 4);
+        assert_eq!(report.changed_paths().len(), 4);
         assert!(!concept.contains(crate::links::BEGIN_LINKS_GUARD));
     }
 
@@ -1579,7 +1579,7 @@ Body.
 
         let report = entry_directory(&root).delete_generated_links().unwrap();
 
-        assert_eq!(report.entry_count(), 3);
+        assert_eq!(report.entry_count(), 4);
         assert!(report.changed_paths().is_empty());
     }
 

@@ -71,8 +71,16 @@ impl Entry {
     /// The entries are normal entries.
     /// Later operations do not privilege them.
     pub fn default_seed_entries() -> Result<Vec<Self>, EntryParseError> {
+        // sirno:witness:category:begin
+        let category =
+            EntryMetadata::new("Category", "An entry that other entries can be categorized by.")?;
+        // sirno:witness:category:end
+
         // sirno:witness:meta:begin
-        let meta = EntryMetadata::new("Meta", "An entry that defines project vocabulary.")?;
+        let meta = EntryMetadata::new(
+            "Meta",
+            "An entry that defines the project's principles, vocabulary, and documentation method.",
+        )?;
         // sirno:witness:meta:end
 
         // sirno:witness:concept:begin
@@ -85,7 +93,16 @@ impl Entry {
         // sirno:witness:narrative:end
 
         Ok(vec![
-            Self::new(seed_id("meta"), meta, "Defines entries that classify other entries.\n"),
+            Self::new(
+                seed_id("category"),
+                category,
+                "Categorize an entry by this entry to use it as a category target.\n",
+            ),
+            Self::new(
+                seed_id("meta"),
+                meta,
+                "Defines how this project should be understood and developed.\n",
+            ),
             Self::new(
                 seed_id("concept"),
                 concept,
