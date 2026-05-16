@@ -27,6 +27,8 @@ Prefer direct definitions over defensive framing.
 ### Sirno Lake
 
 The authoritative project design lives in `sirno-docs/`.
+The split Chinese translation snapshot lives in `sirno-docs-zh/`.
+Do not update `sirno-docs-zh/` during normal agent workflow or lake maintenance.
 Whenever anything changes about the project design, keep the Sirno Lake in sync.
 Use `sirno-editor` when editing, moving, or reorganizing lake knowledge.
 Use `sirno-explorer` before design-sensitive repository exploration.

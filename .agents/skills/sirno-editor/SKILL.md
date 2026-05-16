@@ -162,6 +162,9 @@ but more durable than a plan item.
 ## Workflow
 
 1. Read repository instructions, `Sirno.toml`, the configured monograph when present, and the existing lake.
+   Use the configured lake as the routine edit target.
+   `sirno-docs-zh/` stores the split Chinese translation snapshot.
+   Leave that directory unchanged during lake maintenance and design sync.
 2. Inspect the current Sirno CLI before assuming which commands exist.
 3. Map candidate entries before editing:
    id, name, desc, structural fields, and witness status.
