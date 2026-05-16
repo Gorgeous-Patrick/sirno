@@ -60,7 +60,7 @@ enum Command {
     Entry {
         /// Entry command.
         #[command(subcommand)]
-        command: EntryCommand,
+        command: GroupedEntryCommand,
     },
     // sirno:witness:interfaces:end
     /// Manage optional Sirno Frost snapshots.
@@ -153,6 +153,15 @@ enum EntryCommand {
         body: Option<String>,
     },
     // sirno:witness:interfaces:end
+    /// Rename one entry id and its Sirno references.
+    // sirno:witness:interfaces:begin
+    Rename {
+        /// Existing entry id.
+        old_id: String,
+        /// New entry id.
+        new_id: String,
+    },
+    // sirno:witness:interfaces:end
     /// Freeze one public Markdown entry and make its file read-only.
     // sirno:witness:interfaces:begin
     Freeze {
@@ -210,6 +219,83 @@ enum EntryCommand {
         full: bool,
     },
     // sirno:witness:interfaces:end
+}
+
+/// Supported grouped public entry commands.
+#[derive(Debug, Subcommand)]
+enum GroupedEntryCommand {
+    /// Create one Markdown entry.
+    New {
+        /// Entry id and filename stem.
+        id: String,
+        /// Human-readable entry name.
+        #[arg(short = 'n', long)]
+        name: Option<String>,
+        /// Short entry desc.
+        #[arg(short = 'd', long)]
+        desc: String,
+        /// Structural metadata target as FIELD=ENTRY_ID.
+        #[arg(long = "structural", value_name = "FIELD=ENTRY_ID")]
+        structural: Vec<CliStructuralPredicate>,
+        /// Initial Markdown body.
+        #[arg(short = 'b', long)]
+        body: Option<String>,
+    },
+    /// Rename one entry id and its Sirno references.
+    #[command(visible_aliases = ["mv", "move"])]
+    Rename {
+        /// Existing entry id.
+        old_id: String,
+        /// New entry id.
+        new_id: String,
+    },
+    /// Freeze one public Markdown entry and make its file read-only.
+    Freeze {
+        /// Entry id to freeze.
+        id: String,
+    },
+    /// Melt one public Markdown entry and make its file writable.
+    #[command(visible_alias = "unfreeze")]
+    Melt {
+        /// Entry id to melt.
+        id: String,
+    },
+    /// Query public Markdown entries.
+    #[command(visible_alias = "q")]
+    Query {
+        /// Vague text terms matched against entries and structural target summaries.
+        terms: Vec<String>,
+        /// Exact text term matched against id, name, desc, and body.
+        #[arg(long = "exact-term")]
+        exact_terms: Vec<String>,
+        /// Exact structural predicate as FIELD=ENTRY_ID.
+        #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
+        exact: Vec<CliStructuralPredicate>,
+        /// Comma-separated output fields: id, name, path, desc.
+        #[arg(short = 'f', long, value_name = "FIELDS")]
+        fields: Option<CliQueryFields>,
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<CliQueryOutputFormat>,
+    },
+    /// Run ripgrep in the configured public Markdown lake.
+    Rg {
+        /// Include Sirno-owned generated-footer regions in the search.
+        #[arg(long = "with-generated-footer")]
+        with_generated_footer: bool,
+        /// Arguments forwarded to ripgrep before the lake path.
+        #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<OsString>,
+    },
+    /// Show repository witness blocks for one entry id.
+    #[command(visible_aliases = ["w", "wit"])]
+    Witness {
+        /// Entry id used as the witness query key.
+        id: String,
+        /// Print full witness regions instead of only their locations.
+        #[arg(short = 'f', long)]
+        full: bool,
+    },
 }
 
 /// CLI representation of check boundaries.
@@ -466,11 +552,32 @@ impl Cli {
             | Command::TopLevelLake(command) | Command::Lake { command } => {
                 command.run(&config_path, lake_path.as_deref())
             }
-            | Command::TopLevelEntry(command) | Command::Entry { command } => {
-                command.run(&config_path, lake_path.as_deref())
+            | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::Entry { command } => {
+                EntryCommand::from(command).run(&config_path, lake_path.as_deref())
             }
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
+        }
+    }
+}
+
+impl From<GroupedEntryCommand> for EntryCommand {
+    fn from(command: GroupedEntryCommand) -> Self {
+        match command {
+            | GroupedEntryCommand::New { id, name, desc, structural, body } => {
+                Self::New { id, name, desc, structural, body }
+            }
+            | GroupedEntryCommand::Rename { old_id, new_id } => Self::Rename { old_id, new_id },
+            | GroupedEntryCommand::Freeze { id } => Self::Freeze { id },
+            | GroupedEntryCommand::Melt { id } => Self::Melt { id },
+            | GroupedEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
+                Self::Query { terms, exact_terms, exact, fields, format }
+            }
+            | GroupedEntryCommand::Rg { with_generated_footer, args } => {
+                Self::Rg { with_generated_footer, args }
+            }
+            | GroupedEntryCommand::Witness { id, full } => Self::Witness { id, full },
         }
     }
 }
@@ -638,6 +745,22 @@ impl EntryCommand {
                 let entry = Entry::new(id, metadata, body.unwrap_or_default());
                 let path = EntryDirectory::new(&lake).create_entry(&entry)?;
                 println!("created {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | EntryCommand::Rename { old_id, new_id } => {
+                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
+                let old_id = EntryId::new(&old_id)?;
+                let new_id = EntryId::new(&new_id)?;
+                let report =
+                    EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
+                let mut changed_paths = report.changed_paths().to_vec();
+                if let Some(witness) = &settings.witness {
+                    changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
+                }
+                changed_paths.sort();
+                changed_paths.dedup();
+                println!("renamed entry {old_id} to {new_id}");
+                println!("updated {} paths", changed_paths.len());
                 Ok(ExitCode::SUCCESS)
             }
             | EntryCommand::Freeze { id } => {
@@ -1568,9 +1691,10 @@ mod tests {
 
     use crate::{
         Cli, CliCheckMode, CliError, CliQueryField, CliQueryFields, CliQueryOutputFormat,
-        CliStructuralPredicate, Command, EntryCommand, FrostCommand, LakeCommand,
-        exact_query_from_predicates, format_gen_link_report, format_query_json, format_query_table,
-        format_witness_record, format_witness_records, rg_args_include_preprocessor,
+        CliStructuralPredicate, Command, EntryCommand, FrostCommand, GroupedEntryCommand,
+        LakeCommand, exact_query_from_predicates, format_gen_link_report, format_query_json,
+        format_query_table, format_witness_record, format_witness_records,
+        rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -1928,6 +2052,35 @@ Body.
     }
 
     #[test]
+    fn rename_accepts_entry_ids_and_aliases() {
+        let top_level = Cli::parse_from(["sirno", "rename", "old-entry", "new-entry"]);
+        let grouped = Cli::parse_from(["sirno", "entry", "rename", "old-entry", "new-entry"]);
+        let short = Cli::parse_from(["sirno", "entry", "mv", "old-entry", "new-entry"]);
+        let mnemonic = Cli::parse_from(["sirno", "entry", "move", "old-entry", "new-entry"]);
+
+        assert!(matches!(
+            top_level.command,
+            Command::TopLevelEntry(EntryCommand::Rename { old_id, new_id })
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
+        assert!(matches!(
+            grouped.command,
+            Command::Entry { command: GroupedEntryCommand::Rename { old_id, new_id } }
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
+        assert!(matches!(
+            short.command,
+            Command::Entry { command: GroupedEntryCommand::Rename { old_id, new_id } }
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
+        assert!(matches!(
+            mnemonic.command,
+            Command::Entry { command: GroupedEntryCommand::Rename { old_id, new_id } }
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
+    }
+
+    #[test]
     fn entry_new_creates_entry() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
@@ -2055,7 +2208,8 @@ Body.
             "human",
         ]);
         let Command::Entry {
-            command: EntryCommand::Query { exact, fields: Some(fields), format: Some(format), .. },
+            command:
+                GroupedEntryCommand::Query { exact, fields: Some(fields), format: Some(format), .. },
         } = cli.command
         else {
             panic!("expected grouped query command with short options");
@@ -2415,6 +2569,81 @@ Body.
     }
 
     #[test]
+    fn rename_command_updates_lake_and_witness_references() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        let src = temp.path().join("src");
+        SirnoConfig {
+            repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
+            structural: StructuralSettings::from_fields([(
+                "area",
+                StructuralFieldSettings::default(),
+            )]),
+            ..SirnoConfig::new("docs")
+        }
+        .write_new(&config_path)
+        .unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::create_dir(&src).unwrap();
+        fs::write(
+            docs.join("old-entry.md"),
+            "\
+---
+name: Old
+desc: Old entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            docs.join("reader.md"),
+            "\
+---
+name: Reader
+desc: Reader entry.
+area:
+  - old-entry
+---
+
+Body.
+",
+        )
+        .unwrap();
+        let witness_source = format!(
+            "\
+// sirno{}old-entry:begin
+fn sample() {{}}
+// sirno{}old-entry:end
+",
+            ":witness:", ":witness:"
+        );
+        fs::write(src.join("lib.rs"), witness_source).unwrap();
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "entry",
+            "rename",
+            "old-entry",
+            "new-entry",
+        ])
+        .run()
+        .unwrap();
+
+        let reader_source = fs::read_to_string(docs.join("reader.md")).unwrap();
+        let witness_source = fs::read_to_string(src.join("lib.rs")).unwrap();
+        assert!(!docs.join("old-entry.md").exists());
+        assert!(docs.join("new-entry.md").exists());
+        assert!(reader_source.contains("area:\n  - new-entry\n"));
+        assert!(witness_source.contains("sirno:witness:new-entry:begin"));
+        assert!(witness_source.contains("sirno:witness:new-entry:end"));
+    }
+
+    #[test]
     fn lake_path_override_targets_public_lake_commands() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
@@ -2520,17 +2749,17 @@ Body.
 
         assert!(matches!(
             short_query.command,
-            Command::Entry { command: EntryCommand::Query { terms, .. } }
+            Command::Entry { command: GroupedEntryCommand::Query { terms, .. } }
                 if terms == vec!["alpha"]
         ));
         assert!(matches!(
             short_witness.command,
-            Command::Entry { command: EntryCommand::Witness { id, full: false } }
+            Command::Entry { command: GroupedEntryCommand::Witness { id, full: false } }
                 if id == "alpha"
         ));
         assert!(matches!(
             mnemonic_witness.command,
-            Command::Entry { command: EntryCommand::Witness { id, full: false } }
+            Command::Entry { command: GroupedEntryCommand::Witness { id, full: false } }
                 if id == "beta"
         ));
     }

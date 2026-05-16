@@ -8,13 +8,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use glob::glob;
-use mosaika::engine::{Engine, OverwriteMode};
+use mosaika::engine::{
+    CaptureRecord, DelimiterRecord, Engine, MatchRecord, ReplacementScope, RunAnalysis, SourceSpan,
+    TextEditSet,
+};
 use mosaika::semantics::Scheme;
 use mosaika::syntax::{
     self as syn, Arrow, Delimiter, Effect, LogDestination, LogPipe, PipeName, RegexDelimiter,
     Transaction, Transform,
 };
-use serde::Deserialize;
 use thiserror::Error;
 use tracing::trace;
 
@@ -64,12 +66,35 @@ impl WitnessCheckSettings {
             "scan_witnesses begin"
         );
         let files = self.resolve_member_files()?;
-        let output = self.run_mosaika_scan(&files)?;
-        let index = WitnessIndex::from_mosaika_output(&output)?;
+        let analysis = self.run_mosaika_analysis(&files)?;
+        let index = WitnessIndex::from_mosaika_matches(analysis.match_records())?;
         trace!(file_count = files.len(), "scan_witnesses end");
         Ok(index)
     }
     // sirno:witness:witness-lookup:end
+
+    /// Rename configured witness sentinel ids that reference one entry.
+    pub fn rename_entry_references(
+        &self, old_id: &EntryId, new_id: &EntryId,
+    ) -> Result<Vec<PathBuf>, WitnessError> {
+        if old_id == new_id || self.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let files = self.resolve_member_files()?;
+        let analysis = self.run_mosaika_analysis(&files)?;
+        let mut edits = TextEditSet::new();
+        for record in analysis.match_records() {
+            if &entry_id_from_match(record)? != old_id {
+                continue;
+            }
+            add_witness_capture_edit(&mut edits, record, 0, new_id)?;
+            add_witness_capture_edit(&mut edits, record, 1, new_id)?;
+        }
+
+        let report = edits.apply_in_place().map_err(WitnessError::Patch)?;
+        Ok(report.changed_paths().iter().cloned().collect())
+    }
 
     // sirno:witness:witness-lookup:begin
     fn resolve_member_files(&self) -> Result<Vec<PathBuf>, WitnessError> {
@@ -162,18 +187,14 @@ impl WitnessCheckSettings {
     // sirno:witness:witness-lookup:end
 
     // sirno:witness:witness-lookup:begin
-    fn run_mosaika_scan(&self, files: &[PathBuf]) -> Result<String, WitnessError> {
-        if files.is_empty() {
-            return Ok(String::new());
-        }
-
+    fn run_mosaika_analysis(&self, files: &[PathBuf]) -> Result<RunAnalysis, WitnessError> {
         let projection = self.witness.projection(files);
         let scheme = Scheme::from_syntax(projection, &self.root).map_err(WitnessError::Scheme)?;
-        let mut output = Vec::new();
         Engine::new("sirno witness scan", scheme)
-            .run_with_stdout(OverwriteMode::RejectExisting, &mut output)
-            .map_err(WitnessError::Engine)?;
-        String::from_utf8(output).map_err(WitnessError::Utf8)
+            .plan()
+            .map_err(WitnessError::Engine)?
+            .analyze()
+            .map_err(WitnessError::Engine)
     }
     // sirno:witness:witness-lookup:end
 }
@@ -211,47 +232,21 @@ impl WitnessIndex {
     }
 
     // sirno:witness:witness-lookup:begin
-    fn from_mosaika_output(output: &str) -> Result<Self, WitnessError> {
+    fn from_mosaika_matches<'a>(
+        records: impl IntoIterator<Item = &'a MatchRecord>,
+    ) -> Result<Self, WitnessError> {
         let mut index = Self::new();
-        for line in output.lines().filter(|line| !line.trim().is_empty()) {
-            let record: MosaikaLogRecord =
-                serde_json::from_str(line).map_err(WitnessError::Json)?;
-            let marker = record
-                .delimiters
-                .first()
-                .ok_or_else(|| WitnessError::MissingDelimiter { line: line.to_owned() })?;
-            let closing = record
-                .delimiters
-                .last()
-                .ok_or_else(|| WitnessError::MissingDelimiter { line: line.to_owned() })?;
-            let raw_entry = marker
-                .captures
-                .first()
-                .ok_or_else(|| WitnessError::MissingCapture { line: line.to_owned() })?;
-            let raw_closing_entry = closing
-                .captures
-                .first()
-                .ok_or_else(|| WitnessError::MissingCapture { line: line.to_owned() })?;
-            if raw_entry != raw_closing_entry {
-                return Err(WitnessError::MismatchedEntryId {
-                    path: PathBuf::from(&record.file),
-                    opening: raw_entry.clone(),
-                    closing: raw_closing_entry.clone(),
-                });
-            }
-            let entry = EntryId::new(raw_entry).map_err(|source| WitnessError::InvalidEntryId {
-                path: PathBuf::from(&record.file),
-                marker: raw_entry.clone(),
-                source,
-            })?;
+        for record in records {
+            let (marker, closing) = witness_delimiters(record)?;
+            let entry = entry_id_from_match(record)?;
             index.push(WitnessRecord {
                 entry,
-                path: PathBuf::from(record.file),
-                region: record.region.into(),
-                opening: marker.witness_span(),
-                closing: closing.witness_span(),
-                marker: marker.matched.clone(),
-                body: record.body,
+                path: record.source_path.clone(),
+                region: WitnessSpan::from(&record.span),
+                opening: witness_span_for_delimiter(marker),
+                closing: witness_span_for_delimiter(closing),
+                marker: marker.matched_text.clone(),
+                body: record.matched_text.clone(),
             });
         }
         Ok(index)
@@ -302,6 +297,86 @@ pub struct WitnessSpan {
 }
 // sirno:witness:witness:end
 
+impl From<&SourceSpan> for WitnessSpan {
+    fn from(span: &SourceSpan) -> Self {
+        Self {
+            start_line: span.start_line(),
+            start_column: span.start_column(),
+            end_line: span.end_line(),
+            end_column: span.end_column(),
+        }
+    }
+}
+
+fn entry_id_from_match(record: &MatchRecord) -> Result<EntryId, WitnessError> {
+    let (marker, closing) = witness_delimiters(record)?;
+    let raw_entry = witness_capture(record, marker)?.text.as_str();
+    let raw_closing_entry = witness_capture(record, closing)?.text.as_str();
+    if raw_entry != raw_closing_entry {
+        return Err(WitnessError::MismatchedEntryId {
+            path: record.source_path.clone(),
+            opening: raw_entry.to_owned(),
+            closing: raw_closing_entry.to_owned(),
+        });
+    }
+    EntryId::new(raw_entry).map_err(|source| WitnessError::InvalidEntryId {
+        path: record.source_path.clone(),
+        marker: raw_entry.to_owned(),
+        source,
+    })
+}
+
+fn witness_delimiters(
+    record: &MatchRecord,
+) -> Result<(&DelimiterRecord, &DelimiterRecord), WitnessError> {
+    let marker = record.delimiters.first().ok_or_else(|| WitnessError::MissingDelimiter {
+        path: record.source_path.clone(),
+        transform: record.transform.clone(),
+    })?;
+    let closing = record.delimiters.last().ok_or_else(|| WitnessError::MissingDelimiter {
+        path: record.source_path.clone(),
+        transform: record.transform.clone(),
+    })?;
+    Ok((marker, closing))
+}
+
+fn witness_capture<'a>(
+    record: &MatchRecord, delimiter: &'a DelimiterRecord,
+) -> Result<&'a CaptureRecord, WitnessError> {
+    delimiter.captures.first().ok_or_else(|| WitnessError::MissingCapture {
+        path: record.source_path.clone(),
+        transform: record.transform.clone(),
+        delimiter_index: delimiter.delimiter_index,
+    })
+}
+
+fn add_witness_capture_edit(
+    edits: &mut TextEditSet, record: &MatchRecord, delimiter_index: usize, new_id: &EntryId,
+) -> Result<(), WitnessError> {
+    let edit = record
+        .edit_for_scope(
+            ReplacementScope::Capture { delimiter_index, capture_index: 0 },
+            new_id.as_str(),
+        )
+        .ok_or_else(|| WitnessError::MissingCaptureSpan {
+            path: record.source_path.clone(),
+            transform: record.transform.clone(),
+            delimiter_index,
+            capture_index: 0,
+        })?;
+    edits.add(edit).map_err(WitnessError::Patch)
+}
+
+fn witness_span_for_delimiter(delimiter: &DelimiterRecord) -> WitnessSpan {
+    let mut span = WitnessSpan::from(&delimiter.span);
+    span.start_column += leading_whitespace_len(&delimiter.matched_text);
+    span
+}
+
+fn leading_whitespace_len(line: &str) -> usize {
+    line.bytes().take_while(|byte| matches!(byte, b' ' | b'\t')).count()
+}
+
 impl RepoMember {
     fn has_glob_meta(&self) -> bool {
         self.as_str().contains('*') || self.as_str().contains('?') || self.as_str().contains('[')
@@ -347,52 +422,6 @@ impl WitnessSettings {
 
     fn transform_name(index: usize) -> String {
         format!("{WITNESS_TRANSFORM}-{index}")
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct MosaikaLogRecord {
-    file: String,
-    region: MosaikaSourceSpan,
-    delimiters: Vec<MosaikaDelimiterRecord>,
-    body: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct MosaikaDelimiterRecord {
-    span: MosaikaSourceSpan,
-    matched: String,
-    captures: Vec<String>,
-}
-
-impl MosaikaDelimiterRecord {
-    fn witness_span(&self) -> WitnessSpan {
-        let mut span = WitnessSpan::from(self.span);
-        span.start_column += Self::leading_whitespace_len(&self.matched);
-        span
-    }
-
-    fn leading_whitespace_len(line: &str) -> usize {
-        line.bytes().take_while(|byte| matches!(byte, b' ' | b'\t')).count()
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-struct MosaikaSourceSpan {
-    start_line: usize,
-    start_column: usize,
-    end_line: usize,
-    end_column: usize,
-}
-
-impl From<MosaikaSourceSpan> for WitnessSpan {
-    fn from(span: MosaikaSourceSpan) -> Self {
-        Self {
-            start_line: span.start_line,
-            start_column: span.start_column,
-            end_line: span.end_line,
-            end_column: span.end_column,
-        }
     }
 }
 
@@ -445,26 +474,45 @@ pub enum WitnessError {
     /// The generated `mosaika` scheme is invalid.
     #[error("failed to build mosaika witness scheme")]
     Scheme(#[source] mosaika::semantics::SchemeError),
-    /// The `mosaika` scan failed.
-    #[error("failed to run mosaika witness scan")]
+    /// Mosaika witness analysis failed.
+    #[error("failed to analyze mosaika witness matches")]
     Engine(#[source] mosaika::engine::EngineError),
-    /// Mosaika output was not UTF-8.
-    #[error("mosaika witness output was not UTF-8")]
-    Utf8(#[source] std::string::FromUtf8Error),
-    /// One Mosaika JSON record could not be decoded.
-    #[error("failed to decode mosaika witness output")]
-    Json(#[source] serde_json::Error),
-    /// Mosaika emitted a record without delimiter data.
-    #[error("mosaika witness output did not include delimiter data: {line}")]
+    /// Mosaika in-place patching failed.
+    #[error("failed to patch witness captures")]
+    Patch(#[source] mosaika::engine::PatchError),
+    /// Mosaika emitted a match without delimiter data.
+    #[error("mosaika witness match in {path} from `{transform}` did not include delimiter data")]
     MissingDelimiter {
-        /// Raw JSONL line.
-        line: String,
+        /// Repository path containing the match.
+        path: PathBuf,
+        /// Transform that produced the match.
+        transform: String,
     },
-    /// Mosaika emitted a record without the witness id capture.
-    #[error("mosaika witness output did not include a witness id capture: {line}")]
+    /// Mosaika emitted a delimiter without the witness id capture.
+    #[error(
+        "mosaika witness delimiter {delimiter_index} in {path} from `{transform}` did not include a witness id capture"
+    )]
     MissingCapture {
-        /// Raw JSONL line.
-        line: String,
+        /// Repository path containing the match.
+        path: PathBuf,
+        /// Transform that produced the match.
+        transform: String,
+        /// Delimiter missing the capture.
+        delimiter_index: usize,
+    },
+    /// Mosaika emitted a capture that cannot be edited in place.
+    #[error(
+        "mosaika witness capture {capture_index} in delimiter {delimiter_index} in {path} from `{transform}` did not include an editable span"
+    )]
+    MissingCaptureSpan {
+        /// Repository path containing the match.
+        path: PathBuf,
+        /// Transform that produced the match.
+        transform: String,
+        /// Delimiter missing the editable capture span.
+        delimiter_index: usize,
+        /// Capture missing the editable span.
+        capture_index: usize,
     },
     /// A witness block opened and closed with different entry ids.
     #[error("witness block in {path} opens for `{opening}` but closes for `{closing}`")]
@@ -600,6 +648,45 @@ mod tests {
             records[0].closing,
             WitnessSpan { start_line: 3, start_column: 1, end_line: 3, end_column: 34 }
         );
+    }
+
+    #[test]
+    fn renames_standard_witness_entry_references() {
+        let temp = tempfile::tempdir().unwrap();
+        let src = temp.path().join("src");
+        std::fs::create_dir(&src).unwrap();
+        std::fs::write(
+            src.join("lib.rs"),
+            format!(
+                "    {}\n        let preserved = \"old-entry stays in the body\";\n    {}\n",
+                witness_begin("old-entry"),
+                witness_end("old-entry")
+            ),
+        )
+        .unwrap();
+        std::fs::write(temp.path().join("README.md"), markdown_witness_block("old-entry")).unwrap();
+        let settings = WitnessCheckSettings::new(
+            temp.path(),
+            [RepoMember::new("src").unwrap(), RepoMember::new("README.md").unwrap()],
+            WitnessSettings::standard(),
+        );
+
+        let paths = settings
+            .rename_entry_references(
+                &EntryId::new("old-entry").unwrap(),
+                &EntryId::new("new-entry").unwrap(),
+            )
+            .unwrap();
+        let rust_source = std::fs::read_to_string(src.join("lib.rs")).unwrap();
+        let readme_source = std::fs::read_to_string(temp.path().join("README.md")).unwrap();
+
+        assert_eq!(paths.len(), 2);
+        assert!(rust_source.contains("sirno:witness:new-entry:begin"));
+        assert!(rust_source.contains("sirno:witness:new-entry:end"));
+        assert!(rust_source.contains("old-entry stays in the body"));
+        assert!(!rust_source.contains("sirno:witness:old-entry"));
+        assert!(readme_source.contains("sirno:witness:new-entry:begin"));
+        assert!(!readme_source.contains("old-entry"));
     }
 
     #[test]

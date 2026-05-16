@@ -53,6 +53,12 @@ Version checkout is immutable unless `--unsafe-mutable` is supplied.
 The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.
 The `--structural FIELD=ENTRY_ID` option adds configured structural metadata targets.
 It refuses to overwrite an existing *entry* file.
+`sirno entry rename OLD_ID NEW_ID` renames one *entry* id.
+It updates structural metadata targets,
+existing *generated footer* regions,
+and configured *witness* sentinels that reference `OLD_ID`.
+`sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
+Authored prose outside *generated footer* regions remains user-owned.
 
 `sirno freeze ENTRY_ID` adds `frozen:` to one public *entry*
 and removes write permission from that file.

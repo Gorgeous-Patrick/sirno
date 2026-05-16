@@ -163,6 +163,31 @@ impl GenLinkDirectoryReport {
     }
 }
 
+/// Result of renaming one entry id in a public entry directory.
+#[derive(Debug)]
+pub struct EntryRenameReport {
+    old_id: EntryId,
+    new_id: EntryId,
+    changed_paths: Vec<PathBuf>,
+}
+
+impl EntryRenameReport {
+    /// Entry id before the rename.
+    pub fn old_id(&self) -> &EntryId {
+        &self.old_id
+    }
+
+    /// Entry id after the rename.
+    pub fn new_id(&self) -> &EntryId {
+        &self.new_id
+    }
+
+    /// Entry files changed by the rename.
+    pub fn changed_paths(&self) -> &[PathBuf] {
+        &self.changed_paths
+    }
+}
+
 /// Conflict policy for writing a complete public entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EntryDirectoryWritePolicy {
@@ -286,6 +311,118 @@ impl EntryDirectory {
     /// The file is left writable so normal editing can resume.
     pub fn melt_entry(&self, id: &EntryId) -> Result<PathBuf, EntryDirectoryError> {
         self.set_entry_frozen(id, false)
+    }
+
+    /// Rename one entry id and every structural metadata target that references it.
+    ///
+    /// Existing generated-link regions are refreshed after metadata changes.
+    /// Prose outside generated-link regions remains user-owned.
+    pub fn rename_entry(
+        &self, old_id: &EntryId, new_id: &EntryId, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<EntryRenameReport, EntryDirectoryError> {
+        trace!(
+            "rename_entry begin: root={} old_id={} new_id={}",
+            self.root.display(),
+            old_id,
+            new_id
+        );
+        if old_id == new_id {
+            return Err(EntryDirectoryError::RenameSameId(old_id.clone()));
+        }
+
+        let mut check_settings = settings.clone();
+        check_settings.link = false;
+        let checked = self.check_with_settings(CheckMode::Review, &check_settings)?;
+        if checked.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
+        }
+
+        if checked.entry_path(old_id).is_none() {
+            return Err(EntryDirectoryError::EntryNotFound(old_id.clone()));
+        }
+        let new_path = self.entry_file_path(new_id);
+        match fs::symlink_metadata(&new_path) {
+            | Ok(_) => {
+                return Err(EntryDirectoryError::EntryAlreadyExists {
+                    id: new_id.clone(),
+                    path: new_path,
+                });
+            }
+            | Err(source) if source.kind() == std::io::ErrorKind::NotFound => {}
+            | Err(source) => return Err(source.into()),
+        }
+
+        let mut entries = Vec::<(EntryId, Entry, bool)>::new();
+        for entry in checked.entries() {
+            let original_id = entry.id.clone();
+            let mut entry = entry.clone();
+            if &entry.id == old_id {
+                entry.id = new_id.clone();
+            }
+            let content_changed = entry.metadata.rename_structural_target(old_id, new_id);
+            entries.push((original_id, entry, content_changed));
+        }
+
+        let indexed_entries = entries.iter().map(|(_, entry, _)| entry.clone()).collect::<Vec<_>>();
+        let link_index = GeneratedLinkIndex::from_entries(&indexed_entries);
+        let mut changed_paths = Vec::new();
+
+        for (original_id, mut entry, mut content_changed) in entries {
+            let source_path = checked
+                .entry_path(&original_id)
+                .ok_or_else(|| EntryDirectoryError::MissingEntryPath(original_id.clone()))?;
+            let destination_path =
+                if &original_id == old_id { new_path.as_path() } else { source_path };
+            let footer = link_index.render_entry(&entry, &settings.structural);
+            let body = GeneratedLinkBody::new(&entry.body);
+            if body.is_stale(&footer)? {
+                entry.body = body.apply(&footer)?;
+                content_changed = true;
+            }
+
+            if &original_id == old_id {
+                set_path_writable(source_path)?;
+                fs::rename(source_path, destination_path).map_err(|source| {
+                    EntryDirectoryError::RenameFile {
+                        source_path: source_path.to_path_buf(),
+                        destination_path: destination_path.to_path_buf(),
+                        source,
+                    }
+                })?;
+                if content_changed {
+                    let rendered = entry.to_markdown()?;
+                    set_path_writable(destination_path)?;
+                    fs::write(destination_path, rendered).map_err(|source| {
+                        EntryDirectoryError::WriteFile {
+                            path: destination_path.to_path_buf(),
+                            source,
+                        }
+                    })?;
+                }
+                if entry.metadata.frozen.is_some() {
+                    set_path_readonly(destination_path)?;
+                }
+                changed_paths.push(destination_path.to_path_buf());
+                continue;
+            }
+
+            if content_changed {
+                let rendered = entry.to_markdown()?;
+                set_path_writable(source_path)?;
+                fs::write(source_path, rendered).map_err(|source| {
+                    EntryDirectoryError::WriteFile { path: source_path.to_path_buf(), source }
+                })?;
+                if entry.metadata.frozen.is_some() {
+                    set_path_readonly(source_path)?;
+                }
+                changed_paths.push(source_path.to_path_buf());
+            }
+        }
+
+        changed_paths.sort();
+        changed_paths.dedup();
+        trace!("rename_entry end: changed={}", changed_paths.len());
+        Ok(EntryRenameReport { old_id: old_id.clone(), new_id: new_id.clone(), changed_paths })
     }
 
     /// Write a complete public Markdown entry directory.
@@ -939,6 +1076,20 @@ pub enum EntryDirectoryError {
     /// Checkout would overwrite a path that is not a managed entry file.
     #[error("checkout conflict at unmanaged path: {0}")]
     CheckoutConflict(PathBuf),
+    /// Entry rename source and destination ids must differ.
+    #[error("entry rename source and destination are both `{0}`")]
+    RenameSameId(EntryId),
+    /// The entry selected for rename does not exist.
+    #[error("entry `{0}` does not exist")]
+    EntryNotFound(EntryId),
+    /// The destination entry id already exists.
+    #[error("entry `{id}` already exists at {path}")]
+    EntryAlreadyExists {
+        /// Existing destination id.
+        id: EntryId,
+        /// Existing destination path.
+        path: PathBuf,
+    },
     /// Reading the directory or one of its files failed.
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -985,6 +1136,17 @@ pub enum EntryDirectoryError {
     WriteFile {
         /// Path that could not be written.
         path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// An entry file could not be renamed.
+    #[error("failed to rename entry file {source_path} to {destination_path}")]
+    RenameFile {
+        /// Existing entry path.
+        source_path: PathBuf,
+        /// New entry path.
+        destination_path: PathBuf,
         /// Underlying I/O error.
         #[source]
         source: std::io::Error,
@@ -1341,6 +1503,158 @@ Body.
         let error = entry_directory(&root).create_entry(&entry).unwrap_err();
 
         assert!(matches!(error, EntryDirectoryError::CreateFile { .. }));
+    }
+
+    #[test]
+    fn rename_entry_updates_file_structural_targets_and_generated_links() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("docs");
+        fs::create_dir(&root).unwrap();
+        write_entry(
+            &root,
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+        );
+        write_entry(
+            &root,
+            "old-entry.md",
+            "\
+---
+name: Source
+desc: Source entry.
+kind:
+  - concept
+---
+
+Body.
+",
+        );
+        write_entry(
+            &root,
+            "reader.md",
+            "\
+---
+name: Reader
+desc: Reader entry.
+area:
+  - old-entry
+---
+
+Body.
+",
+        );
+        let settings = EntryDirectoryCheckSettings {
+            structural: structural_settings([
+                (FIELD_KIND, StructuralLinkSettings::disabled()),
+                (FIELD_AREA, StructuralLinkSettings::enabled()),
+            ]),
+            ..EntryDirectoryCheckSettings::default()
+        };
+        let directory = entry_directory(&root);
+        directory.generate_links(&settings.structural).unwrap();
+
+        let report = directory
+            .rename_entry(
+                &EntryId::new("old-entry").unwrap(),
+                &EntryId::new("new-entry").unwrap(),
+                &settings,
+            )
+            .unwrap();
+        let checked = directory.check_with_settings(CheckMode::Review, &settings).unwrap();
+        let reader_source = fs::read_to_string(root.join("reader.md")).unwrap();
+        let renamed_source = fs::read_to_string(root.join("new-entry.md")).unwrap();
+
+        assert_eq!(report.old_id(), &EntryId::new("old-entry").unwrap());
+        assert_eq!(report.new_id(), &EntryId::new("new-entry").unwrap());
+        assert!(report.changed_paths().contains(&root.join("new-entry.md")));
+        assert!(!root.join("old-entry.md").exists());
+        assert!(root.join("new-entry.md").exists());
+        assert!(reader_source.contains("area:\n  - new-entry\n"));
+        assert!(!reader_source.contains("old-entry"));
+        assert!(renamed_source.contains("[reader](reader.md)"));
+        assert!(checked.is_clean());
+    }
+
+    #[test]
+    fn rename_entry_refuses_existing_destination() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "old-entry.md",
+            "\
+---
+name: Old
+desc: Old entry.
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
+            "new-entry.md",
+            "\
+---
+name: New
+desc: New entry.
+---
+
+Body.
+",
+        );
+
+        let error = entry_directory(temp.path())
+            .rename_entry(
+                &EntryId::new("old-entry").unwrap(),
+                &EntryId::new("new-entry").unwrap(),
+                &EntryDirectoryCheckSettings::default(),
+            )
+            .unwrap_err();
+
+        assert!(matches!(error, EntryDirectoryError::EntryAlreadyExists { .. }));
+    }
+
+    #[test]
+    fn rename_entry_leaves_unreferenced_entries_untouched() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "old-entry.md",
+            "\
+---
+name: Old
+desc: Old entry.
+---
+
+Body.
+",
+        );
+        let untouched = "\
+---
+desc: Untouched entry.
+name: Untouched
+---
+
+Body.
+";
+        write_entry(temp.path(), "untouched.md", untouched);
+
+        entry_directory(temp.path())
+            .rename_entry(
+                &EntryId::new("old-entry").unwrap(),
+                &EntryId::new("new-entry").unwrap(),
+                &EntryDirectoryCheckSettings::default(),
+            )
+            .unwrap();
+
+        assert_eq!(fs::read_to_string(temp.path().join("untouched.md")).unwrap(), untouched);
     }
 
     #[test]

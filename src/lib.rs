@@ -33,7 +33,7 @@ pub use crate::frost::{FrostError, SirnoFrost};
 pub use crate::id::{EntryId, EntryIdError};
 pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
-    EntryDirectoryWritePolicy, EntryFileDiagnostic, GenLinkDirectoryReport,
+    EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
 };
 pub use crate::links::{
     BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex,

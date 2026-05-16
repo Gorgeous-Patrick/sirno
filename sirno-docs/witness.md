@@ -37,6 +37,8 @@ when another *repository* surface needs a different marker shape.
 
 The *entry* body may explain how to find or interpret evidence as fallback guidance.
 The convention is the *entry* id plus the *repository witness* block.
+When `sirno entry rename` changes an *entry* id,
+it rewrites configured *witness* sentinels that captured the old id.
 
 Repository *witnesses* connect prose to artifacts without merging the two.
 The *entry* states the design claim in project language.

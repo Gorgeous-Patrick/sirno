@@ -236,6 +236,20 @@ impl EntryMetadata {
     pub fn push_structural_target(&mut self, field: impl Into<String>, target: EntryId) {
         self.structural_targets_for_mut(field).push(target);
     }
+
+    /// Rename every structural metadata target that matches `old_id`.
+    pub fn rename_structural_target(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+        let mut changed = false;
+        for targets in self.structural.values_mut() {
+            for target in targets {
+                if target == old_id {
+                    *target = new_id.clone();
+                    changed = true;
+                }
+            }
+        }
+        changed
+    }
 }
 
 /// Marker for the canonical `frozen:` metadata field.
@@ -653,6 +667,24 @@ Body.
         let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
 
         assert_eq!(reparsed.metadata.structural_targets_for("witness"), &[target]);
+    }
+
+    #[test]
+    fn renames_structural_targets() {
+        let old_id = EntryId::new("old-entry").unwrap();
+        let new_id = EntryId::new("new-entry").unwrap();
+        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        metadata.push_structural_target("belongs", old_id.clone());
+        metadata.push_structural_target("belongs", EntryId::new("other-entry").unwrap());
+        metadata.push_structural_target("refines", old_id.clone());
+
+        assert!(metadata.rename_structural_target(&old_id, &new_id));
+
+        assert_eq!(
+            metadata.structural_targets_for("belongs"),
+            &[new_id.clone(), EntryId::new("other-entry").unwrap()]
+        );
+        assert_eq!(metadata.structural_targets_for("refines"), &[new_id]);
     }
 
     #[test]
