@@ -28,6 +28,14 @@ Then expand or revise the body with direct, reader-friendly prose.
 Choose `category`, `belongs`, and `refines` by their own entries,
 and leave a structural field out when it is merely decorative.
 
+Distinguish a principle from its application.
+A meta-level principle states how the project should be understood or developed.
+Applying it produces structural facts:
+which entries a `category` names, which `belongs` neighborhood an entry joins.
+Those facts live in metadata and generated footers, not in new entries.
+Create an entry only when it gives future work a handle
+that the principle and its structural edges do not already provide.
+
 Leave generated footers untouched.
 After metadata stabilizes, run generated-link maintenance,
 then run the editing-mode structural check and the review-mode check.
