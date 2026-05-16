@@ -59,6 +59,7 @@ Sirno keeps the edges between those forms explicit.
 
 - belongs (to): (none)
 - belongs (from):
+  - [agent-skills](agent-skills.md)
   - [form](form.md)
   - [future-work](future-work.md)
   - [interfaces](interfaces.md)
