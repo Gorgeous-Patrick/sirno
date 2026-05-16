@@ -60,9 +60,10 @@ Checkout materializes one frozen snapshot as Markdown files.
 The conservative write policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
 and preserves ignored paths.
-Normal checkout writes a visible read-only blockquote
+`sirno frost checkout --latest` materializes the current snapshot as a mutable current *lake*.
+Explicit version checkout writes a visible read-only blockquote
 and removes write permission from the *lake* root and managed *entry* files.
-`--unsafe-mutable` leaves the checkout writable.
+`--unsafe-mutable` leaves an explicit version checkout writable.
 
 `Sirno.lock.toml` records the public *lake* state relative to *frost*.
 `status = "current"` means the public *lake* is the editable current version.
@@ -70,7 +71,7 @@ and removes write permission from the *lake* root and managed *entry* files.
 The lock stores the snapshot generation and version,
 plus `mutable = true` only for unsafe mutable checkouts.
 Sirno refuses to commit an immutable checkout.
-Committing an unsafe mutable checkout creates a new current snapshot.
+Committing a mutable checkout creates a new current snapshot.
 
 Sirno Frost is private substrate.
 Users and tools may inspect it when debugging storage,

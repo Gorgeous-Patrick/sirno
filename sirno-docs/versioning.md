@@ -72,7 +72,8 @@ Checkout uses an explicit conflict policy.
 The conservative policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
 while preserving ignored paths.
-After checkout,
+`sirno frost checkout --latest` writes the current snapshot as a mutable current *lake*.
+After explicit version checkout,
 `Sirno.lock.toml` records `status = "checked-out"` and the selected snapshot reference.
 
 A normal checkout is immutable.
@@ -81,7 +82,7 @@ It also writes a visible Markdown blockquote at the start of each checked-out *e
 that marks the file as read-only and says not to edit it by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable
 and records `mutable = true`.
-Committing an unsafe mutable checkout creates a new current version.
+Committing a mutable lake creates a new current version.
 Sirno refuses to commit an immutable checkout.
 
 Versioning is field-level in `eter` and *entry*-level in Sirno.

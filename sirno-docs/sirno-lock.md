@@ -14,6 +14,7 @@ It is written only when Sirno Frost is configured.
 The lock contains one `[frost]` table.
 `status = "current"` means the public *lake* represents the current editable *frost* version.
 `status = "checked-out"` means the public *lake* materializes a selected frozen version.
+`sirno frost checkout --latest` records `status = "current"` and leaves files writable.
 The `generation` and `version` fields store the `eter` `SnapshotRef` for that state.
 `version` is the raw `Eterator` coordinate inside the stored GC generation.
 Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
@@ -27,7 +28,7 @@ that says the file is read-only and should not be edited by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable
 and records `mutable = true`.
 
-Committing a mutable checkout writes a new current *frost* version
+Committing a mutable lake writes a new current *frost* version
 and rewrites the lock to `status = "current"`.
 Sirno refuses to commit an immutable checkout.
 

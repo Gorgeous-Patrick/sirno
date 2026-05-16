@@ -36,8 +36,9 @@ and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.
 `sirno frost commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
-`sirno frost checkout VERSION` materializes one version into the public *lake*.
-The checkout is immutable unless `--unsafe-mutable` is supplied.
+`sirno frost checkout --latest` materializes the latest version as a mutable public *lake*.
+`sirno frost checkout VERSION` materializes one older version into the public *lake*.
+Version checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.
 The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.

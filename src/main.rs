@@ -365,11 +365,15 @@ enum FrostCommand {
     },
     /// Freeze the current public Markdown lake.
     Commit,
-    /// Check out one Frost version into the public Markdown lake.
+    /// Check out Frost entries into the public Markdown lake.
     Checkout {
         /// Version coordinate to materialize in the current Frost generation.
-        version: u64,
-        /// Leave the checked-out version writable.
+        #[arg(required_unless_present = "latest", conflicts_with = "latest")]
+        version: Option<u64>,
+        /// Check out the latest Frost version as the mutable current lake.
+        #[arg(long, conflicts_with = "unsafe_mutable")]
+        latest: bool,
+        /// Leave an explicit version checkout writable.
         #[arg(long)]
         unsafe_mutable: bool,
     },
@@ -706,11 +710,19 @@ impl FrostCommand {
                 );
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Checkout { version, unsafe_mutable } => {
+            | FrostCommand::Checkout { version, latest, unsafe_mutable } => {
                 let context = FrostContext::load(config_path, lake_path)?;
-                let version = frost_version(version)?;
                 let frost = SirnoFrost::open(&context.frost_path)?;
-                let snapshot = frost.snapshot_for_version(version)?;
+                let snapshot = if latest {
+                    frost.current_snapshot()?
+                } else {
+                    frost.snapshot_for_version(frost_version(
+                        version.expect("clap requires VERSION unless --latest is present"),
+                    )?)?
+                };
+                if snapshot.version() == Eterator::EMPTY.version() {
+                    return Err(CliError::InvalidFrostVersion(snapshot.version()));
+                }
                 let paths = frost.checkout_entry_directory(
                     snapshot,
                     &context.lake_path,
@@ -718,19 +730,30 @@ impl FrostCommand {
                         ignore: context.settings.ignore.clone(),
                     },
                 )?;
-                if unsafe_mutable {
+                if latest || unsafe_mutable {
                     context.lake().set_writable(&context.settings)?;
                 } else {
                     context.lake().add_readonly_checkout_warnings(&paths)?;
                     context.lake().set_readonly(&context.settings)?;
                 }
-                SirnoLock::checked_out(snapshot, unsafe_mutable).write(&context.lock_path)?;
+                if latest {
+                    SirnoLock::current(snapshot).write(&context.lock_path)?;
+                } else {
+                    SirnoLock::checked_out(snapshot, unsafe_mutable).write(&context.lock_path)?;
+                }
                 println!(
-                    "checked out frost version {} into {} ({} entries, {})",
+                    "checked out {}frost version {} into {} ({} entries, {})",
+                    if latest { "latest " } else { "" },
                     snapshot.version(),
                     context.lake_path.display(),
                     paths.len(),
-                    if unsafe_mutable { "unsafe mutable" } else { "immutable" }
+                    if latest {
+                        "mutable"
+                    } else if unsafe_mutable {
+                        "unsafe mutable"
+                    } else {
+                        "immutable"
+                    }
                 );
                 Ok(ExitCode::SUCCESS)
             }
@@ -1161,7 +1184,10 @@ fn frost_state_label(lock: Option<&SirnoLock>) -> String {
     };
     match lock.frost.status {
         | FrostLockStatus::Current => {
-            format!("current version {} (generation {})", lock.frost.version, lock.frost.generation)
+            format!(
+                "current version {} (generation {}, mutable)",
+                lock.frost.version, lock.frost.generation
+            )
         }
         | FrostLockStatus::CheckedOut if lock.frost.mutable => {
             format!(
@@ -1606,6 +1632,62 @@ Body.
     }
 
     #[test]
+    fn frost_checkout_latest_writes_mutable_current_lake() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "checkout",
+            "1",
+        ])
+        .run()
+        .unwrap();
+        assert!(fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "checkout",
+            "--latest",
+        ])
+        .run()
+        .unwrap();
+
+        let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
+        let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
+        assert_eq!(lock.frost.status, FrostLockStatus::Current);
+        assert_eq!(lock.frost.version, 1);
+        assert!(!lock.frost.mutable);
+        assert!(!source.contains("read-only Sirno Frost checkout"));
+        assert!(!fs::metadata(&docs).unwrap().permissions().readonly());
+        assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+    }
+
+    #[test]
     fn move_accepts_lake_path() {
         let cli = Cli::parse_from(["sirno", "move", "sirno-docs"]);
 
@@ -1647,8 +1729,47 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::Frost { command: FrostCommand::Checkout { version: 3, unsafe_mutable: true } }
+            Command::Frost {
+                command: FrostCommand::Checkout {
+                    version: Some(3),
+                    latest: false,
+                    unsafe_mutable: true
+                }
+            }
         ));
+    }
+
+    #[test]
+    fn frost_checkout_accepts_latest_flag() {
+        let cli = Cli::parse_from(["sirno", "frost", "checkout", "--latest"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::Frost {
+                command: FrostCommand::Checkout {
+                    version: None,
+                    latest: true,
+                    unsafe_mutable: false
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn frost_checkout_rejects_latest_with_version() {
+        let error =
+            Cli::try_parse_from(["sirno", "frost", "checkout", "3", "--latest"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn frost_checkout_rejects_latest_with_unsafe_mutable() {
+        let error =
+            Cli::try_parse_from(["sirno", "frost", "checkout", "--latest", "--unsafe-mutable"])
+                .unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
     }
 
     #[test]
