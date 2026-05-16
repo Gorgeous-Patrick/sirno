@@ -5,9 +5,12 @@ category:
   - concept
 belongs:
   - structural-field
+refines:
+  - refinement
 ---
 
-`refines` points from a more specific *entry* to the broader *entries* it makes concrete.
+`refines` records a *refinement* edge from a more specific *entry*
+to the broader *entries* it makes concrete.
 
 Refinement turns high-level design into lower-level design,
 implementation detail, and testable behavior.
