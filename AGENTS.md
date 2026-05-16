@@ -28,8 +28,12 @@ Prefer direct definitions over defensive framing.
 
 The authoritative project design lives in `sirno-docs/`.
 Whenever anything changes about the project design, keep the Sirno Lake in sync.
-Use the `sirno-editor` skill when editing, moving, or reorganizing design knowledge in the lake.
-Run generated-link maintenance after changing lake metadata.
+Use `sirno-editor` when editing, moving, or reorganizing lake knowledge.
+Use `sirno-explorer` before design-sensitive repository exploration.
+Use `sirno-witness` when adding or refining repository witness blocks.
+Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
+If more details are needed, the Sirno skill roster is documented in `sirno-docs/agent-skills.md`.
+After lake metadata changes, run generated-link maintenance and `sirno check`.
 Use `sirno-docs/introduction.md` as the first narrative route.
 Use `sirno-docs/methodology.md` as the working guide.
 
