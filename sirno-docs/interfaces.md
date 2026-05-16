@@ -45,6 +45,7 @@ and renames the current *frost* path on the filesystem.
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 `sirno frost checkout --latest` materializes the latest version as a mutable public *lake*.
 `sirno frost checkout VERSION` materializes one older version into the public *lake*.
+`sirno frost defrost` is an alias for `sirno frost checkout`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.

@@ -396,6 +396,7 @@ enum FrostCommand {
     /// Freeze the current public Markdown lake.
     Commit,
     /// Check out Frost entries into the public Markdown lake.
+    #[command(visible_alias = "defrost")]
     Checkout {
         /// Version coordinate to materialize in the current Frost generation.
         #[arg(required_unless_present = "latest", conflicts_with = "latest")]
@@ -1810,6 +1811,22 @@ Body.
     #[test]
     fn frost_checkout_accepts_latest_flag() {
         let cli = Cli::parse_from(["sirno", "frost", "checkout", "--latest"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::Frost {
+                command: FrostCommand::Checkout {
+                    version: None,
+                    latest: true,
+                    unsafe_mutable: false
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn frost_defrost_alias_accepts_latest_flag() {
+        let cli = Cli::parse_from(["sirno", "frost", "defrost", "--latest"]);
 
         assert!(matches!(
             cli.command,

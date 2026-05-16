@@ -67,6 +67,7 @@ The conservative write policy writes only into an absent or empty target directo
 CLI checkout replaces managed Markdown files in the configured public *lake*
 and preserves ignored paths.
 `sirno frost checkout --latest` materializes the current snapshot as a mutable current *lake*.
+`sirno frost defrost` is an alias for `sirno frost checkout`.
 Explicit version checkout writes a visible read-only blockquote
 and removes write permission from the *lake* root and managed *entry* files.
 `--unsafe-mutable` leaves an explicit version checkout writable.
