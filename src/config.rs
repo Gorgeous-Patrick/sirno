@@ -527,7 +527,7 @@ impl ConfigRenderer {
             self.push_field(
                 "ignore",
                 &config.lake.ignore,
-                "Lake-root paths Sirno skips while reading, checking, querying, and generating links.",
+                "Paths in lake that Sirno skips while reading, checking, querying, and generating links.",
             )?;
         }
         // sirno:witness:project-config-comments:end
@@ -1333,7 +1333,7 @@ delimiters = []
         assert_eq!(read, config);
         assert!(source.contains("# Markdown monograph path"));
         assert!(source.contains("# Markdown entry lake path"));
-        assert!(source.contains("# Lake-root paths Sirno skips"));
+        assert!(source.contains("# Paths in lake that Sirno skips"));
         assert!(source.contains("# Sirno Frost path"));
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));

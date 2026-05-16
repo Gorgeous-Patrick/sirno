@@ -17,7 +17,7 @@ The generated comments are:
 
 - `Markdown monograph path, resolved relative to this config file.`
 - `Markdown entry lake path, resolved relative to this config file.`
-- `Lake-root paths Sirno skips while reading, checking, querying, and generating links.`
+- `Paths in lake that Sirno skips while reading, checking, querying, and generating links.`
 - `Sirno Frost path, kept outside the public lake.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry id.`

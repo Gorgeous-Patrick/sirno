@@ -1,7 +1,7 @@
 [lake]
 # Markdown entry lake path, resolved relative to this config file.
 path = "sirno-docs"
-# Lake-root paths Sirno skips while reading, checking, querying, and generating links.
+# Paths in lake that Sirno skips while reading, checking, querying, and generating links.
 ignore = [".obsidian"]
 
 [repo]
