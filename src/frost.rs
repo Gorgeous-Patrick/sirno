@@ -4,7 +4,7 @@
 //! The current backend uses `eter` filesystem snapshots as durable storage.
 //! That layout is private to this module.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use eter::filesystem::{FilesystemBackend, FilesystemEntryId, FilesystemError, FilesystemWriteTxn};
@@ -16,7 +16,7 @@ use thiserror::Error;
 use tracing::trace;
 
 use crate::check::{CheckMode, CheckReport};
-use crate::entry::{Entry, EntryMetadata};
+use crate::entry::{Entry, EntryMetadata, EntryStructuralFields};
 use crate::id::{EntryId, EntryIdError};
 use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy,
@@ -48,7 +48,7 @@ impl Field for DescField {
 
 struct StructuralField;
 impl Field for StructuralField {
-    type Content = BTreeMap<String, Vec<EntryId>>;
+    type Content = EntryStructuralFields;
 }
 
 /// Sirno Frost facade for Sirno entries.
@@ -288,7 +288,7 @@ impl SirnoFrost {
 struct StoredEntryFacet {
     name: Option<String>,
     desc: Option<String>,
-    structural: BTreeMap<String, Vec<EntryId>>,
+    structural: EntryStructuralFields,
     body: Option<String>,
 }
 
@@ -325,15 +325,15 @@ impl StoredEntryFacet {
 
     fn resolve_optional_structural(
         backend: &SirnoBackend, at: SnapshotRef, id: &FilesystemEntryId,
-    ) -> Result<BTreeMap<String, Vec<EntryId>>, FilesystemError> {
+    ) -> Result<EntryStructuralFields, FilesystemError> {
         match backend.resolve::<StructuralField>(at, id)? {
             | Resolution::Content(value) => Ok(value),
-            | Resolution::Deleted | Resolution::Absent => Ok(BTreeMap::new()),
+            | Resolution::Deleted | Resolution::Absent => Ok(EntryStructuralFields::new()),
         }
     }
 
     fn apply_structural<'a>(
-        txn: SirnoWriteTxn<'a>, fs_id: &FilesystemEntryId, value: &BTreeMap<String, Vec<EntryId>>,
+        txn: SirnoWriteTxn<'a>, fs_id: &FilesystemEntryId, value: &EntryStructuralFields,
     ) -> SirnoWriteTxn<'a> {
         if value.is_empty() {
             txn.delete::<StructuralField>(fs_id)
@@ -480,6 +480,35 @@ mod tests {
         let read = frost.read_entry_at_snapshot(version, &entry.id).unwrap();
 
         assert_eq!(read, Some(entry));
+    }
+
+    #[test]
+    fn checkout_preserves_structural_field_order_after_frost_round_trip() {
+        let public = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let checkout = tempfile::tempdir().unwrap();
+        let mut entry = test_entry("alpha", "Alpha");
+        entry.metadata.push_structural_target("zeta", EntryId::new("concept").unwrap());
+        entry.metadata.push_structural_target("area", EntryId::new("meta").unwrap());
+        write_public_entry(public.path(), &entry);
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let version = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        frost
+            .checkout_entry_directory(
+                version,
+                checkout.path(),
+                EntryDirectoryWritePolicy::EmptyDirectory,
+            )
+            .unwrap();
+        let source = fs::read_to_string(checkout.path().join("alpha.md")).unwrap();
+        let read = Entry::from_markdown(entry.id.clone(), &source).unwrap();
+        let fields = read.metadata.structural_fields().map(|(field, _)| field).collect::<Vec<_>>();
+
+        assert_eq!(fields, ["zeta", "area"]);
+        assert!(source.find("zeta:\n").unwrap() < source.find("area:\n").unwrap());
     }
 
     #[test]

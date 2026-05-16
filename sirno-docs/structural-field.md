@@ -16,6 +16,8 @@ but Sirno treats their values as the graph that powers query, checking, and gene
 
 Structural fields refer to entries by id.
 They are list-valued and may name several targets.
+Their configured order is user-managed.
+Sirno uses that order when rendering configured structural surfaces.
 Agents should discover witness regions mechanically with `sirno witness ENTRY_ID --full`.
 
 This entry is the review front door for the structural field entries.

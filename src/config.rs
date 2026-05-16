@@ -781,6 +781,10 @@ mod tests {
         toml::from_str(&config_source(source)).unwrap()
     }
 
+    fn assert_before(source: &str, before: &str, after: &str) {
+        assert!(source.find(before).unwrap() < source.find(after).unwrap());
+    }
+
     #[test]
     fn parses_minimal_config() {
         let config = parse_config(
@@ -1012,6 +1016,28 @@ link = { clique = true }
                 ),
             ])
         );
+    }
+
+    #[test]
+    fn preserves_configured_structural_field_order() {
+        let config = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[structural]
+zeta = { link = { to = true } }
+alpha = { link = { from = true } }
+middle = { link = { clique = true } }
+"#,
+        );
+
+        let fields = config.structural.fields().map(|(field, _)| field).collect::<Vec<_>>();
+        let rendered = config.to_toml().unwrap();
+
+        assert_eq!(fields, ["zeta", "alpha", "middle"]);
+        assert_before(&rendered, "zeta = ", "alpha = ");
+        assert_before(&rendered, "alpha = ", "middle = ");
     }
 
     #[test]
@@ -1347,6 +1373,8 @@ delimiters = []
         assert!(source.contains("# Structural metadata field"));
         assert!(source.contains("kind = { link = { to = true, from = true } }"));
         assert!(source.contains("area = { link = { to = true, from = true, clique = true } }"));
+        assert_before(&source, "kind = ", "area = ");
+        assert_before(&source, "area = ", "parent = ");
     }
 
     #[test]

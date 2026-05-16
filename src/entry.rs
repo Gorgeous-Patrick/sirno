@@ -4,8 +4,7 @@
 //! The prose body carries design content.
 //! The metadata block carries structure that tools read exactly.
 
-use std::collections::BTreeMap;
-
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 use thiserror::Error;
@@ -101,6 +100,9 @@ impl Entry {
     }
 }
 
+/// Ordered structural metadata fields for one entry.
+pub type EntryStructuralFields = IndexMap<String, Vec<EntryId>>;
+
 /// Metadata for one Sirno entry.
 ///
 /// Invariant: `name` and `desc` are single-line plain strings.
@@ -113,7 +115,10 @@ pub struct EntryMetadata {
     pub desc: String,
     // sirno:witness:structural-field:begin
     /// Structural metadata fields keyed by their Markdown metadata field name.
-    pub structural: BTreeMap<String, Vec<EntryId>>,
+    ///
+    /// Field order follows the user-authored metadata order and is preserved when entries move
+    /// through other storage forms.
+    pub structural: EntryStructuralFields,
     // sirno:witness:structural-field:end
     /// Freeze marker declaring that this public entry file is read-only.
     pub frozen: Option<FrozenMarker>,
@@ -127,7 +132,7 @@ impl EntryMetadata {
         let desc = desc.into();
         validate_plain_string(NAME_FIELD, &name)?;
         validate_plain_string(DESC_FIELD, &desc)?;
-        Ok(Self { name, desc, structural: BTreeMap::new(), frozen: None })
+        Ok(Self { name, desc, structural: EntryStructuralFields::new(), frozen: None })
     }
     // sirno:witness:metadata:end
 
@@ -179,7 +184,7 @@ impl EntryMetadata {
     }
     // sirno:witness:metadata:end
 
-    /// Return structural field names and their targets in deterministic order.
+    /// Return structural field names and their targets in user-authored order.
     pub fn structural_fields(&self) -> impl Iterator<Item = (&str, &[EntryId])> {
         self.structural.iter().map(|(field, targets)| (field.as_str(), targets.as_slice()))
     }
@@ -201,7 +206,7 @@ impl EntryMetadata {
         let field = field.into();
         let targets = targets.into_iter().collect::<Vec<_>>();
         if targets.is_empty() {
-            self.structural.remove(&field);
+            self.structural.shift_remove(&field);
         } else {
             self.structural.insert(field, targets);
         }
@@ -249,7 +254,7 @@ fn take_required_string(
     mapping: &mut Mapping, field: &'static str,
 ) -> Result<String, EntryParseError> {
     let value = mapping
-        .remove(Value::String(field.to_owned()))
+        .shift_remove(Value::String(field.to_owned()))
         .ok_or(EntryParseError::MissingField(field))?;
     match value {
         | Value::String(value) => Ok(value),
@@ -257,10 +262,8 @@ fn take_required_string(
     }
 }
 
-fn take_structural_fields(
-    mapping: Mapping,
-) -> Result<BTreeMap<String, Vec<EntryId>>, EntryParseError> {
-    let mut structural = BTreeMap::new();
+fn take_structural_fields(mapping: Mapping) -> Result<EntryStructuralFields, EntryParseError> {
+    let mut structural = EntryStructuralFields::new();
     for (key, value) in mapping {
         let Value::String(field) = key else {
             return Err(EntryParseError::MetadataKeyMustBeString);
@@ -289,7 +292,7 @@ fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryId>, EntryParse
 fn take_frozen_marker(
     mapping: &mut Mapping, canonical_frozen: bool,
 ) -> Result<Option<FrozenMarker>, EntryParseError> {
-    let Some(value) = mapping.remove(Value::String(FROZEN_FIELD.to_owned())) else {
+    let Some(value) = mapping.shift_remove(Value::String(FROZEN_FIELD.to_owned())) else {
         return Ok(None);
     };
     if value != Value::Null || !canonical_frozen {
@@ -329,7 +332,7 @@ fn render_id_list(
 }
 
 fn render_structural_fields(
-    out: &mut String, structural: &BTreeMap<String, Vec<EntryId>>,
+    out: &mut String, structural: &EntryStructuralFields,
 ) -> Result<(), EntryRenderError> {
     for (field, values) in structural {
         render_id_list(out, field, values)?;
@@ -466,6 +469,29 @@ witness:
             entry.metadata.structural_targets_for("witness"),
             &[EntryId::new("repository-evidence").unwrap()]
         );
+    }
+
+    #[test]
+    fn preserves_structural_field_order_when_rendering() {
+        let source = "\
+---
+name: Ordered
+desc: Metadata with user-authored structural field order.
+zeta:
+  - concept
+alpha:
+  - meta
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let fields = entry.metadata.structural_fields().map(|(field, _)| field).collect::<Vec<_>>();
+        let rendered = entry.to_markdown().unwrap();
+
+        assert_eq!(fields, ["zeta", "alpha"]);
+        assert!(rendered.find("zeta:\n").unwrap() < rendered.find("alpha:\n").unwrap());
     }
 
     #[test]

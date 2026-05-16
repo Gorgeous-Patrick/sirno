@@ -1,6 +1,5 @@
 //! Command-line interface for Sirno.
 
-use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
@@ -12,6 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
+use indexmap::IndexMap;
 use serde::ser::SerializeMap;
 use sirno::{
     CONFIG_FILE_NAME, CheckMode, ConfigError, Entry, EntryDirectory, EntryDirectoryCheckSettings,
@@ -1142,8 +1142,8 @@ fn exact_query_from_predicates(
 
 fn structural_targets_by_field(
     predicates: Vec<CliStructuralPredicate>, structural: &StructuralSettings,
-) -> Result<BTreeMap<String, Vec<EntryId>>, CliError> {
-    let mut targets_by_field = BTreeMap::<String, Vec<EntryId>>::new();
+) -> Result<IndexMap<String, Vec<EntryId>>, CliError> {
+    let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
     for predicate in predicates {
         if !structural.contains_field(&predicate.field) {
             return Err(CliError::UnconfiguredStructuralField(predicate.field));
@@ -1547,6 +1547,10 @@ mod tests {
         format_gen_link_report, format_query_json, format_query_table, format_witness_record,
         format_witness_records, rg_args_include_preprocessor,
     };
+
+    fn assert_before(source: &str, before: &str, after: &str) {
+        assert!(source.find(before).unwrap() < source.find(after).unwrap());
+    }
 
     #[test]
     fn init_does_not_accept_frost_path() {
@@ -2249,7 +2253,14 @@ Body.
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_lake = temp.path().join("docs");
         let new_lake = temp.path().join("sirno-docs");
-        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        let config = SirnoConfig {
+            structural: StructuralSettings::from_fields([
+                ("zeta", StructuralFieldSettings::default()),
+                ("area", StructuralFieldSettings::default()),
+            ]),
+            ..SirnoConfig::new("docs")
+        };
+        config.write_new(&config_path).unwrap();
         fs::create_dir(&old_lake).unwrap();
         fs::write(old_lake.join("entry.md"), "entry").unwrap();
 
@@ -2258,7 +2269,9 @@ Body.
             .unwrap();
 
         let config = SirnoConfig::from_file(&config_path).unwrap();
+        let source = fs::read_to_string(&config_path).unwrap();
         assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
+        assert_before(&source, "zeta = ", "area = ");
         assert!(!old_lake.exists());
         assert!(new_lake.join("entry.md").exists());
     }
@@ -2295,7 +2308,14 @@ Body.
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_frost = temp.path().join("sirno-frost");
         let new_frost = temp.path().join("frost");
-        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        let config = SirnoConfig {
+            structural: StructuralSettings::from_fields([
+                ("zeta", StructuralFieldSettings::default()),
+                ("area", StructuralFieldSettings::default()),
+            ]),
+            ..SirnoConfig::new("docs").with_frost("sirno-frost")
+        };
+        config.write_new(&config_path).unwrap();
         fs::create_dir(&old_frost).unwrap();
         fs::write(old_frost.join("row"), "frost").unwrap();
 
@@ -2311,7 +2331,9 @@ Body.
         .unwrap();
 
         let config = SirnoConfig::from_file(&config_path).unwrap();
+        let source = fs::read_to_string(&config_path).unwrap();
         assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("frost") }));
+        assert_before(&source, "zeta = ", "area = ");
         assert!(!old_frost.exists());
         assert!(new_frost.join("row").exists());
     }

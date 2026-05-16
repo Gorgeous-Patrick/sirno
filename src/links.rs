@@ -6,6 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Write};
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -104,6 +105,9 @@ impl StructuralFieldSettings {
     }
 }
 
+/// Ordered structural field settings from `Sirno.toml`.
+pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
+
 /// Configured structural fields.
 ///
 /// Each key names a metadata field that Sirno should treat as structural.
@@ -111,7 +115,7 @@ impl StructuralFieldSettings {
 #[serde(transparent)]
 // sirno:witness:generated-link-policy:begin
 pub struct StructuralSettings {
-    fields: BTreeMap<String, StructuralFieldSettings>,
+    fields: StructuralFieldMap,
 }
 // sirno:witness:generated-link-policy:end
 
@@ -125,7 +129,7 @@ impl StructuralSettings {
         }
     }
 
-    /// Iterate configured fields in deterministic order.
+    /// Iterate configured fields in user-authored order.
     pub fn fields(&self) -> impl Iterator<Item = (&str, &StructuralFieldSettings)> {
         self.fields.iter().map(|(field, settings)| (field.as_str(), settings))
     }

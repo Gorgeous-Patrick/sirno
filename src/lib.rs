@@ -26,7 +26,8 @@ pub use crate::config::{
     RepoMember, RepoSettings, SirnoConfig, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
-    DESC_FIELD, Entry, EntryMetadata, EntryParseError, FROZEN_FIELD, FrozenMarker, NAME_FIELD,
+    DESC_FIELD, Entry, EntryMetadata, EntryParseError, EntryStructuralFields, FROZEN_FIELD,
+    FrozenMarker, NAME_FIELD,
 };
 pub use crate::frost::{FrostError, SirnoFrost};
 pub use crate::id::{EntryId, EntryIdError};
@@ -36,7 +37,7 @@ pub use crate::lake::{
 };
 pub use crate::links::{
     BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex,
-    StructuralFieldSettings, StructuralLinkSettings, StructuralSettings,
+    StructuralFieldMap, StructuralFieldSettings, StructuralLinkSettings, StructuralSettings,
 };
 pub use crate::lock::{FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock};
 pub use crate::query::{EntryQuery, EntryTextTerm, VagueEntryQuery};

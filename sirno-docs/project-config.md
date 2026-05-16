@@ -68,6 +68,8 @@ because malformed sentinels make Sirno ownership ambiguous.
 `[structural]` controls which metadata fields are treated as structural.
 Each field key maps to a table with `link = { to = bool, from = bool, clique = bool }`.
 This repository recommends `category`, `belongs`, and `refines`.
+The key order is user-authored project structure.
+Sirno preserves that order when it rewrites `Sirno.toml`.
 Each `link` boolean is optional,
 and an absent boolean means false.
 

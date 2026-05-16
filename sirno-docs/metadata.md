@@ -17,6 +17,8 @@ Configured structural fields are optional.
 This repository configures `category`, `belongs`, and `refines`.
 They are always lists when present,
 and their values are entry ids.
+Their field order is user-authored metadata.
+Sirno preserves it when parsing, rendering, and moving entries through Sirno Frost.
 
 `frozen:` declares that the entry file is read-only
 and must be melted before Sirno Frost can commit it.

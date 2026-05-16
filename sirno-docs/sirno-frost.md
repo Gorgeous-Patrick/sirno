@@ -17,11 +17,13 @@ The *frost* layer is the durable snapshot substrate behind that form.
 The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries*.
 Each *entry* is stored under its stable id.
-The backend records `name`, `desc`, `category`, `belongs`, `refines`,
+The backend records `name`, `desc`, ordered structural metadata,
 and Markdown body as typed fields.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer
 while preserving the public *entry* schema.
+Structural field order stays in Sirno's typed structural metadata,
+so a Frost round trip renders the same order back to Markdown.
 
 `sirno frost init` configures Sirno Frost when needed
 and records the empty snapshot as version `0`.
