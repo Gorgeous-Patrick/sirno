@@ -249,20 +249,60 @@ fn seed_id(raw: &str) -> EntryId {
     EntryId::new(raw).unwrap_or_else(|error| panic!("invalid built-in seed id `{raw}`: {error}"))
 }
 
+/// Strip the opening `---` line from frontmatter, accepting both LF and CRLF.
+fn strip_opening_fence(source: &str) -> Result<&str, EntryParseError> {
+    if let Some(rest) = source.strip_prefix("---\n") {
+        return Ok(rest);
+    }
+    if let Some(rest) = source.strip_prefix("---\r\n") {
+        return Ok(rest);
+    }
+    Err(EntryParseError::MissingFrontmatter)
+}
+
+/// Find the closing `---` fence in frontmatter metadata text.
+/// The closing fence is a line containing only `---`, preceded by a newline.
+/// Accepts both LF and CRLF line endings for the line before the fence.
+fn find_closing_fence_offset(metadata_text: &str) -> Option<(usize, usize)> {
+    // \n---\n
+    if let Some(pos) = metadata_text.find("\n---\n") {
+        return Some((pos, "\n---\n".len()));
+    }
+    // \r\n---\r\n
+    if let Some(pos) = metadata_text.find("\r\n---\r\n") {
+        return Some((pos, "\r\n---\r\n".len()));
+    }
+    // \r\n---\n (mixed: CRLF body, LF after ---)
+    if let Some(pos) = metadata_text.find("\r\n---\n") {
+        return Some((pos, "\r\n---\n".len()));
+    }
+    // \n---\r\n (mixed: LF body, CRLF after ---)
+    if let Some(pos) = metadata_text.find("\n---\r\n") {
+        return Some((pos, "\n---\r\n".len()));
+    }
+    None
+}
+
 fn split_frontmatter(source: &str) -> Result<(&str, String), EntryParseError> {
     let body_start = frontmatter_body_start(source)?;
-    let rest = source.strip_prefix("---\n").ok_or(EntryParseError::MissingFrontmatter)?;
-    let index = rest.find("\n---\n").ok_or(EntryParseError::UnterminatedFrontmatter)?;
+    let rest = strip_opening_fence(source)?;
+    let (index, _fence_len) =
+        find_closing_fence_offset(rest).ok_or(EntryParseError::UnterminatedFrontmatter)?;
     let metadata = &rest[..index];
     Ok((metadata, source[body_start..].to_owned()))
 }
 
 fn frontmatter_body_start(source: &str) -> Result<usize, EntryParseError> {
-    let rest = source.strip_prefix("---\n").ok_or(EntryParseError::MissingFrontmatter)?;
-    let index = rest.find("\n---\n").ok_or(EntryParseError::UnterminatedFrontmatter)?;
-    let mut body_start = "---\n".len() + index + "\n---\n".len();
+    let rest = strip_opening_fence(source)?;
+    let opening_len = source.len() - rest.len();
+    let (index, fence_len) =
+        find_closing_fence_offset(rest).ok_or(EntryParseError::UnterminatedFrontmatter)?;
+    let mut body_start = opening_len + index + fence_len;
+    // Skip the blank line after the closing fence if present
     if source[body_start..].starts_with('\n') {
         body_start += 1;
+    } else if source[body_start..].starts_with("\r\n") {
+        body_start += 2;
     }
     Ok(body_start)
 }
