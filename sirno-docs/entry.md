@@ -25,6 +25,8 @@ The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
 The `frozen:` field makes the *entry* file read-only through `sirno freeze ENTRY_ID`.
+An *entry* file may use LF or CRLF line endings.
+Use one line-ending style per file so byte-preserving tools can keep the file predictable.
 
 An *entry* should be focused enough to read in place.
 It can state a concept, category, review neighborhood, refinement, invariant,

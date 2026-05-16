@@ -16,7 +16,9 @@ use thiserror::Error;
 use tracing::trace;
 
 use crate::check::{CheckMode, CheckReport, CheckSeverity};
-use crate::entry::{Entry, EntryParseError, EntryRenderError, FrozenMarker};
+use crate::entry::{
+    Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
+};
 use crate::id::EntryId;
 use crate::links::{GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex, StructuralSettings};
 use crate::witness::{WitnessCheckSettings, WitnessError};
@@ -768,6 +770,13 @@ impl LoadedEntryDirectory {
             }
 
             let source = fs::read_to_string(&path)?;
+            if has_mixed_line_endings(&source) {
+                file_diagnostics.push(EntryFileDiagnostic::new(
+                    CheckSeverity::Warning,
+                    &path,
+                    "entry file uses mixed LF and CRLF line endings",
+                ));
+            }
             let entry = match Entry::from_markdown(id.clone(), &source) {
                 | Ok(entry) => entry,
                 | Err(source) => {
@@ -1107,6 +1116,24 @@ Body.
         assert_eq!(report.file_diagnostics().len(), 1);
         assert_eq!(report.file_diagnostics()[0].path, temp.path().join("bad.md"));
         assert!(report.file_diagnostics()[0].message.contains("failed to parse entry"));
+    }
+
+    #[test]
+    fn reports_mixed_line_endings_as_warning() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "meta.md",
+            "---\r\nname: Meta\ndesc: A metadata entry.\r\n---\r\n\r\nBody.\n",
+        );
+
+        let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
+
+        assert!(!report.is_clean());
+        assert!(!report.has_errors());
+        assert_eq!(report.entries().len(), 1);
+        assert_eq!(report.file_diagnostics()[0].severity, CheckSeverity::Warning);
+        assert!(report.file_diagnostics()[0].message.contains("mixed LF and CRLF"));
     }
 
     #[test]

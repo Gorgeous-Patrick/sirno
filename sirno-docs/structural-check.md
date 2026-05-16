@@ -37,6 +37,9 @@ because the *lake* is being treated as a coherent design form.
 File checks keep the public *lake* shape predictable.
 An *entry* directory contains Markdown *entry* files with valid ids.
 Each file starts with accepted frontmatter.
+Files may use LF or CRLF line endings.
+Mixed LF and CRLF line endings warn,
+because a file should keep one line-ending style even when Sirno can still parse it.
 Generated footer sentinels must be well formed.
 Malformed structural values are errors because tools cannot safely infer target ids from them.
 Unconfigured structural fields are warnings because the *entry* names structure the project config does not enable.

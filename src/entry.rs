@@ -40,7 +40,10 @@ impl Entry {
     }
     // sirno:witness:entry:end
 
-    /// Parse an entry from canonical Markdown source.
+    /// Parse an entry from Markdown source with LF or CRLF line endings.
+    ///
+    /// Sirno accepts mixed line endings so tooling can still inspect the file.
+    /// Lake checks warn when one file mixes LF and CRLF.
     // sirno:witness:entry:begin
     pub fn from_markdown(id: EntryId, source: &str) -> Result<Self, EntryParseError> {
         let (metadata_source, body) = split_frontmatter(source)?;
@@ -249,62 +252,126 @@ fn seed_id(raw: &str) -> EntryId {
     EntryId::new(raw).unwrap_or_else(|error| panic!("invalid built-in seed id `{raw}`: {error}"))
 }
 
-/// Strip the opening `---` line from frontmatter, accepting both LF and CRLF.
-fn strip_opening_fence(source: &str) -> Result<&str, EntryParseError> {
-    if let Some(rest) = source.strip_prefix("---\n") {
-        return Ok(rest);
-    }
-    if let Some(rest) = source.strip_prefix("---\r\n") {
-        return Ok(rest);
-    }
-    Err(EntryParseError::MissingFrontmatter)
+/// Byte ranges for one Markdown frontmatter block.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FrontmatterBounds {
+    /// First byte after the opening fence line.
+    metadata_start: usize,
+    /// First byte after metadata text, before the closing fence line.
+    metadata_end: usize,
+    /// First byte of the Markdown body after the optional blank separator.
+    body_start: usize,
 }
 
-/// Find the closing `---` fence in frontmatter metadata text.
-/// The closing fence is a line containing only `---`, preceded by a newline.
-/// Accepts both LF and CRLF line endings for the line before the fence.
-fn find_closing_fence_offset(metadata_text: &str) -> Option<(usize, usize)> {
-    // \n---\n
-    if let Some(pos) = metadata_text.find("\n---\n") {
-        return Some((pos, "\n---\n".len()));
+impl FrontmatterBounds {
+    /// Locate the frontmatter block while preserving source byte offsets.
+    fn parse(source: &str) -> Result<Self, EntryParseError> {
+        let opening_line =
+            source.split_inclusive('\n').next().ok_or(EntryParseError::MissingFrontmatter)?;
+        if !opening_line.ends_with('\n') || line_text(opening_line) != "---" {
+            return Err(EntryParseError::MissingFrontmatter);
+        }
+
+        let metadata_start = opening_line.len();
+        let mut metadata_end = metadata_start;
+        let mut cursor = metadata_start;
+
+        for line in source[metadata_start..].split_inclusive('\n') {
+            if line.ends_with('\n') && line_text(line) == "---" {
+                let body_start =
+                    cursor + line.len() + line_break_len_at(&source[cursor + line.len()..]);
+                return Ok(Self { metadata_start, metadata_end, body_start });
+            }
+
+            if !line.ends_with('\n') {
+                break;
+            }
+
+            metadata_end = cursor + line.len() - line_ending_len(line);
+            cursor += line.len();
+        }
+
+        Err(EntryParseError::UnterminatedFrontmatter)
     }
-    // \r\n---\r\n
-    if let Some(pos) = metadata_text.find("\r\n---\r\n") {
-        return Some((pos, "\r\n---\r\n".len()));
-    }
-    // \r\n---\n (mixed: CRLF body, LF after ---)
-    if let Some(pos) = metadata_text.find("\r\n---\n") {
-        return Some((pos, "\r\n---\n".len()));
-    }
-    // \n---\r\n (mixed: LF body, CRLF after ---)
-    if let Some(pos) = metadata_text.find("\n---\r\n") {
-        return Some((pos, "\n---\r\n".len()));
-    }
-    None
 }
 
 fn split_frontmatter(source: &str) -> Result<(&str, String), EntryParseError> {
-    let body_start = frontmatter_body_start(source)?;
-    let rest = strip_opening_fence(source)?;
-    let (index, _fence_len) =
-        find_closing_fence_offset(rest).ok_or(EntryParseError::UnterminatedFrontmatter)?;
-    let metadata = &rest[..index];
-    Ok((metadata, source[body_start..].to_owned()))
+    let bounds = FrontmatterBounds::parse(source)?;
+    Ok((bounds.metadata(source), bounds.body(source).to_owned()))
 }
 
 fn frontmatter_body_start(source: &str) -> Result<usize, EntryParseError> {
-    let rest = strip_opening_fence(source)?;
-    let opening_len = source.len() - rest.len();
-    let (index, fence_len) =
-        find_closing_fence_offset(rest).ok_or(EntryParseError::UnterminatedFrontmatter)?;
-    let mut body_start = opening_len + index + fence_len;
-    // Skip the blank line after the closing fence if present
-    if source[body_start..].starts_with('\n') {
-        body_start += 1;
-    } else if source[body_start..].starts_with("\r\n") {
-        body_start += 2;
+    Ok(FrontmatterBounds::parse(source)?.body_start)
+}
+
+impl FrontmatterBounds {
+    fn metadata(self, source: &str) -> &str {
+        &source[self.metadata_start..self.metadata_end]
     }
-    Ok(body_start)
+
+    fn body(self, source: &str) -> &str {
+        &source[self.body_start..]
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LineEnding {
+    Lf,
+    Crlf,
+}
+
+/// Return true when one source uses both LF-only and CRLF line endings.
+pub(crate) fn has_mixed_line_endings(source: &str) -> bool {
+    let mut first = None;
+    for line in source.split_inclusive('\n') {
+        let Some(ending) = line_ending(line) else {
+            continue;
+        };
+        if let Some(first) = first {
+            if first != ending {
+                return true;
+            }
+        } else {
+            first = Some(ending);
+        }
+    }
+    false
+}
+
+fn line_text(line: &str) -> &str {
+    match line_ending(line) {
+        | Some(LineEnding::Crlf) => &line[..line.len() - "\r\n".len()],
+        | Some(LineEnding::Lf) => &line[..line.len() - "\n".len()],
+        | None => line,
+    }
+}
+
+fn line_ending_len(line: &str) -> usize {
+    match line_ending(line) {
+        | Some(LineEnding::Crlf) => "\r\n".len(),
+        | Some(LineEnding::Lf) => "\n".len(),
+        | None => 0,
+    }
+}
+
+fn line_break_len_at(source: &str) -> usize {
+    if source.starts_with("\r\n") {
+        "\r\n".len()
+    } else if source.starts_with('\n') {
+        "\n".len()
+    } else {
+        0
+    }
+}
+
+fn line_ending(line: &str) -> Option<LineEnding> {
+    if line.ends_with("\r\n") {
+        Some(LineEnding::Crlf)
+    } else if line.ends_with('\n') {
+        Some(LineEnding::Lf)
+    } else {
+        None
+    }
 }
 
 fn take_required_string(
@@ -496,6 +563,29 @@ Body.
     }
 
     #[test]
+    fn parses_crlf_entry_metadata() {
+        let source = concat!(
+            "---\r\n",
+            "name: Witness\r\n",
+            "desc: An entry whose claim is evidenced by repository artifacts.\r\n",
+            "topic:\r\n",
+            "  - concept\r\n",
+            "---\r\n",
+            "\r\n",
+            "Body.\r\n",
+        );
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+
+        assert_eq!(entry.metadata.name, "Witness");
+        assert_eq!(
+            entry.metadata.structural_targets_for("topic"),
+            &[EntryId::new("concept").unwrap()]
+        );
+        assert_eq!(entry.body, "Body.\r\n");
+    }
+
+    #[test]
     fn rejects_scalar_structural_field() {
         let source = "\
 ---
@@ -641,5 +731,23 @@ Old body.
         assert!(replaced.starts_with("---\nname: Old\ndesc: Existing desc.\n---\n\n"));
         assert!(replaced.ends_with("New body.\n"));
         assert!(!replaced.contains("Old body."));
+    }
+
+    #[test]
+    fn replaces_crlf_body_without_rewriting_frontmatter() {
+        let source = "---\r\nname: Old\r\ndesc: Existing desc.\r\n---\r\n\r\nOld body.\r\n";
+
+        let replaced = Entry::replace_markdown_body(source, "New body.\n").unwrap();
+
+        assert!(replaced.starts_with("---\r\nname: Old\r\ndesc: Existing desc.\r\n---\r\n\r\n"));
+        assert!(replaced.ends_with("New body.\n"));
+        assert!(!replaced.contains("Old body."));
+    }
+
+    #[test]
+    fn detects_mixed_line_endings() {
+        assert!(!has_mixed_line_endings("---\nname: Entry\n---\n"));
+        assert!(!has_mixed_line_endings("---\r\nname: Entry\r\n---\r\n"));
+        assert!(has_mixed_line_endings("---\r\nname: Entry\n---\r\n"));
     }
 }
