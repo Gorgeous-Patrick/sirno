@@ -529,8 +529,10 @@ dependencies = [
  "eter",
  "glob",
  "indexmap",
+ "libc",
  "mosaika",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -539,6 +541,7 @@ dependencies = [
  "thiserror",
  "toml",
  "tracing",
+ "windows-sys",
 ]
 
 [[package]]

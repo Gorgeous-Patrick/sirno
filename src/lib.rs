@@ -8,6 +8,7 @@
 pub mod check;
 pub mod config;
 pub mod entry;
+pub mod freeze;
 pub mod frost;
 pub mod id;
 pub mod lake;
@@ -31,6 +32,7 @@ pub use crate::entry::{
     DESC_FIELD, Entry, EntryMetadata, EntryParseError, EntryStructuralFields, FROZEN_FIELD,
     FrozenMarker, NAME_FIELD,
 };
+pub use crate::freeze::{FreezeError, FrozenPath};
 pub use crate::frost::{FrostError, SirnoFrost};
 pub use crate::id::{EntryId, EntryIdError};
 pub use crate::lake::{
