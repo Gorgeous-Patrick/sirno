@@ -33,10 +33,16 @@ A target should help navigation, review, or accountability.
 A loose browsing tag should not become structural metadata.
 
 Generated `belongs` links preserve direct target and source links.
-The `belongs` clique edge policy can add separate clique-derived sections.
-With clique sections enabled,
-the target links to its members
-and each member links to the target and the other members.
+The active tide policy also uses waterline `to`,
+waterline and frostline `from`,
+and waterline `clique`.
+Waterline `to` is enough because neighborhood targets are outgoing metadata on the edited entry.
+Old neighborhood targets were visible where the edit happened.
+Requiring frostline `to` review would make ordinary neighborhood retargeting noisy.
+`from` uses both waterline and frostline because member entries live elsewhere.
+Those current or former members may not be open during the edit.
+Waterline `clique` surfaces the current review neighborhood around a changed member.
+Frostline clique is omitted so former peer groups do not reopen after an intentional move.
 
 This is useful for domains that cut across categories.
 For example, a *lake* neighborhood may include concepts, metadata rules,

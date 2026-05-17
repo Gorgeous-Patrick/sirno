@@ -52,7 +52,7 @@ category:
 ```
 
 The schema keeps required scalar fields small.
-New list-valued metadata can become structural when `[structural]` configures that field.
+New list-valued metadata can become structural when `[structural.FIELD]` configures that field.
 Unconfigured list-valued metadata fields remain visible as check warnings.
 
 ---

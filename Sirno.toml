@@ -25,6 +25,14 @@ render = true
 
 [structural]
 # Structural metadata fields; render and ripple settings default to false.
-category = {}
-belongs = { to = { ripple = { lake = true }, render = true }, from = { ripple = { lake = true, frost = true }, render = true }, clique = { ripple = { lake = true } } }
-refines = {}
+
+[structural.category]
+
+[structural.belongs]
+to = { ripple = { lake = true }, render = true }
+from = { ripple = { lake = true, frost = true }, render = true }
+clique = { ripple = { lake = true } }
+
+[structural.refines]
+to = { ripple = { lake = true } }
+from = { ripple = { lake = true, frost = true } }

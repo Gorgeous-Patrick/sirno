@@ -12,7 +12,7 @@ Sirno checks structure.
 Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
-They check references through fields configured under `[structural]`.
+They check references through fields configured by `[structural.FIELD]` subtables.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 

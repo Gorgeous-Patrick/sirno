@@ -66,7 +66,8 @@ Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 
 `[structural]` controls which metadata fields are treated as structural.
-Each field key maps to a table with `to`, `from`, and `clique` edge policies.
+Each structural field is written as a `[structural.FIELD]` subtable.
+The subtable may define `to`, `from`, and `clique` edge policies.
 This repository recommends `category`, `belongs`, and `refines`.
 The key order is user-authored project structure.
 Sirno preserves that order when it rewrites `Sirno.toml`.

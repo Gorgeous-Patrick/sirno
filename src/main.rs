@@ -1870,7 +1870,7 @@ enum CliError {
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
     /// A command named a structural field not configured for this project.
-    #[error("structural field `{0}` is not configured; add it under [structural] in Sirno.toml")]
+    #[error("structural field `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
     UnconfiguredStructuralField(String),
     /// Generated-footer masking cannot compose with another ripgrep preprocessor.
     #[error(
@@ -2890,7 +2890,7 @@ Changed body.
         let config = SirnoConfig::from_file(&config_path).unwrap();
         let source = fs::read_to_string(&config_path).unwrap();
         assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
-        assert_before(&source, "zeta = ", "area = ");
+        assert_before(&source, "[structural.zeta]", "[structural.area]");
         assert!(!old_lake.exists());
         assert!(new_lake.join("entry.md").exists());
     }
@@ -2952,7 +2952,7 @@ Changed body.
         let config = SirnoConfig::from_file(&config_path).unwrap();
         let source = fs::read_to_string(&config_path).unwrap();
         assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("frost") }));
-        assert_before(&source, "zeta = ", "area = ");
+        assert_before(&source, "[structural.zeta]", "[structural.area]");
         assert!(!old_frost.exists());
         assert!(new_frost.join("row").exists());
     }

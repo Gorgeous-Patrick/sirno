@@ -14,7 +14,7 @@ use thiserror::Error;
 use tracing::trace;
 
 use crate::entry::{DESC_FIELD, FROZEN_FIELD, NAME_FIELD};
-use crate::structural::StructuralSettings;
+use crate::structural::{StructuralEdgeSettings, StructuralSettings};
 
 /// Canonical Sirno project config filename.
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
@@ -639,7 +639,20 @@ impl ConfigRenderer {
             );
         }
         for (field, settings) in fields {
-            self.push_bare_field(field, settings)?;
+            self.out.push('\n');
+            self.push_table(&format!("structural.{field}"));
+            self.push_structural_edge("to", &settings.to)?;
+            self.push_structural_edge("from", &settings.from)?;
+            self.push_structural_edge("clique", &settings.clique)?;
+        }
+        Ok(())
+    }
+
+    fn push_structural_edge(
+        &mut self, name: &str, settings: &StructuralEdgeSettings,
+    ) -> Result<(), toml::ser::Error> {
+        if settings != &StructuralEdgeSettings::default() {
+            self.push_bare_field(name, settings)?;
         }
         Ok(())
     }
@@ -985,8 +998,7 @@ path = "DESIGN.md"
 [lake]
 path = "docs"
 
-[structural]
-topic = { to = {} }
+[structural.topic]
 "#,
         );
 
@@ -1047,8 +1059,8 @@ middle = { clique = { render = true } }
         let rendered = config.to_toml().unwrap();
 
         assert_eq!(fields, ["zeta", "alpha", "middle"]);
-        assert_before(&rendered, "zeta = ", "alpha = ");
-        assert_before(&rendered, "alpha = ", "middle = ");
+        assert_before(&rendered, "[structural.zeta]", "[structural.alpha]");
+        assert_before(&rendered, "[structural.alpha]", "[structural.middle]");
     }
 
     #[test]
@@ -1399,13 +1411,20 @@ delimiters = []
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural metadata fields"));
         assert_eq!(source.matches("# Structural metadata fields").count(), 1);
-        assert_before(&source, "# Structural metadata fields", "kind = ");
-        assert!(source.contains("kind = { to = { render = true }, from = { render = true } }"));
+        assert_before(&source, "# Structural metadata fields", "[structural.kind]");
+        assert!(
+            source
+                .contains("[structural.kind]\nto = { render = true }\nfrom = { render = true }\n")
+        );
         assert!(source.contains(
-            "area = { to = { render = true }, from = { render = true }, clique = { render = true } }"
+            "[structural.area]\nto = { render = true }\nfrom = { render = true }\nclique = { render = true }\n"
         ));
-        assert_before(&source, "kind = ", "area = ");
-        assert_before(&source, "area = ", "parent = ");
+        assert!(source.contains("[structural.parent]\n"));
+        assert!(!source.contains("kind = {"));
+        assert!(!source.contains("area = {"));
+        assert!(!source.contains("parent = {"));
+        assert_before(&source, "[structural.kind]", "[structural.area]");
+        assert_before(&source, "[structural.area]", "[structural.parent]");
     }
 
     #[test]
