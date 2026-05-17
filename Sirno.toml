@@ -1,7 +1,7 @@
 [lake]
 # Markdown entry lake path, resolved relative to this config file.
 path = "sirno-docs"
-# Paths in lake that Sirno skips while reading, checking, querying, and generating links.
+# Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.
 ignore = [".obsidian"]
 
 [repo]
@@ -10,21 +10,21 @@ members = ["src", "README.md"]
 
 [witness]
 # Witness delimiter regex pairs; each first capture group is the entry id.
-# Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+)
+# Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)
 [[witness.delimiters]]
-begin = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+):begin'
-end = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+):end'
+begin = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):begin'
+end = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end'
 
 [[witness.delimiters]]
-begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+):begin[ \t]*-->'
-end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+):end[ \t]*-->'
+begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):begin[ \t]*-->'
+end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end[ \t]*-->'
 
 [check]
 # Require generated footers to match current metadata during checks.
-link = true
+render = true
 
 [structural]
-# Structural metadata fields; link.to, link.from, and link.clique default to false.
-category = { link = {} }
-belongs = { link = { to = true, from = true } }
-refines = { link = {} }
+# Structural metadata fields; render and ripple settings default to false.
+category = {}
+belongs = { to = { ripple = { lake = true }, render = true }, from = { ripple = { lake = true, frost = true }, render = true }, clique = { ripple = { lake = true } } }
+refines = {}

@@ -31,14 +31,14 @@ Some editors and documentation tools navigate Markdown links more naturally than
 Sirno can project selected fields into links so those tools can participate in the *lake*.
 
 The generated body is grouped by configured *structural field*.
-Each enabled group appears in the region.
+Each group enabled with `render = true` appears in the region.
 Within one field,
 groups render in `to`, `from`, then `clique` order.
 Each group is a top-level Markdown list item,
 such as `- category (from):`, `- belongs (to):`, or `- belongs (clique):`.
 The group's links are child list items indented under the group item.
 A group with no links is rendered inline, such as `- belongs (from): (none)`.
-If no generated-link group is enabled, the region contains `(none)`.
+If no rendered group is enabled, the region contains `(none)`.
 
 The footer is derived from metadata.
 Changing a generated link by hand does not change the metadata.
@@ -48,12 +48,12 @@ A *frost* commit removes the *generated footer* before writing the *entry* snaps
 Sirno Frost keeps canonical metadata and prose,
 not navigation projections.
 
-The `[structural]` link policy controls which *structural fields* appear.
+The `[structural]` edge policy controls which *structural fields* appear.
 
-`sirno check` reports stale *generated footer* regions when link checking is enabled.
-`sirno gen-link` creates or replaces *generated footer* regions.
-`sirno gen-link --dry` reports *generated footer* regions that would change without writing files.
-`sirno gen-link delete` removes them.
+`sirno check` reports stale *generated footer* regions when render checking is enabled.
+`sirno render` creates or replaces *generated footer* regions.
+`sirno render --dry` reports *generated footer* regions that would change without writing files.
+`sirno render delete` removes them.
 The mutating commands leave prose outside the guard-bounded region under user ownership.
 `sirno rg` searches the *lake* as if those guard-bounded regions contain only whitespace.
 That keeps literal searches focused on authored metadata and prose.

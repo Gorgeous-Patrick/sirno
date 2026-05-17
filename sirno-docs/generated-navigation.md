@@ -7,13 +7,13 @@ category:
 
 Generated navigation is the review front door for the Sirno-owned footer machinery.
 
-It gathers the parts that produce and bound generated links:
+It gathers the parts that produce and bound rendered generated links:
 `generated-footer` is the footer Sirno projects from metadata,
 `generated-footer-ownership` is the guard-bounded boundary Sirno may mutate,
-and `generated-link-policy` chooses which structural fields become links.
+and `structural-edge-policy` chooses which structural edges become links.
 
 These parts are reviewed together.
-A change to footer rendering, ownership boundaries, or link selection
+A change to footer rendering, ownership boundaries, or structural edge policy
 usually constrains the others, so this *entry* gives them one neighborhood.
 
 `generated-footer` remains the broader claim ownership and policy `refines`.
@@ -29,6 +29,6 @@ This neighborhood is the separate horizontal view:
 - belongs (from):
   - [generated-footer](generated-footer.md)
   - [generated-footer-ownership](generated-footer-ownership.md)
-  - [generated-link-policy](generated-link-policy.md)
+  - [structural-edge-policy](structural-edge-policy.md)
 
 > **Sirno generated links end.**

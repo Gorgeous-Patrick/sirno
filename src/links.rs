@@ -5,6 +5,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Write};
+use std::str::FromStr;
 
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -17,68 +18,79 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
-/// Generated-link settings for one structural field.
-///
-/// `to` includes links from the current entry to metadata targets.
-/// `from` includes links from the current entry to entries that point at it.
-/// `clique` includes entries connected through a shared target in the same field.
-// sirno:witness:generated-link-policy:begin
+/// Configured ripple sources for one structural edge direction.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-pub struct StructuralLinkSettings {
-    /// Include outgoing metadata targets.
+// sirno:witness:structural-edge-policy:begin
+pub struct StructuralRippleSettings {
+    /// Include waterline neighbors in tide workitems.
     #[serde(skip_serializing_if = "is_false")]
-    pub to: bool,
-    /// Include incoming metadata sources.
+    pub lake: bool,
+    /// Include frostline neighbors in tide workitems.
     #[serde(skip_serializing_if = "is_false")]
-    pub from: bool,
-    /// Include clique links derived from shared targets in this field.
-    #[serde(skip_serializing_if = "is_false")]
-    pub clique: bool,
+    pub frost: bool,
 }
-// sirno:witness:generated-link-policy:end
+// sirno:witness:structural-edge-policy:end
 
-// sirno:witness:generated-link-policy:begin
-impl StructuralLinkSettings {
-    /// Construct structural-field link settings from explicit sides.
-    pub fn new(to: bool, from: bool, clique: bool) -> Self {
-        Self { to, from, clique }
+impl StructuralRippleSettings {
+    /// Construct ripple settings from explicit source flags.
+    pub fn new(lake: bool, frost: bool) -> Self {
+        Self { lake, frost }
     }
 
-    /// Construct structural-field link settings from one boolean applied to direct links.
-    pub fn from_bool(enabled: bool) -> Self {
-        Self::new(enabled, enabled, false)
-    }
-
-    /// Construct enabled structural-field link settings.
-    pub fn enabled() -> Self {
-        Self::from_bool(true)
-    }
-
-    /// Construct disabled structural-field link settings.
-    pub fn disabled() -> Self {
-        Self::from_bool(false)
-    }
-}
-// sirno:witness:generated-link-policy:end
-
-impl From<bool> for StructuralLinkSettings {
-    fn from(value: bool) -> Self {
-        Self::from_bool(value)
+    /// Returns true when no ripple source is enabled.
+    pub fn is_empty(&self) -> bool {
+        !self.lake && !self.frost
     }
 }
 
-impl fmt::Display for StructuralLinkSettings {
+/// Tooling settings for one structural edge direction.
+///
+/// `render` includes the edge in generated footers.
+/// `ripple` includes the edge in tide workitem generation.
+// sirno:witness:structural-edge-policy:begin
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct StructuralEdgeSettings {
+    /// Include this edge direction in generated footer rendering.
+    #[serde(skip_serializing_if = "is_false")]
+    pub render: bool,
+    /// Include this edge direction in tide workitem generation.
+    #[serde(skip_serializing_if = "StructuralRippleSettings::is_empty")]
+    pub ripple: StructuralRippleSettings,
+}
+// sirno:witness:structural-edge-policy:end
+
+// sirno:witness:structural-edge-policy:begin
+impl StructuralEdgeSettings {
+    /// Construct structural edge settings from explicit render and ripple settings.
+    pub fn new(render: bool, ripple: StructuralRippleSettings) -> Self {
+        Self { render, ripple }
+    }
+
+    /// Construct an edge used only for generated footer rendering.
+    pub fn render_only(enabled: bool) -> Self {
+        Self::new(enabled, StructuralRippleSettings::default())
+    }
+
+    /// Construct an edge used for rendering and selected ripple sources.
+    pub fn render_and_ripple(render: bool, lake: bool, frost: bool) -> Self {
+        Self::new(render, StructuralRippleSettings::new(lake, frost))
+    }
+}
+// sirno:witness:structural-edge-policy:end
+
+impl fmt::Display for StructuralEdgeSettings {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
-        if self.to {
-            parts.push("to=true");
+        if self.render {
+            parts.push("render=true");
         }
-        if self.from {
-            parts.push("from=true");
+        if self.ripple.lake {
+            parts.push("ripple.lake=true");
         }
-        if self.clique {
-            parts.push("clique=true");
+        if self.ripple.frost {
+            parts.push("ripple.frost=true");
         }
         if parts.is_empty() {
             write!(formatter, "none")
@@ -88,21 +100,102 @@ impl fmt::Display for StructuralLinkSettings {
     }
 }
 
+/// Direction of one configured structural edge.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StructuralEdgeDirection {
+    /// Outgoing metadata targets from the current entry.
+    To,
+    /// Incoming metadata sources that point at the current entry.
+    From,
+    /// Entries connected through a shared target in the same field.
+    Clique,
+}
+
+impl StructuralEdgeDirection {
+    /// Directions in deterministic generated-footer and tide order.
+    pub const ORDER: [Self; 3] = [Self::To, Self::From, Self::Clique];
+
+    /// Lowercase direction label.
+    pub fn label(self) -> &'static str {
+        match self {
+            | Self::To => "to",
+            | Self::From => "from",
+            | Self::Clique => "clique",
+        }
+    }
+}
+
+impl fmt::Display for StructuralEdgeDirection {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.label())
+    }
+}
+
+impl FromStr for StructuralEdgeDirection {
+    type Err = StructuralEdgeDirectionParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        match raw {
+            | "to" => Ok(Self::To),
+            | "from" => Ok(Self::From),
+            | "clique" => Ok(Self::Clique),
+            | direction => Err(StructuralEdgeDirectionParseError(direction.to_owned())),
+        }
+    }
+}
+
+/// Error raised when text does not name a structural edge direction.
+#[derive(Debug, Error, PartialEq, Eq)]
+#[error("unknown structural edge direction `{0}`; expected to, from, or clique")]
+pub struct StructuralEdgeDirectionParseError(String);
+
 /// Settings for one configured structural field.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-// sirno:witness:generated-link-policy:begin
+// sirno:witness:structural-edge-policy:begin
 pub struct StructuralFieldSettings {
-    /// Generated-link policy for this structural field.
-    pub link: StructuralLinkSettings,
+    /// Outgoing metadata target edge policy.
+    #[serde(skip_serializing_if = "is_default")]
+    pub to: StructuralEdgeSettings,
+    /// Incoming metadata source edge policy.
+    #[serde(skip_serializing_if = "is_default")]
+    pub from: StructuralEdgeSettings,
+    /// Shared-target clique edge policy.
+    #[serde(skip_serializing_if = "is_default")]
+    pub clique: StructuralEdgeSettings,
 }
-// sirno:witness:generated-link-policy:end
+// sirno:witness:structural-edge-policy:end
 
 impl StructuralFieldSettings {
-    /// Construct structural field settings from a link policy.
-    pub fn new(link: StructuralLinkSettings) -> Self {
-        Self { link }
+    /// Construct structural field settings from explicit edge policies.
+    pub fn new(
+        to: StructuralEdgeSettings, from: StructuralEdgeSettings, clique: StructuralEdgeSettings,
+    ) -> Self {
+        Self { to, from, clique }
     }
+
+    /// Construct structural field settings from render-only edge flags.
+    pub fn render_only(to: bool, from: bool, clique: bool) -> Self {
+        Self::new(
+            StructuralEdgeSettings::render_only(to),
+            StructuralEdgeSettings::render_only(from),
+            StructuralEdgeSettings::render_only(clique),
+        )
+    }
+
+    /// Return settings for one structural edge direction.
+    pub fn edge(&self, direction: StructuralEdgeDirection) -> &StructuralEdgeSettings {
+        match direction {
+            | StructuralEdgeDirection::To => &self.to,
+            | StructuralEdgeDirection::From => &self.from,
+            | StructuralEdgeDirection::Clique => &self.clique,
+        }
+    }
+}
+
+fn is_default<T: Default + PartialEq>(value: &T) -> bool {
+    value == &T::default()
 }
 
 /// Ordered structural field settings from `Sirno.toml`.
@@ -113,11 +206,11 @@ pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
 /// Each key names a metadata field that Sirno should treat as structural.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
-// sirno:witness:generated-link-policy:begin
+// sirno:witness:structural-edge-policy:begin
 pub struct StructuralSettings {
     fields: StructuralFieldMap,
 }
-// sirno:witness:generated-link-policy:end
+// sirno:witness:structural-edge-policy:end
 
 impl StructuralSettings {
     /// Construct structural settings from explicit field settings.
@@ -339,24 +432,13 @@ impl GeneratedLinkIndex {
         // sirno:witness:generated-footer:begin
         let mut sections = Vec::new();
         for (field, field_settings) in settings.fields() {
-            let link = field_settings.link;
-            if link.to {
-                sections.push(GeneratedLinkSection::new(
-                    section_title(field, "to"),
-                    entry.metadata.structural_targets_for(field).iter().cloned().collect(),
-                ));
-            }
-            if link.from {
-                sections.push(GeneratedLinkSection::new(
-                    section_title(field, "from"),
-                    self.incoming_targets(field, entry),
-                ));
-            }
-            if link.clique {
-                sections.push(GeneratedLinkSection::new(
-                    section_title(field, "clique"),
-                    self.clique_targets(field, entry),
-                ));
+            for direction in StructuralEdgeDirection::ORDER {
+                if field_settings.edge(direction).render {
+                    sections.push(GeneratedLinkSection::new(
+                        section_title(field, direction),
+                        self.edge_targets(field, direction, entry),
+                    ));
+                }
             }
         }
         // sirno:witness:generated-footer:end
@@ -396,6 +478,19 @@ impl GeneratedLinkIndex {
         }
     }
 
+    /// Return target entries for one structural edge direction.
+    pub fn edge_targets(
+        &self, field: &str, direction: StructuralEdgeDirection, entry: &Entry,
+    ) -> BTreeSet<EntryId> {
+        match direction {
+            | StructuralEdgeDirection::To => {
+                entry.metadata.structural_targets_for(field).iter().cloned().collect()
+            }
+            | StructuralEdgeDirection::From => self.incoming_targets(field, entry),
+            | StructuralEdgeDirection::Clique => self.clique_targets(field, entry),
+        }
+    }
+
     fn incoming_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryId> {
         self.sources_by_field_target
             .get(field)
@@ -404,7 +499,7 @@ impl GeneratedLinkIndex {
             .unwrap_or_default()
     }
 
-    // sirno:witness:generated-link-policy:begin
+    // sirno:witness:structural-edge-policy:begin
     fn clique_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryId> {
         let mut targets = BTreeSet::new();
         let Some(cliques_by_target) = self.cliques_by_field_target.get(field) else {
@@ -420,10 +515,10 @@ impl GeneratedLinkIndex {
         }
         targets
     }
-    // sirno:witness:generated-link-policy:end
+    // sirno:witness:structural-edge-policy:end
 }
 
-fn section_title(field: &str, direction: &str) -> String {
+fn section_title(field: &str, direction: StructuralEdgeDirection) -> String {
     format!("{field} ({direction})")
 }
 
@@ -594,15 +689,17 @@ mod tests {
     }
 
     fn structural_settings(
-        fields: impl IntoIterator<Item = (&'static str, StructuralLinkSettings)>,
+        fields: impl IntoIterator<Item = (&'static str, StructuralFieldSettings)>,
     ) -> StructuralSettings {
-        StructuralSettings::from_fields(
-            fields.into_iter().map(|(field, link)| (field, StructuralFieldSettings::new(link))),
-        )
+        StructuralSettings::from_fields(fields)
     }
 
     fn area_settings() -> StructuralSettings {
-        structural_settings([(FIELD_AREA, StructuralLinkSettings::enabled())])
+        structural_settings([(FIELD_AREA, render_settings(true, true, false))])
+    }
+
+    fn render_settings(to: bool, from: bool, clique: bool) -> StructuralFieldSettings {
+        StructuralFieldSettings::render_only(to, from, clique)
     }
 
     #[test]
@@ -640,9 +737,9 @@ mod tests {
     #[test]
     fn settings_can_enable_each_structural_field() {
         let settings = structural_settings([
-            (FIELD_KIND, StructuralLinkSettings::enabled()),
-            (FIELD_AREA, StructuralLinkSettings::enabled()),
-            (FIELD_PARENT, StructuralLinkSettings::enabled()),
+            (FIELD_KIND, render_settings(true, true, false)),
+            (FIELD_AREA, render_settings(true, true, false)),
+            (FIELD_PARENT, render_settings(true, true, false)),
         ]);
         let footer = settings.render_entry(&entry());
 
@@ -661,7 +758,7 @@ mod tests {
     fn repeated_targets_render_once() {
         let mut entry = entry();
         entry.metadata.push_structural_target(FIELD_KIND, id("meta"));
-        let settings = structural_settings([(FIELD_KIND, StructuralLinkSettings::enabled())]);
+        let settings = structural_settings([(FIELD_KIND, render_settings(true, true, false))]);
 
         let footer = settings.render_entry(&entry);
 
@@ -682,7 +779,7 @@ mod tests {
 
     #[test]
     fn boolean_field_settings_render_to_and_from_edges() {
-        let settings = structural_settings([(FIELD_KIND, StructuralLinkSettings::enabled())]);
+        let settings = structural_settings([(FIELD_KIND, render_settings(true, true, false))]);
         let target_entry =
             Entry::new(id("meta"), EntryMetadata::new("Meta", "A kind.").unwrap(), "Body.\n");
         let mut member_metadata = EntryMetadata::new("Member", "A kind member.").unwrap();
@@ -704,8 +801,7 @@ mod tests {
 
     #[test]
     fn table_field_settings_can_choose_one_side() {
-        let settings =
-            structural_settings([(FIELD_KIND, StructuralLinkSettings::new(false, true, false))]);
+        let settings = structural_settings([(FIELD_KIND, render_settings(false, true, false))]);
         let target_entry =
             Entry::new(id("meta"), EntryMetadata::new("Meta", "A kind.").unwrap(), "Body.\n");
         let mut member_metadata = EntryMetadata::new("Member", "A kind member.").unwrap();
@@ -725,8 +821,7 @@ mod tests {
 
     #[test]
     fn clique_setting_expands_field_targets_to_edges() {
-        let settings =
-            structural_settings([(FIELD_AREA, StructuralLinkSettings::new(false, false, true))]);
+        let settings = structural_settings([(FIELD_AREA, render_settings(false, false, true))]);
 
         let closure = Entry::new(
             id("core"),
@@ -764,8 +859,7 @@ mod tests {
 
     #[test]
     fn direct_sections_remain_when_clique_is_enabled() {
-        let settings =
-            structural_settings([(FIELD_AREA, StructuralLinkSettings::new(true, true, true))]);
+        let settings = structural_settings([(FIELD_AREA, render_settings(true, true, true))]);
 
         let closure = Entry::new(
             id("core"),
@@ -790,8 +884,7 @@ mod tests {
 
     #[test]
     fn sections_render_to_from_clique_order() {
-        let settings =
-            structural_settings([(FIELD_AREA, StructuralLinkSettings::new(true, true, true))]);
+        let settings = structural_settings([(FIELD_AREA, render_settings(true, true, true))]);
 
         let closure = Entry::new(
             id("core"),
@@ -935,9 +1028,9 @@ mod tests {
         let stale = GeneratedLinkBody::new("Body.\n")
             .apply(
                 &structural_settings([
-                    (FIELD_KIND, StructuralLinkSettings::enabled()),
-                    (FIELD_AREA, StructuralLinkSettings::enabled()),
-                    (FIELD_PARENT, StructuralLinkSettings::enabled()),
+                    (FIELD_KIND, render_settings(true, true, false)),
+                    (FIELD_AREA, render_settings(true, true, false)),
+                    (FIELD_PARENT, render_settings(true, true, false)),
                 ])
                 .render_entry(&entry()),
             )

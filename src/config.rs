@@ -22,7 +22,7 @@ pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
 // sirno:witness:project-config:begin
 macro_rules! witness_entry_id_capture_regex {
     () => {
-        r#"([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+)"#
+        r#"([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)"#
     };
 }
 
@@ -77,13 +77,13 @@ impl MonoSettings {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CheckSettings {
-    /// Check generated-link footer freshness.
-    pub link: bool,
+    /// Check generated footer freshness.
+    pub render: bool,
 }
 
 impl Default for CheckSettings {
     fn default() -> Self {
-        Self { link: true }
+        Self { render: true }
     }
 }
 
@@ -469,7 +469,11 @@ impl SirnoConfig {
 
     fn validate_structural_fields(&self) -> Result<(), ConfigError> {
         for (field, _) in self.structural.fields() {
-            if field.is_empty() || field.contains('\n') || field.contains('\r') {
+            if field.is_empty()
+                || field.contains('\n')
+                || field.contains('\r')
+                || field.contains(',')
+            {
                 return Err(ConfigError::StructuralFieldName(field.to_owned()));
             }
             if matches!(field, NAME_FIELD | DESC_FIELD | FROZEN_FIELD) {
@@ -527,7 +531,7 @@ impl ConfigRenderer {
             self.push_field(
                 "ignore",
                 &config.lake.ignore,
-                "Paths in lake that Sirno skips while reading, checking, querying, and generating links.",
+                "Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.",
             )?;
         }
         // sirno:witness:project-config-comments:end
@@ -568,8 +572,8 @@ impl ConfigRenderer {
         self.push_table("check");
         // sirno:witness:project-config-comments:begin
         self.push_field(
-            "link",
-            &config.check.link,
+            "render",
+            &config.check.render,
             "Require generated footers to match current metadata during checks.",
         )?;
         // sirno:witness:project-config-comments:end
@@ -631,7 +635,7 @@ impl ConfigRenderer {
         let mut fields = structural.fields().peekable();
         if fields.peek().is_some() {
             self.out.push_str(
-                "# Structural metadata fields; link.to, link.from, and link.clique default to false.\n",
+                "# Structural metadata fields; render and ripple settings default to false.\n",
             );
         }
         for (field, settings) in fields {
@@ -859,11 +863,11 @@ path = "DESIGN.md"
 path = "docs"
 
 [check]
-link = false
+render = false
 "#,
         );
 
-        assert_eq!(config.check, CheckSettings { link: false });
+        assert_eq!(config.check, CheckSettings { render: false });
     }
 
     #[test]
@@ -940,39 +944,31 @@ path = "DESIGN.md"
 path = "docs"
 
 [structural]
-kind = { link = { to = true } }
-area = { link = { from = true, to = true, clique = true } }
-parent = { link = { from = true } }
+kind = { to = { render = true } }
+area = { to = { render = true }, from = { render = true }, clique = { render = true, ripple = { lake = true, frost = true } } }
+parent = { from = { render = true } }
 "#,
         );
 
         assert_eq!(
             config.structural,
             StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(true, false, false),
-                    ),
-                ),
+                ("kind", crate::links::StructuralFieldSettings::render_only(true, false, false),),
                 (
                     "area",
                     crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(true, true, true),
+                        crate::links::StructuralEdgeSettings::render_only(true),
+                        crate::links::StructuralEdgeSettings::render_only(true),
+                        crate::links::StructuralEdgeSettings::render_and_ripple(true, true, true),
                     ),
                 ),
-                (
-                    "parent",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(false, true, false),
-                    ),
-                ),
+                ("parent", crate::links::StructuralFieldSettings::render_only(false, true, false),),
             ])
         );
     }
 
     #[test]
-    fn structural_link_fields_default_to_false() {
+    fn structural_edge_fields_default_to_false() {
         let config = parse_config(
             r#"
 [mono]
@@ -982,7 +978,7 @@ path = "DESIGN.md"
 path = "docs"
 
 [structural]
-topic = { link = {} }
+topic = { to = {} }
 "#,
         );
 
@@ -1003,28 +999,18 @@ topic = { link = {} }
 path = "docs"
 
 [structural.kind]
-link = { to = true }
+to = { render = true }
 
 [structural.topic]
-link = { clique = true }
+clique = { render = true }
 "#,
         );
 
         assert_eq!(
             config.structural,
             StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(true, false, false),
-                    ),
-                ),
-                (
-                    "topic",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(false, false, true),
-                    ),
-                ),
+                ("kind", crate::links::StructuralFieldSettings::render_only(true, false, false),),
+                ("topic", crate::links::StructuralFieldSettings::render_only(false, false, true),),
             ])
         );
     }
@@ -1037,9 +1023,9 @@ link = { clique = true }
 path = "docs"
 
 [structural]
-zeta = { link = { to = true } }
-alpha = { link = { from = true } }
-middle = { link = { clique = true } }
+zeta = { to = { render = true } }
+alpha = { from = { render = true } }
+middle = { clique = { render = true } }
 "#,
         );
 
@@ -1346,18 +1332,15 @@ delimiters = []
             frost: Some(FrostSettings::new("sirno-frost")),
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
-            check: CheckSettings { link: false },
+            check: CheckSettings { render: false },
             structural: StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::enabled(),
-                    ),
-                ),
+                ("kind", crate::links::StructuralFieldSettings::render_only(true, true, false)),
                 (
                     "area",
                     crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralLinkSettings::new(true, true, true),
+                        crate::links::StructuralEdgeSettings::render_only(true),
+                        crate::links::StructuralEdgeSettings::render_only(true),
+                        crate::links::StructuralEdgeSettings::render_only(true),
                     ),
                 ),
                 ("parent", crate::links::StructuralFieldSettings::default()),
@@ -1384,8 +1367,10 @@ delimiters = []
         assert!(source.contains("# Structural metadata fields"));
         assert_eq!(source.matches("# Structural metadata fields").count(), 1);
         assert_before(&source, "# Structural metadata fields", "kind = ");
-        assert!(source.contains("kind = { link = { to = true, from = true } }"));
-        assert!(source.contains("area = { link = { to = true, from = true, clique = true } }"));
+        assert!(source.contains("kind = { to = { render = true }, from = { render = true } }"));
+        assert!(source.contains(
+            "area = { to = { render = true }, from = { render = true }, clique = { render = true } }"
+        ));
         assert_before(&source, "kind = ", "area = ");
         assert_before(&source, "area = ", "parent = ");
     }

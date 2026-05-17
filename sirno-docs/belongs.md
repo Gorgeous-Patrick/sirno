@@ -33,7 +33,7 @@ A target should help navigation, review, or accountability.
 A loose browsing tag should not become structural metadata.
 
 Generated `belongs` links preserve direct target and source links.
-`structural.belongs.link.clique` can add separate clique-derived sections.
+The `belongs` clique edge policy can add separate clique-derived sections.
 With clique sections enabled,
 the target links to its members
 and each member links to the target and the other members.

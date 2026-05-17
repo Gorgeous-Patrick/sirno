@@ -139,13 +139,13 @@ python3 .agents/skills/sirno-narrative-session/scripts/serialize_narrative_entry
   --input session.json
 ```
 
-After changing lake metadata, run generated-link maintenance.
+After changing lake metadata, run render maintenance.
 Then run structural checks.
 Prefer the repository's current Sirno CLI commands after inspecting what exists,
 such as:
 
 ```sh
-cargo run -- gen-link
+cargo run -- render
 cargo run -- check --mode edit
 ```
 

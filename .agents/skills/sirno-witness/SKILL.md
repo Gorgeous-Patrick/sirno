@@ -99,7 +99,7 @@ cargo run -- check --mode review
 If Sirno Lake metadata or links changed, run:
 
 ```sh
-cargo run -- gen-link
+cargo run -- render
 ```
 
 Review the full witness output as a human would.

@@ -31,6 +31,9 @@ This neighborhood is the separate horizontal view:
   - [entry-freeze](entry-freeze.md)
   - [sirno-frost](sirno-frost.md)
   - [sirno-lock](sirno-lock.md)
+  - [structural-edge-policy](structural-edge-policy.md)
+  - [tide](tide.md)
   - [versioning](versioning.md)
+  - [wave](wave.md)
 
 > **Sirno generated links end.**

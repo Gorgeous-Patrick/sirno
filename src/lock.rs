@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
 
+use crate::tide::TideResolution;
+
 /// Canonical Sirno project lock filename.
 pub const LOCK_FILE_NAME: &str = "Sirno.lock.toml";
 
@@ -33,6 +35,9 @@ const LOCK_FILE_HEADER: &str = "\
 pub struct SirnoLock {
     /// Current public-lake Frost state.
     pub frost: FrostLock,
+    /// Explicit dependency review resolutions for the current lake edit session.
+    #[serde(default, skip_serializing_if = "TideLock::is_empty")]
+    pub tide: TideLock,
 }
 // sirno:witness:sirno-lock:end
 
@@ -40,14 +45,14 @@ impl SirnoLock {
     /// Construct a lock for the current editable public lake.
     // sirno:witness:sirno-lock:begin
     pub fn current(snapshot: SnapshotRef) -> Self {
-        Self { frost: FrostLock::current(snapshot) }
+        Self { frost: FrostLock::current(snapshot), tide: TideLock::default() }
     }
     // sirno:witness:sirno-lock:end
 
     /// Construct a lock for a checked-out Frost snapshot.
     // sirno:witness:sirno-lock:begin
     pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
-        Self { frost: FrostLock::checked_out(snapshot, mutable) }
+        Self { frost: FrostLock::checked_out(snapshot, mutable), tide: TideLock::default() }
     }
     // sirno:witness:sirno-lock:end
 
@@ -141,6 +146,34 @@ impl SirnoLock {
         parent.join(temporary_name)
     }
     // sirno:witness:sirno-lock:end
+}
+
+/// Tide state recorded in `Sirno.lock.toml`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TideLock {
+    /// Explicitly resolved tide workitems.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resolved: Vec<TideResolution>,
+}
+
+impl TideLock {
+    /// Returns true when no tide state is stored.
+    pub fn is_empty(&self) -> bool {
+        self.resolved.is_empty()
+    }
+
+    /// Replace stored resolutions with a deterministic list.
+    pub fn set_resolved(&mut self, mut resolved: Vec<TideResolution>) {
+        resolved.sort();
+        resolved.dedup();
+        self.resolved = resolved;
+    }
+
+    /// Clear all tide state.
+    pub fn clear(&mut self) {
+        self.resolved.clear();
+    }
 }
 
 /// Frost state recorded in `Sirno.lock.toml`.

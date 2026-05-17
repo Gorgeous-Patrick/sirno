@@ -29,6 +29,8 @@ A *ripple* is the named delta between two *lake* states.
 It is the reviewable difference made visible by comparing versions,
 checkout states,
 or other future *lake* snapshots.
+For the active *tide*,
+Sirno compares the latest frozen snapshot with the current public *lake*.
 
 The public *lake* is always the editable working form.
 The *frost* path is private storage,
@@ -53,6 +55,8 @@ Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
 Generated links remain a public *lake* projection.
 Sirno Frost keeps metadata and prose without generated navigation regions.
+Before writing the transaction,
+Sirno also requires the active *tide* to be clear.
 A successful commit returns the new `SnapshotRef`.
 If the public *lake* matches the current frozen snapshot,
 the commit returns the current snapshot reference without writing a new snapshot.

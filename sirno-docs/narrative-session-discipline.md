@@ -43,7 +43,7 @@ and leave an aftertaste the reader can reuse.
 
 Materialize when the route should guide future onboarding or review.
 The artifact is a narrative entry built by the serializer contract; see `narrative-serializer`.
-After materializing, run generated-link maintenance and the editing-mode structural check.
+After materializing, run render maintenance and the editing-mode structural check.
 Finish by naming the artifact, the entry path, and the main sequencing choice,
 and confirm the route preserves pull, a clean first bite, and an aftertaste.
 

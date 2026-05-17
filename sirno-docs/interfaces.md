@@ -12,7 +12,8 @@ A lightweight GUI or Obsidian extension may later provide a direct editing exper
 
 The CLI is the first operational interface.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
-move configured storage paths, and maintain *generated footer* links.
+move configured storage paths, maintain *generated footer* links,
+and manage the active *tide*.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
@@ -43,6 +44,8 @@ and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.
 `sirno frost commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
+It fails while open *tide* workitems remain.
+`sirno frost commit --unsafe-resolve-all` bypasses that gate for the current commit.
 `sirno frost checkout --latest` materializes the latest version as a mutable public *lake*.
 `sirno frost checkout VERSION` materializes one older version into the public *lake*.
 `sirno frost defrost` is an alias for `sirno frost checkout`.
@@ -103,11 +106,19 @@ Sirno preserves the matched indentation.
 A blank line separates the summary from that region.
 Multiple full regions are separated by a blank line, `---`, and another blank line.
 
-`sirno gen-link` creates or replaces Sirno-owned *generated footer* regions.
-`sirno gen-link -n, --dry` reports *generated footer* regions that would change without writing files.
+`sirno tide status` reports open dependency review obligations.
+`sirno tide status --all` also reports resolved obligations.
+`sirno tide resolve ENTRY_ID` resolves open workitems whose neighbor is that *entry*.
+`sirno tide resolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` resolves one full workitem tuple.
+`sirno tide resolve --infer` resolves open workitems whose neighbor also appears in the ripple set.
+`sirno tide reopen` removes matching resolutions.
+`sirno tide reset` clears tide resolution state.
+
+`sirno render` creates or replaces Sirno-owned *generated footer* regions.
+`sirno render -n, --dry` reports *generated footer* regions that would change without writing files.
 `--dry-run` is an alias for `--dry`.
-`sirno gen-link delete` removes those regions.
-Generated-link commands operate on the active *lake* path.
+`sirno render delete` removes those regions.
+Render commands operate on the active *lake* path.
 
 `sirno util completion` emits shell completion scripts.
 Completion generation is a utility interface,

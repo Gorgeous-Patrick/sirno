@@ -171,7 +171,7 @@ but more durable than a plan item.
 4. Create missing entries through Sirno's current entry-creation command when available.
 5. Expand or revise bodies with direct, reader-friendly prose.
 6. Leave generated footer regions untouched.
-7. Run Sirno's generated-link command after metadata stabilizes.
+7. Run `sirno render` after metadata stabilizes.
 8. Run structural checks and query commands to verify the lake parses and references resolve.
 
 Use the configured lake path.
@@ -211,7 +211,7 @@ Prefer these checks when the CLI provides them:
 sirno query --fields id
 sirno rg TEXT
 sirno check --mode edit
-sirno gen-link
+sirno render
 sirno check
 sirno status
 ```

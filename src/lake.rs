@@ -55,9 +55,9 @@ pub struct EntryDirectoryReport {
 #[derive(Clone, Debug, PartialEq, Eq)]
 // sirno:witness:sirno-lake:begin
 pub struct EntryDirectoryCheckSettings {
-    /// Check generated-link footer freshness.
-    pub link: bool,
-    /// Configured structural fields and generated-link settings.
+    /// Check generated footer freshness.
+    pub render: bool,
+    /// Configured structural fields and generated footer settings.
     pub structural: StructuralSettings,
     /// Lake-root-relative paths ignored by Sirno.
     pub ignore: Vec<PathBuf>,
@@ -69,7 +69,7 @@ pub struct EntryDirectoryCheckSettings {
 impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
         Self {
-            link: true,
+            render: true,
             structural: StructuralSettings::default(),
             ignore: Vec::new(),
             witness: None,
@@ -331,7 +331,7 @@ impl EntryDirectory {
         }
 
         let mut check_settings = settings.clone();
-        check_settings.link = false;
+        check_settings.render = false;
         let checked = self.check_with_settings(CheckMode::Review, &check_settings)?;
         if checked.has_errors() {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
@@ -528,7 +528,7 @@ impl EntryDirectory {
             operation.label()
         );
         let check_settings = EntryDirectoryCheckSettings {
-            link: false,
+            render: false,
             structural: settings.clone(),
             ignore: ignore.into_iter().collect(),
             witness: None,
@@ -586,7 +586,7 @@ impl EntryDirectory {
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
         trace!("delete_gen_link_entry_directory begin: root={}", self.root.display());
         let check_settings = EntryDirectoryCheckSettings {
-            link: false,
+            render: false,
             structural: StructuralSettings::default(),
             ignore: ignore.into_iter().collect(),
             witness: None,
@@ -948,13 +948,13 @@ impl LoadedEntryDirectory {
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
             let body = GeneratedLinkBody::new(&entry.body);
             match body.validate() {
-                | Ok(()) if settings.link => {
+                | Ok(()) if settings.render => {
                     let expected = index.render_entry(entry, &settings.structural);
                     if body.is_stale(&expected)? {
                         self.file_diagnostics.push(EntryFileDiagnostic::new(
                             mode.severity(),
                             path,
-                            "generated links are stale; run `sirno gen-link`",
+                            "generated links are stale; run `sirno render`",
                         ));
                     }
                 }
@@ -1157,8 +1157,7 @@ pub enum EntryDirectoryError {
 mod tests {
     use super::*;
     use crate::{
-        EntryMetadata, RepoMember, StructuralFieldSettings, StructuralLinkSettings,
-        WitnessCheckSettings, WitnessSettings,
+        EntryMetadata, RepoMember, StructuralFieldSettings, WitnessCheckSettings, WitnessSettings,
     };
 
     const FIELD_KIND: &str = "kind";
@@ -1185,19 +1184,21 @@ mod tests {
     }
 
     fn structural_settings(
-        fields: impl IntoIterator<Item = (&'static str, StructuralLinkSettings)>,
+        fields: impl IntoIterator<Item = (&'static str, StructuralFieldSettings)>,
     ) -> StructuralSettings {
-        StructuralSettings::from_fields(
-            fields.into_iter().map(|(field, link)| (field, StructuralFieldSettings::new(link))),
-        )
+        StructuralSettings::from_fields(fields)
     }
 
     fn all_test_fields_linked() -> StructuralSettings {
         structural_settings([
-            (FIELD_KIND, StructuralLinkSettings::enabled()),
-            (FIELD_AREA, StructuralLinkSettings::enabled()),
-            (FIELD_PARENT, StructuralLinkSettings::enabled()),
+            (FIELD_KIND, render_settings(true, true, false)),
+            (FIELD_AREA, render_settings(true, true, false)),
+            (FIELD_PARENT, render_settings(true, true, false)),
         ])
+    }
+
+    fn render_settings(to: bool, from: bool, clique: bool) -> StructuralFieldSettings {
+        StructuralFieldSettings::render_only(to, from, clique)
     }
 
     // sirno:witness:witness-fixture-isolation:begin
@@ -1374,7 +1375,7 @@ kind:
                 &EntryDirectoryCheckSettings {
                     structural: structural_settings([(
                         FIELD_KIND,
-                        StructuralLinkSettings::disabled(),
+                        StructuralFieldSettings::default(),
                     )]),
                     ..EntryDirectoryCheckSettings::default()
                 },
@@ -1552,8 +1553,8 @@ Body.
         );
         let settings = EntryDirectoryCheckSettings {
             structural: structural_settings([
-                (FIELD_KIND, StructuralLinkSettings::disabled()),
-                (FIELD_AREA, StructuralLinkSettings::enabled()),
+                (FIELD_KIND, StructuralFieldSettings::default()),
+                (FIELD_AREA, render_settings(true, true, false)),
             ]),
             ..EntryDirectoryCheckSettings::default()
         };
@@ -1849,8 +1850,7 @@ area:
 Body.
 ",
         );
-        let settings =
-            structural_settings([(FIELD_AREA, StructuralLinkSettings::new(true, true, true))]);
+        let settings = structural_settings([(FIELD_AREA, render_settings(true, true, true))]);
 
         entry_directory(temp.path()).generate_links(&settings).unwrap();
         let core = fs::read_to_string(temp.path().join("core.md")).unwrap();
@@ -1936,7 +1936,7 @@ Body.
             .check_with_settings(
                 CheckMode::Review,
                 &EntryDirectoryCheckSettings {
-                    link: true,
+                    render: true,
                     structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },
@@ -1960,7 +1960,7 @@ Body.
             .check_with_settings(
                 CheckMode::Edit,
                 &EntryDirectoryCheckSettings {
-                    link: true,
+                    render: true,
                     structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },
@@ -1983,7 +1983,7 @@ Body.
             .check_with_settings(
                 CheckMode::Review,
                 &EntryDirectoryCheckSettings {
-                    link: false,
+                    render: false,
                     structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },

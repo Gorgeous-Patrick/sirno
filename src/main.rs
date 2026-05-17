@@ -12,14 +12,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
 use indexmap::IndexMap;
-use serde::ser::SerializeMap;
+use serde::{Deserialize, ser::SerializeMap};
 use sirno::{
     CONFIG_FILE_NAME, CheckMode, ConfigError, Entry, EntryDirectory, EntryDirectoryCheckSettings,
     EntryDirectoryError, EntryDirectoryReport, EntryDirectoryWritePolicy, EntryId, EntryIdError,
     EntryMetadata, EntryParseError, EntryQuery, Eterator, FrostError, FrostLockStatus,
     GenLinkDirectoryReport, GeneratedLinkBody, GeneratedLinkError, LockError, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralSettings, VagueEntryQuery, WitnessCheckSettings, WitnessError,
-    WitnessRecord,
+    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideError, TideWorkitem, VagueEntryQuery,
+    WitnessCheckSettings, WitnessError, WitnessRecord,
 };
 use thiserror::Error;
 
@@ -71,6 +71,14 @@ enum Command {
         command: FrostCommand,
     },
     // sirno:witness:interfaces:end
+    /// Manage dependency review worklists for lake edits.
+    // sirno:witness:interfaces:begin
+    Tide {
+        /// Tide command.
+        #[command(subcommand)]
+        command: TideCommand,
+    },
+    // sirno:witness:interfaces:end
     /// Utility commands.
     // sirno:witness:interfaces:begin
     Util {
@@ -112,16 +120,15 @@ enum LakeCommand {
         mode: Option<CliCheckMode>,
     },
     // sirno:witness:interfaces:end
-    /// Generate Markdown links in entry footers.
+    /// Render Markdown links in entry footers.
     // sirno:witness:interfaces:begin
-    #[command(name = "gen-link")]
-    GenLink {
-        /// Report generated-link changes without writing files.
+    Render {
+        /// Report rendered-footer changes without writing files.
         #[arg(short = 'n', long, visible_alias = "dry-run")]
         dry: bool,
-        /// Generated-link command.
+        /// Render command.
         #[command(subcommand)]
-        command: Option<GenLinkCommand>,
+        command: Option<RenderCommand>,
     },
     // sirno:witness:interfaces:end
     /// Show the current Sirno project status.
@@ -437,6 +444,37 @@ enum CliStructuralPredicateParseError {
     EntryId(#[from] EntryIdError),
 }
 
+/// Tide item selector parsed from one CLI argument.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum CliTideItem {
+    /// Select every open workitem whose neighbor matches this entry.
+    Neighbor(EntryId),
+    /// Select one full workitem tuple.
+    Workitem(TideWorkitem),
+}
+
+impl FromStr for CliTideItem {
+    type Err = CliTideItemParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        if raw.contains(',') {
+            return Ok(Self::Workitem(raw.parse()?));
+        }
+        Ok(Self::Neighbor(EntryId::new(raw)?))
+    }
+}
+
+/// Error raised while parsing one tide item selector.
+#[derive(Debug, Error)]
+enum CliTideItemParseError {
+    /// Entry id parsing failed.
+    #[error(transparent)]
+    EntryId(#[from] EntryIdError),
+    /// Full workitem parsing failed.
+    #[error(transparent)]
+    Workitem(#[from] sirno::TideWorkitemParseError),
+}
+
 /// CLI shell target for completion generation.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum CliCompletionShell {
@@ -480,7 +518,11 @@ enum FrostCommand {
         frost: PathBuf,
     },
     /// Freeze the current public Markdown lake.
-    Commit,
+    Commit {
+        /// Bypass open tide workitems for this commit without recording resolutions.
+        #[arg(long = "unsafe-resolve-all")]
+        unsafe_resolve_all: bool,
+    },
     /// Check out Frost entries into the public Markdown lake.
     #[command(visible_alias = "defrost")]
     Checkout {
@@ -496,9 +538,54 @@ enum FrostCommand {
     },
 }
 
-/// Supported generated-link commands.
+/// Supported tide commands.
 #[derive(Debug, Subcommand)]
-enum GenLinkCommand {
+// sirno:witness:tide:begin
+enum TideCommand {
+    /// Show tide workitems.
+    Status {
+        /// Include resolved workitems.
+        #[arg(long)]
+        all: bool,
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<CliTideOutputFormat>,
+    },
+    /// Resolve tide workitems.
+    Resolve {
+        /// Resolve workitems whose neighbor also appears in the current ripple set.
+        #[arg(long, conflicts_with_all = ["items", "json"])]
+        infer: bool,
+        /// JSON array of full workitem tuples.
+        #[arg(long, conflicts_with_all = ["infer", "items"])]
+        json: Option<String>,
+        /// Entry ids or full workitem tuples.
+        #[arg(required_unless_present_any = ["infer", "json"])]
+        items: Vec<CliTideItem>,
+    },
+    /// Reopen resolved tide workitems.
+    Reopen {
+        /// Entry ids or full workitem tuples.
+        #[arg(required = true)]
+        items: Vec<CliTideItem>,
+    },
+    /// Clear all tide resolutions from the lock.
+    Reset,
+}
+// sirno:witness:tide:end
+
+/// CLI tide output renderer.
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CliTideOutputFormat {
+    /// Print a JSON object.
+    Json,
+    /// Print a human-readable list.
+    Human,
+}
+
+/// Supported rendered-footer commands.
+#[derive(Debug, Subcommand)]
+enum RenderCommand {
     /// Delete generated Markdown link footers.
     Delete,
 }
@@ -557,6 +644,7 @@ impl Cli {
                 EntryCommand::from(command).run(&config_path, lake_path.as_deref())
             }
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Tide { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
         }
     }
@@ -659,10 +747,10 @@ impl LakeCommand {
 
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
-            | LakeCommand::GenLink { command, dry } => match command {
+            | LakeCommand::Render { command, dry } => match command {
                 | None => {
                     let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
-                    settings.link = false;
+                    settings.render = false;
                     settings.witness = None;
 
                     let directory = EntryDirectory::new(&lake);
@@ -688,9 +776,9 @@ impl LakeCommand {
                     print_gen_link_report(&report);
                     Ok(ExitCode::SUCCESS)
                 }
-                | Some(GenLinkCommand::Delete) => {
+                | Some(RenderCommand::Delete) => {
                     if dry {
-                        return Err(CliError::DryWithGenLinkSubcommand);
+                        return Err(CliError::DryWithRenderSubcommand);
                     }
                     let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                     settings.witness = None;
@@ -779,7 +867,7 @@ impl EntryCommand {
             }
             | EntryCommand::Query { terms, exact_terms, exact, fields, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
-                settings.link = false;
+                settings.render = false;
                 settings.witness = None;
                 let report =
                     EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
@@ -866,14 +954,26 @@ impl FrostCommand {
                 println!("moved frost {} to {}", old_frost.display(), new_frost.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Commit => {
+            | FrostCommand::Commit { unsafe_resolve_all } => {
                 let context = FrostContext::load(config_path, lake_path)?;
                 context.reject_immutable_checkout()?;
+                // sirno:witness:tide:begin
+                if !unsafe_resolve_all {
+                    let tide_context = TideContext::load(config_path, lake_path)?;
+                    let lock = tide_context.load_lock_or_current()?;
+                    let tide = tide_context.tide(&lock)?;
+                    if !tide.is_clear() {
+                        return Err(CliError::OpenTide(tide.open_statuses().count()));
+                    }
+                }
+                // sirno:witness:tide:end
                 let mut frost = SirnoFrost::open(&context.frost_path)?;
                 let version =
                     frost.commit_entry_directory(&context.lake_path, &context.settings)?;
                 context.lake().set_writable(&context.settings)?;
-                SirnoLock::current(version).write(&context.lock_path)?;
+                let mut lock = SirnoLock::current(version);
+                lock.tide.clear();
+                lock.write(&context.lock_path)?;
                 println!(
                     "froze version {} from {}",
                     version.version(),
@@ -932,6 +1032,113 @@ impl FrostCommand {
     }
 }
 
+impl TideCommand {
+    fn run(
+        self, config_path: &std::path::Path, lake_path: Option<&Path>,
+    ) -> Result<ExitCode, CliError> {
+        match self {
+            | TideCommand::Status { all, format } => {
+                let context = TideContext::load(config_path, lake_path)?;
+                let lock = context.load_lock_or_current()?;
+                let tide = context.tide(&lock)?;
+                let format = format.unwrap_or(CliTideOutputFormat::Human);
+                print_tide_status(&tide, all, format)?;
+                Ok(if tide.is_clear() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+            }
+            | TideCommand::Resolve { infer, json, items } => {
+                let context = TideContext::load(config_path, lake_path)?;
+                let mut lock = context.load_lock_or_current()?;
+                let tide = context.tide(&lock)?;
+                let (resolutions, count) = if infer {
+                    tide.resolve_where(|status| {
+                        tide.ripple_ids().contains(&status.workitem.neighbor)
+                    })
+                } else if let Some(json) = json {
+                    let workitems = tide_workitems_from_json(&json)?;
+                    tide.resolve_where(|status| workitems.contains(&status.workitem))
+                } else {
+                    tide.resolve_where(|status| tide_item_matches(&items, status))
+                };
+                lock.tide.set_resolved(resolutions);
+                lock.write(&context.lock_path)?;
+                println!("resolved {count} tide workitems");
+                Ok(ExitCode::SUCCESS)
+            }
+            | TideCommand::Reopen { items } => {
+                let context = TideContext::load(config_path, lake_path)?;
+                let mut lock = context.load_lock_or_current()?;
+                let tide = context.tide(&lock)?;
+                let (resolutions, count) =
+                    tide.reopen_where(|status| tide_item_matches(&items, status));
+                lock.tide.set_resolved(resolutions);
+                lock.write(&context.lock_path)?;
+                println!("reopened {count} tide workitems");
+                Ok(ExitCode::SUCCESS)
+            }
+            | TideCommand::Reset => {
+                let context = TideContext::load(config_path, lake_path)?;
+                let mut lock = context.load_lock_or_current()?;
+                let count = lock.tide.resolved.len();
+                lock.tide.clear();
+                lock.write(&context.lock_path)?;
+                println!("cleared {count} tide resolutions");
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum CliTideJsonWorkitems {
+    One(TideWorkitem),
+    Many(Vec<TideWorkitem>),
+}
+
+fn tide_workitems_from_json(source: &str) -> Result<Vec<TideWorkitem>, CliError> {
+    Ok(match serde_json::from_str::<CliTideJsonWorkitems>(source)? {
+        | CliTideJsonWorkitems::One(workitem) => vec![workitem],
+        | CliTideJsonWorkitems::Many(workitems) => workitems,
+    })
+}
+
+fn tide_item_matches(items: &[CliTideItem], status: &sirno::TideStatus) -> bool {
+    items.iter().any(|item| match item {
+        | CliTideItem::Neighbor(id) => &status.workitem.neighbor == id,
+        | CliTideItem::Workitem(workitem) => &status.workitem == workitem,
+    })
+}
+
+fn print_tide_status(tide: &Tide, all: bool, format: CliTideOutputFormat) -> Result<(), CliError> {
+    let statuses =
+        tide.statuses().iter().filter(|status| all || !status.resolved).collect::<Vec<_>>();
+    match format {
+        | CliTideOutputFormat::Json => {
+            println!("{}", serde_json::to_string_pretty(&statuses)?);
+        }
+        | CliTideOutputFormat::Human => {
+            if statuses.is_empty() {
+                println!("tide: clear");
+            } else {
+                for status in statuses {
+                    let state = if status.resolved { "resolved" } else { "open" };
+                    let sources = status
+                        .sources
+                        .iter()
+                        .map(|source| match source {
+                            | sirno::TideSource::Lake => "lake",
+                            | sirno::TideSource::Frost => "frost",
+                        })
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    println!("{state}: {} [{sources}]", status.workitem);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn move_configured_path_and_write_config(
     source: &Path, destination: &Path, config: &SirnoConfig, config_path: &Path,
 ) -> Result<(), CliError> {
@@ -976,6 +1183,13 @@ struct FrostContext {
     lake_path: PathBuf,
 }
 
+struct TideContext {
+    frost_path: PathBuf,
+    lock_path: PathBuf,
+    settings: EntryDirectoryCheckSettings,
+    lake_path: PathBuf,
+}
+
 impl FrostContext {
     fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CliError> {
         let config = SirnoConfig::from_file(config_path)?;
@@ -1002,6 +1216,48 @@ impl FrostContext {
             return Err(CliError::ImmutableFrostCheckout(lock.frost.version));
         }
         Ok(())
+    }
+}
+
+impl TideContext {
+    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CliError> {
+        let config = SirnoConfig::from_file(config_path)?;
+        let Some(frost_path) = config.resolve_frost(config_path) else {
+            return Err(CliError::FrostNotConfigured);
+        };
+        Ok(Self {
+            frost_path,
+            lock_path: SirnoLock::path_for_config(config_path),
+            settings: entry_directory_check_settings(config_path, &config),
+            lake_path: resolve_lake_path(lake_path, config_path, &config),
+        })
+    }
+
+    fn load_lock_or_current(&self) -> Result<SirnoLock, CliError> {
+        let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
+            let frost = SirnoFrost::open(&self.frost_path)?;
+            return Ok(SirnoLock::current(frost.current_snapshot()?));
+        };
+        Ok(lock)
+    }
+
+    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CliError> {
+        let frost = SirnoFrost::open(&self.frost_path)?;
+        let frostline = frost.read_all_entries_at_snapshot(frost.current_snapshot()?)?;
+        let mut settings = self.settings.clone();
+        settings.render = false;
+        settings.witness = None;
+        let report =
+            EntryDirectory::new(&self.lake_path).check_with_settings(CheckMode::Edit, &settings)?;
+        if report.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(self.lake_path.clone()).into());
+        }
+        Ok(Tide::from_entries(
+            &frostline,
+            report.entries(),
+            &settings.structural,
+            &lock.tide.resolved,
+        )?)
     }
 }
 
@@ -1241,7 +1497,7 @@ fn entry_directory_check_settings(
     config_path: &Path, config: &SirnoConfig,
 ) -> EntryDirectoryCheckSettings {
     EntryDirectoryCheckSettings {
-        link: config.check.link,
+        render: config.check.render,
         structural: config.structural.clone(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
@@ -1336,10 +1592,12 @@ fn print_status(
     }
     println!("entries: {}", report.entries().len());
     println!("checks:");
-    println!("  link: {}", config.check.link);
+    println!("  render: {}", config.check.render);
     println!("structural:");
     for (field, settings) in config.structural.fields() {
-        println!("  {field}.link: {}", settings.link);
+        println!("  {field}.to: {}", settings.to);
+        println!("  {field}.from: {}", settings.from);
+        println!("  {field}.clique: {}", settings.clique);
     }
     if report.has_errors() {
         println!("check: failed");
@@ -1555,6 +1813,9 @@ enum CliError {
     /// Immutable Frost checkouts cannot be committed.
     #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
     ImmutableFrostCheckout(u64),
+    /// Frost commit requires all tide workitems to be resolved.
+    #[error("tide has {0} open workitems; run `sirno tide status`")]
+    OpenTide(usize),
     /// Empty Frost cannot be checked out as a version.
     #[error("frost version {0} is not a check-outable snapshot")]
     InvalidFrostVersion(u64),
@@ -1605,9 +1866,9 @@ enum CliError {
     /// Lake path override does not apply to checking a Frost path directly.
     #[error("`--lake-path` cannot be used with `check --frost-path`")]
     LakePathWithFrostPath,
-    /// Dry-run mode applies only to generated-link writing.
-    #[error("`--dry` only applies to `sirno gen-link` without a subcommand")]
-    DryWithGenLinkSubcommand,
+    /// Dry-run mode applies only to render writing.
+    #[error("`--dry` only applies to `sirno render` without a subcommand")]
+    DryWithRenderSubcommand,
     /// A command named a structural field not configured for this project.
     #[error("structural field `{0}` is not configured; add it under [structural] in Sirno.toml")]
     UnconfiguredStructuralField(String),
@@ -1667,6 +1928,9 @@ enum CliError {
     /// Generated-link footer handling failed.
     #[error(transparent)]
     GeneratedLink(#[from] GeneratedLinkError),
+    /// Tide operation failed.
+    #[error(transparent)]
+    Tide(#[from] TideError),
     /// Ripgrep could not be started.
     #[error("failed to run rg")]
     RunRg(#[source] std::io::Error),
@@ -1686,15 +1950,16 @@ mod tests {
     use sirno::{
         CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostLockStatus,
         FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost,
-        SirnoLock, StructuralFieldSettings, StructuralSettings, WitnessRecord, WitnessSpan,
+        SirnoLock, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
+        StructuralSettings, WitnessRecord, WitnessSpan,
     };
 
     use crate::{
         Cli, CliCheckMode, CliError, CliQueryField, CliQueryFields, CliQueryOutputFormat,
-        CliStructuralPredicate, Command, EntryCommand, FrostCommand, GroupedEntryCommand,
-        LakeCommand, exact_query_from_predicates, format_gen_link_report, format_query_json,
-        format_query_table, format_witness_record, format_witness_records,
-        rg_args_include_preprocessor,
+        CliStructuralPredicate, CliTideItem, Command, EntryCommand, FrostCommand,
+        GroupedEntryCommand, LakeCommand, TideCommand, exact_query_from_predicates,
+        format_gen_link_report, format_query_json, format_query_table, format_witness_record,
+        format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -1864,6 +2129,109 @@ Body.
     }
 
     #[test]
+    fn frost_commit_requires_clear_tide() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        let config = SirnoConfig {
+            structural: StructuralSettings::from_fields([(
+                "belongs",
+                StructuralFieldSettings::new(
+                    StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                    StructuralEdgeSettings::default(),
+                    StructuralEdgeSettings::default(),
+                ),
+            )]),
+            ..SirnoConfig::new("docs").with_frost("sirno-frost")
+        };
+        config.write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            docs.join("beta.md"),
+            "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "commit",
+            "--unsafe-resolve-all",
+        ])
+        .run()
+        .unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Changed body.
+",
+        )
+        .unwrap();
+
+        let error = Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "commit",
+        ])
+        .run()
+        .unwrap_err();
+        assert!(matches!(error, CliError::OpenTide(1)));
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "tide",
+            "resolve",
+            "beta",
+        ])
+        .run()
+        .unwrap();
+        assert_eq!(
+            SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap().tide.resolved.len(),
+            1
+        );
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
+        let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
+        assert!(lock.tide.resolved.is_empty());
+        assert_eq!(lock.frost.version, 2);
+    }
+
+    #[test]
     fn move_accepts_lake_path() {
         let cli = Cli::parse_from(["sirno", "move", "sirno-docs"]);
 
@@ -1970,6 +2338,62 @@ Body.
             Cli::try_parse_from(["sirno", "frost", "checkout", "3", "--latest"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn tide_resolve_accepts_neighbor_and_tuple_selectors() {
+        let neighbor = Cli::parse_from(["sirno", "tide", "resolve", "beta"]);
+        let tuple = Cli::parse_from(["sirno", "tide", "resolve", "alpha,belongs,to,beta"]);
+
+        assert!(matches!(
+            neighbor.command,
+            Command::Tide {
+                command: TideCommand::Resolve {
+                    items,
+                    infer: false,
+                    json: None
+                }
+            } if items == vec![CliTideItem::Neighbor(EntryId::new("beta").unwrap())]
+        ));
+        assert!(matches!(
+            tuple.command,
+            Command::Tide {
+                command: TideCommand::Resolve {
+                    items,
+                    infer: false,
+                    json: None
+                }
+            } if matches!(&items[..], [CliTideItem::Workitem(workitem)]
+                if workitem.to_string() == "alpha,belongs,to,beta")
+        ));
+    }
+
+    #[test]
+    fn tide_resolve_accepts_infer_and_json() {
+        let infer = Cli::parse_from(["sirno", "tide", "resolve", "--infer"]);
+        let json = Cli::parse_from([
+            "sirno",
+            "tide",
+            "resolve",
+            "--json",
+            r#"{"ripple":"alpha","field":"belongs","direction":"to","neighbor":"beta"}"#,
+        ]);
+
+        assert!(matches!(
+            infer.command,
+            Command::Tide { command: TideCommand::Resolve { infer: true, .. } }
+        ));
+        assert!(matches!(
+            json.command,
+            Command::Tide { command: TideCommand::Resolve { json: Some(_), infer: false, .. } }
+        ));
+    }
+
+    #[test]
+    fn tide_resolve_requires_selector_json_or_infer() {
+        let error = Cli::try_parse_from(["sirno", "tide", "resolve"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
     }
 
     #[test]
@@ -2884,34 +3308,34 @@ Body.
     }
 
     #[test]
-    fn gen_link_rejects_no_check_flag() {
-        let error = Cli::try_parse_from(["sirno", "gen-link", "--no-check"]).unwrap_err();
+    fn render_rejects_no_check_flag() {
+        let error = Cli::try_parse_from(["sirno", "render", "--no-check"]).unwrap_err();
 
         assert!(error.to_string().contains("unexpected argument"));
     }
 
     #[test]
-    fn gen_link_accepts_dry_flag() {
-        let cli = Cli::parse_from(["sirno", "gen-link", "--dry"]);
+    fn render_accepts_dry_flag() {
+        let cli = Cli::parse_from(["sirno", "render", "--dry"]);
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::GenLink { dry: true, command: None, .. })
+            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
         ));
     }
 
     #[test]
-    fn gen_link_accepts_dry_run_aliases() {
-        let short = Cli::parse_from(["sirno", "gen-link", "-n"]);
-        let long = Cli::parse_from(["sirno", "gen-link", "--dry-run"]);
+    fn render_accepts_dry_run_aliases() {
+        let short = Cli::parse_from(["sirno", "render", "-n"]);
+        let long = Cli::parse_from(["sirno", "render", "--dry-run"]);
 
         assert!(matches!(
             short.command,
-            Command::TopLevelLake(LakeCommand::GenLink { dry: true, command: None, .. })
+            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
         ));
         assert!(matches!(
             long.command,
-            Command::TopLevelLake(LakeCommand::GenLink { dry: true, command: None, .. })
+            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
         ));
     }
 

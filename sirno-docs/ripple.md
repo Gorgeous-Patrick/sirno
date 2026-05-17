@@ -9,9 +9,15 @@ refines:
   - versioning
 ---
 
-A *ripple* is the named delta between two Sirno Lake states.
-It describes what changed across *entries*, metadata, generated projections,
-or future frozen snapshots without treating the whole *lake* as new.
+A *ripple* is the named delta between the frostline and the waterline.
+The frostline is the latest Sirno Frost snapshot.
+The waterline is the current public *lake*.
+
+A *ripple* exists when an *entry* differs between those two states.
+The difference may be a changed name, description, prose body, or structural field.
+Added and deleted *entries* are ripples too.
+Generated footer regions are ignored,
+because Sirno Frost stores canonical metadata and prose rather than rendered navigation.
 
 The term fits the *lake* model.
 A *lake* is the readable body of project knowledge.
@@ -19,12 +25,12 @@ A *ripple* is a visible disturbance in that body:
 small enough to inspect locally,
 but meaningful because it belongs to a larger surface.
 
-The *ripple* should name reviewable difference, not semantic judgment.
-It can support future commands, displays, or persisted review artifacts that compare *lake* states.
-Those interfaces may decide whether a *ripple* is transient output,
-a durable record,
-or a patch-like object,
-but the concept remains the same delta between two states.
+The *ripple* names reviewable difference, not semantic judgment.
+Sirno can show what changed and which configured neighbors must be reviewed.
+It does not decide whether the new design is correct.
+
+A *ripple* produces a *wave* of *tide workitems* through configured structural edge policies.
+The *tide* is the active worklist created from all current ripples.
 
 ---
 

@@ -12,7 +12,8 @@ A structural field is a configured metadata field that Sirno reads as project st
 This repository recommends `category`, `belongs`, and `refines`.
 `Sirno.toml` defines the active set under `[structural]`.
 Configured fields are ordinary *entry* metadata,
-but Sirno treats their values as the graph that powers query, checking, and generated links.
+but Sirno treats their values as the graph that powers query, checking,
+generated footer rendering, and tide review worklists.
 
 Structural fields refer to *entries* by id.
 They are list-valued and may name several targets.

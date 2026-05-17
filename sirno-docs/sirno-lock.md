@@ -23,6 +23,13 @@ Sirno writes the lock by rendering a complete TOML file to a sibling temporary p
 and renaming it into place.
 A failed write leaves the previous complete lock as the public state.
 
+When a *tide* is active,
+the lock may also contain explicit tide resolutions.
+Each resolution stores one `(ripple, field, direction, neighbor)` tuple
+and the fingerprint of the ripple entry delta it reviewed.
+Sirno derives open workitems from the current waterline and frostline.
+The lock does not store a separate open worklist.
+
 A normal checkout is immutable.
 Sirno removes write permission from the public *lake* root and managed *entry* files.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
@@ -33,6 +40,7 @@ and records `mutable = true`.
 Committing a mutable *lake* writes a new current *frost* version
 and rewrites the lock to `status = "current"`.
 Sirno refuses to commit an immutable checkout.
+Successful commits clear tide resolutions.
 
 ---
 

@@ -32,7 +32,7 @@ Sirno-side work consumes that structured output and formats it for review.
 Validate after changing evidence.
 Run the direct witness query again,
 run the review-mode structural check,
-and run generated-link maintenance if lake metadata or links changed.
+and run render maintenance if lake metadata or links changed.
 Then read the full witness output as a human would:
 it should show concise ranges, the literal matched region, and no broad unrelated code.
 

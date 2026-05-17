@@ -41,7 +41,7 @@ or checked out to a frozen version.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,
-querying, and changing generated links.
+querying, and rendering generated footers.
 Ignored paths are for adjacent tool state, not for *entries*.
 
 `[repo].members` lists paths and globs relative to `Sirno.toml` when repo *witnesses* are enabled.
@@ -60,22 +60,30 @@ The standard regexes use one canonical capture for filename-like *entry* ids.
 Configured regexes may be narrower,
 but they should include every *entry* id allowed by the active project policy.
 
-`[check].link` controls generated-link freshness checks.
+`[check].render` controls generated-footer freshness checks.
 It is enabled by default.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 
 `[structural]` controls which metadata fields are treated as structural.
-Each field key maps to a table with `link = { to = bool, from = bool, clique = bool }`.
+Each field key maps to a table with `to`, `from`, and `clique` edge policies.
 This repository recommends `category`, `belongs`, and `refines`.
 The key order is user-authored project structure.
 Sirno preserves that order when it rewrites `Sirno.toml`.
-Each `link` boolean is optional,
-and an absent boolean means false.
+Each edge policy may set `render = true`
+and `ripple = { lake = bool, frost = bool }`.
+Absent values are false.
 
 `to` links from the *entry* to metadata targets.
 `from` links from the *entry* to *entries* that name it as a metadata target.
 `clique` adds separate clique-derived sections through shared targets in that field.
+
+`render` controls generated footer output.
+`ripple.lake` and `ripple.frost` control which edge directions produce *tide* workitems.
+
+`Sirno.lock.toml` also records explicit *tide* resolutions when Sirno Frost is configured.
+Those resolutions are compared against the current ripple fingerprint.
+They are cleared after a successful Frost commit.
 
 ---
 

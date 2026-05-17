@@ -78,7 +78,7 @@ impl EntryId {
 // sirno:witness:entry:begin
 fn is_forbidden_filename_character(character: char) -> bool {
     character.is_control()
-        || matches!(character, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')
+        || matches!(character, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' | ',')
 }
 
 fn windows_device_name(raw: &str) -> Option<&str> {

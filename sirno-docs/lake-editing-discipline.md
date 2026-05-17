@@ -37,7 +37,7 @@ Create an entry only when it gives future work a handle
 that the principle and its structural edges do not already provide.
 
 Leave generated footers untouched.
-After metadata stabilizes, run generated-link maintenance,
+After metadata stabilizes, run render maintenance,
 then run the editing-mode structural check and the review-mode check.
 
 Validation can be partly blocked.

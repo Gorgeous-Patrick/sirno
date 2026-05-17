@@ -86,10 +86,10 @@ Use `cargo run -- ...` or `target/debug/sirno ...` according to the repository s
 
 ## Validation
 
-If lake metadata or links changed, run generated-link maintenance:
+If lake metadata or links changed, run render maintenance:
 
 ```sh
-cargo run -- gen-link
+cargo run -- render
 ```
 
 Then run the review-mode structural check:

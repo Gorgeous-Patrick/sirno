@@ -45,7 +45,7 @@ This discipline is itself a skill source;
 the synthesizer rebuilds its own package the same way it rebuilds the others.
 
 Validate after writing.
-Run generated-link maintenance if lake metadata changed,
+Run render maintenance if lake metadata changed,
 then the review-mode structural check.
 Confirm each SKILL.md has valid frontmatter,
 and that the disciplines and packages still correspond one to one.

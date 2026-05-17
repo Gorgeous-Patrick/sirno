@@ -8,12 +8,13 @@
 pub mod check;
 pub mod config;
 pub mod entry;
+pub mod frost;
 pub mod id;
 pub mod lake;
 pub mod links;
 pub mod lock;
 pub mod query;
-pub mod frost;
+pub mod tide;
 pub mod witness;
 
 pub use eter::{Eterator, GcGeneration, SnapshotRef};
@@ -37,10 +38,14 @@ pub use crate::lake::{
 };
 pub use crate::links::{
     BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex,
-    StructuralFieldMap, StructuralFieldSettings, StructuralLinkSettings, StructuralSettings,
+    StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeSettings,
+    StructuralFieldMap, StructuralFieldSettings, StructuralRippleSettings, StructuralSettings,
 };
-pub use crate::lock::{FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock};
+pub use crate::lock::{FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock, TideLock};
 pub use crate::query::{EntryQuery, EntryTextTerm, VagueEntryQuery};
+pub use crate::tide::{
+    Tide, TideError, TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,
+};
 pub use crate::witness::{
     WitnessCheckSettings, WitnessError, WitnessIndex, WitnessRecord, WitnessSpan,
 };

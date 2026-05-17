@@ -17,13 +17,13 @@ The generated comments are:
 
 - `Markdown monograph path, resolved relative to this config file.`
 - `Markdown entry lake path, resolved relative to this config file.`
-- `Paths in lake that Sirno skips while reading, checking, querying, and generating links.`
+- `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
 - `Sirno Frost path, kept outside the public lake.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Structural metadata fields; link.to, link.from, and link.clique default to false.`
+- `Structural metadata fields; render and ripple settings default to false.`
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.

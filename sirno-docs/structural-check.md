@@ -16,9 +16,9 @@ They check references through fields configured under `[structural]`.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 
-Generated-link checking has two parts.
+Generated footer checking has two parts.
 Sentinel shape is always checked.
-Freshness is controlled by `[check].link`,
+Freshness is controlled by `[check].render`,
 which is enabled by default.
 
 During editing, dangling structural ids may warn.
@@ -47,7 +47,8 @@ Unconfigured structural fields are warnings because the *entry* names structure 
 Metadata target checks keep the graph navigable.
 If an *entry* names a target through configured structural metadata,
 that target should exist by the time the *lake* is reviewed.
-This lets query results, generated footers, and reader navigation agree about the same set of *entries*.
+This lets query results, generated footers, tide workitems,
+and reader navigation agree about the same set of *entries*.
 
 Semantic review remains human and agent work.
 The checker can say that a *witness* block is shaped correctly.
