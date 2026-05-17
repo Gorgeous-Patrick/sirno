@@ -79,6 +79,7 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
+  - [entry-lifecycle](entry-lifecycle.md)
   - [metadata](metadata.md)
   - [project-config](project-config.md)
   - [query](query.md)
