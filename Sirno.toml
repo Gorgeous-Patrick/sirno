@@ -23,6 +23,14 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 # Require generated footers to match current metadata during checks.
 render = true
 
+[tutorial]
+# Presence of this table enables tutorial text for recoverable command failures.
+# Remove this table to keep CLI errors terse.
+# Show tutorial text when frost commit is blocked by open tide workitems.
+frost_commit_tide = true
+# Include first-snapshot bootstrap context in the frost commit tide tutorial.
+frost_bootstrap_tide = true
+
 [structural]
 # Structural metadata fields.
 # Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.

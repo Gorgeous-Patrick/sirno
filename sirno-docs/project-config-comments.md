@@ -23,6 +23,10 @@ The generated comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
+- `Presence of this table enables tutorial text for recoverable command failures.`
+- `Remove this table to keep CLI errors terse.`
+- `Show tutorial text when frost commit is blocked by open tide workitems.`
+- `Include first-snapshot bootstrap context in the frost commit tide tutorial.`
 - `Structural metadata fields.`
 - `Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.`
 - `FIELD must name the lake entry that documents the field and follow normal entry-id rules.`

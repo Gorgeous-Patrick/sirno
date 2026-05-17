@@ -1,6 +1,5 @@
 //! Command-line interface for Sirno.
 
-use std::env;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{self, ErrorKind, Write};
@@ -8,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, ExitCode, ExitStatus};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::{env, fmt};
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
@@ -18,8 +18,8 @@ use sirno::{
     EntryDirectoryError, EntryDirectoryReport, EntryDirectoryWritePolicy, EntryId, EntryIdError,
     EntryMetadata, EntryParseError, EntryQuery, Eterator, FrostError, FrostLockStatus,
     GenLinkDirectoryReport, GeneratedLinkBody, GeneratedLinkError, LockError, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideError, TideWorkitem, VagueEntryQuery,
-    WitnessCheckSettings, WitnessError, WitnessRecord,
+    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideError, TideWorkitem, TutorialSettings,
+    VagueEntryQuery, WitnessCheckSettings, WitnessError, WitnessRecord,
 };
 use thiserror::Error;
 
@@ -968,7 +968,13 @@ impl FrostCommand {
                     let lock = tide_context.load_lock_or_current()?;
                     let tide = tide_context.tide(&lock)?;
                     if !tide.is_clear() {
-                        return Err(CliError::OpenTide(tide.open_statuses().count()));
+                        return Err(CliError::OpenTide {
+                            count: tide.open_statuses().count(),
+                            tutorial: OpenTideTutorial::new(
+                                context.tutorial,
+                                lock.frost.version == Eterator::EMPTY.version(),
+                            ),
+                        });
                     }
                 }
                 // sirno:witness:tide:end
@@ -1186,6 +1192,7 @@ struct FrostContext {
     lock_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
     lake_path: PathBuf,
+    tutorial: Option<TutorialSettings>,
 }
 
 struct TideContext {
@@ -1206,6 +1213,7 @@ impl FrostContext {
             lock_path: SirnoLock::path_for_config(config_path),
             settings: entry_directory_check_settings(config_path, &config),
             lake_path: resolve_lake_path(lake_path, config_path, &config),
+            tutorial: config.tutorial,
         })
     }
 
@@ -1806,6 +1814,57 @@ fn print_entry_directory_report(report: &EntryDirectoryReport) {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct OpenTideTutorial {
+    frost_commit_tide: bool,
+    frost_bootstrap_tide: bool,
+    bootstrap: bool,
+}
+
+impl OpenTideTutorial {
+    fn new(settings: Option<TutorialSettings>, bootstrap: bool) -> Self {
+        let Some(settings) = settings else {
+            return Self { frost_commit_tide: false, frost_bootstrap_tide: false, bootstrap };
+        };
+        Self {
+            frost_commit_tide: settings.frost_commit_tide,
+            frost_bootstrap_tide: settings.frost_bootstrap_tide,
+            bootstrap,
+        }
+    }
+}
+
+impl fmt::Display for OpenTideTutorial {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if !self.frost_commit_tide {
+            return Ok(());
+        }
+
+        writeln!(formatter)?;
+        writeln!(formatter)?;
+        writeln!(formatter, "Tutorial:")?;
+        writeln!(
+            formatter,
+            "A tide is the review worklist for differences between the waterline and frostline.",
+        )?;
+        if self.bootstrap && self.frost_bootstrap_tide {
+            writeln!(
+                formatter,
+                "This Frost path is still at empty version 0, so the first commit compares",
+            )?;
+            writeln!(formatter, "the full lake to an empty frostline.")?;
+        }
+        writeln!(formatter, "Inspect the work with `sirno tide status`.")?;
+        writeln!(formatter, "Resolve reviewed work with `sirno tide resolve ...`,",)?;
+        writeln!(
+            formatter,
+            "or choose the current lake as the baseline with `sirno frost commit --unsafe-resolve-all`.",
+        )?;
+        write!(formatter, "Remove `[tutorial]` from Sirno.toml, or set tutorial knobs to false,",)?;
+        write!(formatter, " to silence tutorial text.")
+    }
+}
+
 /// Error raised while running the CLI.
 #[derive(Debug, Error)]
 enum CliError {
@@ -1819,8 +1878,13 @@ enum CliError {
     #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
     ImmutableFrostCheckout(u64),
     /// Frost commit requires all tide workitems to be resolved.
-    #[error("tide has {0} open workitems; run `sirno tide status`")]
-    OpenTide(usize),
+    #[error("tide has {count} open workitems; run `sirno tide status`{tutorial}")]
+    OpenTide {
+        /// Number of open tide workitems.
+        count: usize,
+        /// Optional tutorial text controlled by Sirno.toml.
+        tutorial: OpenTideTutorial,
+    },
     /// Empty Frost cannot be checked out as a version.
     #[error("frost version {0} is not a check-outable snapshot")]
     InvalidFrostVersion(u64),
@@ -1952,11 +2016,13 @@ mod tests {
 
     use clap::Parser;
 
+    use crate::OpenTideTutorial;
+
     use sirno::{
         CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostError,
         FrostLockStatus, FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig,
         SirnoFrost, SirnoLock, StructuralEdgeSettings, StructuralFieldSettings,
-        StructuralRippleSettings, StructuralSettings, WitnessRecord, WitnessSpan,
+        StructuralRippleSettings, StructuralSettings, TutorialSettings, WitnessRecord, WitnessSpan,
     };
 
     use crate::{
@@ -2211,7 +2277,12 @@ Changed body.
         ])
         .run()
         .unwrap_err();
-        assert!(matches!(error, CliError::OpenTide(1)));
+        assert!(matches!(
+            &error,
+            CliError::OpenTide { count, tutorial }
+                if *count == 1 && !tutorial.frost_commit_tide
+        ));
+        assert_eq!(error.to_string(), "tide has 1 open workitems; run `sirno tide status`");
 
         Cli::parse_from([
             "sirno",
@@ -2234,6 +2305,91 @@ Changed body.
         let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
         assert!(lock.tide.resolved.is_empty());
         assert_eq!(lock.frost.version, 2);
+    }
+
+    #[test]
+    fn frost_commit_open_tide_tutorial_explains_bootstrap_when_enabled() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        let config = SirnoConfig {
+            structural: StructuralSettings::from_fields([(
+                "belongs",
+                StructuralFieldSettings::new(
+                    StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                    StructuralEdgeSettings::default(),
+                    StructuralEdgeSettings::default(),
+                ),
+            )]),
+            tutorial: Some(TutorialSettings::all()),
+            ..SirnoConfig::new("docs").with_frost("sirno-frost")
+        };
+        config.write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            docs.join("beta.md"),
+            "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "init"])
+            .run()
+            .unwrap();
+        let error = Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "commit",
+        ])
+        .run()
+        .unwrap_err();
+        let message = error.to_string();
+
+        assert!(matches!(&error, CliError::OpenTide { count, .. } if *count == 1));
+        assert!(message.contains("Tutorial:"));
+        assert!(message.contains("empty version 0"));
+        assert!(message.contains("sirno frost commit --unsafe-resolve-all"));
+        assert!(message.contains("Remove `[tutorial]` from Sirno.toml"));
+    }
+
+    #[test]
+    fn open_tide_tutorial_knobs_control_message_parts() {
+        let no_tutorial = OpenTideTutorial::new(
+            Some(TutorialSettings { frost_commit_tide: false, frost_bootstrap_tide: true }),
+            true,
+        )
+        .to_string();
+        let generic_tutorial = OpenTideTutorial::new(
+            Some(TutorialSettings { frost_commit_tide: true, frost_bootstrap_tide: false }),
+            true,
+        )
+        .to_string();
+
+        assert!(no_tutorial.is_empty());
+        assert!(generic_tutorial.contains("Tutorial:"));
+        assert!(!generic_tutorial.contains("empty version 0"));
     }
 
     #[test]

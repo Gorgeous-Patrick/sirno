@@ -87,6 +87,31 @@ impl Default for CheckSettings {
     }
 }
 
+/// Optional tutorial output settings.
+///
+/// Invariant: table presence enables configured tutorial text for recoverable command failures.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TutorialSettings {
+    /// Show tutorial text when Frost commit is blocked by open tide workitems.
+    pub frost_commit_tide: bool,
+    /// Include first-snapshot bootstrap context in the Frost commit tide tutorial.
+    pub frost_bootstrap_tide: bool,
+}
+
+impl TutorialSettings {
+    /// Construct tutorial settings with every current tutorial enabled.
+    pub fn all() -> Self {
+        Self { frost_commit_tide: true, frost_bootstrap_tide: true }
+    }
+}
+
+impl Default for TutorialSettings {
+    fn default() -> Self {
+        Self::all()
+    }
+}
+
 /// Configured public Markdown lake settings.
 ///
 /// Invariant: `path` points to the public Markdown entry lake.
@@ -303,6 +328,7 @@ impl WitnessSettings {
 /// `repo.members`, when present, contains relative member paths or globs for witness lookup.
 /// `witness` controls the delimiter syntax for repository witness blocks.
 /// `check` controls optional structural check families.
+/// `tutorial`, when present, enables tutorial output for recoverable command failures.
 /// `structural` controls structural metadata fields and generated-link footer content.
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -325,6 +351,9 @@ pub struct SirnoConfig {
     /// Structural check settings.
     #[serde(default)]
     pub check: CheckSettings,
+    /// Optional tutorial output settings.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tutorial: Option<TutorialSettings>,
     /// Structural metadata and generated-link settings.
     #[serde(default)]
     pub structural: StructuralSettings,
@@ -342,6 +371,7 @@ impl SirnoConfig {
             repo: None,
             witness: WitnessSettings::standard(),
             check: CheckSettings::default(),
+            tutorial: None,
             structural: StructuralSettings::default(),
         }
     }
@@ -362,6 +392,12 @@ impl SirnoConfig {
     /// Return this config with a configured Sirno Frost path.
     pub fn with_frost(mut self, frost: impl Into<PathBuf>) -> Self {
         self.frost = Some(FrostSettings::new(frost));
+        self
+    }
+
+    /// Return this config with tutorial output enabled.
+    pub fn with_tutorial(mut self) -> Self {
+        self.tutorial = Some(TutorialSettings::all());
         self
     }
 
@@ -577,6 +613,27 @@ impl ConfigRenderer {
             "Require generated footers to match current metadata during checks.",
         )?;
         // sirno:witness:project-config-comments:end
+
+        if let Some(tutorial) = config.tutorial {
+            self.out.push('\n');
+            self.push_table("tutorial");
+            // sirno:witness:project-config-comments:begin
+            self.out.push_str(
+                "# Presence of this table enables tutorial text for recoverable command failures.\n",
+            );
+            self.out.push_str("# Remove this table to keep CLI errors terse.\n");
+            self.push_field(
+                "frost_commit_tide",
+                &tutorial.frost_commit_tide,
+                "Show tutorial text when frost commit is blocked by open tide workitems.",
+            )?;
+            self.push_field(
+                "frost_bootstrap_tide",
+                &tutorial.frost_bootstrap_tide,
+                "Include first-snapshot bootstrap context in the frost commit tide tutorial.",
+            )?;
+            // sirno:witness:project-config-comments:end
+        }
 
         self.out.push('\n');
         self.push_table("structural");
@@ -842,6 +899,7 @@ path = "docs"
         assert_eq!(config.repo, None);
         assert_eq!(config.witness, test_witness_syntax());
         assert_eq!(config.check, CheckSettings::default());
+        assert_eq!(config.tutorial, None);
         assert_eq!(config.structural, StructuralSettings::default());
     }
 
@@ -894,6 +952,34 @@ render = false
         );
 
         assert_eq!(config.check, CheckSettings { render: false });
+    }
+
+    #[test]
+    fn parses_tutorial_settings() {
+        let default_tutorial = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[tutorial]
+"#,
+        );
+        let selected_tutorial = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[tutorial]
+frost_commit_tide = false
+frost_bootstrap_tide = true
+"#,
+        );
+
+        assert_eq!(default_tutorial.tutorial, Some(TutorialSettings::all()));
+        assert_eq!(
+            selected_tutorial.tutorial,
+            Some(TutorialSettings { frost_commit_tide: false, frost_bootstrap_tide: true })
+        );
     }
 
     #[test]
@@ -1370,6 +1456,7 @@ delimiters = []
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
+        assert!(!source.contains("[tutorial]"));
         assert!(source.contains("[structural]"));
         assert!(!source.contains("# Structural metadata field"));
         assert!(!source.contains("[mono]"));
@@ -1388,6 +1475,10 @@ delimiters = []
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
             check: CheckSettings { render: false },
+            tutorial: Some(TutorialSettings {
+                frost_commit_tide: true,
+                frost_bootstrap_tide: false,
+            }),
             structural: StructuralSettings::from_fields([
                 (
                     "kind",
@@ -1421,6 +1512,21 @@ delimiters = []
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("[tutorial]"));
+        assert!(source.contains(
+            "# Presence of this table enables tutorial text for recoverable command failures."
+        ));
+        assert!(source.contains("# Remove this table to keep CLI errors terse."));
+        assert!(
+            source.contains(
+                "# Show tutorial text when frost commit is blocked by open tide workitems."
+            )
+        );
+        assert!(source.contains(
+            "# Include first-snapshot bootstrap context in the frost commit tide tutorial."
+        ));
+        assert!(source.contains("frost_commit_tide = true"));
+        assert!(source.contains("frost_bootstrap_tide = false"));
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural metadata fields."));
         assert!(source.contains(
@@ -1444,6 +1550,7 @@ delimiters = []
             "# ripple.lake and ripple.frost add tide workitems from the waterline and frostline."
         ));
         assert!(source.contains("# Omitted render and ripple values are false."));
+        assert_before(&source, "[tutorial]", "[structural]");
         assert_eq!(source.matches("# Structural metadata fields.").count(), 1);
         assert_before(&source, "# Structural metadata fields", "[structural.kind]");
         assert!(

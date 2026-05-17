@@ -46,6 +46,9 @@ and an optional `mutable` flag.
 `sirno frost init` configures the *frost* path and records empty version `0`.
 `sirno frost init --frost-path PATH` chooses a non-default *frost* path.
 The first *frost* commit creates the first frozen snapshot.
+If active *tide* policy is configured,
+that first commit may surface the whole public *lake* as a bootstrap review worklist
+because the frostline is still empty.
 A *frost* commit imports the selected public *entry* set and writes one `eter` transaction.
 The transaction contains changed *entries* and lifecycle deletions.
 Unchanged live *entries* do not receive new version files.

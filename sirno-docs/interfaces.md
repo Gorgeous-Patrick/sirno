@@ -45,6 +45,9 @@ and renames the current *frost* path on the filesystem.
 `sirno frost commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 It fails while open *tide* workitems remain.
+When `[tutorial]` is present,
+this failure can include tutorial text controlled by `[tutorial].frost_commit_tide`
+and `[tutorial].frost_bootstrap_tide`.
 `sirno frost commit --unsafe-resolve-all` bypasses that gate for the current commit.
 `sirno frost checkout --latest` materializes the latest version as a mutable public *lake*.
 `sirno frost checkout VERSION` materializes one older version into the public *lake*.

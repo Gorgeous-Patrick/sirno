@@ -26,7 +26,8 @@ pub use crate::check::{
 };
 pub use crate::config::{
     CONFIG_FILE_NAME, CheckSettings, ConfigError, FrostSettings, LakeSettings, MonoSettings,
-    RepoMember, RepoSettings, SirnoConfig, WitnessDelimiterSettings, WitnessSettings,
+    RepoMember, RepoSettings, SirnoConfig, TutorialSettings, WitnessDelimiterSettings,
+    WitnessSettings,
 };
 pub use crate::entry::{
     DESC_FIELD, Entry, EntryMetadata, EntryParseError, EntryStructuralFields, FROZEN_FIELD,

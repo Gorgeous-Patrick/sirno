@@ -23,6 +23,7 @@ Generated config files include concise comments that describe how each written f
 `[frost].path` optionally names the private Sirno Frost path.
 `[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
 `[witness]` configures the delimiter regexes used to find *witness* blocks.
+`[tutorial]` optionally enables extra CLI tutorial text for recoverable command failures.
 Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 
@@ -64,6 +65,14 @@ but they should include every *entry* id allowed by the active project policy.
 It is enabled by default.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
+
+`[tutorial]` controls optional instructional CLI output.
+The table is absent by default.
+When the table is present,
+Sirno shows enabled tutorials after matching recoverable command failures.
+`[tutorial].frost_commit_tide` explains a Frost commit blocked by open *tide* workitems.
+`[tutorial].frost_bootstrap_tide` adds first-snapshot context to that tutorial.
+Removing the table silences all tutorial text.
 
 `[structural]` controls which metadata fields are treated as structural.
 Each structural field is written as a `[structural.FIELD]` subtable.

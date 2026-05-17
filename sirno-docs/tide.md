@@ -36,6 +36,9 @@ including neighbors deleted from the waterline.
 `sirno frost commit --unsafe-resolve-all` bypasses that gate for the current commit,
 does not write fake resolutions,
 and clears tide state after a successful commit.
+When `[tutorial]` is present in `Sirno.toml`,
+an open-*tide* commit failure may explain the worklist
+and the empty-version bootstrap case.
 
 ---
 
