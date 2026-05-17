@@ -24,9 +24,7 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+):end[
 link = true
 
 [structural]
-# Structural metadata field; link.to, link.from, and link.clique default to false.
+# Structural metadata fields; link.to, link.from, and link.clique default to false.
 category = { link = {} }
-# Structural metadata field; link.to, link.from, and link.clique default to false.
 belongs = { link = { to = true, from = true } }
-# Structural metadata field; link.to, link.from, and link.clique default to false.
 refines = { link = {} }

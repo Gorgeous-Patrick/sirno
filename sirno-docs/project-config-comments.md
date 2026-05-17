@@ -9,7 +9,7 @@ refines:
 
 Project config comments are the field-level comments Sirno writes when it renders `Sirno.toml`.
 
-Each comment sits immediately above the field it describes.
+Each comment sits immediately above the field or repeated field group it describes.
 Optional table comments appear only when the optional table is written.
 Parsing still ignores comments through ordinary TOML rules.
 
@@ -23,7 +23,7 @@ The generated comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Structural metadata field; link.to, link.from, and link.clique default to false.`
+- `Structural metadata fields; link.to, link.from, and link.clique default to false.`
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.

@@ -577,13 +577,7 @@ impl ConfigRenderer {
         self.out.push('\n');
         self.push_table("structural");
         // sirno:witness:project-config-comments:begin
-        for (field, settings) in config.structural.fields() {
-            self.push_field(
-                field,
-                settings,
-                "Structural metadata field; link.to, link.from, and link.clique default to false.",
-            )?;
-        }
+        self.push_structural_fields(&config.structural)?;
         // sirno:witness:project-config-comments:end
 
         Ok(())
@@ -625,6 +619,23 @@ impl ConfigRenderer {
             self.push_array_table("witness.delimiters");
             self.push_bare_field("begin", &delimiter.begin)?;
             self.push_bare_field("end", &delimiter.end)?;
+        }
+        Ok(())
+    }
+    // sirno:witness:project-config-comments:end
+
+    // sirno:witness:project-config-comments:begin
+    fn push_structural_fields(
+        &mut self, structural: &StructuralSettings,
+    ) -> Result<(), toml::ser::Error> {
+        let mut fields = structural.fields().peekable();
+        if fields.peek().is_some() {
+            self.out.push_str(
+                "# Structural metadata fields; link.to, link.from, and link.clique default to false.\n",
+            );
+        }
+        for (field, settings) in fields {
+            self.push_bare_field(field, settings)?;
         }
         Ok(())
     }
@@ -1370,7 +1381,9 @@ delimiters = []
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("[structural]"));
-        assert!(source.contains("# Structural metadata field"));
+        assert!(source.contains("# Structural metadata fields"));
+        assert_eq!(source.matches("# Structural metadata fields").count(), 1);
+        assert_before(&source, "# Structural metadata fields", "kind = ");
         assert!(source.contains("kind = { link = { to = true, from = true } }"));
         assert!(source.contains("area = { link = { to = true, from = true, clique = true } }"));
         assert_before(&source, "kind = ", "area = ");
