@@ -67,6 +67,11 @@ because malformed sentinels make Sirno ownership ambiguous.
 
 `[structural]` controls which metadata fields are treated as structural.
 Each structural field is written as a `[structural.FIELD]` subtable.
+The field name should also name the *entry* that documents that structural field
+and follow normal *entry* id rules.
+It must be a non-empty single-line metadata key,
+must not contain a comma,
+and must not be `name`, `desc`, or `frozen`.
 The subtable may define `to`, `from`, and `clique` edge policies.
 This repository recommends `category`, `belongs`, and `refines`.
 The key order is user-authored project structure.

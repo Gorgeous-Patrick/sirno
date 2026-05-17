@@ -634,9 +634,22 @@ impl ConfigRenderer {
     ) -> Result<(), toml::ser::Error> {
         let mut fields = structural.fields().peekable();
         if fields.peek().is_some() {
-            self.out.push_str(
-                "# Structural metadata fields; render and ripple settings default to false.\n",
-            );
+            for comment in [
+                "Structural metadata fields.",
+                "Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.",
+                "FIELD must name the lake entry that documents the field and follow normal entry-id rules.",
+                "FIELD must be a non-empty single-line metadata key with no comma.",
+                "FIELD cannot be name, desc, or frozen.",
+                "Entry metadata values for FIELD must be lists of entry ids; targets must exist by review.",
+                "`to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.",
+                "render = true writes generated footer links.",
+                "ripple.lake and ripple.frost add tide workitems from the waterline and frostline.",
+                "Omitted render and ripple values are false.",
+            ] {
+                self.out.push_str("# ");
+                self.out.push_str(comment);
+                self.out.push('\n');
+            }
         }
         for (field, settings) in fields {
             self.out.push('\n');
@@ -1409,8 +1422,29 @@ delimiters = []
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("[structural]"));
-        assert!(source.contains("# Structural metadata fields"));
-        assert_eq!(source.matches("# Structural metadata fields").count(), 1);
+        assert!(source.contains("# Structural metadata fields."));
+        assert!(source.contains(
+            "# Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure."
+        ));
+        assert!(source.contains(
+            "# FIELD must name the lake entry that documents the field and follow normal entry-id rules."
+        ));
+        assert!(
+            source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
+        );
+        assert!(source.contains("# FIELD cannot be name, desc, or frozen."));
+        assert!(source.contains(
+            "# Entry metadata values for FIELD must be lists of entry ids; targets must exist by review."
+        ));
+        assert!(source.contains(
+            "# `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors."
+        ));
+        assert!(source.contains("# render = true writes generated footer links."));
+        assert!(source.contains(
+            "# ripple.lake and ripple.frost add tide workitems from the waterline and frostline."
+        ));
+        assert!(source.contains("# Omitted render and ripple values are false."));
+        assert_eq!(source.matches("# Structural metadata fields.").count(), 1);
         assert_before(&source, "# Structural metadata fields", "[structural.kind]");
         assert!(
             source

@@ -23,7 +23,16 @@ The generated comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Structural metadata fields; render and ripple settings default to false.`
+- `Structural metadata fields.`
+- `Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.`
+- `FIELD must name the lake entry that documents the field and follow normal entry-id rules.`
+- `FIELD must be a non-empty single-line metadata key with no comma.`
+- `FIELD cannot be name, desc, or frozen.`
+- `Entry metadata values for FIELD must be lists of entry ids; targets must exist by review.`
+- `` `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors. ``
+- `render = true writes generated footer links.`
+- `ripple.lake and ripple.frost add tide workitems from the waterline and frostline.`
+- `Omitted render and ripple values are false.`
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.
