@@ -1302,6 +1302,22 @@ delimiters = []
     }
 
     #[test]
+    fn standard_witness_regexes_reject_entry_id_separators_and_line_breaks() {
+        let line_begin = Regex::new(STANDARD_LINE_WITNESS_BEGIN_REGEX).unwrap();
+        let markdown_begin = Regex::new(STANDARD_MARKDOWN_WITNESS_BEGIN_REGEX).unwrap();
+
+        assert!(line_begin.is_match("// sirno:witness:valid-entry:begin"));
+        assert!(!line_begin.is_match("// sirno:witness:bad,id:begin"));
+        assert!(!line_begin.is_match("// sirno:witness:bad\rid:begin"));
+        assert!(!line_begin.is_match("// sirno:witness:bad\nid:begin"));
+
+        assert!(markdown_begin.is_match("<!-- sirno:witness:valid-entry:begin -->"));
+        assert!(!markdown_begin.is_match("<!-- sirno:witness:bad,id:begin -->"));
+        assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\rid:begin -->"));
+        assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\nid:begin -->"));
+    }
+
+    #[test]
     fn writes_and_reads_config_without_overwrite() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
