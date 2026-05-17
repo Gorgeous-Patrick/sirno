@@ -55,6 +55,7 @@ Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
 Generated links remain a public *lake* projection.
 Sirno Frost keeps metadata and prose without generated navigation regions.
+Frozen public *entries* must match the current Frost snapshot after public-only state is removed.
 Before writing the transaction,
 Sirno also requires the active *tide* to be clear.
 A successful commit returns the new `SnapshotRef`.

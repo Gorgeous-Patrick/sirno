@@ -169,7 +169,7 @@ enum EntryCommand {
         new_id: String,
     },
     // sirno:witness:interfaces:end
-    /// Freeze one public Markdown entry and make its file read-only.
+    /// Freeze one current Frost entry and make its public file read-only.
     // sirno:witness:interfaces:begin
     Freeze {
         /// Entry id to freeze.
@@ -256,7 +256,7 @@ enum GroupedEntryCommand {
         /// New entry id.
         new_id: String,
     },
-    /// Freeze one public Markdown entry and make its file read-only.
+    /// Freeze one current Frost entry and make its public file read-only.
     Freeze {
         /// Entry id to freeze.
         id: String,
@@ -852,9 +852,14 @@ impl EntryCommand {
                 Ok(ExitCode::SUCCESS)
             }
             | EntryCommand::Freeze { id } => {
-                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
+                let context = FrostContext::load(config_path, lake_path)?;
+                context.reject_immutable_checkout()?;
                 let id = EntryId::new(&id)?;
-                let path = EntryDirectory::new(&lake).freeze_entry(&id)?;
+                let directory = context.lake();
+                let entry = directory.read_entry(&id)?;
+                let frost = SirnoFrost::open(&context.frost_path)?;
+                frost.ensure_entry_current(&entry)?;
+                let path = directory.freeze_entry(&id)?;
                 println!("froze entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)
             }
@@ -1948,10 +1953,10 @@ mod tests {
     use clap::Parser;
 
     use sirno::{
-        CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostLockStatus,
-        FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost,
-        SirnoLock, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
-        StructuralSettings, WitnessRecord, WitnessSpan,
+        CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostError,
+        FrostLockStatus, FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig,
+        SirnoFrost, SirnoLock, StructuralEdgeSettings, StructuralFieldSettings,
+        StructuralRippleSettings, StructuralSettings, WitnessRecord, WitnessSpan,
     };
 
     use crate::{
@@ -2962,7 +2967,7 @@ Changed body.
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let docs = temp.path().join("docs");
-        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
         fs::write(
             docs.join("alpha.md"),
@@ -2977,6 +2982,9 @@ Body.
         )
         .unwrap();
 
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
         Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "alpha"])
             .run()
             .unwrap();
@@ -2990,6 +2998,56 @@ Body.
         let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
         assert!(!source.contains("frozen:\n"));
         assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+    }
+
+    #[test]
+    fn freeze_command_requires_current_frost_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Changed body.
+",
+        )
+        .unwrap();
+
+        let error = Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "freeze",
+            "alpha",
+        ])
+        .run()
+        .unwrap_err();
+
+        assert!(
+            matches!(error, CliError::Frost(FrostError::FrozenEntryChanged(id)) if id.as_str() == "alpha")
+        );
     }
 
     #[test]
@@ -3073,7 +3131,7 @@ fn sample() {{}}
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let configured_docs = temp.path().join("docs");
         let override_docs = temp.path().join("scratch-docs");
-        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
         fs::create_dir(&configured_docs).unwrap();
         fs::create_dir(&override_docs).unwrap();
         let entry = "\
@@ -3086,6 +3144,17 @@ Body.
 ";
         fs::write(configured_docs.join("alpha.md"), entry).unwrap();
         fs::write(override_docs.join("alpha.md"), entry).unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "frost",
+            "commit",
+            "--lake-path",
+            override_docs.to_str().unwrap(),
+        ])
+        .run()
+        .unwrap();
 
         Cli::parse_from([
             "sirno",

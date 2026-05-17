@@ -238,6 +238,29 @@ impl EntryDirectory {
         }
     }
 
+    /// Read one public Markdown entry file by id.
+    pub fn read_entry(&self, id: &EntryId) -> Result<Entry, EntryDirectoryError> {
+        if !self.root.exists() {
+            return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
+        }
+        if !self.root.is_dir() {
+            return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
+        }
+
+        let path = self.entry_file_path(id);
+        match fs::symlink_metadata(&path) {
+            | Ok(metadata) if metadata.file_type().is_file() => {}
+            | Ok(_) => return Err(EntryDirectoryError::EntryNotFound(id.clone())),
+            | Err(source) if source.kind() == std::io::ErrorKind::NotFound => {
+                return Err(EntryDirectoryError::EntryNotFound(id.clone()));
+            }
+            | Err(source) => return Err(source.into()),
+        }
+
+        let source = fs::read_to_string(path)?;
+        Ok(Entry::from_markdown(id.clone(), &source)?)
+    }
+
     /// Check this public Markdown entry directory.
     pub fn check(&self, mode: CheckMode) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         self.check_with_settings(mode, &EntryDirectoryCheckSettings::default())

@@ -109,9 +109,15 @@ impl SirnoFrost {
     // sirno:witness:sirno-frost:begin
     pub fn put_entry(&mut self, entry: &Entry) -> Result<SnapshotRef, FrostError> {
         trace!("sirno put_entry begin: id={}", entry.id);
-        Self::reject_frozen_entries(std::slice::from_ref(entry))?;
+        let current = self.current_snapshot()?;
+        let entry_to_write = Self::entry_without_frozen_marker(entry);
+        if entry.metadata.frozen.is_some() {
+            self.ensure_entry_matches_snapshot(current, &entry_to_write)?;
+            trace!("sirno put_entry end: version={}", current.version());
+            return Ok(current);
+        }
         let fs_id = entry.id.to_filesystem_id()?;
-        let facet = StoredEntryFacet::from_entry(entry);
+        let facet = StoredEntryFacet::from_entry(&entry_to_write);
         let snapshot = facet.apply_to(self.backend.write(), &fs_id).commit()?;
         trace!("sirno put_entry end: version={}", snapshot.version());
         Ok(snapshot)
@@ -165,6 +171,16 @@ impl SirnoFrost {
     pub fn check_current(&self, mode: CheckMode) -> Result<CheckReport, FrostError> {
         let entries = self.read_all_entries()?;
         Ok(mode.check_entries(&entries, &StructuralSettings::default()))
+    }
+
+    /// Require a public entry to match the current Frost snapshot.
+    ///
+    /// Generated-link regions and the `frozen:` marker are public lake state.
+    /// They are removed before comparing to Frost storage.
+    pub fn ensure_entry_current(&self, entry: &Entry) -> Result<(), FrostError> {
+        let entries = Self::entries_without_generated_links(std::slice::from_ref(entry))?;
+        let entry = Self::entry_without_frozen_marker(&entries[0]);
+        self.ensure_entry_matches_snapshot(self.current_snapshot()?, &entry)
     }
 
     /// Freeze a public Markdown entry directory into Sirno Frost.
@@ -224,13 +240,24 @@ impl SirnoFrost {
 
     // sirno:witness:sirno-frost:begin
     fn commit_entries(&mut self, entries: &[Entry]) -> Result<SnapshotRef, FrostError> {
-        Self::reject_frozen_entries(entries)?;
         let current = self.current_snapshot()?;
         let previous_entries = self
             .read_all_entries_at_snapshot(current)?
             .into_iter()
             .map(|entry| (entry.id.clone(), entry))
             .collect::<BTreeMap<_, _>>();
+        let entries = entries
+            .iter()
+            .map(|entry| {
+                let entry_to_commit = Self::entry_without_frozen_marker(entry);
+                if entry.metadata.frozen.is_some()
+                    && previous_entries.get(&entry.id) != Some(&entry_to_commit)
+                {
+                    return Err(FrostError::FrozenEntryChanged(entry.id.clone()));
+                }
+                Ok(entry_to_commit)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         let changed_entries = entries
             .iter()
             .filter(|entry| match previous_entries.get(&entry.id) {
@@ -261,11 +288,19 @@ impl SirnoFrost {
         Ok(txn.commit()?)
     }
 
-    fn reject_frozen_entries(entries: &[Entry]) -> Result<(), FrostError> {
-        if let Some(entry) = entries.iter().find(|entry| entry.metadata.frozen.is_some()) {
-            return Err(FrostError::FrozenEntryCommit(entry.id.clone()));
+    fn ensure_entry_matches_snapshot(
+        &self, snapshot: SnapshotRef, entry: &Entry,
+    ) -> Result<(), FrostError> {
+        if self.read_entry_at_snapshot(snapshot, &entry.id)?.as_ref() != Some(entry) {
+            return Err(FrostError::FrozenEntryChanged(entry.id.clone()));
         }
         Ok(())
+    }
+
+    fn entry_without_frozen_marker(entry: &Entry) -> Entry {
+        let mut metadata = entry.metadata.clone();
+        metadata.frozen = None;
+        Entry::new(entry.id.clone(), metadata, entry.body.clone())
     }
 
     fn entries_without_generated_links(entries: &[Entry]) -> Result<Vec<Entry>, FrostError> {
@@ -415,9 +450,11 @@ pub enum FrostError {
     /// Seed initialization would overwrite an existing entry.
     #[error("entry `{0}` already exists")]
     EntryAlreadyExists(EntryId),
-    /// A frozen entry cannot be committed to Sirno Frost.
-    #[error("entry `{0}` is frozen; run `sirno melt {0}` before Frost commit")]
-    FrozenEntryCommit(EntryId),
+    /// A frozen entry differs from the current Frost snapshot.
+    #[error(
+        "entry `{0}` is frozen but does not match the current Frost snapshot; run `sirno melt {0}` before changing it"
+    )]
+    FrozenEntryChanged(EntryId),
     /// A frozen entry is missing a required Sirno field.
     #[error("frozen entry `{id}` is missing required field `{field}`")]
     CorruptEntry {
@@ -545,7 +582,59 @@ mod tests {
     }
 
     #[test]
-    fn commit_entry_directory_rejects_frozen_entry() {
+    fn commit_entry_directory_allows_current_frozen_entry() {
+        let public = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let alpha = test_entry("alpha", "Alpha");
+        let beta = test_entry("beta", "Beta");
+        write_public_entry(public.path(), &alpha);
+        write_public_entry(public.path(), &beta);
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let first = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        let mut frozen_alpha = alpha.clone();
+        frozen_alpha.metadata.frozen = Some(FrozenMarker::Present);
+        let mut changed_beta = beta.clone();
+        changed_beta.body = "Beta changed body.\n".to_owned();
+        write_public_entry(public.path(), &frozen_alpha);
+        write_public_entry(public.path(), &changed_beta);
+        let second = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+
+        assert_ne!(first, second);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &alpha.id), [first]);
+        assert_eq!(entry_snapshot_versions(frost_path.path(), &beta.id), [first, second]);
+        assert_eq!(frost.read_entry_at_snapshot(second, &alpha.id).unwrap(), Some(alpha));
+        assert_eq!(frost.read_entry_at_snapshot(second, &beta.id).unwrap(), Some(changed_beta));
+    }
+
+    #[test]
+    fn commit_entry_directory_rejects_changed_frozen_entry() {
+        let public = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let entry = test_entry("alpha", "Alpha");
+        write_public_entry(public.path(), &entry);
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+        frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        let mut changed_entry = entry.clone();
+        changed_entry.metadata.frozen = Some(FrozenMarker::Present);
+        changed_entry.body = "Changed body.\n".to_owned();
+        write_public_entry(public.path(), &changed_entry);
+
+        let error = frost
+            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap_err();
+
+        assert!(matches!(error, FrostError::FrozenEntryChanged(id) if id == entry.id));
+    }
+
+    #[test]
+    fn commit_entry_directory_rejects_new_frozen_entry() {
         let public = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
@@ -557,19 +646,37 @@ mod tests {
             .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
             .unwrap_err();
 
-        assert!(matches!(error, FrostError::FrozenEntryCommit(id) if id == entry.id));
+        assert!(matches!(error, FrostError::FrozenEntryChanged(id) if id == entry.id));
     }
 
     #[test]
-    fn put_entry_rejects_frozen_entry() {
+    fn put_entry_allows_current_frozen_entry() {
         let temp = tempfile::tempdir().unwrap();
         let mut frost = SirnoFrost::open(temp.path()).unwrap();
-        let mut entry = test_entry("alpha", "Alpha");
-        entry.metadata.frozen = Some(FrozenMarker::Present);
+        let entry = test_entry("alpha", "Alpha");
 
-        let error = frost.put_entry(&entry).unwrap_err();
+        let first = frost.put_entry(&entry).unwrap();
+        let mut frozen_entry = entry.clone();
+        frozen_entry.metadata.frozen = Some(FrozenMarker::Present);
+        let second = frost.put_entry(&frozen_entry).unwrap();
 
-        assert!(matches!(error, FrostError::FrozenEntryCommit(id) if id == entry.id));
+        assert_eq!(first, second);
+        assert_eq!(frost.read_entry(&entry.id).unwrap(), Some(entry));
+    }
+
+    #[test]
+    fn put_entry_rejects_changed_frozen_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut frost = SirnoFrost::open(temp.path()).unwrap();
+        let entry = test_entry("alpha", "Alpha");
+        frost.put_entry(&entry).unwrap();
+        let mut changed_entry = entry.clone();
+        changed_entry.metadata.frozen = Some(FrozenMarker::Present);
+        changed_entry.body = "Changed body.\n".to_owned();
+
+        let error = frost.put_entry(&changed_entry).unwrap_err();
+
+        assert!(matches!(error, FrostError::FrozenEntryChanged(id) if id == entry.id));
     }
 
     #[test]

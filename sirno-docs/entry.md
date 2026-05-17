@@ -24,7 +24,8 @@ Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
-The `frozen:` field makes the *entry* file read-only through `sirno freeze ENTRY_ID`.
+The `frozen:` field marks a current Frost-backed *entry* as read-only
+through `sirno freeze ENTRY_ID`.
 An *entry* file may use LF or CRLF line endings.
 Use one line-ending style per file so byte-preserving tools can keep the file predictable.
 

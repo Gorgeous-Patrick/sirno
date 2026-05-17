@@ -42,7 +42,8 @@ The graph is intentionally small:
 classification, belonging, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 The `frozen:` marker adds a file-level protection state,
-so one public *entry* can be held read-only and excluded from Frost commits.
+so one current Frost-backed public *entry* can be held read-only
+and checked against the Frost snapshot before commit.
 
 The *lake* is also a collaboration boundary.
 A person can edit an *entry* directly.

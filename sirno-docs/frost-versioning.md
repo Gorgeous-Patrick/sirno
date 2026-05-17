@@ -11,7 +11,7 @@ The subsystem has several parts:
 `versioning` states the lake-wide snapshot model,
 `sirno-frost` is the private `eter`-backed path that holds snapshots,
 `sirno-lock` records the public *lake*'s frost state,
-and `entry-freeze` protects one *entry* from Frost commits.
+and `entry-freeze` protects one current Frost-backed public *entry* from edits.
 
 These parts are reviewed together.
 A change to the snapshot model, the frost path, the lock file, or *entry* protection

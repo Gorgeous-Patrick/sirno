@@ -20,8 +20,9 @@ and their values are *entry* ids.
 Their field order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 
-`frozen:` declares that the *entry* file is read-only
-and must be melted before Sirno Frost can commit it.
+`frozen:` declares that the public *entry* is protected
+because it matches the current Sirno Frost snapshot.
+Sirno Frost accepts it only while its committed form still matches that snapshot.
 It is written without a value.
 
 Operational structure is formed only from metadata.

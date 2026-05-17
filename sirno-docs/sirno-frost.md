@@ -39,8 +39,10 @@ The move refuses to replace an existing destination.
 A *frost* commit imports the selected public *entry* set.
 The public directory must pass review-mode checks before any snapshot is written.
 The active *tide* must also be clear before any snapshot is written.
-Entries carrying `frozen:` are protected public files.
-Frost refuses to commit them until `sirno melt ENTRY_ID` removes the marker.
+Entries carrying `frozen:` are protected public files
+that must still match the current Frost snapshot.
+Frost accepts unchanged frozen entries
+and refuses a frozen entry that differs from that snapshot.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are public *lake* projections.
 The commit writes one `eter` transaction and returns a `SnapshotRef`.

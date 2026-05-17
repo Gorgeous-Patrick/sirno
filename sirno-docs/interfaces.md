@@ -63,7 +63,8 @@ and configured *witness* sentinels that reference `OLD_ID`.
 `sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
 Authored prose outside *generated footer* regions remains user-owned.
 
-`sirno freeze ENTRY_ID` adds `frozen:` to one public *entry*
+`sirno freeze ENTRY_ID` verifies that one public *entry* matches current Frost,
+adds `frozen:`,
 and removes write permission from that file.
 `sirno melt ENTRY_ID` removes `frozen:` from one public *entry*
 and restores write permission.

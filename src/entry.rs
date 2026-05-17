@@ -254,8 +254,8 @@ impl EntryMetadata {
 
 /// Marker for the canonical `frozen:` metadata field.
 ///
-/// A frozen entry is protected by the public Markdown file.
-/// Sirno Frost refuses to commit entries carrying this marker.
+/// A frozen entry is a public Markdown file protected against changes from the current Frost
+/// snapshot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FrozenMarker {
     /// The entry is frozen and should be read-only on disk.
