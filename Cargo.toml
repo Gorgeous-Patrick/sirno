@@ -17,7 +17,7 @@ thiserror = "2"
 toml = { version = "1.1.2", features = ["preserve_order"] }
 tracing = "0.1"
 eter = { git = "https://github.com/LighghtEeloo/eter" }
-mosaika = { path = "../mosaika" }
+mosaika = { path = "https://github.com/LighghtEeloo/mosaika" }
 
 [dev-dependencies]
 tempfile = "3"
