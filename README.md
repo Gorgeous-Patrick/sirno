@@ -113,3 +113,8 @@ Sirno Frost is initialized separately with `sirno frost init`.
 `Sirno.lock.toml` records whether the public *lake* is current
 or checked out to a frozen version.
 Future interfaces may add MCP, lightweight GUI, or Obsidian integration.
+
+## License
+
+Sirno is distributed under either the MIT license
+or the Apache License, Version 2.0. See [LICENSE](LICENSE).
