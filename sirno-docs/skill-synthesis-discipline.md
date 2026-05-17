@@ -16,7 +16,7 @@ then every `meta`-categorized entry through `sirno query`.
 The lake is authoritative; a packaged skill is its reproducible surface.
 
 Separate disciplines from shared method.
-A `meta` entry that `belongs: agent-skills` and states a skill procedure is a skill source.
+A `meta` entry that `belongs: agent-skills` and defines a skill procedure is a skill source.
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.

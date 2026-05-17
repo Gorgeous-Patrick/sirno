@@ -1,9 +1,10 @@
 ---
 name: sirno-skill-synthesizer
 description: >-
-  Rebuild the packaged Sirno agent skills from the lake. Use when you regenerate or audit
-  `.agents/skills/sirno-*/SKILL.md`, after editing a `meta`-categorized discipline entry, when a
-  packaged skill drifts from the Sirno Lake, or when `agent-skills` adds a new skill to the roster.
+  Rebuild the packaged Sirno agent skills from the lake. Use for regenerating or auditing
+  `.agents/skills/sirno-*/SKILL.md`, editing a `meta`-categorized discipline entry, finding a
+  packaged skill that has drifted from the Sirno Lake, or adding a new skill to the
+  `agent-skills` roster.
 ---
 
 # Sirno Skill Synthesizer
@@ -25,7 +26,7 @@ Read `Sirno.toml` for the lake path,
 and every `meta`-categorized entry for the method the skills render.
 
 Separate disciplines from shared method.
-A `meta` entry that `belongs: agent-skills` and states a skill procedure is a skill source.
+A `meta` entry that `belongs: agent-skills` and defines a skill procedure is a skill source.
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method every skill must respect, not skills in their own right.
 

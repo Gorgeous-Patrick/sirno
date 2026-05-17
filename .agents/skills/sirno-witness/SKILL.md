@@ -1,10 +1,10 @@
 ---
 name: sirno-witness
 description: >-
-  Create, refine, or review Sirno repository witnesses. Use when you insert or split
-  `sirno:witness:<entry-id>:begin` blocks, links code/tests/config to Sirno Lake entries,
-  decides whether a witness needs a new or more specific Sirno Lake entry, interprets
-  `sirno witness` output, or checks whether a Sirno entry has precise repository evidence.
+  Create, refine, or review Sirno repository witnesses. Use for inserting or splitting
+  `sirno:witness:<entry-id>:begin` blocks, linking code/tests/config to Sirno Lake entries,
+  deciding whether a witness needs a new or more specific Sirno Lake entry, interpreting
+  `sirno witness` output, or checking whether a Sirno entry has precise repository evidence.
 ---
 
 # Sirno Witness

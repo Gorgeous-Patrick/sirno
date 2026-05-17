@@ -2,7 +2,7 @@
 name: sirno-narrative-session
 description: >-
   Conduct adaptive Sirno narrative sessions with users and materialize the resulting route as a
-  Sirno Lake entry. Use when you need to teach, onboard, review, or explore project knowledge
+  Sirno Lake entry. Use for teaching, onboarding, reviewing, or exploring project knowledge
   through questions, feedback loops, reader-state tracking, narrative route design, or serialized
   narrative artifacts in `sirno-docs/`.
 ---
