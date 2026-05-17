@@ -4,6 +4,10 @@ path = "sirno-docs"
 # Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.
 ignore = [".obsidian"]
 
+[frost]
+# Sirno Frost path, kept outside the public lake.
+path = "sirno-frost"
+
 [repo]
 # Repository files, directories, or globs scanned for witness blocks.
 members = ["src", "README.md"]
@@ -46,8 +50,8 @@ frost_bootstrap_tide = true
 [structural.category]
 
 [structural.belongs]
-to = { ripple = { lake = true }, render = true }
-from = { ripple = { lake = true, frost = true }, render = true }
+to = { render = true, ripple = { lake = true } }
+from = { render = true, ripple = { lake = true, frost = true } }
 clique = { ripple = { lake = true } }
 
 [structural.refines]
