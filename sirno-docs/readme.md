@@ -18,6 +18,16 @@ It should state a precise compiler-flavored definition at the top before the mas
 The definition should explain `nominal objects` concisely:
 each design object is identified first by its *entry* id.
 
+Right after the mascot image, the README should carry a `TL;DR` section.
+The `TL;DR` compresses the project model into one short paragraph:
+a queryable *lake* of small named *entries* with stable ids, metadata edges,
+and *witnesses* back to *repository* artifacts.
+It then appends an interactive onboarding invitation,
+a `$sirno-narrative-session` prompt grounded in `sirno-docs/introduction.md`,
+so a new reader can start a guided route from the top of the page.
+The `TL;DR` sits outside the witness comment markers
+because it summarizes the design rather than asserting a witnessed claim.
+
 It should make the reader want the project model before it names every mechanism in detail.
 The opening pressure is documentation drift:
 design begins as a clear explanation,

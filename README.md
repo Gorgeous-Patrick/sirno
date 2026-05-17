@@ -18,6 +18,19 @@ As such, each design *object* is given an identifier, hence *nominal*.
   </picture>
 </p>
 
+## TL;DR
+
+Sirno keeps project design in a queryable *lake* of small, named Markdown *entries*.
+Each entry has a stable id, metadata edges, and witnesses linking back to code, tests, or assets,
+so the design stays readable, connected, and resistant to drift.
+
+New here? Start with an interactive onboarding session:
+
+```text
+Use $sirno-narrative-session for an introduction session based on sirno-docs/introduction.md.
+I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
+```
+
 <!-- sirno:witness:readme:begin -->
 ## Minute Motivation
 
