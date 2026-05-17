@@ -27,6 +27,8 @@ are correct.
 Then expand or revise the body with direct, reader-friendly prose.
 Choose `category`, `belongs`, and `refines` by their own entries,
 and leave a structural field out when it is merely decorative.
+Use section headings only when they frame the material that follows.
+Do not leave a heading empty by placing another heading, diagram, or list directly under it.
 
 Distinguish a principle from its application.
 A meta-level principle states how the project should be understood or developed.

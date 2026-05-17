@@ -148,6 +148,8 @@ Keep paragraphs focused.
 One paragraph should introduce one idea, state its consequence, and stop.
 Prefer short sentences and natural line breaks under the repository line budget.
 Break Markdown prose at natural punctuation boundaries or conjunctions; otherwise don't make linebreaks.
+Use section headings only when they frame the material that follows.
+Do not leave a heading empty by placing another heading, diagram, or list directly under it.
 
 Avoid turning the lake into:
 
