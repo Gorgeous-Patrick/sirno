@@ -1,7 +1,7 @@
 ---
 name: sirno-editor
 description: >-
-  Edit a Sirno Lake. Use when Codex creates, revises, or reorganizes compact Markdown
+  Edit a Sirno Lake. Use when you create, revise, or reorganize compact Markdown
   entries, moves design knowledge from DESIGN.md or another mono form into the lake, chooses entry
   ids and structural metadata, expands entries, or validates generated Sirno links.
 ---
