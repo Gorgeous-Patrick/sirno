@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use crate::entry::Entry;
 use crate::id::EntryId;
-use crate::links::StructuralSettings;
+use crate::structural::StructuralSettings;
 
 /// Boundary at which Sirno checks structure.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -169,7 +169,7 @@ impl CheckReport {
 mod tests {
     use super::*;
     use crate::entry::EntryMetadata;
-    use crate::links::StructuralFieldSettings;
+    use crate::structural::StructuralFieldSettings;
 
     const FIELD_TOPIC: &str = "topic";
 

@@ -14,7 +14,7 @@ use thiserror::Error;
 use tracing::trace;
 
 use crate::entry::{DESC_FIELD, FROZEN_FIELD, NAME_FIELD};
-use crate::links::StructuralSettings;
+use crate::structural::StructuralSettings;
 
 /// Canonical Sirno project config filename.
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
@@ -953,16 +953,24 @@ parent = { from = { render = true } }
         assert_eq!(
             config.structural,
             StructuralSettings::from_fields([
-                ("kind", crate::links::StructuralFieldSettings::render_only(true, false, false),),
+                (
+                    "kind",
+                    crate::structural::StructuralFieldSettings::render_only(true, false, false),
+                ),
                 (
                     "area",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralEdgeSettings::render_only(true),
-                        crate::links::StructuralEdgeSettings::render_only(true),
-                        crate::links::StructuralEdgeSettings::render_and_ripple(true, true, true),
+                    crate::structural::StructuralFieldSettings::new(
+                        crate::structural::StructuralEdgeSettings::render_only(true),
+                        crate::structural::StructuralEdgeSettings::render_only(true),
+                        crate::structural::StructuralEdgeSettings::render_and_ripple(
+                            true, true, true
+                        ),
                     ),
                 ),
-                ("parent", crate::links::StructuralFieldSettings::render_only(false, true, false),),
+                (
+                    "parent",
+                    crate::structural::StructuralFieldSettings::render_only(false, true, false),
+                ),
             ])
         );
     }
@@ -986,7 +994,7 @@ topic = { to = {} }
             config.structural,
             StructuralSettings::from_fields([(
                 "topic",
-                crate::links::StructuralFieldSettings::default(),
+                crate::structural::StructuralFieldSettings::default(),
             )])
         );
     }
@@ -1009,8 +1017,14 @@ clique = { render = true }
         assert_eq!(
             config.structural,
             StructuralSettings::from_fields([
-                ("kind", crate::links::StructuralFieldSettings::render_only(true, false, false),),
-                ("topic", crate::links::StructuralFieldSettings::render_only(false, false, true),),
+                (
+                    "kind",
+                    crate::structural::StructuralFieldSettings::render_only(true, false, false),
+                ),
+                (
+                    "topic",
+                    crate::structural::StructuralFieldSettings::render_only(false, false, true),
+                ),
             ])
         );
     }
@@ -1334,16 +1348,19 @@ delimiters = []
             witness: test_witness_syntax(),
             check: CheckSettings { render: false },
             structural: StructuralSettings::from_fields([
-                ("kind", crate::links::StructuralFieldSettings::render_only(true, true, false)),
+                (
+                    "kind",
+                    crate::structural::StructuralFieldSettings::render_only(true, true, false),
+                ),
                 (
                     "area",
-                    crate::links::StructuralFieldSettings::new(
-                        crate::links::StructuralEdgeSettings::render_only(true),
-                        crate::links::StructuralEdgeSettings::render_only(true),
-                        crate::links::StructuralEdgeSettings::render_only(true),
+                    crate::structural::StructuralFieldSettings::new(
+                        crate::structural::StructuralEdgeSettings::render_only(true),
+                        crate::structural::StructuralEdgeSettings::render_only(true),
+                        crate::structural::StructuralEdgeSettings::render_only(true),
                     ),
                 ),
-                ("parent", crate::links::StructuralFieldSettings::default()),
+                ("parent", crate::structural::StructuralFieldSettings::default()),
             ]),
         };
 

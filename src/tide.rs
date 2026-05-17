@@ -12,9 +12,10 @@ use thiserror::Error;
 
 use crate::entry::{Entry, EntryRenderError};
 use crate::id::{EntryId, EntryIdError};
-use crate::links::{
-    GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex, StructuralEdgeDirection,
-    StructuralEdgeDirectionParseError, StructuralSettings,
+use crate::render::{GeneratedLinkBody, GeneratedLinkError};
+use crate::structural::{
+    StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
+    StructuralSettings,
 };
 
 /// One side that can produce a tide workitem.
@@ -190,8 +191,8 @@ impl Tide {
             }
         }
 
-        let frost_index = GeneratedLinkIndex::from_entries(&frostline);
-        let water_index = GeneratedLinkIndex::from_entries(&waterline);
+        let frost_index = StructuralEdgeIndex::from_entries(&frostline);
+        let water_index = StructuralEdgeIndex::from_entries(&waterline);
         let mut sources_by_workitem = BTreeMap::<TideWorkitem, BTreeSet<TideSource>>::new();
         let mut fingerprint_by_ripple = BTreeMap::<EntryId, String>::new();
 

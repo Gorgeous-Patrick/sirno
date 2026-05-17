@@ -21,7 +21,8 @@ use crate::id::{EntryId, EntryIdError};
 use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy,
 };
-use crate::links::{GeneratedLinkBody, StructuralSettings};
+use crate::render::GeneratedLinkBody;
+use crate::structural::StructuralSettings;
 
 /// Lifecycle state used by Sirno entries in the `eter` backend.
 ///
@@ -437,7 +438,8 @@ mod tests {
 
     use crate::entry::FrozenMarker;
     use crate::lake::EntryDirectoryWritePolicy;
-    use crate::links::{GeneratedLinkBody, GeneratedLinkIndex, StructuralSettings};
+    use crate::render::GeneratedLinkBody;
+    use crate::structural::{StructuralEdgeIndex, StructuralSettings};
 
     #[test]
     fn init_creates_ordinary_seed_entries() {
@@ -527,7 +529,7 @@ mod tests {
         let public = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        let footer = GeneratedLinkIndex::from_entries(std::slice::from_ref(&entry))
+        let footer = StructuralEdgeIndex::from_entries(std::slice::from_ref(&entry))
             .render_entry(&entry, &StructuralSettings::default());
         entry.body = GeneratedLinkBody::new(&entry.body).apply(&footer).unwrap();
         write_public_entry(public.path(), &entry);

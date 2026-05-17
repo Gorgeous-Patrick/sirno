@@ -11,9 +11,10 @@ pub mod entry;
 pub mod frost;
 pub mod id;
 pub mod lake;
-pub mod links;
 pub mod lock;
 pub mod query;
+pub mod render;
+pub mod structural;
 pub mod tide;
 pub mod witness;
 
@@ -36,13 +37,16 @@ pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
     EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
 };
-pub use crate::links::{
-    BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex,
-    StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeSettings,
-    StructuralFieldMap, StructuralFieldSettings, StructuralRippleSettings, StructuralSettings,
-};
 pub use crate::lock::{FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock, TideLock};
 pub use crate::query::{EntryQuery, EntryTextTerm, VagueEntryQuery};
+pub use crate::render::{
+    BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError,
+};
+pub use crate::structural::{
+    StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
+    StructuralEdgeSettings, StructuralFieldMap, StructuralFieldSettings, StructuralRippleSettings,
+    StructuralSettings,
+};
 pub use crate::tide::{
     Tide, TideError, TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,
 };

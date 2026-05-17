@@ -20,7 +20,8 @@ use crate::entry::{
     Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
 };
 use crate::id::EntryId;
-use crate::links::{GeneratedLinkBody, GeneratedLinkError, GeneratedLinkIndex, StructuralSettings};
+use crate::render::{GeneratedLinkBody, GeneratedLinkError};
+use crate::structural::{StructuralEdgeIndex, StructuralSettings};
 use crate::witness::{WitnessCheckSettings, WitnessError};
 
 const READONLY_CHECKOUT_WARNING: &str = "\
@@ -364,7 +365,7 @@ impl EntryDirectory {
         }
 
         let indexed_entries = entries.iter().map(|(_, entry, _)| entry.clone()).collect::<Vec<_>>();
-        let link_index = GeneratedLinkIndex::from_entries(&indexed_entries);
+        let link_index = StructuralEdgeIndex::from_entries(&indexed_entries);
         let mut changed_paths = Vec::new();
 
         for (original_id, mut entry, mut content_changed) in entries {
@@ -539,7 +540,7 @@ impl EntryDirectory {
         }
 
         let mut changed_paths = Vec::new();
-        let index = GeneratedLinkIndex::from_entries(checked.entries());
+        let index = StructuralEdgeIndex::from_entries(checked.entries());
         for entry in checked.entries() {
             let path = checked
                 .entry_path(&entry.id)
@@ -940,7 +941,7 @@ impl LoadedEntryDirectory {
     fn add_generated_link_diagnostics(
         &mut self, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
     ) -> Result<(), EntryDirectoryError> {
-        let index = GeneratedLinkIndex::from_entries(&self.entries);
+        let index = StructuralEdgeIndex::from_entries(&self.entries);
         for entry in &self.entries {
             let path = self
                 .paths_by_id
@@ -1800,7 +1801,7 @@ Body.
 
         assert_eq!(report.entry_count(), 4);
         assert_eq!(report.changed_paths().len(), 4);
-        assert!(concept.contains(crate::links::BEGIN_LINKS_GUARD));
+        assert!(concept.contains(crate::render::BEGIN_LINKS_GUARD));
         assert!(concept.contains("\n---\n\n> **Sirno generated links begin."));
         assert!(concept.contains("- kind (to): (none)"));
         assert!(!concept.contains("## Sirno Links"));
@@ -1889,7 +1890,7 @@ Body.
 
         assert_eq!(report.entry_count(), 4);
         assert_eq!(report.changed_paths().len(), 4);
-        assert!(!concept.contains(crate::links::BEGIN_LINKS_GUARD));
+        assert!(!concept.contains(crate::render::BEGIN_LINKS_GUARD));
 
         entry_directory(&root).generate_links(&settings).unwrap();
         let report = entry_directory(&root).check_generated_links(&settings).unwrap();
@@ -1909,7 +1910,7 @@ Body.
 
         assert_eq!(report.entry_count(), 4);
         assert_eq!(report.changed_paths().len(), 4);
-        assert!(!concept.contains(crate::links::BEGIN_LINKS_GUARD));
+        assert!(!concept.contains(crate::render::BEGIN_LINKS_GUARD));
     }
 
     #[test]
