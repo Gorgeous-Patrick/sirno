@@ -19,6 +19,7 @@ use crate::check::{CheckMode, CheckReport, CheckSeverity};
 use crate::entry::{
     Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
 };
+use crate::freeze::FrozenPath;
 use crate::id::EntryId;
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{StructuralEdgeIndex, StructuralSettings};
@@ -324,7 +325,7 @@ impl EntryDirectory {
     /// Mark one public Markdown entry as frozen and read-only.
     ///
     /// The entry metadata gains the canonical `frozen:` marker.
-    /// The file's write bits are removed after the marker is written.
+    /// Local file protection is applied after the marker is written.
     pub fn freeze_entry(&self, id: &EntryId) -> Result<PathBuf, EntryDirectoryError> {
         self.set_entry_frozen(id, true)
     }
@@ -364,6 +365,13 @@ impl EntryDirectory {
         if checked.entry_path(old_id).is_none() {
             return Err(EntryDirectoryError::EntryNotFound(old_id.clone()));
         }
+        if checked
+            .entries()
+            .iter()
+            .any(|entry| &entry.id == old_id && entry.metadata.frozen.is_some())
+        {
+            return Err(EntryDirectoryError::FrozenEntryProtected(old_id.clone()));
+        }
         let new_path = self.entry_file_path(new_id);
         match fs::symlink_metadata(&new_path) {
             | Ok(_) => {
@@ -392,6 +400,9 @@ impl EntryDirectory {
         let mut changed_paths = Vec::new();
 
         for (original_id, mut entry, mut content_changed) in entries {
+            if content_changed && entry.metadata.frozen.is_some() {
+                return Err(EntryDirectoryError::FrozenEntryProtected(original_id));
+            }
             let source_path = checked
                 .entry_path(&original_id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(original_id.clone()))?;
@@ -402,6 +413,9 @@ impl EntryDirectory {
             if body.is_stale(&footer)? {
                 entry.body = body.apply(&footer)?;
                 content_changed = true;
+            }
+            if content_changed && entry.metadata.frozen.is_some() {
+                return Err(EntryDirectoryError::FrozenEntryProtected(original_id.clone()));
             }
 
             if &original_id == old_id {
@@ -574,6 +588,9 @@ impl EntryDirectory {
             let rendered = Entry::replace_markdown_body(&source, &body)?;
             if rendered != source {
                 if operation.writes() {
+                    if entry.metadata.frozen.is_some() {
+                        return Err(EntryDirectoryError::FrozenEntryProtected(entry.id.clone()));
+                    }
                     fs::write(path, rendered).map_err(|source| EntryDirectoryError::WriteFile {
                         path: path.to_path_buf(),
                         source,
@@ -629,6 +646,9 @@ impl EntryDirectory {
             let body = GeneratedLinkBody::new(&entry.body).delete()?;
             let rendered = Entry::replace_markdown_body(&source, &body)?;
             if rendered != source {
+                if entry.metadata.frozen.is_some() {
+                    return Err(EntryDirectoryError::FrozenEntryProtected(entry.id.clone()));
+                }
                 fs::write(path, rendered).map_err(|source| EntryDirectoryError::WriteFile {
                     path: path.to_path_buf(),
                     source,
@@ -675,6 +695,9 @@ impl EntryDirectory {
         let mut entry = Entry::from_markdown(id.clone(), &source)?;
         entry.metadata.frozen = frozen.then_some(FrozenMarker::Present);
         let rendered = entry.to_markdown()?;
+        if !frozen {
+            melt_path_best_effort(&path)?;
+        }
         if rendered != source {
             set_path_writable(&path)?;
             fs::write(&path, rendered)
@@ -682,7 +705,7 @@ impl EntryDirectory {
         }
 
         if frozen {
-            set_path_readonly(&path)?;
+            freeze_path_best_effort(&path)?;
         } else {
             set_path_writable(&path)?;
         }
@@ -742,7 +765,11 @@ impl EntryDirectory {
                 && path.extension().and_then(|extension| extension.to_str()) == Some("md")
                 && Self::is_managed_entry_file(&path)?
             {
-                set_path_writable(&path)?;
+                if Self::is_frozen_entry_file(&path)? {
+                    melt_path_best_effort(&path)?;
+                } else {
+                    set_path_writable(&path)?;
+                }
                 fs::remove_file(&path)?;
                 continue;
             }
@@ -761,6 +788,19 @@ impl EntryDirectory {
         };
         let source = fs::read_to_string(path)?;
         Ok(Entry::from_markdown(id, &source).is_ok())
+    }
+
+    fn is_frozen_entry_file(path: &Path) -> Result<bool, EntryDirectoryError> {
+        let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
+            return Ok(false);
+        };
+        let Ok(id) = EntryId::new(stem) else {
+            return Ok(false);
+        };
+        let source = fs::read_to_string(path)?;
+        Ok(Entry::from_markdown(id, &source)
+            .map(|entry| entry.metadata.frozen.is_some())
+            .unwrap_or(false))
     }
 
     fn set_writability(
@@ -799,6 +839,9 @@ impl EntryDirectory {
 
             let file_type = fs::symlink_metadata(&path)?.file_type();
             if writable {
+                if file_type.is_file() && Self::is_frozen_entry_file(&path)? {
+                    continue;
+                }
                 set_path_writable(&path)?;
             }
             if file_type.is_dir() {
@@ -1048,6 +1091,21 @@ fn add_readonly_checkout_warning(path: &Path, source: &str) -> Result<String, En
     Ok(Entry::replace_markdown_body(source, &body)?)
 }
 
+fn freeze_path_best_effort(path: &Path) -> Result<(), EntryDirectoryError> {
+    set_path_readonly(path)?;
+    if let Err(source) = FrozenPath::new(path).freeze() {
+        trace!("immutable freeze unavailable: path={} error={source}", path.display());
+    }
+    Ok(())
+}
+
+fn melt_path_best_effort(path: &Path) -> Result<(), EntryDirectoryError> {
+    if let Err(source) = FrozenPath::new(path).melt() {
+        trace!("immutable melt unavailable: path={} error={source}", path.display());
+    }
+    set_path_writable(path)
+}
+
 fn set_path_readonly(path: &Path) -> Result<(), EntryDirectoryError> {
     set_path_writable_flag(path, false)
 }
@@ -1143,6 +1201,9 @@ pub enum EntryDirectoryError {
     /// Generated-link operations require a clean enough entry directory.
     #[error("entry directory must pass checks before changing generated links: {0}")]
     InvalidEntryDirectory(PathBuf),
+    /// A command attempted to change an entry marked as frozen.
+    #[error("entry `{0}` is frozen; run `sirno melt {0}` before changing it")]
+    FrozenEntryProtected(EntryId),
     /// A parsed entry had no file path in the directory report.
     #[error("entry `{0}` has no source file path")]
     MissingEntryPath(EntryId),
@@ -1707,6 +1768,31 @@ Body.
     }
 
     #[test]
+    fn set_writable_preserves_frozen_entry_permission() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "alpha.md",
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        );
+        let settings = EntryDirectoryCheckSettings::default();
+        let directory = entry_directory(temp.path());
+        let path = directory.freeze_entry(&EntryId::new("alpha").unwrap()).unwrap();
+
+        directory.set_writable(&settings).unwrap();
+
+        assert_path_readonly(&path);
+        directory.melt_entry(&EntryId::new("alpha").unwrap()).unwrap();
+    }
+
+    #[test]
     fn melt_entry_file_removes_marker_and_restores_write_permission() {
         let temp = tempfile::tempdir().unwrap();
         write_entry(
@@ -1730,6 +1816,49 @@ Body.
 
         assert!(!source.contains("frozen:\n"));
         assert_path_writable(&path);
+    }
+
+    #[test]
+    fn generate_links_refuses_to_change_frozen_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "alpha.md",
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+frozen:
+kind:
+  - beta
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
+            "beta.md",
+            "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+        );
+
+        let error = entry_directory(temp.path())
+            .generate_links(&structural_settings([(
+                FIELD_KIND,
+                render_settings(true, false, false),
+            )]))
+            .unwrap_err();
+
+        assert!(
+            matches!(error, EntryDirectoryError::FrozenEntryProtected(id) if id.as_str() == "alpha")
+        );
     }
 
     #[test]

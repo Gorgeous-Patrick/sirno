@@ -137,9 +137,9 @@ Editing it moves it back to working state until the next successful Frost commit
 and its committed form matches the frostline.
 `sirno freeze ENTRY_ID` enters this state.
 The command verifies current Frost first,
-then adds the marker and removes write permission from the file.
+then adds the marker and applies local file protection.
 `sirno melt ENTRY_ID` removes the marker,
-restores write permission,
+clears local file protection,
 and returns the entry to the aligned state if the content still matches Frost.
 
 `drifted` means a frozen waterline entry no longer matches the frostline.

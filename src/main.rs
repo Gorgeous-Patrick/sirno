@@ -3001,6 +3001,43 @@ Body.
     }
 
     #[test]
+    fn frost_commit_preserves_frozen_entry_permissions() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "alpha"])
+            .run()
+            .unwrap();
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+            .run()
+            .unwrap();
+
+        assert!(fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "melt", "alpha"])
+            .run()
+            .unwrap();
+    }
+
+    #[test]
     fn freeze_command_requires_current_frost_entry() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
