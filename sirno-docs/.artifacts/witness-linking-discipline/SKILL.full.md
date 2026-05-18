@@ -19,10 +19,10 @@ It follows the `witness-linking-discipline` lake entry.
 
 ## MCP Project Resolution
 
-When using Sirno through MCP, call `cwd` with the repository root before project tools
+When using Sirno through MCP, call `sirno_cwd` with the repository root before project tools
 if the server started without `--config`.
 Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
-Call `cwd` again before switching projects in the same server process.
+Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Core Principles
 

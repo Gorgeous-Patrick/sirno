@@ -182,13 +182,13 @@ impl ServerHandler for SirnoMcpServer {
 #[tool_router(router = tool_router)]
 impl SirnoMcpServer {
     /// Read or change the server process current working directory.
-    #[tool(name = "cwd")]
+    #[tool(name = "sirno_cwd")]
     fn cwd(&self, Parameters(params): Parameters<CwdParams>) -> McpToolResult {
         result(self.context.cwd(params.path))
     }
 
     /// Create one Markdown entry.
-    #[tool(name = "entry_new")]
+    #[tool(name = "sirno_entry_new")]
     fn entry_new(&self, Parameters(params): Parameters<EntryNewParams>) -> McpToolResult {
         let request = EntryNewRequest {
             id: entry_id(params.id)?,
@@ -201,25 +201,25 @@ impl SirnoMcpServer {
     }
 
     /// Rename one entry id and its Sirno references.
-    #[tool(name = "entry_rename")]
+    #[tool(name = "sirno_entry_rename")]
     fn entry_rename(&self, Parameters(params): Parameters<EntryRenameParams>) -> McpToolResult {
         result(self.context.entry_rename(entry_id(params.old_id)?, entry_id(params.new_id)?))
     }
 
     /// Freeze one current Frost entry and make its public file read-only.
-    #[tool(name = "entry_freeze")]
+    #[tool(name = "sirno_entry_freeze")]
     fn entry_freeze(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_freeze(entry_id(params.id)?))
     }
 
     /// Melt one public Markdown entry and make its file writable.
-    #[tool(name = "entry_melt")]
+    #[tool(name = "sirno_entry_melt")]
     fn entry_melt(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_melt(entry_id(params.id)?))
     }
 
     /// Show filesystem paths related to one entry.
-    #[tool(name = "entry_path")]
+    #[tool(name = "sirno_entry_path")]
     fn entry_path(&self, Parameters(params): Parameters<EntryPathParams>) -> McpToolResult {
         let selection = path_selection(params.entry, params.artifact, params.frost);
         let request = EntryPathRequest::new(
@@ -231,7 +231,7 @@ impl SirnoMcpServer {
     }
 
     /// Query public Markdown entries.
-    #[tool(name = "entry_query")]
+    #[tool(name = "sirno_entry_query")]
     fn entry_query(&self, Parameters(params): Parameters<EntryQueryParams>) -> McpToolResult {
         let request = QueryRequest {
             terms: params.terms,
@@ -244,7 +244,7 @@ impl SirnoMcpServer {
     }
 
     /// Run ripgrep in the configured public Markdown lake.
-    #[tool(name = "entry_rg")]
+    #[tool(name = "sirno_entry_rg")]
     fn entry_rg(&self, Parameters(params): Parameters<EntryRgParams>) -> McpToolResult {
         result(self.context.entry_rg(RgRequest {
             with_generated_footer: params.with_generated_footer,
@@ -253,19 +253,19 @@ impl SirnoMcpServer {
     }
 
     /// Return repository witness blocks for one entry.
-    #[tool(name = "entry_witness")]
+    #[tool(name = "sirno_entry_witness")]
     fn entry_witness(&self, Parameters(params): Parameters<EntryWitnessParams>) -> McpToolResult {
         result(self.context.entry_witness(entry_id(params.id)?, params.full))
     }
 
     /// List artifacts owned by one entry.
-    #[tool(name = "entry_artifact_list")]
+    #[tool(name = "sirno_entry_artifact_list")]
     fn entry_artifact_list(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_artifact_list(entry_id(params.id)?))
     }
 
     /// Copy a file into one entry's artifact tree.
-    #[tool(name = "entry_artifact_add")]
+    #[tool(name = "sirno_entry_artifact_add")]
     fn entry_artifact_add(
         &self, Parameters(params): Parameters<ArtifactAddParams>,
     ) -> McpToolResult {
@@ -277,7 +277,7 @@ impl SirnoMcpServer {
     }
 
     /// Rename one artifact path owned by an entry.
-    #[tool(name = "entry_artifact_rename")]
+    #[tool(name = "sirno_entry_artifact_rename")]
     fn entry_artifact_rename(
         &self, Parameters(params): Parameters<ArtifactRenameParams>,
     ) -> McpToolResult {
@@ -289,7 +289,7 @@ impl SirnoMcpServer {
     }
 
     /// Remove one artifact owned by an entry.
-    #[tool(name = "entry_artifact_remove")]
+    #[tool(name = "sirno_entry_artifact_remove")]
     fn entry_artifact_remove(
         &self, Parameters(params): Parameters<ArtifactRemoveParams>,
     ) -> McpToolResult {
@@ -300,61 +300,61 @@ impl SirnoMcpServer {
     }
 
     /// Create a Sirno config and ordinary seed entries.
-    #[tool(name = "lake_init")]
+    #[tool(name = "sirno_lake_init")]
     fn lake_init(&self, Parameters(params): Parameters<LakeInitParams>) -> McpToolResult {
         result(self.context.lake_init(LakeInitRequest { lake: params.lake }))
     }
 
     /// Move the configured public Markdown entry lake.
-    #[tool(name = "lake_move")]
+    #[tool(name = "sirno_lake_move")]
     fn lake_move(&self, Parameters(params): Parameters<LakeMoveParams>) -> McpToolResult {
         result(self.context.lake_move(params.lake))
     }
 
     /// Check current entry structure.
-    #[tool(name = "lake_check")]
+    #[tool(name = "sirno_lake_check")]
     fn lake_check(&self, Parameters(params): Parameters<LakeCheckParams>) -> McpToolResult {
         result(self.context.lake_check(params.mode.unwrap_or(McpCheckMode::Review).into()))
     }
 
     /// Render Markdown links in entry footers.
-    #[tool(name = "lake_render")]
+    #[tool(name = "sirno_lake_render")]
     fn lake_render(&self, Parameters(params): Parameters<LakeRenderParams>) -> McpToolResult {
         result(self.context.lake_render(params.dry))
     }
 
     /// Delete generated Markdown link footers.
-    #[tool(name = "lake_render_delete")]
+    #[tool(name = "sirno_lake_render_delete")]
     fn lake_render_delete(&self) -> McpToolResult {
         result(self.context.lake_render_delete())
     }
 
     /// Show the current Sirno project status.
-    #[tool(name = "lake_status")]
+    #[tool(name = "sirno_lake_status")]
     fn lake_status(&self) -> McpToolResult {
         result(self.context.lake_status())
     }
 
     /// Configure Sirno Frost.
-    #[tool(name = "frost_init")]
+    #[tool(name = "sirno_frost_init")]
     fn frost_init(&self, Parameters(params): Parameters<FrostInitParams>) -> McpToolResult {
         result(self.context.frost_init(params.frost))
     }
 
     /// Move the configured Sirno Frost path.
-    #[tool(name = "frost_move")]
+    #[tool(name = "sirno_frost_move")]
     fn frost_move(&self, Parameters(params): Parameters<FrostMoveParams>) -> McpToolResult {
         result(self.context.frost_move(params.frost))
     }
 
     /// Freeze the current public Markdown lake.
-    #[tool(name = "frost_commit")]
+    #[tool(name = "sirno_frost_commit")]
     fn frost_commit(&self, Parameters(params): Parameters<FrostCommitParams>) -> McpToolResult {
         result(self.context.frost_commit(params.unsafe_resolve_all))
     }
 
     /// Check out Frost entries into the public Markdown lake.
-    #[tool(name = "frost_checkout")]
+    #[tool(name = "sirno_frost_checkout")]
     fn frost_checkout(&self, Parameters(params): Parameters<FrostCheckoutParams>) -> McpToolResult {
         result(self.context.frost_checkout(FrostCheckoutRequest {
             version: params.version,
@@ -364,31 +364,31 @@ impl SirnoMcpServer {
     }
 
     /// Check out the latest Frost version as the mutable current lake.
-    #[tool(name = "frost_defrost")]
+    #[tool(name = "sirno_frost_defrost")]
     fn frost_defrost(&self) -> McpToolResult {
         result(self.context.frost_defrost())
     }
 
     /// Show tide review status.
-    #[tool(name = "tide_status")]
+    #[tool(name = "sirno_tide_status")]
     fn tide_status(&self, Parameters(params): Parameters<TideStatusParams>) -> McpToolResult {
         result(self.context.tide_status(params.show.into()))
     }
 
     /// Resolve tide workitems.
-    #[tool(name = "tide_resolve")]
+    #[tool(name = "sirno_tide_resolve")]
     fn tide_resolve(&self, Parameters(params): Parameters<TideResolveParams>) -> McpToolResult {
         result(self.context.tide_resolve(params.into_request()?))
     }
 
     /// Remove resolved marks from tide workitems.
-    #[tool(name = "tide_unresolve")]
+    #[tool(name = "sirno_tide_unresolve")]
     fn tide_unresolve(&self, Parameters(params): Parameters<TideSelectionParams>) -> McpToolResult {
         result(self.context.tide_unresolve(params.into_request()?))
     }
 
     /// Clear all tide resolutions from the lock.
-    #[tool(name = "tide_reset")]
+    #[tool(name = "sirno_tide_reset")]
     fn tide_reset(&self) -> McpToolResult {
         result(self.context.tide_reset())
     }
@@ -779,34 +779,34 @@ mod tests {
 
     // sirno:witness:interfaces:begin
     const EXPECTED_TOOLS: &[&str] = &[
-        "cwd",
-        "entry_artifact_add",
-        "entry_artifact_list",
-        "entry_artifact_remove",
-        "entry_artifact_rename",
-        "entry_freeze",
-        "entry_melt",
-        "entry_new",
-        "entry_path",
-        "entry_query",
-        "entry_rename",
-        "entry_rg",
-        "entry_witness",
-        "frost_checkout",
-        "frost_commit",
-        "frost_defrost",
-        "frost_init",
-        "frost_move",
-        "lake_check",
-        "lake_init",
-        "lake_move",
-        "lake_render",
-        "lake_render_delete",
-        "lake_status",
-        "tide_reset",
-        "tide_resolve",
-        "tide_status",
-        "tide_unresolve",
+        "sirno_cwd",
+        "sirno_entry_artifact_add",
+        "sirno_entry_artifact_list",
+        "sirno_entry_artifact_remove",
+        "sirno_entry_artifact_rename",
+        "sirno_entry_freeze",
+        "sirno_entry_melt",
+        "sirno_entry_new",
+        "sirno_entry_path",
+        "sirno_entry_query",
+        "sirno_entry_rename",
+        "sirno_entry_rg",
+        "sirno_entry_witness",
+        "sirno_frost_checkout",
+        "sirno_frost_commit",
+        "sirno_frost_defrost",
+        "sirno_frost_init",
+        "sirno_frost_move",
+        "sirno_lake_check",
+        "sirno_lake_init",
+        "sirno_lake_move",
+        "sirno_lake_render",
+        "sirno_lake_render_delete",
+        "sirno_lake_status",
+        "sirno_tide_reset",
+        "sirno_tide_resolve",
+        "sirno_tide_status",
+        "sirno_tide_unresolve",
     ];
     // sirno:witness:interfaces:end
 
@@ -986,7 +986,7 @@ Changed body.
 
         let tools = client.peer().list_tools(None).await.unwrap();
         assert_eq!(tools.tools.len(), EXPECTED_TOOLS.len());
-        assert!(tools.tools.iter().any(|tool| tool.name == "lake_status"));
+        assert!(tools.tools.iter().any(|tool| tool.name == "sirno_lake_status"));
 
         let resources = client.peer().list_resources(None).await.unwrap();
         assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
@@ -1046,7 +1046,7 @@ Changed body.
         let result = client
             .peer()
             .call_tool(
-                CallToolRequestParams::new("lake_status")
+                CallToolRequestParams::new("sirno_lake_status")
                     .with_arguments(json!({}).as_object().unwrap().clone()),
             )
             .await
@@ -1058,7 +1058,7 @@ Changed body.
         let cwd = client
             .peer()
             .call_tool(
-                CallToolRequestParams::new("cwd")
+                CallToolRequestParams::new("sirno_cwd")
                     .with_arguments(json!({}).as_object().unwrap().clone()),
             )
             .await
