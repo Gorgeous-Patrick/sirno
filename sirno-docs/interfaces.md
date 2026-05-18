@@ -201,9 +201,17 @@ One server process serves one configured Sirno project.
 `sirno util mcp` rejects `--lake-path` and `--frost-path`;
 the configured project selects its *lake* and optional *frost* path.
 
-The MCP interface is tools-only.
-It exposes grouped commands, not top-level CLI aliases or shortcut commands.
-There are no MCP resources or prompts in the initial server surface.
+The MCP interface exposes grouped command tools and skill resources.
+It does not expose top-level CLI aliases, shortcut commands, or prompts.
+Skill resources are `text/markdown` payloads embedded by `src/mcp.rs`
+from the lake-owned `SKILL.full.md` artifacts.
+Packaged `.agents/skills/sirno-*` wrappers tell agents to read these resources.
+The resource URIs are `sirno://skills/design-doc-writer`,
+`sirno://skills/sirno-editor`,
+`sirno://skills/sirno-explorer`,
+`sirno://skills/sirno-narrative-session`,
+`sirno://skills/sirno-skill-synthesizer`,
+and `sirno://skills/sirno-witness`.
 Tool names are stable snake-case names:
 `entry_new`, `entry_rename`, `entry_freeze`, `entry_melt`, `entry_path`,
 `entry_query`, `entry_rg`, and `entry_witness`;

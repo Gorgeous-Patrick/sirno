@@ -8,8 +8,10 @@ belongs:
 ---
 
 Lake editing follows a fixed procedure so the lake stays precise and reviewable.
-It renders to `.agents/skills/sirno-editor/SKILL.md`.
-Its exact packaged skill text lives in the `SKILL.md` entry artifact.
+Its full MCP resource text lives in `.artifacts/lake-editing-discipline/SKILL.full.md`
+and is embedded by `src/mcp.rs` as `sirno://skills/sirno-editor`.
+Its packaged wrapper lives in `.artifacts/lake-editing-discipline/SKILL.md`
+and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
 Read first.
 Read repository instructions, `Sirno.toml`, the configured monograph when present,

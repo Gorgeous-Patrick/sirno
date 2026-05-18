@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract packaged Sirno skills from exact lake-owned skill artifacts."""
+"""Extract packaged Sirno skill wrappers from lake-owned skill artifacts."""
 
 from __future__ import annotations
 
@@ -20,7 +20,8 @@ GENERATED_FOOTER_PATTERN = re.compile(
     r"\n---\n\n> \*\*Sirno generated links begin\. Do not edit this section\.\*\*.*\Z",
     re.DOTALL,
 )
-SKILL_ARTIFACT_PATH = Path("SKILL.md")
+WRAPPER_ARTIFACT_PATH = Path("SKILL.md")
+FULL_ARTIFACT_PATH = Path("SKILL.full.md")
 
 
 @dataclass(frozen=True)
@@ -34,14 +35,15 @@ class Entry:
 @dataclass(frozen=True)
 class SkillSource:
     entry: Entry
-    source: Path
+    wrapper: Path
+    full: Path
     target: Path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Copy exact `SKILL.md` entry artifacts into `.agents/skills/sirno-*` packages."
+            "Copy exact wrapper artifacts into `.agents/skills/sirno-*` packages."
         ),
     )
     parser.add_argument(
@@ -60,17 +62,17 @@ def main() -> int:
     parser.add_argument(
         "--write",
         action="store_true",
-        help="Write exact skill artifacts to their package paths.",
+        help="Write exact wrapper artifacts to their package paths.",
     )
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Fail if any package differs from its exact skill artifact.",
+        help="Fail if any package differs from its exact wrapper artifact.",
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="List discovered skill artifact sources and package targets.",
+        help="List discovered full sources, wrapper sources, and package targets.",
     )
     args = parser.parse_args()
 
@@ -88,7 +90,7 @@ def main() -> int:
 
     if args.list:
         for source in sources:
-            print(f"{source.entry.id}\t{source.source}\t{source.target}")
+            print(f"{source.entry.id}\t{source.full}\t{source.wrapper}\t{source.target}")
         return 0
 
     if args.check:
@@ -98,7 +100,7 @@ def main() -> int:
 
     for source in sources:
         print(f"--- {source.target} ({source.entry.id}) ---")
-        content = source.source.read_bytes()
+        content = source.wrapper.read_bytes()
         sys.stdout.buffer.write(content)
         if not content.endswith(b"\n"):
             print()
@@ -188,10 +190,13 @@ def discover_skill_sources(lake_path: Path, entries: dict[str, Entry]) -> list[S
         if target is None:
             continue
 
-        source = lake_path / ".artifacts" / entry.id / SKILL_ARTIFACT_PATH
-        if not source.is_file():
-            raise SystemExit(f"{entry.id} is missing skill artifact: {source}")
-        sources.append(SkillSource(entry, source, Path(target)))
+        wrapper = lake_path / ".artifacts" / entry.id / WRAPPER_ARTIFACT_PATH
+        full = lake_path / ".artifacts" / entry.id / FULL_ARTIFACT_PATH
+        if not wrapper.is_file():
+            raise SystemExit(f"{entry.id} is missing skill wrapper artifact: {wrapper}")
+        if not full.is_file():
+            raise SystemExit(f"{entry.id} is missing full skill artifact: {full}")
+        sources.append(SkillSource(entry, wrapper, full, Path(target)))
 
     sources.sort(key=lambda source: source.target.as_posix())
     return sources
@@ -210,7 +215,7 @@ def check_sources(root: Path, sources: list[SkillSource]) -> int:
     failed = False
     for source in sources:
         target = root / source.target
-        expected = source.source.read_bytes()
+        expected = source.wrapper.read_bytes()
         current = target.read_bytes() if target.exists() else b""
         if current == expected:
             continue
@@ -219,7 +224,7 @@ def check_sources(root: Path, sources: list[SkillSource]) -> int:
             current.decode("utf-8", errors="replace").splitlines(keepends=True),
             expected.decode("utf-8", errors="replace").splitlines(keepends=True),
             fromfile=str(source.target),
-            tofile=f"{source.source} ({source.entry.id})",
+            tofile=f"{source.wrapper} ({source.entry.id})",
         )
         sys.stdout.writelines(diff)
     return 1 if failed else 0
@@ -229,8 +234,8 @@ def write_sources(root: Path, sources: list[SkillSource]) -> int:
     for source in sources:
         target = root / source.target
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(source.source.read_bytes())
-        print(f"wrote {source.target} from {source.source}")
+        target.write_bytes(source.wrapper.read_bytes())
+        print(f"wrote {source.target} from {source.wrapper}")
     return 0
 
 

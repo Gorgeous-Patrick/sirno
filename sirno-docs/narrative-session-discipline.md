@@ -8,8 +8,10 @@ belongs:
 ---
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.
-It renders to `.agents/skills/sirno-narrative-session/SKILL.md`.
-Its exact packaged skill text lives in the `SKILL.md` entry artifact.
+Its full MCP resource text lives in `.artifacts/narrative-session-discipline/SKILL.full.md`
+and is embedded by `src/mcp.rs` as `sirno://skills/sirno-narrative-session`.
+Its packaged wrapper lives in `.artifacts/narrative-session-discipline/SKILL.md`
+and renders to `.agents/skills/sirno-narrative-session/SKILL.md`.
 
 Read the route sources first.
 Read `Sirno.toml` for the lake path,

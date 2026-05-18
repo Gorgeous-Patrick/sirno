@@ -1,18 +1,25 @@
 //! MCP server adapter for Sirno.
 //!
-//! The adapter exposes grouped Sirno command tools over stdio.
+//! The adapter exposes grouped Sirno command tools and skill resources over stdio.
 //! Command behavior remains in `core`; this module only converts JSON parameters
 //! into typed core requests and converts core DTOs into MCP tool results.
 
 use std::error::Error;
+use std::future::{self, Future};
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
-use rmcp::model::{CallToolResult, Content, ServerCapabilities, ServerInfo};
+use rmcp::model::{
+    Annotated, CallToolResult, Content, ListResourcesResult, PaginatedRequestParams, RawResource,
+    ReadResourceRequestParams, ReadResourceResult, Resource, ResourceContents, ServerCapabilities,
+    ServerInfo,
+};
+use rmcp::service::{MaybeSendFuture, RequestContext};
 use rmcp::{
-    ServerHandler, ServiceExt, schemars, schemars::JsonSchema, tool, tool_handler, tool_router,
+    ErrorData as McpError, RoleServer, ServerHandler, ServiceExt, schemars, schemars::JsonSchema,
+    tool, tool_handler, tool_router,
 };
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +30,90 @@ use crate::core::{
     StructuralStateFilter, StructuralTarget, TideResolveRequest, TideSelectionRequest,
 };
 use crate::{CheckMode, EntryId, StructuralEdgeDirection, TideWorkitem};
+
+const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
+
+// sirno:witness:design-doc-writer-skill:begin
+const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
+    uri: "sirno://skills/design-doc-writer",
+    name: "design-doc-writer",
+    title: "Design Doc Writer",
+    description: "Full design-doc-writer skill text from the bundled lake artifact.",
+    content: include_str!("../sirno-docs/.artifacts/design-doc-writer-skill/SKILL.full.md"),
+};
+// sirno:witness:design-doc-writer-skill:end
+
+// sirno:witness:agent-skills:begin
+const SKILL_RESOURCES: &[SkillResourceSpec] = &[
+    DESIGN_DOC_WRITER_SKILL_RESOURCE,
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-editor",
+        name: "sirno-editor",
+        title: "Sirno Editor",
+        description: "Full Sirno editor skill text from the bundled lake artifact.",
+        content: include_str!("../sirno-docs/.artifacts/lake-editing-discipline/SKILL.full.md"),
+    },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-explorer",
+        name: "sirno-explorer",
+        title: "Sirno Explorer",
+        description: "Full Sirno explorer skill text from the bundled lake artifact.",
+        content: include_str!("../sirno-docs/.artifacts/lake-exploration-discipline/SKILL.full.md"),
+    },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-narrative-session",
+        name: "sirno-narrative-session",
+        title: "Sirno Narrative Session",
+        description: "Full Sirno narrative-session skill text from the bundled lake artifact.",
+        content: include_str!(
+            "../sirno-docs/.artifacts/narrative-session-discipline/SKILL.full.md"
+        ),
+    },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-skill-synthesizer",
+        name: "sirno-skill-synthesizer",
+        title: "Sirno Skill Synthesizer",
+        description: "Full Sirno skill-synthesizer text from the bundled lake artifact.",
+        content: include_str!("../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
+    },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-witness",
+        name: "sirno-witness",
+        title: "Sirno Witness",
+        description: "Full Sirno witness skill text from the bundled lake artifact.",
+        content: include_str!("../sirno-docs/.artifacts/witness-linking-discipline/SKILL.full.md"),
+    },
+];
+// sirno:witness:agent-skills:end
+
+#[derive(Clone, Copy, Debug)]
+struct SkillResourceSpec {
+    uri: &'static str,
+    name: &'static str,
+    title: &'static str,
+    description: &'static str,
+    content: &'static str,
+}
+
+impl SkillResourceSpec {
+    fn for_uri(uri: &str) -> Option<&'static Self> {
+        SKILL_RESOURCES.iter().find(|resource| resource.uri == uri)
+    }
+
+    fn as_resource(&self) -> Resource {
+        Annotated::new(
+            RawResource::new(self.uri, self.name)
+                .with_title(self.title)
+                .with_description(self.description)
+                .with_mime_type(SKILL_RESOURCE_MIME_TYPE),
+            None,
+        )
+    }
+
+    fn as_resource_contents(&self) -> ResourceContents {
+        ResourceContents::text(self.content, self.uri).with_mime_type(SKILL_RESOURCE_MIME_TYPE)
+    }
+}
 
 /// Sirno MCP server bound to one configured project.
 #[derive(Clone, Debug)]
@@ -48,9 +139,33 @@ pub async fn run_stdio(context: CoreContext) -> Result<(), Box<dyn Error + Send 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for SirnoMcpServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+        ServerInfo::new(ServerCapabilities::builder().enable_resources().enable_tools().build())
             .with_instructions("Sirno tools for one configured project.")
     }
+
+    // sirno:witness:interfaces:begin
+    fn list_resources(
+        &self, _request: Option<PaginatedRequestParams>, _context: RequestContext<RoleServer>,
+    ) -> impl Future<Output = Result<ListResourcesResult, McpError>> + MaybeSendFuture + '_ {
+        let resources =
+            SKILL_RESOURCES.iter().map(SkillResourceSpec::as_resource).collect::<Vec<_>>();
+        future::ready(Ok(ListResourcesResult::with_all_items(resources)))
+    }
+
+    fn read_resource(
+        &self, request: ReadResourceRequestParams, _context: RequestContext<RoleServer>,
+    ) -> impl Future<Output = Result<ReadResourceResult, McpError>> + MaybeSendFuture + '_ {
+        let result = SkillResourceSpec::for_uri(&request.uri)
+            .map(|resource| ReadResourceResult::new(vec![resource.as_resource_contents()]))
+            .ok_or_else(|| {
+                McpError::resource_not_found(
+                    format!("skill resource not found: {}", request.uri),
+                    None,
+                )
+            });
+        future::ready(result)
+    }
+    // sirno:witness:interfaces:end
 }
 
 #[tool_router(router = tool_router)]
@@ -737,6 +852,44 @@ Body.
         let tools = client.peer().list_tools(None).await.unwrap();
         assert_eq!(tools.tools.len(), EXPECTED_TOOLS.len());
         assert!(tools.tools.iter().any(|tool| tool.name == "lake_status"));
+
+        let resources = client.peer().list_resources(None).await.unwrap();
+        assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
+        assert!(resources.resources.iter().any(|resource| {
+            resource.uri == "sirno://skills/sirno-editor"
+                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
+        }));
+        assert!(resources.resources.iter().any(|resource| {
+            resource.uri == "sirno://skills/design-doc-writer"
+                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
+        }));
+
+        let skill = client
+            .peer()
+            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-editor"))
+            .await
+            .unwrap();
+        let Some(ResourceContents::TextResourceContents { text, mime_type, .. }) =
+            skill.contents.first()
+        else {
+            panic!("expected text skill resource");
+        };
+        assert_eq!(mime_type.as_deref(), Some(SKILL_RESOURCE_MIME_TYPE));
+        assert!(text.contains("# Sirno Editor"));
+        assert!(text.contains("## Core Judgment"));
+
+        let design_skill = client
+            .peer()
+            .read_resource(ReadResourceRequestParams::new("sirno://skills/design-doc-writer"))
+            .await
+            .unwrap();
+        let Some(ResourceContents::TextResourceContents { text, .. }) =
+            design_skill.contents.first()
+        else {
+            panic!("expected text design-doc-writer resource");
+        };
+        assert!(text.contains("# Design Doc Writer"));
+        assert!(text.contains("## Reader Evaluation"));
 
         let result = client
             .peer()

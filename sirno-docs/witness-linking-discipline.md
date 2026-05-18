@@ -8,8 +8,10 @@ belongs:
 ---
 
 Witness linking connects an entry claim to the repository region that makes it inspectable.
-It renders to `.agents/skills/sirno-witness/SKILL.md`.
-Its exact packaged skill text lives in the `SKILL.md` entry artifact.
+Its full MCP resource text lives in `.artifacts/witness-linking-discipline/SKILL.full.md`
+and is embedded by `src/mcp.rs` as `sirno://skills/sirno-witness`.
+Its packaged wrapper lives in `.artifacts/witness-linking-discipline/SKILL.md`
+and renders to `.agents/skills/sirno-witness/SKILL.md`.
 
 Read the target entry before touching code.
 Understand the claim, its structural fields, and any body guidance about what the evidence should
