@@ -49,19 +49,6 @@ struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Run an entry operation at the top level.
-    // sirno:witness:interfaces:begin
-    #[command(flatten)]
-    TopLevelEntry(TopLevelEntryCommand),
-    /// Run a lake operation at the top level.
-    #[command(flatten)]
-    TopLevelLake(TopLevelLakeCommand),
-    /// Run a Frost snapshot operation at the top level.
-    #[command(flatten)]
-    TopLevelFrost(TopLevelFrostCommand),
-    /// Run a tide review operation at the top level.
-    #[command(flatten)]
-    TopLevelTide(TideReviewCommand),
     /// Create a Sirno config, public lake, and Frost store.
     Init {
         /// Monograph path written to Sirno.toml.
@@ -105,6 +92,19 @@ enum Command {
         #[command(subcommand)]
         command: TideCommand,
     },
+    /// Run an entry operation at the top level.
+    // sirno:witness:interfaces:begin
+    #[command(flatten)]
+    TopLevelEntry(TopLevelEntryCommand),
+    /// Run a lake operation at the top level.
+    #[command(flatten)]
+    TopLevelLake(TopLevelLakeCommand),
+    /// Run a Frost snapshot operation at the top level.
+    #[command(flatten)]
+    TopLevelFrost(TopLevelFrostCommand),
+    /// Run a tide review operation at the top level.
+    #[command(flatten)]
+    TopLevelTide(TideReviewCommand),
     /// Utility commands.
     Util {
         /// Utility command.
@@ -863,27 +863,6 @@ impl Cli {
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
-            | Command::TopLevelEntry(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::TopLevelLake(command) => {
-                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
-            }
-            | Command::TopLevelFrost(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::TopLevelTide(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
             | Command::Init { mono, lake, frost } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
@@ -909,6 +888,27 @@ impl Cli {
                 command.run(&config_path, lake_path.as_deref())
             }
             | Command::Tide { command } => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::TopLevelEntry(command) => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::TopLevelLake(command) => {
+                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
+            }
+            | Command::TopLevelFrost(command) => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::TopLevelTide(command) => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
@@ -2831,13 +2831,15 @@ Body.
     }
 
     #[test]
-    fn top_level_help_orders_entry_lake_then_frost_commands() {
+    fn top_level_help_orders_grouped_commands_before_shortcuts() {
         let help = Cli::command().render_help().to_string();
 
-        assert_before(&help, "  new", "  check");
-        assert_before(&help, "  status", "  init");
-        assert_before(&help, "  checkout", "  entry");
+        assert_before(&help, "  init", "  new");
+        assert_before(&help, "  tide", "  new");
         assert_before(&help, "  entry", "  lake");
+        assert_before(&help, "  lake", "  frost");
+        assert_before(&help, "  frost", "  tide");
+        assert_before(&help, "  new", "  check");
     }
 
     #[test]
