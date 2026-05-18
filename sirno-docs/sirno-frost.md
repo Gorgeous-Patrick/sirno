@@ -60,7 +60,9 @@ If the public *lake* is unchanged,
 the commit returns the current snapshot reference without writing.
 If a previously live *entry* is missing from the public *lake*,
 the commit records an `eter` lifecycle deletion marker.
-`sirno frost commit --unsafe-resolve-all` bypasses the *tide* gate for that commit
+`sirno commit` runs this import.
+`sirno frost commit` is the grouped form.
+`sirno commit --unsafe-resolve-all` bypasses the *tide* gate for that commit
 without writing fake resolutions.
 
 The *frost* read path reconstructs *entries* and artifacts from a selected snapshot.
@@ -74,8 +76,9 @@ Checkout materializes one frozen snapshot as Markdown files and `.artifacts` fil
 The conservative write policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
 and preserves ignored paths.
-`sirno frost checkout --latest` materializes the current snapshot as a mutable current *lake*.
-`sirno frost defrost` is an alias for `sirno frost checkout`.
+`sirno checkout --latest` materializes the current snapshot as a mutable current *lake*.
+`sirno defrost` is an alias for `sirno checkout`.
+The grouped forms are `sirno frost checkout` and `sirno frost defrost`.
 Explicit version checkout writes a visible read-only blockquote
 and removes write permission from the *lake* root and managed *entry* files.
 It also removes write permission from checked-out artifact trees.

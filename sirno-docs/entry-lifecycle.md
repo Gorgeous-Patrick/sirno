@@ -108,10 +108,10 @@ they are not drawn as lifecycle transitions.
 ## State Definitions
 
 `absent` means no managed Markdown file exists for the *entry* id in the waterline.
-`sirno new`, `sirno init`, manual file creation,
+`sirno new`, `sirno lake init`, manual file creation,
 or checkout of a live Frost entry can create the file.
 If an entry is absent from the waterline but live in the frostline,
-`sirno frost commit` records a lifecycle deletion marker.
+`sirno commit` records a lifecycle deletion marker.
 
 `working` means the waterline file exists and may differ from the frostline.
 It is the normal editing state.
@@ -147,7 +147,7 @@ This is an error state.
 It can happen if a read-only file is changed outside Sirno,
 if a frozen entry is renamed,
 or if metadata or prose is changed after bypassing file permissions.
-`sirno frost commit` refuses this state.
+`sirno commit` refuses this state.
 The supported exits are to restore the entry to current Frost
 or to melt it before intentionally changing it.
 
@@ -155,8 +155,8 @@ or to melt it before intentionally changing it.
 A normal version checkout is immutable:
 Sirno writes a read-only blockquote
 and removes write permission from managed entry files.
-`sirno frost checkout --latest` returns to the mutable current lake.
-`sirno frost checkout VERSION --unsafe-mutable` deliberately turns a historical version
+`sirno checkout --latest` returns to the mutable current lake.
+`sirno checkout VERSION --unsafe-mutable` deliberately turns a historical version
 into a writable working baseline.
 
 ## Projections And Frame Commands
@@ -173,9 +173,10 @@ report structure,
 or inspect configured repository evidence.
 
 Storage commands affect the frame around entries.
-`sirno move PATH` moves the public lake path.
+`sirno lake move PATH` moves the public lake path.
 `sirno frost init` and `sirno frost move PATH` configure or move the private Frost path.
 They do not change one entry file's lifecycle state by themselves.
+Top-level `sirno init` and `sirno move` are reserved commands.
 
 ---
 

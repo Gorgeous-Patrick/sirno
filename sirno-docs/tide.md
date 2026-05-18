@@ -32,8 +32,8 @@ including neighbors deleted from the waterline.
 `sirno tide reopen` removes matching resolutions.
 `sirno tide reset` clears all tide resolutions from the lock.
 
-`sirno frost commit` requires a clear *tide*.
-`sirno frost commit --unsafe-resolve-all` bypasses that gate for the current commit,
+`sirno commit` requires a clear *tide*.
+`sirno commit --unsafe-resolve-all` bypasses that gate for the current commit,
 does not write fake resolutions,
 and clears tide state after a successful commit.
 When `[tutorial]` is present in `Sirno.toml`,

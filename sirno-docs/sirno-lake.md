@@ -16,9 +16,9 @@ quiet enough to read,
 but structured enough that changes leave visible *ripples*.
 
 `Sirno.toml` records the *lake* path under `[lake].path`.
-`sirno move PATH` renames the configured *lake* directory
+`sirno lake move PATH` renames the configured *lake* directory
 and writes the new path back to `[lake].path`.
-`sirno mv PATH` is its short form.
+`sirno lake mv PATH` is its short form.
 The move refuses to replace an existing destination.
 
 The *lake* is the human-readable intermediate representation:

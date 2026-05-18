@@ -44,18 +44,28 @@ struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Run a lake operation at the top level.
+    /// Run an entry operation at the top level.
     // sirno:witness:interfaces:begin
     #[command(flatten)]
-    TopLevelLake(LakeCommand),
-    /// Run an entry operation at the top level.
-    #[command(flatten)]
     TopLevelEntry(EntryCommand),
-    /// Manage public Markdown lake storage.
-    Lake {
-        /// Lake command.
-        #[command(subcommand)]
-        command: LakeCommand,
+    /// Run a lake operation at the top level.
+    #[command(flatten)]
+    TopLevelLake(TopLevelLakeCommand),
+    /// Run a Frost snapshot operation at the top level.
+    #[command(flatten)]
+    TopLevelFrost(FrostSnapshotCommand),
+    /// Reserved top-level initialization command.
+    Init {
+        /// Reserved arguments.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        args: Vec<OsString>,
+    },
+    /// Reserved top-level move command.
+    #[command(visible_alias = "mv")]
+    Move {
+        /// Reserved arguments.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        args: Vec<OsString>,
     },
     /// Manage public Markdown lake entries.
     Entry {
@@ -63,11 +73,11 @@ enum Command {
         #[command(subcommand)]
         command: GroupedEntryCommand,
     },
-    /// Manage entry-owned artifact files.
-    Artifact {
-        /// Artifact command.
+    /// Manage public Markdown lake storage.
+    Lake {
+        /// Lake command.
         #[command(subcommand)]
-        command: ArtifactCommand,
+        command: LakeCommand,
     },
     // sirno:witness:interfaces:end
     /// Manage optional Sirno Frost snapshots.
@@ -84,6 +94,12 @@ enum Command {
         /// Tide command.
         #[command(subcommand)]
         command: TideCommand,
+    },
+    /// Manage entry-owned artifact files.
+    Artifact {
+        /// Artifact command.
+        #[command(subcommand)]
+        command: ArtifactCommand,
     },
     // sirno:witness:interfaces:end
     /// Utility commands.
@@ -143,6 +159,42 @@ enum LakeCommand {
     #[command(visible_alias = "st")]
     Status,
     // sirno:witness:interfaces:end
+}
+
+/// Supported top-level public lake commands.
+#[derive(Debug, Subcommand)]
+enum TopLevelLakeCommand {
+    /// Check current entry structure.
+    Check {
+        /// Sirno Frost path.
+        #[arg(long = "frost-path", conflicts_with = "lake_path")]
+        frost_path: Option<PathBuf>,
+        /// Check boundary.
+        #[arg(short = 'm', long, value_enum)]
+        mode: Option<CliCheckMode>,
+    },
+    /// Render Markdown links in entry footers.
+    Render {
+        /// Report rendered-footer changes without writing files.
+        #[arg(short = 'n', long, visible_alias = "dry-run")]
+        dry: bool,
+        /// Render command.
+        #[command(subcommand)]
+        command: Option<RenderCommand>,
+    },
+    /// Show the current Sirno project status.
+    #[command(visible_alias = "st")]
+    Status,
+}
+
+impl From<TopLevelLakeCommand> for LakeCommand {
+    fn from(value: TopLevelLakeCommand) -> Self {
+        match value {
+            | TopLevelLakeCommand::Check { frost_path, mode } => Self::Check { frost_path, mode },
+            | TopLevelLakeCommand::Render { dry, command } => Self::Render { dry, command },
+            | TopLevelLakeCommand::Status => Self::Status,
+        }
+    }
 }
 
 /// Supported public entry commands.
@@ -600,7 +652,7 @@ enum UtilCommand {
 /// Supported Sirno Frost commands.
 #[derive(Debug, Subcommand)]
 enum FrostCommand {
-    /// Configure Sirno Frost and freeze the current public Markdown lake.
+    /// Configure Sirno Frost.
     Init {
         /// Sirno Frost path written to Sirno.toml.
         #[arg(long = "frost-path")]
@@ -612,6 +664,14 @@ enum FrostCommand {
         /// New Sirno Frost path written to Sirno.toml.
         frost: PathBuf,
     },
+    /// Run a Frost snapshot operation.
+    #[command(flatten)]
+    Snapshot(FrostSnapshotCommand),
+}
+
+/// Supported Sirno Frost snapshot commands.
+#[derive(Debug, Subcommand)]
+enum FrostSnapshotCommand {
     /// Freeze the current public Markdown lake.
     Commit {
         /// Bypass open tide workitems for this commit without recording resolutions.
@@ -731,10 +791,14 @@ impl Cli {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
         match self.command {
-            | Command::TopLevelLake(command) | Command::Lake { command } => {
-                command.run(&config_path, lake_path.as_deref())
-            }
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::TopLevelLake(command) => {
+                LakeCommand::from(command).run(&config_path, lake_path.as_deref())
+            }
+            | Command::Init { .. } => Err(CliError::ReservedTopLevelCommand("init")),
+            | Command::Move { .. } => Err(CliError::ReservedTopLevelCommand("move")),
+            | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::TopLevelFrost(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::Entry { command } => {
                 run_grouped_entry_command(command, &config_path, lake_path.as_deref())
             }
@@ -1112,7 +1176,17 @@ impl FrostCommand {
                 println!("moved frost {} to {}", old_frost.display(), new_frost.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Commit { unsafe_resolve_all } => {
+            | FrostCommand::Snapshot(command) => command.run(config_path, lake_path),
+        }
+    }
+}
+
+impl FrostSnapshotCommand {
+    fn run(
+        self, config_path: &std::path::Path, lake_path: Option<&Path>,
+    ) -> Result<ExitCode, CliError> {
+        match self {
+            | FrostSnapshotCommand::Commit { unsafe_resolve_all } => {
                 let context = FrostContext::load(config_path, lake_path)?;
                 context.reject_immutable_checkout()?;
                 // sirno:witness:tide:begin
@@ -1145,7 +1219,7 @@ impl FrostCommand {
                 );
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Checkout { version, latest, unsafe_mutable } => {
+            | FrostSnapshotCommand::Checkout { version, latest, unsafe_mutable } => {
                 let context = FrostContext::load(config_path, lake_path)?;
                 let frost = SirnoFrost::open(&context.frost_path)?;
                 let snapshot = if latest {
@@ -2142,7 +2216,7 @@ impl fmt::Display for OpenTideTutorial {
         writeln!(formatter, "Resolve reviewed work with `sirno tide resolve ...`,",)?;
         writeln!(
             formatter,
-            "or choose the current lake as the baseline with `sirno frost commit --unsafe-resolve-all`.",
+            "or choose the current lake as the baseline with `sirno commit --unsafe-resolve-all`.",
         )?;
         write!(formatter, "Remove `[tutorial]` from Sirno.toml, or set tutorial knobs to false,",)?;
         write!(formatter, " to silence tutorial text.")
@@ -2161,6 +2235,9 @@ enum CliError {
     /// Immutable Frost checkouts cannot be committed.
     #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
     ImmutableFrostCheckout(u64),
+    /// A top-level command name is intentionally reserved.
+    #[error("top-level `sirno {0}` is reserved")]
+    ReservedTopLevelCommand(&'static str),
     /// Frost commit requires all tide workitems to be resolved.
     #[error("tide has {count} open workitems; run `sirno tide status`{tutorial}")]
     OpenTide {
@@ -2307,7 +2384,7 @@ mod tests {
     use std::fs;
     use std::path::{Path, PathBuf};
 
-    use clap::Parser;
+    use clap::{CommandFactory, Parser};
 
     use crate::OpenTideTutorial;
 
@@ -2321,9 +2398,10 @@ mod tests {
     use crate::{
         ArtifactCommand, Cli, CliCheckMode, CliError, CliPathArgs, CliPathOutputFormat,
         CliQueryField, CliQueryFields, CliQueryOutputFormat, CliStructuralPredicate, CliTideItem,
-        Command, EntryCommand, FrostCommand, GroupedEntryCommand, LakeCommand, TideCommand,
-        entry_path_records, exact_query_from_predicates, format_gen_link_report, format_path_table,
-        format_query_json, format_query_table, format_witness_record, format_witness_records,
+        Command, EntryCommand, FrostCommand, FrostSnapshotCommand, GroupedEntryCommand,
+        LakeCommand, TideCommand, TopLevelLakeCommand, entry_path_records,
+        exact_query_from_predicates, format_gen_link_report, format_path_table, format_query_json,
+        format_query_table, format_witness_record, format_witness_records,
         rg_args_include_preprocessor,
     };
 
@@ -2332,15 +2410,15 @@ mod tests {
     }
 
     #[test]
-    fn init_does_not_accept_frost_path() {
-        let error =
-            Cli::try_parse_from(["sirno", "init", "--frost-path", "sirno-frost"]).unwrap_err();
+    fn init_is_reserved_at_top_level() {
+        let cli = Cli::parse_from(["sirno", "init", "--frost-path", "sirno-frost"]);
 
-        assert!(error.to_string().contains("unexpected argument"));
+        assert!(matches!(cli.command, Command::Init { .. }));
+        assert!(matches!(cli.run(), Err(CliError::ReservedTopLevelCommand("init"))));
     }
 
     #[test]
-    fn init_uses_global_lake_path() {
+    fn lake_init_uses_global_lake_path() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let docs = temp.path().join("sirno-docs");
@@ -2351,6 +2429,7 @@ mod tests {
             config_path.to_str().unwrap(),
             "--lake-path",
             "sirno-docs",
+            "lake",
             "init",
         ])
         .run()
@@ -2366,7 +2445,7 @@ mod tests {
         let cli = Cli::parse_from(["sirno", "-C", "Sirno.alt.toml", "status"]);
 
         assert_eq!(cli.config, Some(PathBuf::from("Sirno.alt.toml")));
-        assert!(matches!(cli.command, Command::TopLevelLake(LakeCommand::Status)));
+        assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
     }
 
     #[test]
@@ -2374,7 +2453,7 @@ mod tests {
         let cli = Cli::parse_from(["sirno", "-L", "scratch-docs", "status"]);
 
         assert_eq!(cli.lake_path.as_deref(), Some(Path::new("scratch-docs")));
-        assert!(matches!(cli.command, Command::TopLevelLake(LakeCommand::Status)));
+        assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
     }
 
     #[test]
@@ -2384,6 +2463,49 @@ mod tests {
         assert!(matches!(
             cli.command,
             Command::Frost { command: FrostCommand::Init { frost_path: Some(_) } }
+        ));
+    }
+
+    #[test]
+    fn top_level_help_orders_entry_lake_then_frost_commands() {
+        let help = Cli::command().render_help().to_string();
+
+        assert_before(&help, "  new", "  check");
+        assert_before(&help, "  status", "  init");
+        assert_before(&help, "  checkout", "  entry");
+        assert_before(&help, "  entry", "  lake");
+    }
+
+    #[test]
+    fn frost_commit_accepts_top_level_form() {
+        let cli = Cli::parse_from(["sirno", "commit", "--unsafe-resolve-all"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::TopLevelFrost(FrostSnapshotCommand::Commit { unsafe_resolve_all: true })
+        ));
+    }
+
+    #[test]
+    fn frost_checkout_accepts_top_level_form_and_alias() {
+        let checkout = Cli::parse_from(["sirno", "checkout", "--latest"]);
+        let defrost = Cli::parse_from(["sirno", "defrost", "--latest"]);
+
+        assert!(matches!(
+            checkout.command,
+            Command::TopLevelFrost(FrostSnapshotCommand::Checkout {
+                version: None,
+                latest: true,
+                unsafe_mutable: false,
+            })
+        ));
+        assert!(matches!(
+            defrost.command,
+            Command::TopLevelFrost(FrostSnapshotCommand::Checkout {
+                version: None,
+                latest: true,
+                unsafe_mutable: false,
+            })
         ));
     }
 
@@ -2664,7 +2786,7 @@ Body.
         assert!(matches!(&error, CliError::OpenTide { count, .. } if *count == 1));
         assert!(message.contains("Tutorial:"));
         assert!(message.contains("empty version 0"));
-        assert!(message.contains("sirno frost commit --unsafe-resolve-all"));
+        assert!(message.contains("sirno commit --unsafe-resolve-all"));
         assert!(message.contains("Remove `[tutorial]` from Sirno.toml"));
     }
 
@@ -2687,23 +2809,18 @@ Body.
     }
 
     #[test]
-    fn move_accepts_lake_path() {
+    fn move_is_reserved_at_top_level() {
         let cli = Cli::parse_from(["sirno", "move", "sirno-docs"]);
 
-        assert!(matches!(
-            cli.command,
-            Command::TopLevelLake(LakeCommand::Move { lake }) if lake == Path::new("sirno-docs")
-        ));
+        assert!(matches!(cli.command, Command::Move { .. }));
+        assert!(matches!(cli.run(), Err(CliError::ReservedTopLevelCommand("move"))));
     }
 
     #[test]
-    fn mv_alias_accepts_lake_path() {
+    fn mv_alias_is_reserved_at_top_level() {
         let cli = Cli::parse_from(["sirno", "mv", "sirno-docs"]);
 
-        assert!(matches!(
-            cli.command,
-            Command::TopLevelLake(LakeCommand::Move { lake }) if lake == Path::new("sirno-docs")
-        ));
+        assert!(matches!(cli.command, Command::Move { .. }));
     }
 
     #[test]
@@ -2746,11 +2863,11 @@ Body.
         assert!(matches!(
             cli.command,
             Command::Frost {
-                command: FrostCommand::Checkout {
+                command: FrostCommand::Snapshot(FrostSnapshotCommand::Checkout {
                     version: Some(3),
                     latest: false,
                     unsafe_mutable: true
-                }
+                })
             }
         ));
     }
@@ -2762,11 +2879,11 @@ Body.
         assert!(matches!(
             cli.command,
             Command::Frost {
-                command: FrostCommand::Checkout {
+                command: FrostCommand::Snapshot(FrostSnapshotCommand::Checkout {
                     version: None,
                     latest: true,
                     unsafe_mutable: false
-                }
+                })
             }
         ));
     }
@@ -2778,11 +2895,11 @@ Body.
         assert!(matches!(
             cli.command,
             Command::Frost {
-                command: FrostCommand::Checkout {
+                command: FrostCommand::Snapshot(FrostSnapshotCommand::Checkout {
                     version: None,
                     latest: true,
                     unsafe_mutable: false
-                }
+                })
             }
         ));
     }
@@ -3407,7 +3524,10 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Check { mode: Some(CliCheckMode::Review), .. })
+            Command::TopLevelLake(TopLevelLakeCommand::Check {
+                mode: Some(CliCheckMode::Review),
+                ..
+            })
         ));
     }
 
@@ -3506,7 +3626,7 @@ Body.
     }
 
     #[test]
-    fn move_moves_lake_and_rewrites_config() {
+    fn lake_move_moves_lake_and_rewrites_config() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_lake = temp.path().join("docs");
@@ -3522,9 +3642,16 @@ Body.
         fs::create_dir(&old_lake).unwrap();
         fs::write(old_lake.join("entry.md"), "entry").unwrap();
 
-        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "move", "sirno-docs"])
-            .run()
-            .unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "lake",
+            "move",
+            "sirno-docs",
+        ])
+        .run()
+        .unwrap();
 
         let config = SirnoConfig::from_file(&config_path).unwrap();
         let source = fs::read_to_string(&config_path).unwrap();
@@ -3535,7 +3662,7 @@ Body.
     }
 
     #[test]
-    fn move_refuses_existing_destination() {
+    fn lake_move_refuses_existing_destination() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let old_lake = temp.path().join("docs");
@@ -3548,6 +3675,7 @@ Body.
             "sirno",
             "--config",
             config_path.to_str().unwrap(),
+            "lake",
             "move",
             "sirno-docs",
         ])
@@ -3873,7 +4001,7 @@ Body.
     fn status_accepts_short_alias() {
         let cli = Cli::parse_from(["sirno", "st"]);
 
-        assert!(matches!(cli.command, Command::TopLevelLake(LakeCommand::Status)));
+        assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
     }
 
     #[test]
@@ -4060,7 +4188,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
+            Command::TopLevelLake(TopLevelLakeCommand::Render { dry: true, command: None, .. })
         ));
     }
 
@@ -4071,11 +4199,11 @@ Body.
 
         assert!(matches!(
             short.command,
-            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
+            Command::TopLevelLake(TopLevelLakeCommand::Render { dry: true, command: None, .. })
         ));
         assert!(matches!(
             long.command,
-            Command::TopLevelLake(LakeCommand::Render { dry: true, command: None, .. })
+            Command::TopLevelLake(TopLevelLakeCommand::Render { dry: true, command: None, .. })
         ));
     }
 

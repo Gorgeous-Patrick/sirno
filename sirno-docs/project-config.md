@@ -28,12 +28,13 @@ Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 
 A project can use Sirno without a configured *monograph*, repo members, or Sirno Frost.
-`sirno init` creates the config and public *entry lake*.
-`sirno move PATH` changes `[lake].path` and renames the public *lake* directory.
-`sirno mv PATH` is its short form.
+`sirno lake init` creates the config and public *entry lake*.
+`sirno lake move PATH` changes `[lake].path` and renames the public *lake* directory.
+`sirno lake mv PATH` is its short form.
 `sirno frost init` adds the Sirno Frost config and records empty version `0`.
 `sirno frost move PATH` changes `[frost].path` and renames the private *frost* path.
 `sirno frost mv PATH` is its short form.
+Top-level `sirno init` and `sirno move` are reserved commands.
 
 `Sirno.lock.toml` records the public *lake*'s *frost* state when Sirno Frost is configured.
 It lives next to `Sirno.toml`.

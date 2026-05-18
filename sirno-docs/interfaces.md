@@ -13,20 +13,27 @@ A lightweight GUI or Obsidian extension may later provide a direct editing exper
 The CLI is the first operational interface.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
 move configured storage paths, maintain *generated footer* links,
-and manage the active *tide*.
+manage optional Frost snapshots, and manage the active *tide*.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
 Common command aliases keep terminal use compact:
-`q` for `query`, `st` for `status`, and `w` or `wit` for `witness`.
-Storage-wide lake operations also live under `sirno lake`.
+`q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
+and `defrost` for `checkout`.
 Entry-centric operations also live under `sirno entry`.
+Storage-wide lake operations also live under `sirno lake`.
 Entry artifact operations also live under `sirno artifact`.
-The grouped spellings use the same subcommands and aliases as the top-level spellings.
+Frost operations also live under `sirno frost`.
+When a top-level command delegates to a group,
+the grouped spelling uses the same subcommands and aliases.
 For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
+`sirno commit`, `sirno checkout`, and `sirno defrost`
+select the same Frost operations as their grouped `sirno frost ...` forms.
+Public lake setup and path moves use `sirno lake init` and `sirno lake move`.
+Top-level `sirno init` and `sirno move` are reserved commands.
 For artifact mutation,
 `sirno artifact ...` and `sirno entry artifact ...` select the same operation.
 Those commands should remain plain enough to use from a terminal
@@ -36,25 +43,28 @@ and stable enough for agents and skills to call.
 It reports the config path, *monograph* state, *lake* path, optional *frost* path,
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
-`sirno move PATH` changes the configured public *lake* path
+`sirno lake init` creates a Sirno config and ordinary seed entries.
+`sirno lake move PATH` changes the configured public *lake* path
 and renames the current *lake* directory on the filesystem.
-`sirno mv PATH` is its short form.
+`sirno lake mv PATH` is its short form.
 
 `sirno frost init` configures the private *frost* path and records empty version `0`.
 `sirno frost init --frost-path PATH` chooses a non-default *frost* path.
 `sirno frost move PATH` changes the configured *frost* path
 and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.
-`sirno frost commit` freezes the current public *lake*
+`sirno commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
+`sirno frost commit` is its grouped form.
 It fails while open *tide* workitems remain.
 When `[tutorial]` is present,
 this failure can include tutorial text controlled by `[tutorial].frost_commit_tide`
 and `[tutorial].frost_bootstrap_tide`.
-`sirno frost commit --unsafe-resolve-all` bypasses that gate for the current commit.
-`sirno frost checkout --latest` materializes the latest version as a mutable public *lake*.
-`sirno frost checkout VERSION` materializes one older version into the public *lake*.
-`sirno frost defrost` is an alias for `sirno frost checkout`.
+`sirno commit --unsafe-resolve-all` bypasses that gate for the current commit.
+`sirno checkout --latest` materializes the latest version as a mutable public *lake*.
+`sirno checkout VERSION` materializes one older version into the public *lake*.
+`sirno defrost` is an alias for `sirno checkout`.
+The grouped forms are `sirno frost checkout` and `sirno frost defrost`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.
