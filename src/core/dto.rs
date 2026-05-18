@@ -521,26 +521,25 @@ pub struct WitnessRecordResult {
     pub path: String,
     /// Full matched block region.
     pub region: WitnessSpanResult,
-    /// Opening delimiter span.
-    pub opening: WitnessSpanResult,
-    /// Closing delimiter span.
-    pub closing: WitnessSpanResult,
-    /// Matched opening delimiter text.
-    pub marker: String,
-    /// Full witness body when requested.
-    pub body: Option<String>,
+    /// Opening delimiter span when verbose output is requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opening: Option<WitnessSpanResult>,
+    /// Closing delimiter span when verbose output is requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closing: Option<WitnessSpanResult>,
+    /// Full matched witness block body.
+    pub body: String,
 }
 
 impl WitnessRecordResult {
-    pub(crate) fn from_record(record: &WitnessRecord, full: bool) -> Self {
+    pub(crate) fn from_record(record: &WitnessRecord, verbose: bool) -> Self {
         Self {
             entry: record.entry.to_string(),
             path: display_path(&record.path),
             region: WitnessSpanResult::from(record.region),
-            opening: WitnessSpanResult::from(record.opening),
-            closing: WitnessSpanResult::from(record.closing),
-            marker: record.marker.clone(),
-            body: full.then(|| record.body.clone()),
+            opening: verbose.then(|| WitnessSpanResult::from(record.opening)),
+            closing: verbose.then(|| WitnessSpanResult::from(record.closing)),
+            body: record.body.clone(),
         }
     }
 }

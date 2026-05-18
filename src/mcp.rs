@@ -255,7 +255,7 @@ impl SirnoMcpServer {
     /// Return repository witness blocks for one entry.
     #[tool(name = "sirno_entry_witness")]
     fn entry_witness(&self, Parameters(params): Parameters<EntryWitnessParams>) -> McpToolResult {
-        result(self.context.entry_witness(entry_id(params.id)?, params.full))
+        result(self.context.entry_witness(entry_id(params.id)?, params.verbose))
     }
 
     /// List artifacts owned by one entry.
@@ -579,8 +579,9 @@ struct EntryRgParams {
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct EntryWitnessParams {
     id: String,
+    /// Include opening and closing delimiter spans.
     #[serde(default)]
-    full: bool,
+    verbose: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
@@ -773,8 +774,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        CONFIG_FILE_NAME, SirnoConfig, StructuralEdgeSettings, StructuralFieldSettings,
-        StructuralRippleSettings, StructuralSettings,
+        CONFIG_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, StructuralEdgeSettings,
+        StructuralFieldSettings, StructuralRippleSettings, StructuralSettings,
     };
 
     // sirno:witness:interfaces:begin
@@ -827,6 +828,44 @@ Body.
 ",
         )
         .unwrap();
+        config_path
+    }
+
+    fn write_witness_project(root: &Path) -> PathBuf {
+        let config_path = root.join(CONFIG_FILE_NAME);
+        let docs = root.join("docs");
+        let src = root.join("src");
+        SirnoConfig {
+            repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
+            ..SirnoConfig::new("docs")
+        }
+        .write_new(&config_path)
+        .unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::create_dir(&src).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        let witness_source = format!(
+            "{}{}{}\n{}\n{}{}{}\n",
+            "// sirno",
+            ":witness:",
+            "alpha:begin",
+            "pub fn alpha() {}",
+            "// sirno",
+            ":witness:",
+            "alpha:end"
+        );
+        fs::write(src.join("lib.rs"), witness_source).unwrap();
         config_path
     }
 
@@ -961,6 +1000,44 @@ Changed body.
         assert_eq!(structured(&full)["review_entries"], json!(["beta"]));
         assert_eq!(structured(&full)["statuses"][0]["workitem"]["neighbor"], "beta");
         assert_eq!(structured(&all)["statuses"][0]["workitem"]["neighbor"], "beta");
+    }
+
+    #[test]
+    fn entry_witness_defaults_to_body_and_hides_delimiter_spans() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = write_witness_project(temp.path());
+        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+
+        let result = server
+            .entry_witness(Parameters(EntryWitnessParams {
+                id: "alpha".to_owned(),
+                verbose: false,
+            }))
+            .unwrap();
+        let record = &structured(&result)["records"][0];
+
+        assert_eq!(record["region"]["start_line"], json!(1));
+        assert!(record["body"].as_str().unwrap().contains("pub fn alpha() {}"));
+        assert!(record.get("opening").is_none());
+        assert!(record.get("closing").is_none());
+        assert!(record.get("marker").is_none());
+    }
+
+    #[test]
+    fn entry_witness_verbose_includes_delimiter_spans() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = write_witness_project(temp.path());
+        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+
+        let result = server
+            .entry_witness(Parameters(EntryWitnessParams { id: "alpha".to_owned(), verbose: true }))
+            .unwrap();
+        let record = &structured(&result)["records"][0];
+
+        assert_eq!(record["opening"]["start_line"], json!(1));
+        assert_eq!(record["closing"]["start_line"], json!(3));
+        assert!(record["body"].as_str().unwrap().contains("pub fn alpha() {}"));
+        assert!(record.get("marker").is_none());
     }
 
     #[derive(Clone, Debug, Default)]

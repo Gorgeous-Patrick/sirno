@@ -178,6 +178,10 @@ The displayed region is the complete set of lines spanned by the *witness* block
 Sirno preserves the matched indentation.
 A blank line separates the summary from that region.
 Multiple full regions are separated by a blank line, `---`, and another blank line.
+The MCP `sirno_entry_witness` tool returns full matched *repository* regions by default.
+Each record includes the full `region` span and matched `body`.
+When `verbose` is true,
+records also include `opening` and `closing` delimiter spans.
 
 `sirno tide status` reports entry ids that need dependency review,
 grouped by review entry in one table.

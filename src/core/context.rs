@@ -394,15 +394,15 @@ impl CoreContext {
         })
     }
 
-    /// Return repository witness blocks for one entry.
-    pub fn entry_witness(&self, id: EntryId, full: bool) -> Result<WitnessResult, CommandError> {
+    /// Return repository witness blocks for one entry as a JSON-first command result.
+    pub fn entry_witness(&self, id: EntryId, verbose: bool) -> Result<WitnessResult, CommandError> {
         let records = self.witness_records(&id)?;
         Ok(WitnessResult {
             ok: !records.is_empty(),
             id: id.to_string(),
             records: records
                 .iter()
-                .map(|record| WitnessRecordResult::from_record(record, full))
+                .map(|record| WitnessRecordResult::from_record(record, verbose))
                 .collect(),
             message: if records.is_empty() {
                 format!("no witness found for {id}")
