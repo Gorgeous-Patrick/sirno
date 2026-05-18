@@ -182,8 +182,9 @@ Multiple full regions are separated by a blank line, `---`, and another blank li
 `sirno tide status` reports entry ids that need dependency review,
 grouped by ripple id in one table.
 It prints a one-sentence summary after the table.
-`sirno tide status --full` reports open dependency review obligations in the same wave-grouped table.
-`sirno tide status --full --all` also reports resolved obligations.
+`sirno tide status --show full` reports open dependency review obligations
+in the same wave-grouped table.
+`sirno tide status --show all` also reports resolved obligations.
 `sirno tide status -o, --format` selects `human` or `json` output.
 The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.
 The top-level forms `sirno resolve` and `sirno unresolve` select the same operations.
@@ -264,8 +265,7 @@ Structural filters use `{ field, targets }`.
 Structural states use `{ field, state }`.
 Tide selectors use neighbor id arrays and existing JSON-shaped workitem objects.
 `tide_status` returns review entry ids by default.
-Its `full` argument adds workitem statuses,
-and its `all` argument requires `full`.
+Its `show` argument selects `review`, `full`, or `all`.
 `entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
 Successful tool calls return structured JSON content.
 They also include the same JSON as pretty text content for clients that read only text.

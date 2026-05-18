@@ -31,6 +31,29 @@ pub enum StructuredOutputFormat {
 pub(crate) type QueryOutputFormat = StructuredOutputFormat;
 pub(crate) type TideOutputFormat = StructuredOutputFormat;
 
+/// Tide status detail selected by command callers.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum TideStatusMode {
+    /// Show only entry ids that need review.
+    #[default]
+    Review,
+    /// Show full open workitem statuses.
+    Full,
+    /// Show full open and resolved workitem statuses.
+    All,
+}
+
+impl TideStatusMode {
+    pub(crate) fn includes_workitems(self) -> bool {
+        matches!(self, Self::Full | Self::All)
+    }
+
+    pub(crate) fn includes_resolved(self) -> bool {
+        matches!(self, Self::All)
+    }
+}
+
 /// Result of reading or changing the process current working directory.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CwdResult {

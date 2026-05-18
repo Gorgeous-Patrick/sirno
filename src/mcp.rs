@@ -28,6 +28,7 @@ use crate::core::{
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
     QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
     StructuralStateFilter, StructuralTarget, TideResolveRequest, TideSelectionRequest,
+    TideStatusMode,
 };
 use crate::{CheckMode, EntryId, StructuralEdgeDirection, TideWorkitem};
 
@@ -371,10 +372,7 @@ impl SirnoMcpServer {
     /// Show tide review status.
     #[tool(name = "tide_status")]
     fn tide_status(&self, Parameters(params): Parameters<TideStatusParams>) -> McpToolResult {
-        if params.all && !params.full {
-            return Err("tide_status `all` requires `full`".to_owned());
-        }
-        result(self.context.tide_status(params.full, params.all))
+        result(self.context.tide_status(params.show.into()))
     }
 
     /// Resolve tide workitems.
@@ -669,12 +667,31 @@ struct FrostCheckoutParams {
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideStatusParams {
-    /// Include full workitem statuses instead of only review entry ids.
+    /// Select review entries, full open workitems, or all workitems.
     #[serde(default)]
-    full: bool,
-    /// Include resolved workitem statuses. Requires `full`.
-    #[serde(default)]
-    all: bool,
+    show: McpTideStatusMode,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+enum McpTideStatusMode {
+    /// Return only entry ids that need review.
+    #[default]
+    Review,
+    /// Include full open workitem statuses.
+    Full,
+    /// Include full open and resolved workitem statuses.
+    All,
+}
+
+impl From<McpTideStatusMode> for TideStatusMode {
+    fn from(value: McpTideStatusMode) -> Self {
+        match value {
+            | McpTideStatusMode::Review => Self::Review,
+            | McpTideStatusMode::Full => Self::Full,
+            | McpTideStatusMode::All => Self::All,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
@@ -931,25 +948,19 @@ Changed body.
         let server = SirnoMcpServer::new(CoreContext::new(config_path));
 
         let summary = server.tide_status(Parameters(TideStatusParams::default())).unwrap();
-        let full =
-            server.tide_status(Parameters(TideStatusParams { full: true, all: false })).unwrap();
+        let full = server
+            .tide_status(Parameters(TideStatusParams { show: McpTideStatusMode::Full }))
+            .unwrap();
+        let all = server
+            .tide_status(Parameters(TideStatusParams { show: McpTideStatusMode::All }))
+            .unwrap();
 
         assert_eq!(structured(&summary)["ok"], false);
         assert_eq!(structured(&summary)["review_entries"], json!(["beta"]));
         assert!(structured(&summary).get("statuses").is_none());
         assert_eq!(structured(&full)["review_entries"], json!(["beta"]));
         assert_eq!(structured(&full)["statuses"][0]["workitem"]["neighbor"], "beta");
-    }
-
-    #[test]
-    fn tide_status_all_requires_full() {
-        let server = SirnoMcpServer::new(CoreContext::new("Sirno.toml"));
-
-        let error = server
-            .tide_status(Parameters(TideStatusParams { full: false, all: true }))
-            .unwrap_err();
-
-        assert_eq!(error, "tide_status `all` requires `full`");
+        assert_eq!(structured(&all)["statuses"][0]["workitem"]["neighbor"], "beta");
     }
 
     #[derive(Clone, Debug, Default)]

@@ -24,12 +24,12 @@ use super::{
     FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat,
     QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
     StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
-    TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
-    TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
-    format_config_comment_result, format_gen_link_report, format_human_table_with_width,
-    format_json, format_lake_check_result, format_path_table, format_query_json,
-    format_query_table, format_render_result, format_skill_wrapper_table, format_tide_review_waves,
-    format_tide_statuses, format_witness_record, format_witness_records,
+    TideOutputFormat, TideReviewCommand, TideStatusMode, TopLevelEntryCommand,
+    TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
+    entry_query_from_filters, format_config_comment_result, format_gen_link_report,
+    format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
+    format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
+    format_tide_review_waves, format_tide_statuses, format_witness_record, format_witness_records,
     rg_args_include_preprocessor,
 };
 
@@ -978,25 +978,32 @@ fn frost_defrost_rejects_checkout_arguments() {
 }
 
 #[test]
-fn tide_status_accepts_full_flag() {
-    let full = Cli::parse_from(["sirno", "tide", "status", "--full"]);
-    let all = Cli::parse_from(["sirno", "tide", "status", "--full", "--all"]);
+fn tide_status_accepts_show_modes() {
+    let review = Cli::parse_from(["sirno", "tide", "status"]);
+    let full = Cli::parse_from(["sirno", "tide", "status", "--show", "full"]);
+    let all = Cli::parse_from(["sirno", "tide", "status", "--show=all"]);
 
     assert!(matches!(
+        review.command,
+        Command::Tide { command: TideCommand::Status { show: TideStatusMode::Review, .. } }
+    ));
+    assert!(matches!(
         full.command,
-        Command::Tide { command: TideCommand::Status { full: true, all: false, .. } }
+        Command::Tide { command: TideCommand::Status { show: TideStatusMode::Full, .. } }
     ));
     assert!(matches!(
         all.command,
-        Command::Tide { command: TideCommand::Status { full: true, all: true, .. } }
+        Command::Tide { command: TideCommand::Status { show: TideStatusMode::All, .. } }
     ));
 }
 
 #[test]
-fn tide_status_all_requires_full() {
-    let error = Cli::try_parse_from(["sirno", "tide", "status", "--all"]).unwrap_err();
+fn tide_status_rejects_old_full_and_all_flags() {
+    let full = Cli::try_parse_from(["sirno", "tide", "status", "--full"]).unwrap_err();
+    let all = Cli::try_parse_from(["sirno", "tide", "status", "--all"]).unwrap_err();
 
-    assert_eq!(error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+    assert_eq!(full.kind(), clap::error::ErrorKind::UnknownArgument);
+    assert_eq!(all.kind(), clap::error::ErrorKind::UnknownArgument);
 }
 
 #[test]

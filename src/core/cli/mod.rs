@@ -18,7 +18,7 @@ use crate::core::dto::{
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathRecord, PathSelection,
     QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
     StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
-    TideResolveRequest, TideSelectionRequest,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode,
 };
 use crate::core::error::CommandError;
 use crate::core::output::{
@@ -547,12 +547,9 @@ enum TideItemSelectorParseError {
 enum TideCommand {
     /// Show tide review status.
     Status {
-        /// Show full workitem statuses instead of review entry ids.
-        #[arg(long)]
-        full: bool,
-        /// Include resolved workitems.
-        #[arg(long, requires = "full")]
-        all: bool,
+        /// Select review entries, full open workitems, or all workitems.
+        #[arg(long, value_enum, default_value_t = TideStatusMode::Review)]
+        show: TideStatusMode,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
         format: Option<TideOutputFormat>,
@@ -1141,11 +1138,11 @@ impl TideCommand {
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
     ) -> Result<ExitCode, CommandError> {
         match self {
-            | TideCommand::Status { full, all, format } => {
+            | TideCommand::Status { show, format } => {
                 let context = CoreContext::from_cli_paths(config_path, lake_path);
                 let format = format.unwrap_or_default();
-                if full {
-                    let statuses = context.tide_statuses(all)?;
+                if show.includes_workitems() {
+                    let statuses = context.tide_statuses(show)?;
                     print_tide_statuses(&statuses, format)?;
                     Ok(if statuses.iter().all(|status| status.resolved) {
                         ExitCode::SUCCESS
@@ -1153,7 +1150,7 @@ impl TideCommand {
                         ExitCode::FAILURE
                     })
                 } else {
-                    let statuses = context.tide_statuses(false)?;
+                    let statuses = context.tide_statuses(show)?;
                     print_tide_review_waves(&statuses, format)?;
                     Ok(if statuses.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
                 }

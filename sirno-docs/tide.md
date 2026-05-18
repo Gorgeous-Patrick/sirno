@@ -28,8 +28,9 @@ Changes to the reviewed neighbor do not reopen that workitem.
 Each wave starts with its ripple id and lists the entries that still need review.
 Wave boundaries use heavy double separators.
 A one-sentence summary follows the table.
-`sirno tide status --full` prints full open workitem statuses in the same wave-grouped table.
-`sirno tide status --full --all` includes resolved workitem statuses.
+`sirno tide status --show full` prints full open workitem statuses
+in the same wave-grouped table.
+`sirno tide status --show all` includes resolved workitem statuses.
 `sirno resolve` records explicit review.
 `sirno resolve --infer` resolves workitems whose neighbor is also in the current ripple set,
 including neighbors deleted from the waterline.

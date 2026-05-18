@@ -17,7 +17,7 @@ use crate::core::dto::{
     MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult,
     RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusResult,
     StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusResult,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
     WitnessRecordResult, WitnessResult,
 };
 use crate::core::error::{CommandError, OpenTideTutorial};
@@ -204,11 +204,11 @@ impl CoreContext {
     }
 
     /// Return tide statuses in structured form.
-    pub fn tide_statuses(&self, all: bool) -> Result<Vec<TideStatus>, CommandError> {
+    pub fn tide_statuses(&self, mode: TideStatusMode) -> Result<Vec<TideStatus>, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let lock = context.load_lock_or_current()?;
         let tide = context.tide(&lock)?;
-        Ok(tide_statuses_for_output(&tide, all))
+        Ok(tide_statuses_for_output(&tide, mode.includes_resolved()))
     }
 
     /// Return entry ids that still need tide review.
@@ -220,12 +220,16 @@ impl CoreContext {
     }
 
     /// Return tide review entries and optional full statuses as a JSON-first command result.
-    pub fn tide_status(&self, full: bool, all: bool) -> Result<TideStatusResult, CommandError> {
+    pub fn tide_status(&self, mode: TideStatusMode) -> Result<TideStatusResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let lock = context.load_lock_or_current()?;
         let tide = context.tide(&lock)?;
         let review_entries = tide.review_entries();
-        let statuses = if full { tide_statuses_for_output(&tide, all) } else { Vec::new() };
+        let statuses = if mode.includes_workitems() {
+            tide_statuses_for_output(&tide, mode.includes_resolved())
+        } else {
+            Vec::new()
+        };
         Ok(TideStatusResult { ok: review_entries.is_empty(), review_entries, statuses })
     }
 
