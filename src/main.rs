@@ -273,23 +273,9 @@ enum MoveCommand {
 /// Supported public entry commands.
 #[derive(Debug, Subcommand)]
 enum EntryCommand {
-    /// Create one Markdown entry.
-    New {
-        /// Entry id and filename stem.
-        id: String,
-        /// Human-readable entry name.
-        #[arg(short = 'n', long)]
-        name: Option<String>,
-        /// Short entry desc.
-        #[arg(short = 'd', long)]
-        desc: String,
-        /// Structural metadata target as FIELD=ENTRY_ID.
-        #[arg(long = "structural", value_name = "FIELD=ENTRY_ID")]
-        structural: Vec<CliStructuralPredicate>,
-        /// Initial Markdown body.
-        #[arg(short = 'b', long)]
-        body: Option<String>,
-    },
+    /// Run a top-level entry operation under `sirno entry`.
+    #[command(flatten)]
+    TopLevel(TopLevelEntryCommand),
     /// Rename one entry id and its Sirno references.
     #[command(visible_aliases = ["mv", "move"])]
     Rename {
@@ -298,82 +284,6 @@ enum EntryCommand {
         /// New entry id.
         new_id: String,
     },
-    /// Freeze one current Frost entry and make its public file read-only.
-    Freeze {
-        /// Entry id to freeze.
-        id: String,
-    },
-    /// Melt one public Markdown entry and make its file writable.
-    #[command(visible_alias = "unfreeze")]
-    Melt {
-        /// Entry id to melt.
-        id: String,
-    },
-    /// Show filesystem paths related to one entry.
-    Path(CliPathArgs),
-    /// Query public Markdown entries.
-    #[command(visible_alias = "q")]
-    Query {
-        /// Vague text terms matched against entries and structural target summaries.
-        terms: Vec<String>,
-        /// Exact text term matched against id, name, desc, and body.
-        #[arg(long = "exact-term")]
-        exact_terms: Vec<String>,
-        /// Exact structural predicate as FIELD=ENTRY_ID.
-        #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
-        exact: Vec<CliStructuralPredicate>,
-        /// Comma-separated output fields: id, name, path, desc.
-        #[arg(short = 'f', long, value_name = "FIELDS")]
-        fields: Option<CliQueryFields>,
-        /// Output format.
-        #[arg(short = 'o', long, value_enum)]
-        format: Option<CliQueryOutputFormat>,
-    },
-    /// Run ripgrep in the configured public Markdown lake.
-    Rg {
-        /// Include Sirno-owned generated-footer regions in the search.
-        #[arg(long = "with-generated-footer")]
-        with_generated_footer: bool,
-        /// Arguments forwarded to ripgrep before the lake path.
-        #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<OsString>,
-    },
-    /// Manage entry-owned artifact files.
-    Artifact {
-        /// Artifact command.
-        #[command(subcommand)]
-        command: ArtifactCommand,
-    },
-    /// Show repository witness blocks for one entry id.
-    #[command(visible_aliases = ["w", "wit"])]
-    Witness {
-        /// Entry id used as the witness query key.
-        id: String,
-        /// Print full witness regions instead of only their locations.
-        #[arg(short = 'f', long)]
-        full: bool,
-    },
-}
-
-impl From<TopLevelEntryCommand> for EntryCommand {
-    fn from(value: TopLevelEntryCommand) -> Self {
-        match value {
-            | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
-                Self::New { id, name, desc, structural, body }
-            }
-            | TopLevelEntryCommand::Freeze { id } => Self::Freeze { id },
-            | TopLevelEntryCommand::Melt { id } => Self::Melt { id },
-            | TopLevelEntryCommand::Path(args) => Self::Path(args),
-            | TopLevelEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
-                Self::Query { terms, exact_terms, exact, fields, format }
-            }
-            | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
-                Self::Rg { with_generated_footer, args }
-            }
-            | TopLevelEntryCommand::Artifact { command } => Self::Artifact { command },
-            | TopLevelEntryCommand::Witness { id, full } => Self::Witness { id, full },
-        }
-    }
 }
 
 /// Arguments for entry path lookup.
@@ -795,7 +705,7 @@ impl Cli {
                 if frost_path.is_some() {
                     return Err(CliError::FrostPathRequiresCheck);
                 }
-                EntryCommand::from(command).run(&config_path, lake_path.as_deref())
+                command.run(&config_path, lake_path.as_deref())
             }
             | Command::TopLevelLake(command) => {
                 command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
@@ -903,22 +813,7 @@ fn run_lake_init(
 impl EntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
         match self {
-            | EntryCommand::New { id, name, desc, structural, body } => {
-                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
-                let id = EntryId::new(&id)?;
-                let mut metadata =
-                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
-                for (field, targets) in
-                    structural_targets_by_field(structural, &settings.structural)?
-                {
-                    metadata.set_structural_targets(field, targets);
-                }
-
-                let entry = Entry::new(id, metadata, body.unwrap_or_default());
-                let path = EntryDirectory::new(&lake).create_entry(&entry)?;
-                println!("created {}", path.display());
-                Ok(ExitCode::SUCCESS)
-            }
+            | EntryCommand::TopLevel(command) => command.run(config_path, lake_path),
             | EntryCommand::Rename { old_id, new_id } => {
                 let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
                 let old_id = EntryId::new(&old_id)?;
@@ -935,7 +830,30 @@ impl EntryCommand {
                 println!("updated {} paths", changed_paths.len());
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Freeze { id } => {
+        }
+    }
+}
+
+impl TopLevelEntryCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+        match self {
+            | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
+                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
+                let id = EntryId::new(&id)?;
+                let mut metadata =
+                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
+                for (field, targets) in
+                    structural_targets_by_field(structural, &settings.structural)?
+                {
+                    metadata.set_structural_targets(field, targets);
+                }
+
+                let entry = Entry::new(id, metadata, body.unwrap_or_default());
+                let path = EntryDirectory::new(&lake).create_entry(&entry)?;
+                println!("created {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | TopLevelEntryCommand::Freeze { id } => {
                 let context = FrostContext::load(config_path, lake_path)?;
                 context.reject_immutable_checkout()?;
                 let id = EntryId::new(&id)?;
@@ -948,19 +866,19 @@ impl EntryCommand {
                 println!("froze entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Melt { id } => {
+            | TopLevelEntryCommand::Melt { id } => {
                 let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
                 let id = EntryId::new(&id)?;
                 let path = EntryDirectory::new(&lake).melt_entry(&id)?;
                 println!("melted entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Path(args) => {
+            | TopLevelEntryCommand::Path(args) => {
                 let records = entry_path_records(config_path, lake_path, &args)?;
                 print_path_records(&records, args.format.unwrap_or(CliPathOutputFormat::Human))?;
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Query { terms, exact_terms, exact, fields, format } => {
+            | TopLevelEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
                 settings.witness = None;
@@ -984,11 +902,11 @@ impl EntryCommand {
                 print_query_results(&report, &matches, &fields, format)?;
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Rg { with_generated_footer, args } => {
+            | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
                 run_rg_command(lake_path, config_path, with_generated_footer, args)
             }
-            | EntryCommand::Artifact { command } => command.run(config_path, lake_path),
-            | EntryCommand::Witness { id, full } => {
+            | TopLevelEntryCommand::Artifact { command } => command.run(config_path, lake_path),
+            | TopLevelEntryCommand::Witness { id, full } => {
                 run_witness_command(config_path, lake_path, &id, full)
             }
         }
@@ -3284,14 +3202,14 @@ Body.
         ));
         assert!(matches!(
             entry.command,
-            Command::Entry { command: EntryCommand::Path(CliPathArgs {
+            Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(CliPathArgs {
                 id,
                 show_entry: true,
                 show_artifact: false,
                 show_frost: false,
                 absolute: false,
                 format: None,
-            }) } if id == "alpha"
+            })) } if id == "alpha"
         ));
     }
 
@@ -3333,9 +3251,9 @@ Body.
         assert!(matches!(
             add.command,
             Command::Entry {
-                command: EntryCommand::Artifact {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Artifact {
                     command: ArtifactCommand::Add { id, source, artifact_path: Some(path) },
-                },
+                }),
             } if id == "alpha" && source == Path::new("logo.png") && path == Path::new("images/logo.png")
         ));
         assert!(matches!(
@@ -3349,9 +3267,9 @@ Body.
         assert!(matches!(
             remove.command,
             Command::Entry {
-                command: EntryCommand::Artifact {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Artifact {
                     command: ArtifactCommand::Remove { id, artifact_path },
-                },
+                }),
             } if id == "alpha" && artifact_path == Path::new("logo.png")
         ));
     }
@@ -3372,17 +3290,17 @@ Body.
         assert!(matches!(
             list.command,
             Command::Entry {
-                command: EntryCommand::Artifact {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Artifact {
                     command: ArtifactCommand::List { id },
-                },
+                }),
             } if id == "alpha"
         ));
         assert!(matches!(
             rename.command,
             Command::Entry {
-                command: EntryCommand::Artifact {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Artifact {
                     command: ArtifactCommand::Rename { id, old_path, new_path },
-                },
+                }),
             } if id == "alpha"
                 && old_path == Path::new("images/logo.png")
                 && new_path == Path::new("images/wordmark.png")
@@ -3621,7 +3539,13 @@ Body.
             "human",
         ]);
         let Command::Entry {
-            command: EntryCommand::Query { exact, fields: Some(fields), format: Some(format), .. },
+            command:
+                EntryCommand::TopLevel(TopLevelEntryCommand::Query {
+                    exact,
+                    fields: Some(fields),
+                    format: Some(format),
+                    ..
+                }),
         } = cli.command
         else {
             panic!("expected entry query command with short options");
@@ -4367,17 +4291,29 @@ Body.
 
         assert!(matches!(
             short_query.command,
-            Command::Entry { command: EntryCommand::Query { terms, .. } }
+            Command::Entry {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Query { terms, .. })
+            }
                 if terms == vec!["alpha"]
         ));
         assert!(matches!(
             short_witness.command,
-            Command::Entry { command: EntryCommand::Witness { id, full: false } }
+            Command::Entry {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Witness {
+                    id,
+                    full: false,
+                })
+            }
                 if id == "alpha"
         ));
         assert!(matches!(
             mnemonic_witness.command,
-            Command::Entry { command: EntryCommand::Witness { id, full: false } }
+            Command::Entry {
+                command: EntryCommand::TopLevel(TopLevelEntryCommand::Witness {
+                    id,
+                    full: false,
+                })
+            }
                 if id == "beta"
         ));
     }
