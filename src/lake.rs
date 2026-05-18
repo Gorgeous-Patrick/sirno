@@ -2,12 +2,12 @@
 //!
 //! This module reads the human-facing Sirno Lake shape:
 //! a flat directory of `*.md` files whose filename stems are entry ids.
-//! Path-shaped ids remain outside this first flat-file implementation.
+//! Lake-owned artifacts live under the reserved `.artifacts` directory.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -15,6 +15,9 @@ use std::os::unix::fs::PermissionsExt;
 use thiserror::Error;
 use tracing::trace;
 
+use crate::artifact::{
+    ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath, EntryArtifactPathError,
+};
 use crate::check::{CheckMode, CheckReport, CheckSeverity};
 use crate::entry::{
     Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
@@ -47,6 +50,7 @@ pub struct EntryDirectory {
 pub struct EntryDirectoryReport {
     root: PathBuf,
     entries: Vec<Entry>,
+    artifacts: Vec<EntryArtifact>,
     paths_by_id: BTreeMap<EntryId, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
@@ -100,6 +104,11 @@ impl EntryDirectoryReport {
     /// Parsed entries that were valid enough to participate in structural checks.
     pub fn entries(&self) -> &[Entry] {
         &self.entries
+    }
+
+    /// Lake-owned artifacts attached to parsed entries.
+    pub fn artifacts(&self) -> &[EntryArtifact] {
+        &self.artifacts
     }
 
     /// File-level diagnostics from loading the entry directory.
@@ -262,6 +271,50 @@ impl EntryDirectory {
         Ok(Entry::from_markdown(id.clone(), &source)?)
     }
 
+    /// Read lake-owned artifacts for one entry id.
+    // sirno:witness:entry-artifact:begin
+    pub fn read_entry_artifacts(
+        &self, id: &EntryId,
+    ) -> Result<Vec<EntryArtifact>, EntryDirectoryError> {
+        if !self.root.exists() {
+            return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
+        }
+        if !self.root.is_dir() {
+            return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
+        }
+
+        let owner_root = self.entry_artifact_directory(id);
+        if !owner_root.exists() {
+            return Ok(Vec::new());
+        }
+        if !owner_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(owner_root));
+        }
+
+        let mut artifacts = Vec::new();
+        for path in sorted_recursive_paths(&owner_root)? {
+            let file_type = fs::symlink_metadata(&path)?.file_type();
+            if file_type.is_dir() {
+                continue;
+            }
+            if !file_type.is_file() {
+                return Err(EntryDirectoryError::CheckoutConflict(path));
+            }
+            let relative_path = path.strip_prefix(&owner_root).map_err(|source| {
+                EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: owner_root.clone(),
+                    source,
+                }
+            })?;
+            let artifact_path = EntryArtifactPath::new(relative_path)?;
+            artifacts.push(EntryArtifact::new(id.clone(), artifact_path, fs::read(path)?));
+        }
+        artifacts.sort_by(|left, right| left.path.cmp(&right.path));
+        Ok(artifacts)
+    }
+    // sirno:witness:entry-artifact:end
+
     /// Check this public Markdown entry directory.
     pub fn check(&self, mode: CheckMode) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         self.check_with_settings(mode, &EntryDirectoryCheckSettings::default())
@@ -284,6 +337,7 @@ impl EntryDirectory {
         Ok(EntryDirectoryReport {
             root: self.root.clone(),
             entries: loaded.entries,
+            artifacts: loaded.artifacts,
             paths_by_id: loaded.paths_by_id,
             file_diagnostics: loaded.file_diagnostics,
             structural_report,
@@ -457,6 +511,29 @@ impl EntryDirectory {
             }
         }
 
+        let old_artifacts = self.entry_artifact_directory(old_id);
+        if old_artifacts.exists() {
+            if !old_artifacts.is_dir() {
+                return Err(EntryDirectoryError::CheckoutConflict(old_artifacts));
+            }
+            let new_artifacts = self.entry_artifact_directory(new_id);
+            if new_artifacts.exists() {
+                return Err(EntryDirectoryError::EntryAlreadyExists {
+                    id: new_id.clone(),
+                    path: new_artifacts,
+                });
+            }
+            set_path_writable(&self.artifact_root())?;
+            fs::rename(&old_artifacts, &new_artifacts).map_err(|source| {
+                EntryDirectoryError::RenameFile {
+                    source_path: old_artifacts.clone(),
+                    destination_path: new_artifacts.clone(),
+                    source,
+                }
+            })?;
+            changed_paths.push(new_artifacts);
+        }
+
         changed_paths.sort();
         changed_paths.dedup();
         trace!("rename_entry end: changed={}", changed_paths.len());
@@ -470,6 +547,15 @@ impl EntryDirectory {
     pub fn write(
         &self, entries: &[Entry], policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        self.write_with_artifacts(entries, &[], policy)
+    }
+
+    /// Write a complete public entry directory with lake-owned artifacts.
+    ///
+    /// The write policy controls how existing target contents are handled.
+    pub fn write_with_artifacts(
+        &self, entries: &[Entry], artifacts: &[EntryArtifact], policy: EntryDirectoryWritePolicy,
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         trace!(
             "write_entry_directory begin: root={} entries={}",
             self.root.display(),
@@ -480,6 +566,7 @@ impl EntryDirectory {
         for entry in entries {
             paths.push(self.write_new_entry_file(entry)?);
         }
+        paths.extend(self.write_entry_artifacts(entries, artifacts)?);
         trace!("write_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
@@ -682,6 +769,45 @@ impl EntryDirectory {
         Ok(path)
     }
 
+    // sirno:witness:entry-artifact:begin
+    fn write_entry_artifacts(
+        &self, entries: &[Entry], artifacts: &[EntryArtifact],
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        if artifacts.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let entry_ids = entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
+        let mut seen = BTreeSet::<(EntryId, EntryArtifactPath)>::new();
+        let mut paths = Vec::new();
+        for artifact in artifacts {
+            if !entry_ids.contains(&artifact.owner) {
+                return Err(EntryDirectoryError::EntryNotFound(artifact.owner.clone()));
+            }
+            if !seen.insert((artifact.owner.clone(), artifact.path.clone())) {
+                return Err(EntryDirectoryError::DuplicateArtifact {
+                    owner: artifact.owner.clone(),
+                    path: artifact.path.clone(),
+                });
+            }
+
+            let path =
+                self.entry_artifact_directory(&artifact.owner).join(artifact.path.to_path_buf());
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            let mut file =
+                OpenOptions::new().write(true).create_new(true).open(&path).map_err(|source| {
+                    EntryDirectoryError::CreateFile { path: path.clone(), source }
+                })?;
+            file.write_all(&artifact.content)
+                .map_err(|source| EntryDirectoryError::WriteFile { path: path.clone(), source })?;
+            paths.push(path);
+        }
+        Ok(paths)
+    }
+    // sirno:witness:entry-artifact:end
+
     fn set_entry_frozen(&self, id: &EntryId, frozen: bool) -> Result<PathBuf, EntryDirectoryError> {
         if !self.root.exists() {
             return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
@@ -706,8 +832,10 @@ impl EntryDirectory {
 
         if frozen {
             freeze_path_best_effort(&path)?;
+            self.set_entry_artifact_writability(id, false)?;
         } else {
             set_path_writable(&path)?;
+            self.set_entry_artifact_writability(id, true)?;
         }
         Ok(path)
     }
@@ -761,6 +889,11 @@ impl EntryDirectory {
             }
 
             let file_type = fs::symlink_metadata(&path)?.file_type();
+            if relative_path == Path::new(ARTIFACT_DIRECTORY_NAME) && file_type.is_dir() {
+                melt_tree_best_effort(&path)?;
+                fs::remove_dir_all(&path)?;
+                continue;
+            }
             if file_type.is_file()
                 && path.extension().and_then(|extension| extension.to_str()) == Some("md")
                 && Self::is_managed_entry_file(&path)?
@@ -839,7 +972,7 @@ impl EntryDirectory {
 
             let file_type = fs::symlink_metadata(&path)?.file_type();
             if writable {
-                if file_type.is_file() && Self::is_frozen_entry_file(&path)? {
+                if self.is_frozen_managed_path(&path)? {
                     continue;
                 }
                 set_path_writable(&path)?;
@@ -856,6 +989,72 @@ impl EntryDirectory {
 
     fn entry_file_path(&self, id: &EntryId) -> PathBuf {
         self.root.join(format!("{}.md", id.as_str()))
+    }
+
+    fn artifact_root(&self) -> PathBuf {
+        self.root.join(ARTIFACT_DIRECTORY_NAME)
+    }
+
+    fn entry_artifact_directory(&self, id: &EntryId) -> PathBuf {
+        self.artifact_root().join(id.as_str())
+    }
+
+    fn is_entry_file_path(&self, path: &Path) -> bool {
+        path.parent() == Some(self.root.as_path())
+            && path.extension().and_then(|extension| extension.to_str()) == Some("md")
+    }
+
+    fn is_frozen_managed_path(&self, path: &Path) -> Result<bool, EntryDirectoryError> {
+        if self.is_entry_file_path(path) && Self::is_frozen_entry_file(path)? {
+            return Ok(true);
+        }
+
+        let artifact_root = self.artifact_root();
+        if let Ok(relative) = path.strip_prefix(&artifact_root) {
+            let Some(owner) = relative.components().next().and_then(|component| match component {
+                | Component::Normal(owner) => owner.to_str(),
+                | _ => None,
+            }) else {
+                return Ok(false);
+            };
+            let Ok(owner) = EntryId::new(owner) else {
+                return Ok(false);
+            };
+            let owner_entry = self.entry_file_path(&owner);
+            if !owner_entry.exists() {
+                return Ok(false);
+            }
+            return Self::is_frozen_entry_file(&owner_entry);
+        }
+
+        Ok(false)
+    }
+
+    fn set_entry_artifact_writability(
+        &self, id: &EntryId, writable: bool,
+    ) -> Result<(), EntryDirectoryError> {
+        let owner_root = self.entry_artifact_directory(id);
+        if !owner_root.exists() {
+            return Ok(());
+        }
+        if !owner_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(owner_root));
+        }
+
+        let paths = sorted_recursive_paths(&owner_root)?;
+        if writable {
+            set_path_writable(&self.artifact_root())?;
+            set_path_writable(&owner_root)?;
+            for path in paths {
+                melt_path_best_effort(&path)?;
+            }
+            return Ok(());
+        }
+
+        for path in paths.iter().rev() {
+            freeze_path_best_effort(path)?;
+        }
+        freeze_path_best_effort(&owner_root)
     }
 }
 
@@ -881,6 +1080,7 @@ impl GenLinkOperation {
 #[derive(Debug)]
 struct LoadedEntryDirectory {
     entries: Vec<Entry>,
+    artifacts: Vec<EntryArtifact>,
     paths_by_id: BTreeMap<EntryId, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
 }
@@ -901,6 +1101,7 @@ impl LoadedEntryDirectory {
         let mut paths_by_id = BTreeMap::<EntryId, PathBuf>::new();
         let mut seen_ids = BTreeSet::<EntryId>::new();
         let mut file_diagnostics = Vec::new();
+        let mut artifact_root = None;
 
         for path in sorted_directory_paths(root)? {
             let relative_path =
@@ -910,6 +1111,11 @@ impl LoadedEntryDirectory {
                     source,
                 })?;
             if settings.ignores(relative_path) {
+                continue;
+            }
+
+            if relative_path == Path::new(ARTIFACT_DIRECTORY_NAME) {
+                artifact_root = Some(path);
                 continue;
             }
 
@@ -998,11 +1204,119 @@ impl LoadedEntryDirectory {
         }
 
         entries.sort_by(|left, right| left.id.cmp(&right.id));
-        let mut loaded = Self { entries, paths_by_id, file_diagnostics };
+        let mut loaded = Self { entries, artifacts: Vec::new(), paths_by_id, file_diagnostics };
+        loaded.load_artifacts(root, artifact_root.as_deref(), mode)?;
         loaded.add_generated_link_diagnostics(mode, settings)?;
         loaded.add_witness_diagnostics(mode, settings)?;
         Ok(loaded)
     }
+
+    // sirno:witness:entry-artifact:begin
+    fn load_artifacts(
+        &mut self, root: &Path, artifact_root: Option<&Path>, mode: CheckMode,
+    ) -> Result<(), EntryDirectoryError> {
+        let Some(artifact_root) = artifact_root else {
+            return Ok(());
+        };
+        let severity = mode.severity();
+        let file_type = fs::symlink_metadata(artifact_root)?.file_type();
+        if !file_type.is_dir() {
+            self.file_diagnostics.push(EntryFileDiagnostic::new(
+                severity,
+                artifact_root,
+                "entry artifact storage must be a directory",
+            ));
+            return Ok(());
+        }
+
+        let ids = self.entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
+        for owner_path in sorted_directory_paths(artifact_root)? {
+            let owner_type = fs::symlink_metadata(&owner_path)?.file_type();
+            if !owner_type.is_dir() {
+                self.file_diagnostics.push(EntryFileDiagnostic::new(
+                    severity,
+                    &owner_path,
+                    "entry artifact storage contains an unsupported filesystem item",
+                ));
+                continue;
+            }
+
+            let Some(owner_name) = owner_path.file_name().and_then(|name| name.to_str()) else {
+                self.file_diagnostics.push(EntryFileDiagnostic::new(
+                    CheckSeverity::Error,
+                    &owner_path,
+                    "entry artifact directory name must be valid UTF-8",
+                ));
+                continue;
+            };
+            let owner = match EntryId::new(owner_name) {
+                | Ok(owner) => owner,
+                | Err(source) => {
+                    self.file_diagnostics.push(EntryFileDiagnostic::new(
+                        CheckSeverity::Error,
+                        &owner_path,
+                        format!("entry artifact directory name is not a valid entry id: {source}"),
+                    ));
+                    continue;
+                }
+            };
+            if !ids.contains(&owner) {
+                self.file_diagnostics.push(EntryFileDiagnostic::new(
+                    severity,
+                    &owner_path,
+                    format!("entry artifact directory references missing entry `{owner}`"),
+                ));
+                continue;
+            }
+
+            self.load_entry_artifacts(root, &owner_path, &owner, severity)?;
+        }
+        self.artifacts.sort_by(|left, right| {
+            left.owner.cmp(&right.owner).then_with(|| left.path.cmp(&right.path))
+        });
+        Ok(())
+    }
+
+    fn load_entry_artifacts(
+        &mut self, root: &Path, owner_root: &Path, owner: &EntryId, severity: CheckSeverity,
+    ) -> Result<(), EntryDirectoryError> {
+        for path in sorted_recursive_paths(owner_root)? {
+            let file_type = fs::symlink_metadata(&path)?.file_type();
+            if file_type.is_dir() {
+                continue;
+            }
+            if !file_type.is_file() {
+                self.file_diagnostics.push(EntryFileDiagnostic::new(
+                    severity,
+                    &path,
+                    "entry artifact tree contains an unsupported filesystem item",
+                ));
+                continue;
+            }
+
+            let relative_path =
+                path.strip_prefix(owner_root).map_err(|source| EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: root.to_path_buf(),
+                    source,
+                })?;
+            let artifact_path = match EntryArtifactPath::new(relative_path) {
+                | Ok(path) => path,
+                | Err(source) => {
+                    self.file_diagnostics.push(EntryFileDiagnostic::new(
+                        CheckSeverity::Error,
+                        &path,
+                        format!("invalid entry artifact path: {source}"),
+                    ));
+                    continue;
+                }
+            };
+            let content = fs::read(&path)?;
+            self.artifacts.push(EntryArtifact::new(owner.clone(), artifact_path, content));
+        }
+        Ok(())
+    }
+    // sirno:witness:entry-artifact:end
 
     fn add_generated_link_diagnostics(
         &mut self, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
@@ -1077,6 +1391,25 @@ fn sorted_directory_paths(root: &Path) -> Result<Vec<PathBuf>, EntryDirectoryErr
     Ok(paths)
 }
 
+fn sorted_recursive_paths(root: &Path) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+    let mut paths = Vec::new();
+    collect_sorted_recursive_paths(root, &mut paths)?;
+    paths.sort();
+    Ok(paths)
+}
+
+fn collect_sorted_recursive_paths(
+    root: &Path, paths: &mut Vec<PathBuf>,
+) -> Result<(), EntryDirectoryError> {
+    for path in sorted_directory_paths(root)? {
+        if fs::symlink_metadata(&path)?.file_type().is_dir() {
+            collect_sorted_recursive_paths(&path, paths)?;
+        }
+        paths.push(path);
+    }
+    Ok(())
+}
+
 fn add_readonly_checkout_warning(path: &Path, source: &str) -> Result<String, EntryDirectoryError> {
     let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
         return Err(EntryDirectoryError::CheckoutConflict(path.to_path_buf()));
@@ -1104,6 +1437,13 @@ fn melt_path_best_effort(path: &Path) -> Result<(), EntryDirectoryError> {
         trace!("immutable melt unavailable: path={} error={source}", path.display());
     }
     set_path_writable(path)
+}
+
+fn melt_tree_best_effort(root: &Path) -> Result<(), EntryDirectoryError> {
+    for path in sorted_recursive_paths(root)?.iter().rev() {
+        melt_path_best_effort(path)?;
+    }
+    melt_path_best_effort(root)
 }
 
 fn set_path_readonly(path: &Path) -> Result<(), EntryDirectoryError> {
@@ -1189,6 +1529,9 @@ pub enum EntryDirectoryError {
     /// An entry could not be parsed or constructed.
     #[error(transparent)]
     EntryParse(#[from] EntryParseError),
+    /// An artifact path could not be represented.
+    #[error(transparent)]
+    ArtifactPath(#[from] EntryArtifactPathError),
     /// A seed entry could not be rendered.
     #[error(transparent)]
     Render(#[from] EntryRenderError),
@@ -1235,6 +1578,14 @@ pub enum EntryDirectoryError {
         /// Underlying I/O error.
         #[source]
         source: std::io::Error,
+    },
+    /// Two artifact records name the same entry-owned path.
+    #[error("entry `{owner}` has duplicate artifact `{path}`")]
+    DuplicateArtifact {
+        /// Entry that owns the duplicate artifact.
+        owner: EntryId,
+        /// Duplicate owner-relative artifact path.
+        path: EntryArtifactPath,
     },
 }
 
@@ -1327,6 +1678,45 @@ Body.
         assert!(report.is_clean());
         assert_eq!(report.entries().len(), 2);
         assert!(report.entry_path(&EntryId::new("concept").unwrap()).is_some());
+    }
+
+    #[test]
+    fn check_loads_entry_artifacts_from_reserved_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+        );
+        let artifact_dir = temp.path().join(ARTIFACT_DIRECTORY_NAME).join("concept").join("images");
+        fs::create_dir_all(&artifact_dir).unwrap();
+        fs::write(artifact_dir.join("logo.bin"), [0, 1, 2, 3]).unwrap();
+
+        let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
+
+        assert!(report.is_clean());
+        assert_eq!(report.artifacts().len(), 1);
+        assert_eq!(report.artifacts()[0].owner, EntryId::new("concept").unwrap());
+        assert_eq!(report.artifacts()[0].path.as_str(), "images/logo.bin");
+        assert_eq!(report.artifacts()[0].content, vec![0, 1, 2, 3]);
+    }
+
+    #[test]
+    fn check_reports_artifacts_for_missing_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::create_dir_all(temp.path().join(ARTIFACT_DIRECTORY_NAME).join("ghost")).unwrap();
+
+        let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
+
+        assert!(report.has_errors());
+        assert!(report.file_diagnostics()[0].message.contains("missing entry `ghost`"));
     }
 
     #[test]
@@ -1645,6 +2035,9 @@ Body.
         };
         let directory = entry_directory(&root);
         directory.generate_links(&settings.structural).unwrap();
+        let artifact_dir = root.join(ARTIFACT_DIRECTORY_NAME).join("old-entry");
+        fs::create_dir_all(&artifact_dir).unwrap();
+        fs::write(artifact_dir.join("note.txt"), "artifact").unwrap();
 
         let report = directory
             .rename_entry(
@@ -1662,6 +2055,14 @@ Body.
         assert!(report.changed_paths().contains(&root.join("new-entry.md")));
         assert!(!root.join("old-entry.md").exists());
         assert!(root.join("new-entry.md").exists());
+        assert!(!root.join(ARTIFACT_DIRECTORY_NAME).join("old-entry").exists());
+        assert_eq!(
+            fs::read_to_string(
+                root.join(ARTIFACT_DIRECTORY_NAME).join("new-entry").join("note.txt")
+            )
+            .unwrap(),
+            "artifact"
+        );
         assert!(reader_source.contains("area:\n  - new-entry\n"));
         assert!(!reader_source.contains("old-entry"));
         assert!(renamed_source.contains("[reader](reader.md)"));
@@ -1883,6 +2284,39 @@ Body.
         assert!(!root.join("old.md").exists());
         assert!(root.join("new.md").exists());
         assert!(root.join(".obsidian/state.json").exists());
+    }
+
+    #[test]
+    fn replace_entry_directory_replaces_readonly_artifact_tree() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("docs");
+        fs::create_dir_all(root.join(ARTIFACT_DIRECTORY_NAME).join("old")).unwrap();
+        fs::write(root.join("old.md"), "---\nname: Old\ndesc: Old.\n---\n").unwrap();
+        fs::write(root.join(ARTIFACT_DIRECTORY_NAME).join("old").join("note.txt"), "old").unwrap();
+        let directory = entry_directory(&root);
+        directory.set_readonly(&EntryDirectoryCheckSettings::default()).unwrap();
+        let metadata = EntryMetadata::new("New", "New entry.").unwrap();
+        let entry = Entry::new(EntryId::new("new").unwrap(), metadata, "Body.\n");
+        let artifact = EntryArtifact::new(
+            entry.id.clone(),
+            EntryArtifactPath::new("note.txt").unwrap(),
+            b"new",
+        );
+
+        directory
+            .write_with_artifacts(
+                std::slice::from_ref(&entry),
+                &[artifact],
+                EntryDirectoryWritePolicy::ReplaceDirectory { ignore: Vec::new() },
+            )
+            .unwrap();
+
+        assert!(!root.join("old.md").exists());
+        assert!(!root.join(ARTIFACT_DIRECTORY_NAME).join("old").exists());
+        assert_eq!(
+            fs::read(root.join(ARTIFACT_DIRECTORY_NAME).join("new").join("note.txt")).unwrap(),
+            b"new"
+        );
     }
 
     #[test]

@@ -692,7 +692,7 @@ mod tests {
     #[test]
     fn scans_standard_witness_blocks_for_filename_like_entry_ids() {
         let temp = tempfile::tempdir().unwrap();
-        let id = EntryId::new("Design Note_v2.1").unwrap();
+        let id = EntryId::new("Design Note_v2+1").unwrap();
         std::fs::write(temp.path().join("README.md"), markdown_witness_block(id.as_str())).unwrap();
         let settings = WitnessCheckSettings::new(
             temp.path(),

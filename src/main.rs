@@ -857,8 +857,9 @@ impl EntryCommand {
                 let id = EntryId::new(&id)?;
                 let directory = context.lake();
                 let entry = directory.read_entry(&id)?;
+                let artifacts = directory.read_entry_artifacts(&id)?;
                 let frost = SirnoFrost::open(&context.frost_path)?;
-                frost.ensure_entry_current(&entry)?;
+                frost.ensure_entry_bundle_current(&entry, &artifacts)?;
                 let path = directory.freeze_entry(&id)?;
                 println!("froze entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)

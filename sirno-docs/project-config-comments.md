@@ -21,7 +21,7 @@ The generated comments are:
 - `Sirno Frost path, kept outside the public lake.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
-- `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
+- `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`

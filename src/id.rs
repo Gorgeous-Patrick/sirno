@@ -22,6 +22,7 @@ const RESERVED_STORAGE_ENTRY_ID: &str = "Eter.lock.toml";
 ///
 /// Invariant: the identifier is a non-empty cross-platform filename stem.
 /// Lowercase ASCII kebab-case is the recommended writing style.
+/// The dot character is reserved for future Sirno id syntax.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(transparent)]
 pub struct EntryId(SmolStr);
@@ -55,8 +56,12 @@ impl EntryId {
             return Err(EntryIdError::TooLong { id: raw.to_owned(), max: ENTRY_ID_MAX_BYTES });
         }
 
-        if raw.ends_with([' ', '.']) {
-            return Err(EntryIdError::TrailingSpaceOrPeriod(raw.to_owned()));
+        if raw.ends_with(' ') {
+            return Err(EntryIdError::TrailingSpace(raw.to_owned()));
+        }
+
+        if raw.contains('.') {
+            return Err(EntryIdError::ReservedDot(raw.to_owned()));
         }
 
         if raw.eq_ignore_ascii_case(RESERVED_STORAGE_ENTRY_ID) || windows_device_name(raw).is_some()
@@ -191,9 +196,12 @@ pub enum EntryIdError {
         /// Invalid character.
         character: char,
     },
-    /// Windows rejects filename components that end with a space or period.
-    #[error("entry id must not end with a space or period: {0}")]
-    TrailingSpaceOrPeriod(String),
+    /// Windows rejects filename components that end with a space.
+    #[error("entry id must not end with a space: {0}")]
+    TrailingSpace(String),
+    /// The dot character is reserved for future Sirno id syntax.
+    #[error("entry id must not contain reserved dot character: {0}")]
+    ReservedDot(String),
     /// The id is reserved by Windows or Sirno storage.
     #[error("entry id uses a reserved filename: {0}")]
     ReservedFilename(String),
@@ -205,7 +213,7 @@ mod tests {
 
     #[test]
     fn accepts_cross_platform_filename_stems() {
-        for raw in ["concept-2", "Concept 2", "api_v2.1+draft", "設計ノート"] {
+        for raw in ["concept-2", "Concept 2", "api_v2+draft", "設計ノート"] {
             let id = EntryId::new(raw).unwrap();
             assert_eq!(id.as_str(), raw);
         }
@@ -235,21 +243,20 @@ mod tests {
     }
 
     #[test]
-    fn rejects_trailing_space_or_period() {
-        assert!(matches!(
-            EntryId::new("concept ").unwrap_err(),
-            EntryIdError::TrailingSpaceOrPeriod(_)
-        ));
-        assert!(matches!(
-            EntryId::new("concept.").unwrap_err(),
-            EntryIdError::TrailingSpaceOrPeriod(_)
-        ));
-        assert!(matches!(EntryId::new(".").unwrap_err(), EntryIdError::TrailingSpaceOrPeriod(_)));
+    fn rejects_trailing_space() {
+        assert!(matches!(EntryId::new("concept ").unwrap_err(), EntryIdError::TrailingSpace(_)));
+    }
+
+    #[test]
+    fn rejects_reserved_dot() {
+        assert!(matches!(EntryId::new("concept.").unwrap_err(), EntryIdError::ReservedDot(_)));
+        assert!(matches!(EntryId::new("api.v2").unwrap_err(), EntryIdError::ReservedDot(_)));
+        assert!(matches!(EntryId::new(".").unwrap_err(), EntryIdError::ReservedDot(_)));
     }
 
     #[test]
     fn rejects_reserved_filenames() {
-        for raw in ["con", "NUL", "com1", "LPT9.notes", "eter.lock.toml"] {
+        for raw in ["con", "NUL", "com1", "LPT9"] {
             assert!(matches!(EntryId::new(raw).unwrap_err(), EntryIdError::ReservedFilename(_)));
         }
     }

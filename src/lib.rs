@@ -5,6 +5,7 @@
 //! entries are nominal objects, structural fields are explicit,
 //! and repository witnesses are discovered by entry id.
 
+pub mod artifact;
 pub mod check;
 pub mod config;
 pub mod entry;
@@ -21,6 +22,9 @@ pub mod witness;
 
 pub use eter::{Eterator, GcGeneration, SnapshotRef};
 
+pub use crate::artifact::{
+    ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath, EntryArtifactPathError,
+};
 pub use crate::check::{
     CheckDiagnostic, CheckDiagnosticKind, CheckMode, CheckReport, CheckSeverity,
 };

@@ -14,8 +14,9 @@ It carries the whole project design as a readable *monograph*.
 
 `sirno` is one configured *entry lake*.
 It contains compact Markdown *entries* with exact metadata.
+It may also contain lake-owned *entry artifacts* attached to those *entries*.
 When Sirno Frost is configured, it is versioned through a separate `eter` *frost* path,
-so one *lake* version names one immutable *entry* set.
+so one *lake* version names one immutable entry and artifact set.
 
 `repo` is the *repository*.
 It contains source, tests, configuration, generated files, assets,

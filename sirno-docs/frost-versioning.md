@@ -11,10 +11,11 @@ The subsystem has several parts:
 `versioning` states the lake-wide snapshot model,
 `sirno-frost` is the private `eter`-backed path that holds snapshots,
 `sirno-lock` records the public *lake*'s frost state,
+`entry-artifact` defines lake-owned bytes that are versioned with their owner,
 and `entry-freeze` protects one current Frost-backed public *entry* from edits.
 
 These parts are reviewed together.
-A change to the snapshot model, the frost path, the lock file, or *entry* protection
+A change to the snapshot model, the frost path, the lock file, artifacts, or *entry* protection
 usually constrains the others, so this *entry* gives them one neighborhood.
 
 `versioning` and `storage` remain the broader claims these parts `refines`.
@@ -28,6 +29,7 @@ This neighborhood is the separate horizontal view:
 
 - belongs (to): (none)
 - belongs (from):
+  - [entry-artifact](entry-artifact.md)
   - [entry-freeze](entry-freeze.md)
   - [sirno-frost](sirno-frost.md)
   - [sirno-lock](sirno-lock.md)

@@ -10,6 +10,8 @@ belongs:
 Sirno storage is the set of *repository* surfaces that hold design knowledge and operational state.
 
 The public Markdown *lake* is the required editable working form.
+It stores flat Markdown *entries* at the *lake* root
+and lake-owned *entry artifacts* under `.artifacts`.
 The configured *monograph* is optional.
 Configured repo members are optional and enable *witness* lookup.
 The private *frost* path is optional and managed through `eter`.
@@ -19,6 +21,7 @@ field history, version retirement, and garbage collection.
 Storage surfaces stay distinct.
 Markdown *entries* are the human-facing form.
 They are easy to read, review, diff, and edit.
+Entry artifacts are public *lake* state attached to those *entries*.
 Sirno Frost provides the durable snapshot substrate beneath that form
 without adding version fields to *entry* metadata.
 Repository *witnesses* stay in *repository* artifacts,

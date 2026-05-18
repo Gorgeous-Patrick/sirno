@@ -12,6 +12,8 @@ refines:
 When Sirno Frost is configured,
 Sirno versions the `sirno` form by freezing the public Markdown *lake*
 into a separate `eter` *frost* path.
+The versioned *lake* state includes flat Markdown *entries*
+and lake-owned *entry artifacts* under `.artifacts`.
 
 The versioning *entry* is the front door for *frost* behavior.
 Its local refinements define the private Sirno Frost and public lock file.
@@ -20,7 +22,7 @@ A Sirno version is an `eter` `SnapshotRef`:
 a GC generation plus an `Eterator` coordinate.
 It is an immutable global snapshot of the *entry lake*.
 It identifies the whole *lake* state,
-not a single *entry* revision.
+not a single *entry* or artifact revision.
 The coordinate is ordered inside its generation.
 The *entry* metadata does not store it,
 and *entry* ids remain stable across versions.
@@ -49,16 +51,18 @@ The first *frost* commit creates the first frozen snapshot.
 If active *tide* policy is configured,
 that first commit may surface the whole public *lake* as a bootstrap review worklist
 because the frostline is still empty.
-A *frost* commit imports the selected public *entry* set and writes one `eter` transaction.
-The transaction contains changed *entries* and lifecycle deletions.
-Unchanged live *entries* do not receive new version files.
+A *frost* commit imports the selected public *entry* set and attached artifacts.
+It writes one `eter` transaction.
+The transaction contains changed *entries*, changed artifacts, and lifecycle deletions.
+Unchanged live *entries* and artifacts do not receive new version files.
 They remain part of the new *lake* snapshot through `eter` snapshot reads.
 All rows written by the transaction receive the same snapshot coordinate.
 Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
 Generated links remain a public *lake* projection.
 Sirno Frost keeps metadata and prose without generated navigation regions.
-Frozen public *entries* must match the current Frost snapshot after public-only state is removed.
+Frozen public *entries* and their artifact trees must match the current Frost snapshot
+after public-only state is removed.
 Before writing the transaction,
 Sirno also requires the active *tide* to be clear.
 A successful commit returns the new `SnapshotRef`.
@@ -77,7 +81,8 @@ It reads from the *frost* path and changes the observed *lake* state
 without changing query or check semantics.
 
 Checkout materializes one *frost* version into a public Markdown directory.
-It resolves live *entries* at the selected `SnapshotRef` and renders canonical *entry* files.
+It resolves live *entries* and artifacts at the selected `SnapshotRef`.
+It renders canonical *entry* files and writes the `.artifacts` tree.
 Checkout uses an explicit conflict policy.
 The conservative policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
@@ -88,6 +93,7 @@ After explicit version checkout,
 
 A normal checkout is immutable.
 Sirno removes write permission from the public *lake* root and managed *entry* files.
+It also removes write permission from managed artifact trees.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
 that marks the file as read-only and says not to edit it by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable
@@ -96,6 +102,7 @@ Committing a mutable *lake* creates a new current version.
 Sirno refuses to commit an immutable checkout.
 
 Versioning is field-level in `eter` and *entry*-level in Sirno.
+Artifact bytes are versioned as separate Frost objects owned by an *entry* id and path.
 Sirno may expose *entry* history, diffs, and restore operations by reading fields at successive snapshots.
 It presents those results as changes to *entries* and *structural fields*.
 The public *entry* schema remains unchanged.

@@ -22,7 +22,7 @@ pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
 // sirno:witness:project-config:begin
 macro_rules! witness_entry_id_capture_regex {
     () => {
-        r#"([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)"#
+        r#"([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+)"#
     };
 }
 
@@ -1419,11 +1419,13 @@ delimiters = []
 
         assert!(line_begin.is_match("// sirno:witness:valid-entry:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad,id:begin"));
+        assert!(!line_begin.is_match("// sirno:witness:bad.id:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad\rid:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad\nid:begin"));
 
         assert!(markdown_begin.is_match("<!-- sirno:witness:valid-entry:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad,id:begin -->"));
+        assert!(!markdown_begin.is_match("<!-- sirno:witness:bad.id:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\rid:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\nid:begin -->"));
     }

@@ -32,6 +32,15 @@ Each *entry* is an ordinary Markdown file with a YAML metadata block and prose b
 The filename stem is the stable id used by *structural fields*, *generated footers*, and *witness* lookup.
 The id is filename-like by definition.
 Lowercase kebab-case is a convention for readable *lakes*, not a validation boundary.
+The `.` character is reserved in *entry* ids for future Sirno syntax,
+including possible scoping such as modules or namespaces,
+and optics such as groups, routes, or views.
+
+The `.artifacts` directory is reserved for lake-owned *entry artifacts*.
+Artifacts live under `.artifacts/<entry-id>/...`.
+This keeps the public *entry* files flat while letting an *entry* own non-Markdown bytes.
+The owner directory must be an existing *entry* id.
+Artifact paths below that owner are relative UTF-8 paths with only normal components.
 
 Once established, the *lake* is the preferred structured design source.
 
@@ -43,7 +52,7 @@ classification, belonging, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 The `frozen:` marker adds a file-level protection state,
 so one current Frost-backed public *entry* can be held read-only
-and checked against the Frost snapshot before commit.
+and checked with its artifact tree against the Frost snapshot before commit.
 
 The *lake* is also a collaboration boundary.
 A person can edit an *entry* directly.
@@ -79,6 +88,7 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
+  - [entry-artifact](entry-artifact.md)
   - [entry-lifecycle](entry-lifecycle.md)
   - [metadata](metadata.md)
   - [project-config](project-config.md)

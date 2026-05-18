@@ -17,7 +17,7 @@ The public *lake* remains the editable working form.
 The *frost* layer is the durable snapshot substrate behind that form.
 
 The `SirnoFrost` facade opens the configured filesystem backend
-and exposes frozen data as ordinary typed Sirno *entries*.
+and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
 Each *entry* is stored under its stable id.
 The backend records `name`, `desc`, ordered structural metadata,
 and Markdown body as typed fields.
@@ -26,6 +26,9 @@ This keeps versioning in the storage layer
 while preserving the public *entry* schema.
 Structural field order stays in Sirno's typed structural metadata,
 so a Frost round trip renders the same order back to Markdown.
+Each artifact is stored as a private backend object keyed by its owner *entry* id
+and owner-relative artifact path.
+Artifact bytes are stored separately from the *entry* row.
 
 `sirno frost init` configures Sirno Frost when needed
 and records the empty snapshot as version `0`.
@@ -36,18 +39,18 @@ and writes the new path back to `[frost].path`.
 `sirno frost mv PATH` is its short form.
 The move refuses to replace an existing destination.
 
-A *frost* commit imports the selected public *entry* set.
+A *frost* commit imports the selected public *entry* set and its lake-owned artifacts.
 The public directory must pass review-mode checks before any snapshot is written.
 The active *tide* must also be clear before any snapshot is written.
 Entries carrying `frozen:` are protected public files
-that must still match the current Frost snapshot.
-Frost accepts unchanged frozen entries
-and refuses a frozen entry that differs from that snapshot.
+that must still match the current Frost snapshot with their artifact trees.
+Frost accepts unchanged frozen entries and artifacts,
+and refuses a frozen entry bundle that differs from that snapshot.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are public *lake* projections.
 The commit writes one `eter` transaction and returns a `SnapshotRef`.
-The transaction contains only changed *entries* and lifecycle deletion markers.
-Unchanged live *entries* are inherited from earlier version files at read time.
+The transaction contains only changed *entries*, changed artifacts, and lifecycle deletion markers.
+Unchanged live *entries* and artifacts are inherited from earlier version files at read time.
 That snapshot reference names the whole committed *lake* state.
 For the filesystem backend,
 `Eter.lock.toml` stores the committed version boundary.
@@ -60,14 +63,14 @@ the commit records an `eter` lifecycle deletion marker.
 `sirno frost commit --unsafe-resolve-all` bypasses the *tide* gate for that commit
 without writing fake resolutions.
 
-The *frost* read path reconstructs *entries* from a selected snapshot.
+The *frost* read path reconstructs *entries* and artifacts from a selected snapshot.
 It can read one *entry*,
 all live *entries* at the current snapshot,
 or all live *entries* at a specific `SnapshotRef`.
 A CLI version coordinate is paired with the current `eter` GC generation
 before the snapshot is read.
 
-Checkout materializes one frozen snapshot as Markdown files.
+Checkout materializes one frozen snapshot as Markdown files and `.artifacts` files.
 The conservative write policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured public *lake*
 and preserves ignored paths.
@@ -75,6 +78,7 @@ and preserves ignored paths.
 `sirno frost defrost` is an alias for `sirno frost checkout`.
 Explicit version checkout writes a visible read-only blockquote
 and removes write permission from the *lake* root and managed *entry* files.
+It also removes write permission from checked-out artifact trees.
 `--unsafe-mutable` leaves an explicit version checkout writable.
 
 `Sirno.lock.toml` records the public *lake* state relative to *frost*.
@@ -94,6 +98,7 @@ snapshot reads,
 commit path,
 checkout path,
 seed initialization,
+artifact storage,
 and deletion handling in `src/frost.rs`.
 
 ---
