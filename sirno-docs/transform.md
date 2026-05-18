@@ -3,6 +3,8 @@ name: Transform
 desc: A concept that names movement between Sirno forms.
 category:
   - concept
+belongs:
+  - form
 ---
 
 A *transform* names a kind of work between Sirno *forms*.
@@ -40,7 +42,8 @@ A raising skill should compose a readable *monograph*.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [form](form.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
