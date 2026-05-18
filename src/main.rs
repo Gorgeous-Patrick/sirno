@@ -120,10 +120,7 @@ enum LakeCommand {
     },
     /// Move the configured public Markdown entry lake.
     #[command(visible_alias = "mv")]
-    Move {
-        /// New public Markdown entry lake path written to Sirno.toml.
-        lake: PathBuf,
-    },
+    Move(LakeMoveArgs),
     /// Run a top-level lake operation under `sirno lake`.
     #[command(flatten)]
     TopLevel(TopLevelLakeCommand),
@@ -251,22 +248,34 @@ enum TopLevelEntryCommand {
 #[derive(Debug, Subcommand)]
 enum MoveCommand {
     /// Rename one entry id and its Sirno references.
-    Entry {
-        /// Existing entry id.
-        old_id: String,
-        /// New entry id.
-        new_id: String,
-    },
+    Entry(EntryRenameArgs),
     /// Move the configured public Markdown entry lake.
-    Lake {
-        /// New public Markdown entry lake path written to Sirno.toml.
-        lake: PathBuf,
-    },
+    Lake(LakeMoveArgs),
     /// Move the configured Sirno Frost path.
-    Frost {
-        /// New Sirno Frost path written to Sirno.toml.
-        frost: PathBuf,
-    },
+    Frost(FrostMoveArgs),
+}
+
+/// Arguments for renaming one entry id and its Sirno references.
+#[derive(Debug, Args)]
+struct EntryRenameArgs {
+    /// Existing entry id.
+    old_id: String,
+    /// New entry id.
+    new_id: String,
+}
+
+/// Arguments for moving the configured public Markdown entry lake.
+#[derive(Debug, Args)]
+struct LakeMoveArgs {
+    /// New public Markdown entry lake path written to Sirno.toml.
+    lake: PathBuf,
+}
+
+/// Arguments for moving the configured Sirno Frost path.
+#[derive(Debug, Args)]
+struct FrostMoveArgs {
+    /// New Sirno Frost path written to Sirno.toml.
+    frost: PathBuf,
 }
 // sirno:witness:interfaces:end
 
@@ -278,12 +287,7 @@ enum EntryCommand {
     TopLevel(TopLevelEntryCommand),
     /// Rename one entry id and its Sirno references.
     #[command(visible_aliases = ["mv", "move"])]
-    Rename {
-        /// Existing entry id.
-        old_id: String,
-        /// New entry id.
-        new_id: String,
-    },
+    Rename(EntryRenameArgs),
 }
 
 /// Arguments for entry path lookup.
@@ -569,10 +573,7 @@ enum FrostCommand {
     },
     /// Move the configured Sirno Frost path.
     #[command(visible_alias = "mv")]
-    Move {
-        /// New Sirno Frost path written to Sirno.toml.
-        frost: PathBuf,
-    },
+    Move(FrostMoveArgs),
     /// Run a Frost snapshot operation.
     #[command(flatten)]
     Snapshot(TopLevelFrostCommand),
@@ -761,20 +762,23 @@ impl MoveCommand {
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
     ) -> Result<ExitCode, CliError> {
         match self {
-            | Self::Entry { old_id, new_id } => {
+            | Self::Entry(args) => {
                 if frost_path.is_some() {
                     return Err(CliError::FrostPathRequiresCheck);
                 }
-                EntryCommand::Rename { old_id, new_id }.run(config_path, lake_path)
+                args.run(config_path, lake_path)
             }
-            | Self::Lake { lake } => {
-                LakeCommand::Move { lake }.run(config_path, lake_path, frost_path)
-            }
-            | Self::Frost { frost } => {
+            | Self::Lake(args) => {
                 if frost_path.is_some() {
                     return Err(CliError::FrostPathRequiresCheck);
                 }
-                FrostCommand::Move { frost }.run(config_path, lake_path)
+                args.run(config_path)
+            }
+            | Self::Frost(args) => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                args.run(config_path)
             }
         }
     }
@@ -814,23 +818,26 @@ impl EntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
         match self {
             | EntryCommand::TopLevel(command) => command.run(config_path, lake_path),
-            | EntryCommand::Rename { old_id, new_id } => {
-                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
-                let old_id = EntryId::new(&old_id)?;
-                let new_id = EntryId::new(&new_id)?;
-                let report =
-                    EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
-                let mut changed_paths = report.changed_paths().to_vec();
-                if let Some(witness) = &settings.witness {
-                    changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
-                }
-                changed_paths.sort();
-                changed_paths.dedup();
-                println!("renamed entry {old_id} to {new_id}");
-                println!("updated {} paths", changed_paths.len());
-                Ok(ExitCode::SUCCESS)
-            }
+            | EntryCommand::Rename(args) => args.run(config_path, lake_path),
         }
+    }
+}
+
+impl EntryRenameArgs {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+        let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
+        let old_id = EntryId::new(&self.old_id)?;
+        let new_id = EntryId::new(&self.new_id)?;
+        let report = EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
+        let mut changed_paths = report.changed_paths().to_vec();
+        if let Some(witness) = &settings.witness {
+            changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
+        }
+        changed_paths.sort();
+        changed_paths.dedup();
+        println!("renamed entry {old_id} to {new_id}");
+        println!("updated {} paths", changed_paths.len());
+        Ok(ExitCode::SUCCESS)
     }
 }
 
@@ -918,22 +925,26 @@ impl LakeCommand {
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
     ) -> Result<ExitCode, CliError> {
         match self {
-            | LakeCommand::Init { .. } | LakeCommand::Move { .. } if frost_path.is_some() => {
+            | LakeCommand::Init { .. } | LakeCommand::Move(_) if frost_path.is_some() => {
                 Err(CliError::FrostPathRequiresCheck)
             }
             | LakeCommand::Init { lake } => run_lake_init(None, lake, config_path, lake_path),
-            | LakeCommand::Move { lake } => {
-                let config = SirnoConfig::from_file(config_path)?;
-                let old_lake = config.resolve_lake(config_path);
-                let config = config.with_lake(lake);
-                config.validate_for_file(config_path)?;
-                let new_lake = config.resolve_lake(config_path);
-                move_configured_path_and_write_config(&old_lake, &new_lake, &config, config_path)?;
-                println!("moved lake {} to {}", old_lake.display(), new_lake.display());
-                Ok(ExitCode::SUCCESS)
-            }
+            | LakeCommand::Move(args) => args.run(config_path),
             | LakeCommand::TopLevel(command) => command.run(config_path, lake_path, frost_path),
         }
+    }
+}
+
+impl LakeMoveArgs {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CliError> {
+        let config = SirnoConfig::from_file(config_path)?;
+        let old_lake = config.resolve_lake(config_path);
+        let config = config.with_lake(self.lake);
+        config.validate_for_file(config_path)?;
+        let new_lake = config.resolve_lake(config_path);
+        move_configured_path_and_write_config(&old_lake, &new_lake, &config, config_path)?;
+        println!("moved lake {} to {}", old_lake.display(), new_lake.display());
+        Ok(ExitCode::SUCCESS)
     }
 }
 
@@ -1186,26 +1197,24 @@ impl FrostCommand {
                 );
                 Ok(ExitCode::SUCCESS)
             }
-            | FrostCommand::Move { frost } => {
-                let config = SirnoConfig::from_file(config_path)?;
-                let Some(old_frost) = config.resolve_frost(config_path) else {
-                    return Err(CliError::FrostNotConfigured);
-                };
-                let config = config.with_frost(frost);
-                config.validate_for_file(config_path)?;
-                let new_frost =
-                    config.resolve_frost(config_path).expect("frost path configured by move");
-                move_configured_path_and_write_config(
-                    &old_frost,
-                    &new_frost,
-                    &config,
-                    config_path,
-                )?;
-                println!("moved frost {} to {}", old_frost.display(), new_frost.display());
-                Ok(ExitCode::SUCCESS)
-            }
+            | FrostCommand::Move(args) => args.run(config_path),
             | FrostCommand::Snapshot(command) => command.run(config_path, lake_path),
         }
+    }
+}
+
+impl FrostMoveArgs {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CliError> {
+        let config = SirnoConfig::from_file(config_path)?;
+        let Some(old_frost) = config.resolve_frost(config_path) else {
+            return Err(CliError::FrostNotConfigured);
+        };
+        let config = config.with_frost(self.frost);
+        config.validate_for_file(config_path)?;
+        let new_frost = config.resolve_frost(config_path).expect("frost path configured by move");
+        move_configured_path_and_write_config(&old_frost, &new_frost, &config, config_path)?;
+        println!("moved frost {} to {}", old_frost.display(), new_frost.display());
+        Ok(ExitCode::SUCCESS)
     }
 }
 
@@ -2397,11 +2406,11 @@ mod tests {
     use crate::{
         ArtifactCommand, Cli, CliCheckMode, CliError, CliPathArgs, CliPathOutputFormat,
         CliQueryField, CliQueryFields, CliQueryOutputFormat, CliStructuralPredicate, CliTideItem,
-        Command, EntryCommand, FrostCommand, LakeCommand, MoveCommand, TideCommand,
-        TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, entry_path_records,
-        exact_query_from_predicates, format_gen_link_report, format_path_table, format_query_json,
-        format_query_table, format_witness_record, format_witness_records,
-        rg_args_include_preprocessor,
+        Command, EntryCommand, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand,
+        LakeMoveArgs, MoveCommand, TideCommand, TopLevelEntryCommand, TopLevelFrostCommand,
+        TopLevelLakeCommand, entry_path_records, exact_query_from_predicates,
+        format_gen_link_report, format_path_table, format_query_json, format_query_table,
+        format_witness_record, format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -2910,17 +2919,19 @@ Body.
 
         assert!(matches!(
             entry.command,
-            Command::Move { command: MoveCommand::Entry { old_id, new_id } }
+            Command::Move {
+                command: MoveCommand::Entry(EntryRenameArgs { old_id, new_id })
+            }
                 if old_id == "old-entry" && new_id == "new-entry"
         ));
         assert!(matches!(
             lake.command,
-            Command::Move { command: MoveCommand::Lake { lake } }
+            Command::Move { command: MoveCommand::Lake(LakeMoveArgs { lake }) }
                 if lake == Path::new("sirno-docs")
         ));
         assert!(matches!(
             frost.command,
-            Command::Move { command: MoveCommand::Frost { frost } }
+            Command::Move { command: MoveCommand::Frost(FrostMoveArgs { frost }) }
                 if frost == Path::new("sirno-frost-2")
         ));
     }
@@ -2931,7 +2942,9 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::Move { command: MoveCommand::Entry { old_id, new_id } }
+            Command::Move {
+                command: MoveCommand::Entry(EntryRenameArgs { old_id, new_id })
+            }
                 if old_id == "old-entry" && new_id == "new-entry"
         ));
     }
@@ -2942,7 +2955,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::Lake { command: LakeCommand::Move { lake } }
+            Command::Lake { command: LakeCommand::Move(LakeMoveArgs { lake }) }
                 if lake == Path::new("sirno-docs")
         ));
     }
@@ -2953,7 +2966,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::Frost { command: FrostCommand::Move { frost } }
+            Command::Frost { command: FrostCommand::Move(FrostMoveArgs { frost }) }
                 if frost == Path::new("sirno-frost-2")
         ));
     }
@@ -2964,7 +2977,7 @@ Body.
 
         assert!(matches!(
             cli.command,
-            Command::Frost { command: FrostCommand::Move { frost } }
+            Command::Frost { command: FrostCommand::Move(FrostMoveArgs { frost }) }
                 if frost == Path::new("sirno-frost-2")
         ));
     }
@@ -3168,17 +3181,23 @@ Body.
 
         assert!(matches!(
             entry.command,
-            Command::Entry { command: EntryCommand::Rename { old_id, new_id } }
+            Command::Entry {
+                command: EntryCommand::Rename(EntryRenameArgs { old_id, new_id })
+            }
                 if old_id == "old-entry" && new_id == "new-entry"
         ));
         assert!(matches!(
             short.command,
-            Command::Entry { command: EntryCommand::Rename { old_id, new_id } }
+            Command::Entry {
+                command: EntryCommand::Rename(EntryRenameArgs { old_id, new_id })
+            }
                 if old_id == "old-entry" && new_id == "new-entry"
         ));
         assert!(matches!(
             mnemonic.command,
-            Command::Entry { command: EntryCommand::Rename { old_id, new_id } }
+            Command::Entry {
+                command: EntryCommand::Rename(EntryRenameArgs { old_id, new_id })
+            }
                 if old_id == "old-entry" && new_id == "new-entry"
         ));
     }
