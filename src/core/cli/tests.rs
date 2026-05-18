@@ -1008,7 +1008,7 @@ fn tide_status_accepts_grouping_modes() {
 
     assert!(matches!(
         default.command,
-        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Wave, .. } }
+        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Entry, .. } }
     ));
     assert!(matches!(
         wave.command,

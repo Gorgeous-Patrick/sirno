@@ -551,7 +551,7 @@ enum TideCommand {
         #[arg(long, value_enum, default_value_t = TideStatusMode::Review)]
         show: TideStatusMode,
         /// Group human output by wave or review entry.
-        #[arg(long, value_enum, default_value_t = TideStatusGrouping::Wave)]
+        #[arg(long, value_enum, default_value_t = TideStatusGrouping::Entry)]
         by: TideStatusGrouping,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
@@ -569,9 +569,9 @@ enum TideCommand {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
 enum TideStatusGrouping {
     /// Group by the changed ripple entry that caused review.
-    #[default]
     Wave,
     /// Group by the entry that needs review.
+    #[default]
     Entry,
 }
 
