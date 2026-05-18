@@ -8,6 +8,7 @@ belongs:
 ---
 
 Lake editing follows a fixed procedure so the lake stays precise and reviewable.
+It renders to `.agents/skills/sirno-editor/SKILL.md`.
 
 Read first.
 Read repository instructions, `Sirno.toml`, the configured monograph when present,
@@ -25,6 +26,13 @@ Create through the tool.
 Create missing entries with the current entry-creation command so id validation and scaffolding
 are correct.
 Then expand or revise the body with direct, reader-friendly prose.
+When editing design documents or design entries,
+apply the documentation-writing discipline used by `design-doc-writer`:
+read the whole design route,
+order concepts by dependency and scope,
+write declarative, dry, precise prose,
+merge avoidable overlap,
+and evaluate whether each paragraph carries one idea.
 Choose `category`, `belongs`, and `refines` by their own entries,
 and leave a structural field out when it is merely decorative.
 Use section headings only when they frame the material that follows.
@@ -43,10 +51,16 @@ After metadata stabilizes, run render maintenance,
 then run the editing-mode structural check and the review-mode check.
 
 Validation can be partly blocked.
+If the entry is frozen or a checkout is immutable,
+use the configured Frost workflow before editing instead of forcing a write.
 If review-mode checks fail only because local editor or tool directories live inside the lake,
 preserve those files unless the user asks to remove them,
 report the blocker,
 and still validate entry parsing and metadata references as far as possible.
+If a command named by an old skill is missing,
+inspect the current CLI and use the closest current command only when its behavior is clear.
+If authored metadata, references, or generated-footer freshness fail,
+fix the lake before treating the edit as complete.
 
 Stage narrowly when committing.
 Stage the configured lake, the config change that points to it, and directly related

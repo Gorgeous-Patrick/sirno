@@ -7,7 +7,8 @@ belongs:
   - agent-skills
 ---
 
-Skill synthesis rebuilds the packaged agent skills from the lake's `meta`-categorized entries.
+Skill synthesis rebuilds the packaged Sirno skills from the lake's `meta`-categorized entries.
+It renders to `.agents/skills/sirno-skill-synthesizer/SKILL.md`.
 
 Read the sources first.
 Read `Sirno.toml` for the lake path,
@@ -20,9 +21,18 @@ A `meta` entry that `belongs: agent-skills` and defines a skill procedure is a s
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.
+Adjacent documentation-writing skills, such as `design-doc-writer`,
+are also method inputs when Sirno skill work touches design prose.
+Their reusable content is reader evaluation,
+conceptual ordering,
+declarative precision,
+and whole-document coherence.
+They do not become package sources unless the Sirno skill roster adds them.
 
 Map each discipline to one package.
-A skill discipline renders exactly one `.agents/skills/sirno-<role>/SKILL.md`.
+A skill discipline renders exactly one `.agents/skills/sirno-<role>/SKILL.md` package.
+The target package path is written in the discipline body until the project defines
+a structural field for skill packages.
 Keep the existing skill directory name and do not invent a new role
 unless `agent-skills` adds one to the roster.
 Every `belongs: agent-skills` discipline should have a package,
@@ -34,6 +44,9 @@ Frontmatter `name` is the skill directory id;
 `description` states when to use the skill and the triggers that should invoke it.
 The body turns durable procedure into concrete steps and current commands.
 Add nothing the lake does not commit, and drop nothing the discipline requires.
+Include the discipline's failure paths in the rendered skill.
+These paths cover missing sources, unavailable commands, blocked validation,
+absent evidence, and design changes that must reflect back into the lake.
 
 Inspect the current Sirno CLI before writing commands into a skill.
 A skill that names a missing command is worse than one that only names the procedure.
@@ -49,6 +62,12 @@ Run render maintenance if lake metadata changed,
 then the review-mode structural check.
 Confirm each SKILL.md has valid frontmatter,
 and that the disciplines and packages still correspond one to one.
+If a package exists without a discipline,
+either add the missing discipline to the lake or report the package as outside the reproducible set.
+If a discipline exists without a package,
+create the package only when the roster says the skill should ship.
+If a skill's generated procedure would need behavior the lake does not commit,
+leave that behavior out and report the missing design instead of inventing it.
 
 ---
 

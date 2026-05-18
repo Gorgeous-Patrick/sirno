@@ -8,6 +8,7 @@ belongs:
 ---
 
 Witness linking connects an entry claim to the repository region that makes it inspectable.
+It renders to `.agents/skills/sirno-witness/SKILL.md`.
 
 Read the target entry before touching code.
 Understand the claim, its structural fields, and any body guidance about what the evidence should
@@ -24,6 +25,13 @@ Place blocks inside configured repository members,
 and use the configured delimiter syntax for the file kind.
 Update the entry prose when needed so it briefly says what the region demonstrates,
 and leave generated footers untouched.
+If no repository evidence exists,
+do not add a placeholder witness.
+Report the claim as unwitnessed and create or revise an entry only when that gives review
+a more precise handle.
+If the intended file sits outside configured repository members,
+update the config only when that file is truly part of the witness surface.
+Otherwise choose evidence that is already inside the configured surface or report the mismatch.
 
 Do not duplicate `mosaika`.
 Sirno calls `mosaika` for delimiter matching, region extraction, and spans;

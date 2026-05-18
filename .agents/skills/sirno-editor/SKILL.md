@@ -16,6 +16,7 @@ Editing keeps the lake precise, structured, and useful for future work.
 Lowering gives a long-form narrative compact nominal form.
 It preserves the design route while creating or revising entries
 future work can cite, query, realize, and reflect.
+This skill renders the `lake-editing-discipline` lake entry.
 
 Apply repository instructions first.
 When the work also edits `README.md`, `DESIGN.md`, or `METHODOLOGY.md`,
@@ -172,9 +173,16 @@ but more durable than a plan item.
    id, name, desc, structural fields, and witness status.
 4. Create missing entries through Sirno's current entry-creation command when available.
 5. Expand or revise bodies with direct, reader-friendly prose.
-6. Leave generated footer regions untouched.
-7. Run `sirno render` after metadata stabilizes.
-8. Run structural checks and query commands to verify the lake parses and references resolve.
+6. When editing design documents or design entries,
+   apply the documentation-writing discipline used by `design-doc-writer`:
+   read the whole design route, order concepts by dependency and scope,
+   write declarative, dry, precise prose, merge avoidable overlap,
+   and keep one idea per paragraph.
+7. Leave generated footer regions untouched.
+8. Run `cargo run -- render` after metadata stabilizes.
+9. Run `cargo run -- check --mode edit`.
+10. Run `cargo run -- check --mode review` before treating the edit as complete.
+11. Run query commands to verify the lake parses and references resolve.
 
 Use the configured lake path.
 Do not hard-code `docs/` when `Sirno.toml` names a different lake.
@@ -214,7 +222,7 @@ sirno query --fields id
 sirno rg TEXT
 sirno check --mode edit
 sirno render
-sirno check
+sirno check --mode review
 sirno status
 ```
 
@@ -223,6 +231,13 @@ Use `cargo run -- ...` or `target/debug/sirno ...` according to the repository s
 If review-mode checks fail because local editor/tool directories are inside the lake,
 preserve those files unless the user asks to remove them.
 Report the blocker and still validate entry parsing and metadata references as far as possible.
+
+If the entry is frozen or a checkout is immutable,
+use the configured Frost workflow before editing instead of forcing a write.
+If a command named by older guidance is missing,
+inspect the current CLI and use the closest current command only when its behavior is clear.
+If authored metadata, references, or generated-footer freshness fail,
+fix the lake before treating the edit as complete.
 
 ## Git Hygiene
 

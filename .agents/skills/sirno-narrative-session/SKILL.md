@@ -14,6 +14,7 @@ description: >-
 Create an interactive route through Sirno knowledge for a particular reader or task.
 The session may be ephemeral while the user is learning,
 but the final artifact should be a compact Sirno narrative entry when the user asked for one.
+This skill renders the `narrative-session-discipline` lake entry.
 
 Treat entries as the durable source of knowledge.
 The narrative chooses sequence, prerequisites, pressure, and deferral.
@@ -50,6 +51,8 @@ Before designing the route, read:
 
 Read `references/narrative-artifact.md` when preparing the session notes or serialized entry.
 Use `scripts/serialize_narrative_entry.py` when a deterministic entry draft is useful.
+If a source entry is missing,
+state the gap and continue only with the route that can be grounded in existing entries.
 
 ## Session Workflow
 
@@ -148,6 +151,11 @@ such as:
 cargo run -- render
 cargo run -- check --mode edit
 ```
+
+If the serializer script is unavailable or its input contract does not fit the session,
+draft the entry manually from the same recorded route state and report that fallback.
+If the user wanted only an ephemeral explanation,
+do not create a lake entry.
 
 ## Handoff
 

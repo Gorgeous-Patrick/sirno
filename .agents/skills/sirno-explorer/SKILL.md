@@ -15,6 +15,7 @@ description: >-
 Use this skill to explore a Sirno-managed repository from the lake outward.
 The Sirno Lake provides the project map.
 Witness blocks provide repository evidence for entry claims.
+This skill renders the `lake-exploration-discipline` lake entry.
 
 Exploration should produce a small, grounded route:
 entry ids, why they matter, witness locations, and the code or docs they point to.

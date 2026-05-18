@@ -8,11 +8,14 @@ belongs:
 ---
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.
+It renders to `.agents/skills/sirno-narrative-session/SKILL.md`.
 
 Read the route sources first.
 Read `Sirno.toml` for the lake path,
 then the lake's narrative, introduction, and methodology entries,
 and any entries the user named or the task implies.
+If a source entry is missing,
+state the gap and continue only with the route that can be grounded in existing entries.
 
 Maintain a small private session state.
 It holds the reader and task,
@@ -46,6 +49,10 @@ The artifact is a narrative entry built by the serializer contract; see `narrati
 After materializing, run render maintenance and the editing-mode structural check.
 Finish by naming the artifact, the entry path, and the main sequencing choice,
 and confirm the route preserves pull, a clean first bite, and an aftertaste.
+If the serializer script is unavailable or its input contract does not fit the session,
+draft the entry manually from the same recorded route state and report that fallback.
+If the user wanted only an ephemeral explanation,
+do not create a lake entry.
 
 ---
 

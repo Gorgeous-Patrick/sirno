@@ -14,6 +14,7 @@ description: >-
 Use this skill when linking Sirno Lake entries to repository evidence.
 A witness is a repository region that makes an entry claim inspectable.
 The entry id is the query key.
+This skill renders the `witness-linking-discipline` lake entry.
 
 ## Core Principles
 
@@ -81,6 +82,15 @@ Avoid wrapping unrelated helpers just because they are nearby.
 
 Update the entry prose when needed so it briefly says what the witness region demonstrates.
 Leave generated footer regions untouched.
+
+If no repository evidence exists,
+do not add a placeholder witness.
+Report the claim as unwitnessed and create or revise an entry only when that gives review
+a more precise handle.
+
+If the intended file sits outside configured repository members,
+update the config only when that file is truly part of the witness surface.
+Otherwise choose evidence already inside the configured surface or report the mismatch.
 
 ## Validation
 
