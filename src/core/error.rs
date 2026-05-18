@@ -1,0 +1,237 @@
+//! Error types for command execution and presentation.
+
+use std::ffi::OsString;
+use std::fmt;
+use std::path::PathBuf;
+
+use thiserror::Error;
+
+use crate::{
+    ConfigError, EntryArtifactPathError, EntryDirectoryError, EntryId, EntryIdError,
+    EntryParseError, FrostError, GeneratedLinkError, LockError, TideError, TutorialSettings,
+    WitnessError,
+};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OpenTideTutorial {
+    pub(crate) frost_commit_tide: bool,
+    pub(crate) frost_bootstrap_tide: bool,
+    pub(crate) bootstrap: bool,
+}
+
+impl OpenTideTutorial {
+    pub(crate) fn new(settings: Option<TutorialSettings>, bootstrap: bool) -> Self {
+        let Some(settings) = settings else {
+            return Self { frost_commit_tide: false, frost_bootstrap_tide: false, bootstrap };
+        };
+        Self {
+            frost_commit_tide: settings.frost_commit_tide,
+            frost_bootstrap_tide: settings.frost_bootstrap_tide,
+            bootstrap,
+        }
+    }
+}
+
+impl fmt::Display for OpenTideTutorial {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if !self.frost_commit_tide {
+            return Ok(());
+        }
+
+        writeln!(formatter)?;
+        writeln!(formatter)?;
+        writeln!(formatter, "Tutorial:")?;
+        writeln!(
+            formatter,
+            "A tide is the review worklist for differences between the waterline and frostline.",
+        )?;
+        if self.bootstrap && self.frost_bootstrap_tide {
+            writeln!(
+                formatter,
+                "This Frost path is still at empty version 0, so the first commit compares",
+            )?;
+            writeln!(formatter, "the full lake to an empty frostline.")?;
+        }
+        writeln!(formatter, "Inspect the work with `sirno tide status`.")?;
+        writeln!(formatter, "Resolve reviewed work with `sirno resolve ...`,",)?;
+        writeln!(
+            formatter,
+            "or choose the current lake as the baseline with `sirno commit --unsafe-resolve-all`.",
+        )?;
+        write!(formatter, "Remove `[tutorial]` from Sirno.toml, or set tutorial knobs to false,",)?;
+        write!(formatter, " to silence tutorial text.")
+    }
+}
+
+/// Error raised while running the CLI.
+#[derive(Debug, Error)]
+pub enum CommandError {
+    /// Sirno Frost has already been configured at another path.
+    #[error("frost is already configured at {0}")]
+    FrostAlreadyConfigured(PathBuf),
+    /// Sirno Frost is required for a frost command but is not configured.
+    #[error("frost is not configured; run `sirno frost init` first")]
+    FrostNotConfigured,
+    /// Immutable Frost checkouts cannot be committed.
+    #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
+    ImmutableFrostCheckout(u64),
+    /// Frost commit requires all tide workitems to be resolved.
+    #[error("tide has {count} open workitems; run `sirno tide status`{tutorial}")]
+    OpenTide {
+        /// Number of open tide workitems.
+        count: usize,
+        /// Optional tutorial text controlled by Sirno.toml.
+        tutorial: OpenTideTutorial,
+    },
+    /// Empty Frost cannot be checked out as a version.
+    #[error("frost version {0} is not a check-outable snapshot")]
+    InvalidFrostVersion(u64),
+    /// Frost checkout needs one target selector.
+    #[error("frost checkout requires `latest` or `version`")]
+    MissingFrostCheckoutTarget,
+    /// An artifact source path did not have a file name for the default artifact path.
+    #[error("artifact source has no file name: {0}")]
+    ArtifactSourceHasNoFileName(PathBuf),
+    /// A configured lake move cannot replace an existing destination.
+    #[error("move destination already exists: {0}")]
+    MoveDestinationExists(PathBuf),
+    /// A configured lake move could not inspect its destination.
+    #[error("failed to inspect move destination {path}")]
+    ReadMoveDestination {
+        /// Destination path that could not be inspected.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A configured lake path could not be moved.
+    #[error("failed to move {source_path} to {destination_path}")]
+    MovePath {
+        /// Source path configured before the move.
+        source_path: PathBuf,
+        /// Destination path configured by the move.
+        destination_path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A config write failed after a configured path was moved, and the rollback also failed.
+    #[error(
+        "failed to write config after moving {source_path} to {destination_path}; rollback failed: {rollback}"
+    )]
+    MoveConfigWriteRollback {
+        /// Source path configured before the move.
+        source_path: PathBuf,
+        /// Destination path already moved into place.
+        destination_path: PathBuf,
+        /// Config write error.
+        #[source]
+        source: Box<ConfigError>,
+        /// Rollback rename error.
+        rollback: std::io::Error,
+    },
+    /// Witness lookup requires configured repo members.
+    #[error("repo members are not configured; add [repo].members to Sirno.toml")]
+    RepoMembersNotConfigured,
+    /// Witness lookup requires an existing entry id.
+    #[error("entry `{0}` does not exist")]
+    MissingWitnessEntry(EntryId),
+    /// Lake path override does not apply to checking a Frost path directly.
+    #[error("`--lake-path` cannot be used with `check --frost-path`")]
+    LakePathWithFrostPath,
+    /// Frost path override applies only to direct Frost checks.
+    #[error("`--frost-path` only applies to `sirno check`")]
+    FrostPathRequiresCheck,
+    /// The MCP server selects its project only through the config path.
+    #[error("`--lake-path` cannot be used with `sirno util mcp`; configure the lake in Sirno.toml")]
+    McpRejectsLakePath,
+    /// The MCP server selects its project only through the config path.
+    #[error("`--frost-path` cannot be used with `sirno util mcp`; use `--config` only")]
+    McpRejectsFrostPath,
+    /// The async MCP runtime could not be created.
+    #[error("failed to create MCP runtime")]
+    CreateMcpRuntime(#[source] std::io::Error),
+    /// The MCP server failed.
+    #[error("MCP server failed: {0}")]
+    McpServer(String),
+    /// Dry-run mode applies only to render writing.
+    #[error("`--dry` only applies to `sirno render` without a subcommand")]
+    DryWithRenderSubcommand,
+    /// A command named a structural field not configured for this project.
+    #[error("structural field `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
+    UnconfiguredStructuralField(String),
+    /// Generated-footer masking cannot compose with another ripgrep preprocessor.
+    #[error(
+        "generated-footer filtering cannot be combined with `rg --pre`; use `--with-generated-footer`"
+    )]
+    RgPreprocessorConflict,
+    /// Ripgrep generated-footer preprocessor received an unexpected argument shape.
+    #[error("rg generated-footer preprocessor expects one path argument")]
+    RgPreprocessorArgumentCount,
+    /// The current executable path could not be resolved.
+    #[error("failed to locate current executable for rg preprocessor")]
+    LocateCurrentExe(#[source] std::io::Error),
+    /// The current working directory could not be resolved.
+    #[error("failed to locate current working directory")]
+    CurrentDirectory(#[source] std::io::Error),
+    /// A temporary ripgrep preprocessor invoker could not be created.
+    #[error("failed to create rg preprocessor invoker at {path}")]
+    CreateRgPreprocessorInvoker {
+        /// Invoker path that could not be created.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The generated-footer preprocessor could not read one file.
+    #[error("failed to read rg preprocessor input {path}")]
+    ReadRgPreprocessorInput {
+        /// Path passed by ripgrep.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The generated-footer preprocessor could not write masked output.
+    #[error("failed to write rg preprocessor output")]
+    WriteRgPreprocessorOutput(#[source] std::io::Error),
+    /// Config-backed command failed.
+    #[error(transparent)]
+    Config(#[from] ConfigError),
+    /// Lock-backed command failed.
+    #[error(transparent)]
+    Lock(#[from] LockError),
+    /// Sirno-Frost-backed command failed.
+    #[error(transparent)]
+    Frost(#[from] FrostError),
+    /// Witness lookup failed.
+    #[error(transparent)]
+    Witness(#[from] WitnessError),
+    /// Public Markdown entry directory command failed.
+    #[error(transparent)]
+    EntryDirectory(#[from] EntryDirectoryError),
+    /// Entry id parsing failed.
+    #[error(transparent)]
+    EntryId(#[from] EntryIdError),
+    /// Entry artifact path parsing failed.
+    #[error(transparent)]
+    ArtifactPath(#[from] EntryArtifactPathError),
+    /// Entry metadata construction failed.
+    #[error(transparent)]
+    EntryParse(#[from] EntryParseError),
+    /// Generated-link footer handling failed.
+    #[error(transparent)]
+    GeneratedLink(#[from] GeneratedLinkError),
+    /// Tide operation failed.
+    #[error(transparent)]
+    Tide(#[from] TideError),
+    /// Ripgrep could not be started.
+    #[error("failed to run rg")]
+    RunRg(#[source] std::io::Error),
+    /// JSON-oriented ripgrep execution needs UTF-8 arguments.
+    #[error("rg argument is not valid UTF-8: {0:?}")]
+    RgArgumentNotUtf8(OsString),
+    /// Query JSON rendering failed.
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+}
