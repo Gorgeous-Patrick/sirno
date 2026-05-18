@@ -130,4 +130,7 @@ Future interfaces may add MCP, lightweight GUI, or Obsidian integration.
 ## License
 
 Sirno is distributed under either the MIT license
-or the Apache License, Version 2.0. See [LICENSE](LICENSE).
+or the Apache License, Version 2.0:
+
+- [MIT license](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
