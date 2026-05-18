@@ -9,8 +9,8 @@ use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
 
 use crate::core::dto::{
-    DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns, QueryOutputFormat,
-    QueryResults, RenderResult, SkillWrapperRecord, StatusResult,
+    ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
+    QueryOutputFormat, QueryResults, RenderResult, SkillWrapperRecord, StatusResult,
 };
 use crate::core::error::CommandError;
 use crate::{
@@ -145,6 +145,16 @@ pub(crate) fn print_render_result(result: &RenderResult) {
         println!("{}", result.message);
     } else {
         print_diagnostics(&result.diagnostics);
+    }
+}
+
+pub(crate) fn print_config_comment_result(result: &ConfigCommentResult) {
+    println!("{}", result.message);
+    if result.changed {
+        return;
+    }
+    for comment in &result.missing_comments {
+        println!("missing: {comment}");
     }
 }
 

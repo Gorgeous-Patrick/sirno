@@ -148,6 +148,12 @@ pub enum CommandError {
     /// The MCP server selects its project only through the config path.
     #[error("`--frost-path` cannot be used with `sirno util mcp`; use `--config` only")]
     McpRejectsFrostPath,
+    /// The config utility only inspects the config file.
+    #[error("`--lake-path` cannot be used with `sirno util config`; use `--config` only")]
+    ConfigRejectsLakePath,
+    /// The config utility only inspects the config file.
+    #[error("`--frost-path` cannot be used with `sirno util config`; use `--config` only")]
+    ConfigRejectsFrostPath,
     /// The async MCP runtime could not be created.
     #[error("failed to create MCP runtime")]
     CreateMcpRuntime(#[source] std::io::Error),

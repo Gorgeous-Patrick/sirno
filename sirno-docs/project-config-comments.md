@@ -13,6 +13,11 @@ Each comment sits immediately above the field or repeated field group it describ
 Optional table comments appear only when the optional table is written.
 Parsing still ignores comments through ordinary TOML rules.
 
+`sirno util config` compares the active config file with the comment set
+that the canonical renderer would write for the parsed config.
+It reports missing comments without changing the file.
+`sirno util config --fix` rewrites the file through that renderer when comments are missing.
+
 The generated comments are:
 
 - `Markdown monograph path, resolved relative to this config file.`

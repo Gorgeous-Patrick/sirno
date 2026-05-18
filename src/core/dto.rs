@@ -31,6 +31,21 @@ pub enum StructuredOutputFormat {
 pub(crate) type QueryOutputFormat = StructuredOutputFormat;
 pub(crate) type TideOutputFormat = StructuredOutputFormat;
 
+/// Result of checking canonical comments in `Sirno.toml`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ConfigCommentResult {
+    /// Whether the config now has every canonical comment.
+    pub ok: bool,
+    /// Whether this run rewrote the config file.
+    pub changed: bool,
+    /// Checked config path.
+    pub config_path: String,
+    /// Canonical comment texts that were missing before any repair.
+    pub missing_comments: Vec<String>,
+    /// Human-readable summary.
+    pub message: String,
+}
+
 /// Query output column list.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QueryColumns {

@@ -462,6 +462,31 @@ impl SirnoConfig {
     }
     // sirno:witness:project-config:end
 
+    // sirno:witness:project-config-comments:begin
+    /// Render this config as canonical commented TOML.
+    pub fn to_commented_toml(&self) -> Result<String, ConfigError> {
+        self.to_toml()
+    }
+
+    /// Return canonical comment text missing from an existing config source.
+    pub fn missing_comments_in(&self, source: &str) -> Result<Vec<String>, ConfigError> {
+        let expected = self
+            .to_commented_toml()?
+            .lines()
+            .filter_map(|line| line.strip_prefix("# ").map(str::to_owned))
+            .collect::<Vec<_>>();
+        let current = source.lines().map(str::trim).collect::<Vec<_>>();
+
+        Ok(expected
+            .into_iter()
+            .filter(|comment| {
+                let line = format!("# {comment}");
+                !current.iter().any(|current| *current == line)
+            })
+            .collect())
+    }
+    // sirno:witness:project-config-comments:end
+
     /// Resolve the monograph path relative to a config file path when configured.
     // sirno:witness:project-config:begin
     pub fn resolve_mono(&self, config_path: impl AsRef<Path>) -> Option<PathBuf> {
@@ -1568,6 +1593,22 @@ delimiters = []
         assert!(!source.contains("parent = {"));
         assert_before(&source, "[structural.kind]", "[structural.area]");
         assert_before(&source, "[structural.area]", "[structural.parent]");
+    }
+
+    #[test]
+    fn detects_missing_generated_comments() {
+        let config = SirnoConfig::default_project();
+        let source = config
+            .to_commented_toml()
+            .unwrap()
+            .replace("# Markdown entry lake path, resolved relative to this config file.\n", "");
+
+        let missing = config.missing_comments_in(&source).unwrap();
+
+        assert_eq!(
+            missing,
+            vec!["Markdown entry lake path, resolved relative to this config file.".to_owned()]
+        );
     }
 
     #[test]

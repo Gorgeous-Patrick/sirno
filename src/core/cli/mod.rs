@@ -21,9 +21,9 @@ use crate::core::dto::{
 };
 use crate::core::error::CommandError;
 use crate::core::output::{
-    format_path_table, format_skill_wrapper_table, print_entry_directory_report, print_json,
-    print_lake_check_result, print_query_results, print_render_result, print_status_result,
-    print_witness_records,
+    format_path_table, format_skill_wrapper_table, print_config_comment_result,
+    print_entry_directory_report, print_json, print_lake_check_result, print_query_results,
+    print_render_result, print_status_result, print_witness_records,
 };
 use crate::core::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -630,6 +630,10 @@ impl From<CompletionShell> for Shell {
 /// Supported utility commands.
 #[derive(Debug, Subcommand)]
 enum UtilCommand {
+    // sirno:witness:interfaces:begin
+    /// Check canonical comments in Sirno.toml.
+    Config(ConfigCommentArgs),
+    // sirno:witness:interfaces:end
     /// Generate a shell completion script.
     Completion {
         /// Shell whose completion script should be generated.
@@ -649,6 +653,16 @@ enum UtilCommand {
     Mcp,
     // sirno:witness:interfaces:end
 }
+
+// sirno:witness:interfaces:begin
+/// Arguments for canonical config comment maintenance.
+#[derive(Debug, Args)]
+struct ConfigCommentArgs {
+    /// Rewrite Sirno.toml with canonical comments when any are missing.
+    #[arg(long)]
+    fix: bool,
+}
+// sirno:witness:interfaces:end
 
 /// Supported skill wrapper utility commands.
 // sirno:witness:interfaces:begin
@@ -1278,6 +1292,22 @@ impl UtilCommand {
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
     ) -> Result<ExitCode, CommandError> {
         match self {
+            | UtilCommand::Config(args) => {
+                if lake_path.is_some() {
+                    return Err(CommandError::ConfigRejectsLakePath);
+                }
+                if frost_path.is_some() {
+                    return Err(CommandError::ConfigRejectsFrostPath);
+                }
+                let context = CoreContext::new(config_path.to_path_buf());
+                let result = if args.fix {
+                    context.config_comments_fix()?
+                } else {
+                    context.config_comments_check()?
+                };
+                print_config_comment_result(&result);
+                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+            }
             | UtilCommand::Completion { shell } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);

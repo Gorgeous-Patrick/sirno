@@ -16,10 +16,10 @@ use crate::{
 };
 
 use super::{
-    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, CoreContext,
-    EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs,
-    LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn,
-    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
+    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, ConfigCommentArgs,
+    CoreContext, EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand,
+    FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat,
+    QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
     StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
     TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
     TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
@@ -407,6 +407,80 @@ fn util_mcp_accepts_config_launch_form() {
     let cli = Cli::parse_from(["sirno", "--config", "Sirno.toml", "util", "mcp"]);
 
     assert!(matches!(cli.command, Command::Util { command: UtilCommand::Mcp }));
+}
+
+#[test]
+fn util_config_accepts_check_and_fix_form() {
+    let check = Cli::parse_from(["sirno", "util", "config"]);
+    let fix = Cli::parse_from(["sirno", "util", "config", "--fix"]);
+
+    assert!(matches!(
+        check.command,
+        Command::Util { command: UtilCommand::Config(ConfigCommentArgs { fix: false }) }
+    ));
+    assert!(matches!(
+        fix.command,
+        Command::Util { command: UtilCommand::Config(ConfigCommentArgs { fix: true }) }
+    ));
+}
+
+#[test]
+fn util_config_check_reports_missing_comments_without_writing() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    let uncommented = fs::read_to_string(&config_path)
+        .unwrap()
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n");
+    fs::write(&config_path, format!("{uncommented}\n")).unwrap();
+
+    let result = CoreContext::new(&config_path).config_comments_check().unwrap();
+
+    assert!(!result.ok);
+    assert!(!result.changed);
+    assert!(
+        result.missing_comments.contains(
+            &"Markdown entry lake path, resolved relative to this config file.".to_owned()
+        )
+    );
+    assert!(!fs::read_to_string(&config_path).unwrap().contains("# Markdown entry lake path"));
+}
+
+#[test]
+fn util_config_fix_writes_missing_comments() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    let uncommented = fs::read_to_string(&config_path)
+        .unwrap()
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n");
+    fs::write(&config_path, format!("{uncommented}\n")).unwrap();
+
+    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
+    let check = CoreContext::new(&config_path).config_comments_check().unwrap();
+
+    assert!(fix.ok);
+    assert!(fix.changed);
+    assert!(check.ok);
+    assert!(check.missing_comments.is_empty());
+    assert!(fs::read_to_string(&config_path).unwrap().contains("# Markdown entry lake path"));
+}
+
+#[test]
+fn util_config_rejects_lake_and_frost_path_overrides() {
+    let lake_error =
+        Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config"]).run().unwrap_err();
+    let frost_error =
+        Cli::parse_from(["sirno", "--frost-path", "frost", "util", "config"]).run().unwrap_err();
+
+    assert!(matches!(lake_error, CommandError::ConfigRejectsLakePath));
+    assert!(matches!(frost_error, CommandError::ConfigRejectsFrostPath));
 }
 
 #[test]

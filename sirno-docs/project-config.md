@@ -17,6 +17,9 @@ It may also configure a *monograph*,
 *repository witness* members,
 and Sirno Frost.
 Generated config files include concise comments that describe how each written field is used.
+`sirno util config` checks whether those comments are present.
+`sirno util config --fix` rewrites the file through Sirno's canonical config renderer
+when comments are missing.
 
 `[mono].path` optionally names the *monograph*.
 `[lake].path` names the Markdown *entry lake*.

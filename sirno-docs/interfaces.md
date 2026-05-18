@@ -200,6 +200,12 @@ Render commands operate on the active *lake* path.
 Completion generation is a utility interface,
 not a *lake* operation.
 
+`sirno util config` checks whether `Sirno.toml` contains the canonical generated comments.
+It exits with failure when required comments are missing.
+`sirno util config --fix` rewrites `Sirno.toml` through the canonical config renderer
+when comments are missing.
+Config utility commands reject `--lake-path` and `--frost-path`.
+
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.

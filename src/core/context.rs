@@ -11,11 +11,11 @@ use indexmap::IndexMap;
 
 use crate::core::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
-    ArtifactRenameRequest, EntryNewRequest, EntryPathRequest, EntryPathResult, EntryRenameResult,
-    FrostCheckoutRequest, FrostCheckoutResult, FrostCommitResult, FrostInitResult, LakeCheckResult,
-    LakeInitRequest, LakeInitResult, MovePathResult, PathRecord, QueryRequest, QueryResponse,
-    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
-    SkillWrapperResult, StatusResult, StructuralFieldStatus, StructuralFilter,
+    ArtifactRenameRequest, ConfigCommentResult, EntryNewRequest, EntryPathRequest, EntryPathResult,
+    EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult, FrostCommitResult,
+    FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult, MovePathResult, PathRecord,
+    QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult,
+    SkillWrapperRecord, SkillWrapperResult, StatusResult, StructuralFieldStatus, StructuralFilter,
     StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
     TideSelectionRequest, TideStatusResult, WitnessRecordResult, WitnessResult,
 };
@@ -365,6 +365,51 @@ impl CoreContext {
             },
         })
     }
+
+    // sirno:witness:project-config-comments:begin
+    /// Check whether `Sirno.toml` contains every canonical config comment.
+    pub fn config_comments_check(&self) -> Result<ConfigCommentResult, CommandError> {
+        self.config_comments(false)
+    }
+
+    /// Rewrite `Sirno.toml` through the canonical commented renderer when comments are missing.
+    pub fn config_comments_fix(&self) -> Result<ConfigCommentResult, CommandError> {
+        self.config_comments(true)
+    }
+
+    fn config_comments(&self, fix: bool) -> Result<ConfigCommentResult, CommandError> {
+        let source = fs::read_to_string(&self.config_path).map_err(|source| {
+            crate::ConfigError::Read { path: self.config_path.clone(), source }
+        })?;
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let missing_comments = config.missing_comments_in(&source)?;
+        let missing_count = missing_comments.len();
+        let changed = fix && missing_count > 0;
+        if changed {
+            config.write(&self.config_path)?;
+        }
+
+        let message = match (missing_count, fix) {
+            | (0, _) => format!("config comments ok in {}", self.config_path.display()),
+            | (_, true) => format!(
+                "updated config comments in {} ({missing_count} missing)",
+                self.config_path.display()
+            ),
+            | (_, false) => format!(
+                "config comments missing in {} ({missing_count} missing); run `sirno util config --fix`",
+                self.config_path.display()
+            ),
+        };
+
+        Ok(ConfigCommentResult {
+            ok: missing_count == 0 || fix,
+            changed,
+            config_path: display_path(&self.config_path),
+            missing_comments,
+            message,
+        })
+    }
+    // sirno:witness:project-config-comments:end
 
     /// List artifacts owned by one entry.
     pub fn entry_artifact_list(&self, id: EntryId) -> Result<ArtifactListResult, CommandError> {
