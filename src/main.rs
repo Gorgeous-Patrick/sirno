@@ -69,12 +69,12 @@ enum Command {
         #[arg(long)]
         frost: Option<PathBuf>,
     },
-    /// Reserved top-level move command.
+    /// Move an entry, the public lake path, or the Frost path.
     #[command(visible_alias = "mv")]
     Move {
-        /// Reserved arguments.
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
-        args: Vec<OsString>,
+        /// Move target.
+        #[command(subcommand)]
+        command: MoveCommand,
     },
     /// Manage public Markdown lake entries.
     Entry {
@@ -245,6 +245,30 @@ enum TopLevelEntryCommand {
     },
     // sirno:witness:interfaces:end
 }
+
+/// Supported top-level move wrappers.
+// sirno:witness:interfaces:begin
+#[derive(Debug, Subcommand)]
+enum MoveCommand {
+    /// Rename one entry id and its Sirno references.
+    Entry {
+        /// Existing entry id.
+        old_id: String,
+        /// New entry id.
+        new_id: String,
+    },
+    /// Move the configured public Markdown entry lake.
+    Lake {
+        /// New public Markdown entry lake path written to Sirno.toml.
+        lake: PathBuf,
+    },
+    /// Move the configured Sirno Frost path.
+    Frost {
+        /// New Sirno Frost path written to Sirno.toml.
+        frost: PathBuf,
+    },
+}
+// sirno:witness:interfaces:end
 
 /// Supported public entry commands.
 #[derive(Debug, Subcommand)]
@@ -788,11 +812,8 @@ impl Cli {
                 }
                 run_top_level_init(mono, lake, frost, &config_path, lake_path.as_deref())
             }
-            | Command::Move { .. } => {
-                if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
-                }
-                Err(CliError::ReservedTopLevelCommand("move"))
+            | Command::Move { command } => {
+                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
             }
             | Command::Entry { command } => {
                 if frost_path.is_some() {
@@ -820,6 +841,30 @@ impl Cli {
                     return Err(CliError::FrostPathRequiresCheck);
                 }
                 command.run()
+            }
+        }
+    }
+}
+
+impl MoveCommand {
+    fn run(
+        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
+    ) -> Result<ExitCode, CliError> {
+        match self {
+            | Self::Entry { old_id, new_id } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                EntryCommand::Rename { old_id, new_id }.run(config_path, lake_path)
+            }
+            | Self::Lake { lake } => {
+                LakeCommand::Move { lake }.run(config_path, lake_path, frost_path)
+            }
+            | Self::Frost { frost } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                FrostCommand::Move { frost }.run(config_path, lake_path)
             }
         }
     }
@@ -2271,9 +2316,6 @@ enum CliError {
     /// Immutable Frost checkouts cannot be committed.
     #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
     ImmutableFrostCheckout(u64),
-    /// A top-level command name is intentionally reserved.
-    #[error("top-level `sirno {0}` is reserved")]
-    ReservedTopLevelCommand(&'static str),
     /// Frost commit requires all tide workitems to be resolved.
     #[error("tide has {count} open workitems; run `sirno tide status`{tutorial}")]
     OpenTide {
@@ -2437,10 +2479,11 @@ mod tests {
     use crate::{
         ArtifactCommand, Cli, CliCheckMode, CliError, CliPathArgs, CliPathOutputFormat,
         CliQueryField, CliQueryFields, CliQueryOutputFormat, CliStructuralPredicate, CliTideItem,
-        Command, EntryCommand, FrostCommand, LakeCommand, TideCommand, TopLevelEntryCommand,
-        TopLevelFrostCommand, TopLevelLakeCommand, entry_path_records, exact_query_from_predicates,
-        format_gen_link_report, format_path_table, format_query_json, format_query_table,
-        format_witness_record, format_witness_records, rg_args_include_preprocessor,
+        Command, EntryCommand, FrostCommand, LakeCommand, MoveCommand, TideCommand,
+        TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, entry_path_records,
+        exact_query_from_predicates, format_gen_link_report, format_path_table, format_query_json,
+        format_query_table, format_witness_record, format_witness_records,
+        rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -2942,18 +2985,37 @@ Body.
     }
 
     #[test]
-    fn move_is_reserved_at_top_level() {
-        let cli = Cli::parse_from(["sirno", "move", "sirno-docs"]);
+    fn move_accepts_entry_lake_and_frost_subcommands() {
+        let entry = Cli::parse_from(["sirno", "move", "entry", "old-entry", "new-entry"]);
+        let lake = Cli::parse_from(["sirno", "move", "lake", "sirno-docs"]);
+        let frost = Cli::parse_from(["sirno", "move", "frost", "sirno-frost-2"]);
 
-        assert!(matches!(cli.command, Command::Move { .. }));
-        assert!(matches!(cli.run(), Err(CliError::ReservedTopLevelCommand("move"))));
+        assert!(matches!(
+            entry.command,
+            Command::Move { command: MoveCommand::Entry { old_id, new_id } }
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
+        assert!(matches!(
+            lake.command,
+            Command::Move { command: MoveCommand::Lake { lake } }
+                if lake == Path::new("sirno-docs")
+        ));
+        assert!(matches!(
+            frost.command,
+            Command::Move { command: MoveCommand::Frost { frost } }
+                if frost == Path::new("sirno-frost-2")
+        ));
     }
 
     #[test]
-    fn mv_alias_is_reserved_at_top_level() {
-        let cli = Cli::parse_from(["sirno", "mv", "sirno-docs"]);
+    fn mv_alias_accepts_move_subcommands() {
+        let cli = Cli::parse_from(["sirno", "mv", "entry", "old-entry", "new-entry"]);
 
-        assert!(matches!(cli.command, Command::Move { .. }));
+        assert!(matches!(
+            cli.command,
+            Command::Move { command: MoveCommand::Entry { old_id, new_id } }
+                if old_id == "old-entry" && new_id == "new-entry"
+        ));
     }
 
     #[test]
@@ -3896,6 +3958,60 @@ Body.
     }
 
     #[test]
+    fn move_lake_wrapper_moves_lake_and_rewrites_config() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let old_lake = temp.path().join("docs");
+        let new_lake = temp.path().join("sirno-docs");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&old_lake).unwrap();
+        fs::write(old_lake.join("entry.md"), "entry").unwrap();
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "move",
+            "lake",
+            "sirno-docs",
+        ])
+        .run()
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
+        assert!(!old_lake.exists());
+        assert!(new_lake.join("entry.md").exists());
+    }
+
+    #[test]
+    fn move_frost_wrapper_moves_frost_and_rewrites_config() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let old_frost = temp.path().join("sirno-frost");
+        let new_frost = temp.path().join("frost");
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        fs::create_dir(&old_frost).unwrap();
+        fs::write(old_frost.join("row"), "frost").unwrap();
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "move",
+            "frost",
+            "frost",
+        ])
+        .run()
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("frost") }));
+        assert!(!old_frost.exists());
+        assert!(new_frost.join("row").exists());
+    }
+
+    #[test]
     fn freeze_and_melt_commands_toggle_marker_and_permissions() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
@@ -4093,6 +4209,42 @@ fn sample() {{}}
         assert!(reader_source.contains("area:\n  - new-entry\n"));
         assert!(witness_source.contains("sirno:witness:new-entry:begin"));
         assert!(witness_source.contains("sirno:witness:new-entry:end"));
+    }
+
+    #[test]
+    fn move_entry_wrapper_renames_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("old-entry.md"),
+            "\
+---
+name: Old
+desc: Old entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "move",
+            "entry",
+            "old-entry",
+            "new-entry",
+        ])
+        .run()
+        .unwrap();
+
+        assert!(!docs.join("old-entry.md").exists());
+        assert!(docs.join("new-entry.md").exists());
     }
 
     #[test]

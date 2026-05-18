@@ -19,6 +19,7 @@ but structured enough that changes leave visible *ripples*.
 `sirno lake move PATH` renames the configured *lake* directory
 and writes the new path back to `[lake].path`.
 `sirno lake mv PATH` is its short form.
+`sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
 The move refuses to replace an existing destination.
 
 The *lake* is the human-readable intermediate representation:

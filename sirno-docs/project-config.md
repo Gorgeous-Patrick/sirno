@@ -40,7 +40,9 @@ Its default paths are derived from the directory that contains `Sirno.toml`:
 `sirno frost init [PATH]` adds the Sirno Frost config and records empty version `0`.
 `sirno frost move PATH` changes `[frost].path` and renames the private *frost* path.
 `sirno frost mv PATH` is its short form.
-Top-level `sirno move` is a reserved command.
+`sirno move lake PATH` and `sirno move frost PATH`
+select the same path moves from the top-level move group.
+`sirno mv ...` is the short form for those wrappers.
 
 `Sirno.lock.toml` records the public *lake*'s *frost* state when Sirno Frost is configured.
 It lives next to `Sirno.toml`.

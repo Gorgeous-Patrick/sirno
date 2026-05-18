@@ -176,8 +176,9 @@ Storage commands affect the frame around entries.
 `sirno init` creates the public lake and private Frost path together.
 `sirno lake move PATH` moves the public lake path.
 `sirno frost init` and `sirno frost move PATH` configure or move the private Frost path.
+`sirno move lake PATH` and `sirno move frost PATH` select the same storage moves.
 They do not change one entry file's lifecycle state by themselves.
-Top-level `sirno move` is a reserved command.
+`sirno move entry OLD_ID NEW_ID` follows the same lifecycle behavior as `sirno entry move`.
 
 ---
 

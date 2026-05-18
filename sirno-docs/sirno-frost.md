@@ -36,6 +36,7 @@ It does not immediately import or commit the public *lake*.
 `sirno frost move PATH` renames the configured *frost* path
 and writes the new path back to `[frost].path`.
 `sirno frost mv PATH` is its short form.
+`sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
 The move refuses to replace an existing destination.
 
 A *frost* commit imports the selected public *entry* set and its lake-owned artifacts.

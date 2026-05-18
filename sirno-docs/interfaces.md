@@ -35,7 +35,10 @@ select the same lake operation.
 `sirno commit`, `sirno checkout`, and `sirno defrost`
 select the same Frost operations as their grouped `sirno frost ...` forms.
 Public lake setup and path moves also live under `sirno lake`.
-Top-level `sirno move` is a reserved command.
+Top-level `sirno move` groups the three mutation moves:
+`sirno move entry OLD_ID NEW_ID`, `sirno move lake PATH`, and `sirno move frost PATH`.
+`sirno mv ...` is its short form.
+Each wrapper delegates to the corresponding grouped move command.
 For artifact mutation,
 `sirno artifact ...` and `sirno entry artifact ...` select the same entry operation.
 Those commands should remain plain enough to use from a terminal
@@ -55,12 +58,14 @@ By default, it names those paths from the directory that contains `Sirno.toml`:
 `sirno lake move PATH` changes the configured public *lake* path
 and renames the current *lake* directory on the filesystem.
 `sirno lake mv PATH` is its short form.
+`sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
 
 `sirno frost init [PATH]` configures the private *frost* path
 and records empty version `0`.
 `sirno frost move PATH` changes the configured *frost* path
 and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.
+`sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
 `sirno commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 `sirno frost commit` is its grouped form.
@@ -85,6 +90,8 @@ It updates structural metadata targets,
 existing *generated footer* regions,
 and configured *witness* sentinels that reference `OLD_ID`.
 `sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
+`sirno move entry OLD_ID NEW_ID` and `sirno mv entry OLD_ID NEW_ID`
+select the same entry rename.
 Authored prose outside *generated footer* regions remains user-owned.
 
 `sirno path ENTRY_ID` prints filesystem paths related to one *entry*.
