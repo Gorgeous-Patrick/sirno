@@ -17,7 +17,7 @@ Sirno does not create a separate workitem id.
 `neighbor` names the *entry* that must be reviewed.
 
 The same tuple can be produced through the waterline, the frostline, or both.
-Status output shows one workitem with its source list,
+Full status output shows one workitem with its source list,
 such as `lake`, `frost`, or both.
 The source list explains why the obligation exists without changing its identity.
 

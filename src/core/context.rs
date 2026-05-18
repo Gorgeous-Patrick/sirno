@@ -211,10 +211,22 @@ impl CoreContext {
         Ok(tide_statuses_for_output(&tide, all))
     }
 
-    /// Return tide statuses as a JSON-first command result.
-    pub fn tide_status(&self, all: bool) -> Result<TideStatusResult, CommandError> {
-        let statuses = self.tide_statuses(all)?;
-        Ok(TideStatusResult { ok: statuses.iter().all(|status| status.resolved), statuses })
+    /// Return entry ids that still need tide review.
+    pub fn tide_review_entries(&self) -> Result<Vec<EntryId>, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        Ok(tide.review_entries())
+    }
+
+    /// Return tide review entries and optional full statuses as a JSON-first command result.
+    pub fn tide_status(&self, full: bool, all: bool) -> Result<TideStatusResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        let review_entries = tide.review_entries();
+        let statuses = if full { tide_statuses_for_output(&tide, all) } else { Vec::new() };
+        Ok(TideStatusResult { ok: review_entries.is_empty(), review_entries, statuses })
     }
 
     /// Return repository witness records for one entry.

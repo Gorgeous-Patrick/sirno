@@ -973,6 +973,28 @@ fn frost_defrost_rejects_checkout_arguments() {
 }
 
 #[test]
+fn tide_status_accepts_full_flag() {
+    let full = Cli::parse_from(["sirno", "tide", "status", "--full"]);
+    let all = Cli::parse_from(["sirno", "tide", "status", "--full", "--all"]);
+
+    assert!(matches!(
+        full.command,
+        Command::Tide { command: TideCommand::Status { full: true, all: false, .. } }
+    ));
+    assert!(matches!(
+        all.command,
+        Command::Tide { command: TideCommand::Status { full: true, all: true, .. } }
+    ));
+}
+
+#[test]
+fn tide_status_all_requires_full() {
+    let error = Cli::try_parse_from(["sirno", "tide", "status", "--all"]).unwrap_err();
+
+    assert_eq!(error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+}
+
+#[test]
 fn tide_resolve_accepts_neighbor_and_tuple_selectors() {
     let neighbor = Cli::parse_from(["sirno", "tide", "resolve", "beta"]);
     let tuple = Cli::parse_from(["sirno", "tide", "resolve", "alpha,belongs,to,beta"]);

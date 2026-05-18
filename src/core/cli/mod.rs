@@ -543,10 +543,13 @@ enum TideItemSelectorParseError {
 #[derive(Debug, Subcommand)]
 // sirno:witness:tide:begin
 enum TideCommand {
-    /// Show tide workitems.
+    /// Show tide review status.
     Status {
-        /// Include resolved workitems.
+        /// Show full workitem statuses instead of review entry ids.
         #[arg(long)]
+        full: bool,
+        /// Include resolved workitems.
+        #[arg(long, requires = "full")]
         all: bool,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
@@ -1131,16 +1134,22 @@ impl TideCommand {
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
     ) -> Result<ExitCode, CommandError> {
         match self {
-            | TideCommand::Status { all, format } => {
-                let statuses =
-                    CoreContext::from_cli_paths(config_path, lake_path).tide_statuses(all)?;
+            | TideCommand::Status { full, all, format } => {
+                let context = CoreContext::from_cli_paths(config_path, lake_path);
                 let format = format.unwrap_or_default();
-                print_tide_statuses(&statuses, format)?;
-                Ok(if statuses.iter().all(|status| status.resolved) {
-                    ExitCode::SUCCESS
+                if full {
+                    let statuses = context.tide_statuses(all)?;
+                    print_tide_statuses(&statuses, format)?;
+                    Ok(if statuses.iter().all(|status| status.resolved) {
+                        ExitCode::SUCCESS
+                    } else {
+                        ExitCode::FAILURE
+                    })
                 } else {
-                    ExitCode::FAILURE
-                })
+                    let entries = context.tide_review_entries()?;
+                    print_tide_review_entries(&entries, format)?;
+                    Ok(if entries.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+                }
             }
             | TideCommand::Review(command) => command.run(config_path, lake_path),
             | TideCommand::Reset => {
@@ -1241,6 +1250,26 @@ fn print_tide_statuses(
                         .collect::<Vec<_>>()
                         .join(",");
                     println!("{state}: {} [{sources}]", status.workitem);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn print_tide_review_entries(
+    entries: &[EntryId], format: TideOutputFormat,
+) -> Result<(), CommandError> {
+    match format {
+        | TideOutputFormat::Json => {
+            print_json(entries)?;
+        }
+        | TideOutputFormat::Human => {
+            if entries.is_empty() {
+                println!("tide: clear");
+            } else {
+                for entry in entries {
+                    println!("{entry}");
                 }
             }
         }

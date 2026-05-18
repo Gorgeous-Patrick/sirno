@@ -368,10 +368,13 @@ impl SirnoMcpServer {
         result(self.context.frost_defrost())
     }
 
-    /// Show tide workitems.
+    /// Show tide review status.
     #[tool(name = "tide_status")]
     fn tide_status(&self, Parameters(params): Parameters<TideStatusParams>) -> McpToolResult {
-        result(self.context.tide_status(params.all))
+        if params.all && !params.full {
+            return Err("tide_status `all` requires `full`".to_owned());
+        }
+        result(self.context.tide_status(params.full, params.all))
     }
 
     /// Resolve tide workitems.
@@ -666,6 +669,10 @@ struct FrostCheckoutParams {
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideStatusParams {
+    /// Include full workitem statuses instead of only review entry ids.
+    #[serde(default)]
+    full: bool,
+    /// Include resolved workitem statuses. Requires `full`.
     #[serde(default)]
     all: bool,
 }
@@ -748,7 +755,10 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::{CONFIG_FILE_NAME, SirnoConfig};
+    use crate::{
+        CONFIG_FILE_NAME, SirnoConfig, StructuralEdgeSettings, StructuralFieldSettings,
+        StructuralRippleSettings, StructuralSettings,
+    };
 
     // sirno:witness:interfaces:begin
     const EXPECTED_TOOLS: &[&str] = &[
@@ -797,6 +807,66 @@ desc: Alpha entry.
 ---
 
 Body.
+",
+        )
+        .unwrap();
+        config_path
+    }
+
+    fn write_open_tide_project(root: &Path) -> PathBuf {
+        let config_path = root.join(CONFIG_FILE_NAME);
+        let docs = root.join("docs");
+        let config = SirnoConfig {
+            structural: StructuralSettings::from_fields([(
+                "belongs",
+                StructuralFieldSettings::new(
+                    StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                    StructuralEdgeSettings::default(),
+                    StructuralEdgeSettings::default(),
+                ),
+            )]),
+            ..SirnoConfig::new("docs").with_frost("sirno-frost")
+        };
+        config.write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            docs.join("beta.md"),
+            "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        CoreContext::new(&config_path).frost_commit(true).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Changed body.
 ",
         )
         .unwrap();
@@ -852,6 +922,34 @@ Body.
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
         assert!(text.contains("\n  \"ok\": true,"));
+    }
+
+    #[test]
+    fn tide_status_defaults_to_review_entries() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = write_open_tide_project(temp.path());
+        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+
+        let summary = server.tide_status(Parameters(TideStatusParams::default())).unwrap();
+        let full =
+            server.tide_status(Parameters(TideStatusParams { full: true, all: false })).unwrap();
+
+        assert_eq!(structured(&summary)["ok"], false);
+        assert_eq!(structured(&summary)["review_entries"], json!(["beta"]));
+        assert!(structured(&summary).get("statuses").is_none());
+        assert_eq!(structured(&full)["review_entries"], json!(["beta"]));
+        assert_eq!(structured(&full)["statuses"][0]["workitem"]["neighbor"], "beta");
+    }
+
+    #[test]
+    fn tide_status_all_requires_full() {
+        let server = SirnoMcpServer::new(CoreContext::new("Sirno.toml"));
+
+        let error = server
+            .tide_status(Parameters(TideStatusParams { full: false, all: true }))
+            .unwrap_err();
+
+        assert_eq!(error, "tide_status `all` requires `full`");
     }
 
     #[derive(Clone, Debug, Default)]

@@ -867,9 +867,12 @@ pub struct TideChangeResult {
 /// JSON-ready tide status result.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TideStatusResult {
-    /// Whether no open workitem remains in the listed statuses.
+    /// Whether no entry still needs review.
     pub ok: bool,
-    /// Tide workitem statuses.
+    /// Entry ids that still need review.
+    pub review_entries: Vec<EntryId>,
+    /// Full workitem statuses when requested.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub statuses: Vec<TideStatus>,
 }
 

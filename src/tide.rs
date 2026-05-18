@@ -265,6 +265,15 @@ impl Tide {
         self.statuses.iter().filter(|status| !status.resolved)
     }
 
+    /// Entry ids that still need dependency review.
+    pub fn review_entries(&self) -> Vec<EntryId> {
+        self.open_statuses()
+            .map(|status| status.workitem.neighbor.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
+
     /// Returns true when no open workitem remains.
     pub fn is_clear(&self) -> bool {
         self.open_statuses().next().is_none()
@@ -468,6 +477,20 @@ mod tests {
             tide.statuses().iter().map(|status| status.workitem.to_string()).collect::<Vec<_>>();
 
         assert_eq!(workitems, ["ripple,belongs,to,new-neighbor", "ripple,belongs,to,old-neighbor"]);
+    }
+
+    #[test]
+    fn review_entries_are_deduplicated_open_neighbors() {
+        let mut old = entry("ripple");
+        old.metadata.push_structural_target("belongs", id("neighbor"));
+        let mut new = old.clone();
+        new.body = "changed body.\n".to_owned();
+
+        let tide = Tide::from_entries(&[old], &[new], &belongs_settings(true, true), &[]).unwrap();
+        let entries =
+            tide.review_entries().into_iter().map(|id| id.to_string()).collect::<Vec<_>>();
+
+        assert_eq!(entries, ["neighbor"]);
     }
 
     #[test]
