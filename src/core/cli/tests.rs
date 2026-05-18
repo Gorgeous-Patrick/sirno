@@ -11,8 +11,9 @@ use super::OpenTideTutorial;
 use crate::{
     CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostError,
     FrostLockStatus, FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralEdgeSettings, StructuralFieldSettings,
-    StructuralRippleSettings, StructuralSettings, TutorialSettings, WitnessRecord, WitnessSpan,
+    SirnoFrost, SirnoLock, StructuralEdgeDirection, StructuralEdgeSettings,
+    StructuralFieldSettings, StructuralRippleSettings, StructuralSettings, TideSource, TideStatus,
+    TideWorkitem, TutorialSettings, WitnessRecord, WitnessSpan,
 };
 
 use super::{
@@ -24,8 +25,9 @@ use super::{
     TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
     TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
     format_gen_link_report, format_human_table_with_width, format_json, format_path_table,
-    format_query_json, format_query_table, format_skill_wrapper_table, format_witness_record,
-    format_witness_records, rg_args_include_preprocessor,
+    format_query_json, format_query_table, format_skill_wrapper_table, format_tide_review_waves,
+    format_tide_statuses, format_witness_record, format_witness_records,
+    rg_args_include_preprocessor,
 };
 
 fn assert_before(source: &str, before: &str, after: &str) {
@@ -1845,6 +1847,127 @@ fn human_table_elides_columns_when_width_is_too_small() {
 └────┴──────┴─────┘
 "
     );
+}
+
+fn tide_status_fixture(
+    ripple: &str, field: &str, direction: StructuralEdgeDirection, neighbor: &str,
+    sources: &[TideSource], resolved: bool,
+) -> TideStatus {
+    TideStatus {
+        workitem: TideWorkitem::new(
+            EntryId::new(ripple).unwrap(),
+            field,
+            direction,
+            EntryId::new(neighbor).unwrap(),
+        )
+        .unwrap(),
+        sources: sources.iter().copied().collect(),
+        fingerprint: format!("{ripple}-{neighbor}"),
+        resolved,
+    }
+}
+
+fn heavy_wave_separator_count(output: &str) -> usize {
+    let mut header_separator_seen = false;
+    output
+        .lines()
+        .filter(|line| {
+            if !line.starts_with('╞') {
+                return false;
+            }
+            if header_separator_seen {
+                true
+            } else {
+                header_separator_seen = true;
+                false
+            }
+        })
+        .count()
+}
+
+#[test]
+fn tide_review_waves_merge_into_one_table() {
+    let statuses = vec![
+        tide_status_fixture(
+            "interfaces",
+            "belongs",
+            StructuralEdgeDirection::Clique,
+            "agent-skills",
+            &[TideSource::Lake],
+            false,
+        ),
+        tide_status_fixture(
+            "interfaces",
+            "belongs",
+            StructuralEdgeDirection::Clique,
+            "form",
+            &[TideSource::Lake],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "refines",
+            StructuralEdgeDirection::From,
+            "wave",
+            &[TideSource::Lake, TideSource::Frost],
+            false,
+        ),
+    ];
+
+    let output = format_tide_review_waves(&statuses);
+
+    assert!(output.contains("tide: 3 open workitems in 2 waves"));
+    assert!(output.contains("review entries: 3 unique"));
+    assert_eq!(output.matches('┌').count(), 1);
+    assert_eq!(heavy_wave_separator_count(&output), 1);
+    assert!(output.contains("│ wave       ┆ entry"));
+    assert!(output.contains("│ interfaces ┆ agent-skills │"));
+    assert!(output.contains("│            ┆ form"));
+    assert!(output.contains("│ tide       ┆ wave"));
+}
+
+#[test]
+fn tide_full_statuses_group_by_wave() {
+    let statuses = vec![
+        tide_status_fixture(
+            "interfaces",
+            "belongs",
+            StructuralEdgeDirection::Clique,
+            "agent-skills",
+            &[TideSource::Lake],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "refines",
+            StructuralEdgeDirection::From,
+            "wave",
+            &[TideSource::Lake, TideSource::Frost],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "belongs",
+            StructuralEdgeDirection::To,
+            "frost-versioning",
+            &[TideSource::Lake],
+            true,
+        ),
+    ];
+
+    let output = format_tide_statuses(&statuses);
+
+    assert!(output.contains("tide: 2 open workitems, 1 resolved in 2 waves"));
+    assert!(output.contains("review entries: 2 unique"));
+    assert_eq!(output.matches('┌').count(), 1);
+    assert_eq!(heavy_wave_separator_count(&output), 1);
+    assert!(output.contains("│ wave       ┆ entry"));
+    assert!(output.contains("┆ state"));
+    assert!(output.contains("│ interfaces ┆ agent-skills"));
+    assert!(output.contains("│ tide       ┆ wave"));
+    assert!(output.contains("│            ┆ frost-versioning"));
+    assert!(output.contains("lake,frost"));
+    assert!(output.contains("resolved"));
 }
 
 #[test]

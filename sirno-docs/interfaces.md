@@ -177,8 +177,9 @@ Sirno preserves the matched indentation.
 A blank line separates the summary from that region.
 Multiple full regions are separated by a blank line, `---`, and another blank line.
 
-`sirno tide status` reports entry ids that need dependency review.
-`sirno tide status --full` reports open dependency review obligations.
+`sirno tide status` reports entry ids that need dependency review,
+grouped by ripple id in one table.
+`sirno tide status --full` reports open dependency review obligations in the same wave-grouped table.
 `sirno tide status --full --all` also reports resolved obligations.
 `sirno tide status -o, --format` selects `human` or `json` output.
 The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.

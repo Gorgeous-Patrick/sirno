@@ -1,5 +1,6 @@
 //! CLI grammar and terminal dispatch for the shared command surface.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -21,9 +22,9 @@ use crate::core::dto::{
 };
 use crate::core::error::CommandError;
 use crate::core::output::{
-    format_path_table, format_skill_wrapper_table, print_config_comment_result,
-    print_entry_directory_report, print_json, print_lake_check_result, print_query_results,
-    print_render_result, print_status_result, print_witness_records,
+    format_human_table_with_width, format_path_table, format_skill_wrapper_table,
+    print_config_comment_result, print_entry_directory_report, print_json, print_lake_check_result,
+    print_query_results, print_render_result, print_status_result, print_witness_records,
 };
 use crate::core::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -41,8 +42,8 @@ use crate::core::dto::{QueryColumn, StructuralFieldState};
 use crate::core::error::OpenTideTutorial;
 #[cfg(test)]
 use crate::core::output::{
-    format_gen_link_report, format_human_table_with_width, format_json, format_query_json,
-    format_query_table, format_witness_record, format_witness_records,
+    format_gen_link_report, format_json, format_query_json, format_query_table,
+    format_witness_record, format_witness_records,
 };
 #[cfg(test)]
 use crate::core::rg::rg_args_include_preprocessor;
@@ -1146,9 +1147,9 @@ impl TideCommand {
                         ExitCode::FAILURE
                     })
                 } else {
-                    let entries = context.tide_review_entries()?;
-                    print_tide_review_entries(&entries, format)?;
-                    Ok(if entries.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+                    let statuses = context.tide_statuses(false)?;
+                    print_tide_review_waves(&statuses, format)?;
+                    Ok(if statuses.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
                 }
             }
             | TideCommand::Review(command) => command.run(config_path, lake_path),
@@ -1235,46 +1236,245 @@ fn print_tide_statuses(
             print_json(statuses)?;
         }
         | TideOutputFormat::Human => {
-            if statuses.is_empty() {
-                println!("tide: clear");
-            } else {
-                for status in statuses {
-                    let state = if status.resolved { "resolved" } else { "open" };
-                    let sources = status
-                        .sources
-                        .iter()
-                        .map(|source| match source {
-                            | TideSource::Lake => "lake",
-                            | TideSource::Frost => "frost",
-                        })
-                        .collect::<Vec<_>>()
-                        .join(",");
-                    println!("{state}: {} [{sources}]", status.workitem);
-                }
-            }
+            print!("{}", format_tide_statuses(statuses));
         }
     }
     Ok(())
 }
 
-fn print_tide_review_entries(
-    entries: &[EntryId], format: TideOutputFormat,
+fn print_tide_review_waves(
+    statuses: &[TideStatus], format: TideOutputFormat,
 ) -> Result<(), CommandError> {
     match format {
         | TideOutputFormat::Json => {
-            print_json(entries)?;
+            let entries = tide_review_entries_from_statuses(statuses);
+            print_json(&entries)?;
         }
         | TideOutputFormat::Human => {
-            if entries.is_empty() {
-                println!("tide: clear");
-            } else {
-                for entry in entries {
-                    println!("{entry}");
-                }
-            }
+            print!("{}", format_tide_review_waves(statuses));
         }
     }
     Ok(())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TideReviewWave {
+    ripple: EntryId,
+    entries: Vec<EntryId>,
+}
+
+fn format_tide_review_waves(statuses: &[TideStatus]) -> String {
+    let waves = tide_review_waves(statuses);
+    if waves.is_empty() {
+        return "tide: clear\n".to_owned();
+    }
+
+    let open_count = statuses.iter().filter(|status| !status.resolved).count();
+    let review_entry_count = tide_review_entries_from_statuses(statuses).len();
+    let mut output = format!(
+        "tide: {open_count} open {} in {} {}\n{}: {review_entry_count} unique\n\n",
+        plural(open_count, "workitem", "workitems"),
+        waves.len(),
+        plural(waves.len(), "wave", "waves"),
+        plural(review_entry_count, "review entry", "review entries"),
+    );
+
+    let rows = waves
+        .iter()
+        .flat_map(|wave| {
+            wave.entries.iter().enumerate().map(|(index, entry)| {
+                let ripple = if index == 0 { wave.ripple.to_string() } else { String::new() };
+                TideWaveTableRow { starts_wave: index == 0, cells: vec![ripple, entry.to_string()] }
+            })
+        })
+        .collect::<Vec<_>>();
+    output.push_str(&format_tide_wave_table(vec!["wave".to_owned(), "entry".to_owned()], rows));
+
+    output
+}
+
+fn format_tide_statuses(statuses: &[TideStatus]) -> String {
+    let waves = tide_status_waves(statuses);
+    if waves.is_empty() {
+        return "tide: clear\n".to_owned();
+    }
+
+    let open_count = statuses.iter().filter(|status| !status.resolved).count();
+    let resolved_count = statuses.len() - open_count;
+    let review_entry_count = tide_review_entries_from_statuses(statuses).len();
+    let mut output = if resolved_count == 0 {
+        format!(
+            "tide: {open_count} open {} in {} {}\n",
+            plural(open_count, "workitem", "workitems"),
+            waves.len(),
+            plural(waves.len(), "wave", "waves"),
+        )
+    } else {
+        format!(
+            "tide: {open_count} open {}, {resolved_count} resolved in {} {}\n",
+            plural(open_count, "workitem", "workitems"),
+            waves.len(),
+            plural(waves.len(), "wave", "waves"),
+        )
+    };
+    output.push_str(&format!(
+        "{}: {review_entry_count} unique\n\n",
+        plural(review_entry_count, "review entry", "review entries"),
+    ));
+
+    let rows = waves
+        .iter()
+        .flat_map(|wave| {
+            wave.statuses.iter().enumerate().map(|(index, status)| {
+                let ripple = if index == 0 { wave.ripple.to_string() } else { String::new() };
+                TideWaveTableRow {
+                    starts_wave: index == 0,
+                    cells: vec![
+                        ripple,
+                        status.workitem.neighbor.to_string(),
+                        tide_state_label(status).to_owned(),
+                        status.workitem.field.clone(),
+                        status.workitem.direction.to_string(),
+                        tide_sources_label(status),
+                    ],
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    output.push_str(&format_tide_wave_table(
+        vec![
+            "wave".to_owned(),
+            "entry".to_owned(),
+            "state".to_owned(),
+            "field".to_owned(),
+            "direction".to_owned(),
+            "sources".to_owned(),
+        ],
+        rows,
+    ));
+
+    output
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TideWaveTableRow {
+    cells: Vec<String>,
+    starts_wave: bool,
+}
+
+fn format_tide_wave_table(headers: Vec<String>, rows: Vec<TideWaveTableRow>) -> String {
+    let wave_start_rows = rows
+        .iter()
+        .enumerate()
+        .filter_map(|(index, row)| row.starts_wave.then_some(index))
+        .filter(|index| *index > 0)
+        .collect::<Vec<_>>();
+    let rows = rows.into_iter().map(|row| row.cells).collect::<Vec<_>>();
+    let table = format_human_table_with_width(headers, rows, None);
+    strengthen_tide_wave_separators(&table, &wave_start_rows)
+}
+
+fn strengthen_tide_wave_separators(table: &str, wave_start_rows: &[usize]) -> String {
+    if wave_start_rows.is_empty() {
+        return table.to_owned();
+    }
+
+    let mut lines = table.lines().map(str::to_owned).collect::<Vec<_>>();
+    for row_index in wave_start_rows {
+        if let Some(separator) = lines.get_mut(tide_row_separator_index(*row_index)) {
+            *separator = heavy_table_separator(separator);
+        }
+    }
+
+    let mut output = lines.join("\n");
+    output.push('\n');
+    output
+}
+
+fn tide_row_separator_index(row_index: usize) -> usize {
+    2 * row_index + 2
+}
+
+fn heavy_table_separator(separator: &str) -> String {
+    let length = separator.chars().count();
+    separator
+        .chars()
+        .enumerate()
+        .map(|(index, character)| {
+            if index == 0 {
+                '╞'
+            } else if index + 1 == length {
+                '╡'
+            } else if character == '┼' {
+                '╪'
+            } else {
+                '═'
+            }
+        })
+        .collect()
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TideStatusWave<'a> {
+    ripple: EntryId,
+    statuses: Vec<&'a TideStatus>,
+}
+
+fn tide_review_waves(statuses: &[TideStatus]) -> Vec<TideReviewWave> {
+    let mut entries_by_ripple = BTreeMap::<EntryId, BTreeSet<EntryId>>::new();
+    for status in statuses.iter().filter(|status| !status.resolved) {
+        entries_by_ripple
+            .entry(status.workitem.ripple.clone())
+            .or_default()
+            .insert(status.workitem.neighbor.clone());
+    }
+
+    entries_by_ripple
+        .into_iter()
+        .map(|(ripple, entries)| TideReviewWave { ripple, entries: entries.into_iter().collect() })
+        .collect()
+}
+
+fn tide_status_waves(statuses: &[TideStatus]) -> Vec<TideStatusWave<'_>> {
+    let mut statuses_by_ripple = BTreeMap::<EntryId, Vec<&TideStatus>>::new();
+    for status in statuses {
+        statuses_by_ripple.entry(status.workitem.ripple.clone()).or_default().push(status);
+    }
+
+    statuses_by_ripple
+        .into_iter()
+        .map(|(ripple, statuses)| TideStatusWave { ripple, statuses })
+        .collect()
+}
+
+fn tide_review_entries_from_statuses(statuses: &[TideStatus]) -> Vec<EntryId> {
+    statuses
+        .iter()
+        .filter(|status| !status.resolved)
+        .map(|status| status.workitem.neighbor.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+fn tide_state_label(status: &TideStatus) -> &'static str {
+    if status.resolved { "resolved" } else { "open" }
+}
+
+fn tide_sources_label(status: &TideStatus) -> String {
+    status
+        .sources
+        .iter()
+        .map(|source| match source {
+            | TideSource::Lake => "lake",
+            | TideSource::Frost => "frost",
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
+    if count == 1 { singular } else { plural }
 }
 
 impl ArtifactCommand {
