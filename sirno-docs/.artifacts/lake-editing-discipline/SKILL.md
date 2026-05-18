@@ -202,7 +202,7 @@ Useful document-search commands:
 
 ```text
 sirno query TERMS --columns id,desc
-sirno query --exact FIELD=ENTRY_ID --columns id,path,desc
+sirno query --has FIELD=ENTRY_ID --columns id,path,desc
 sirno rg TEXT
 sirno rg -n TEXT
 sirno rg -C 2 TEXT

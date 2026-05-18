@@ -17,7 +17,7 @@ and the code or docs they point to.
 
 Follow a fixed order.
 Locate the active `Sirno.toml` and read its lake, structural, and repo settings.
-Query the lake, starting vague for discovery and exact when a structural field or entry id is known,
+Query the lake, starting vague for discovery and using `--has` when a structural field is known,
 and read the `desc` field before narrowing.
 Read the few highest-signal entries and follow their structural fields.
 Ask Sirno for evidence with `sirno witness ENTRY_ID --full`.

@@ -175,9 +175,12 @@ enum TopLevelEntryCommand {
         /// Exact text term matched against id, name, desc, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
-        /// Exact structural predicate as FIELD=ENTRY_ID.
-        #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
-        exact: Vec<StructuralPredicate>,
+        /// Structural filter as FIELD=ENTRY_ID[,ENTRY_ID].
+        ///
+        /// Different fields narrow results.
+        /// Comma-separated values and repeated same-field filters are alternatives.
+        #[arg(long = "has", value_name = "FIELD=ENTRY_ID[,ENTRY_ID]")]
+        has: Vec<StructuralFilter>,
         /// Comma-separated output columns: id, name, path, desc.
         #[arg(long = "columns", value_name = "COLUMNS")]
         columns: Option<QueryColumns>,
@@ -517,6 +520,58 @@ enum StructuralPredicateParseError {
     #[error("structural field name must not be empty")]
     EmptyField,
     /// The target entry id is invalid.
+    #[error(transparent)]
+    EntryId(#[from] EntryIdError),
+}
+
+/// Structural query filter parsed from `FIELD=ENTRY_ID[,ENTRY_ID]`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct StructuralFilter {
+    field: String,
+    targets: Vec<EntryId>,
+}
+
+impl FromStr for StructuralFilter {
+    type Err = StructuralFilterParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        let Some((field, targets)) = raw.split_once('=') else {
+            return Err(StructuralFilterParseError::MissingEquals);
+        };
+        let field = field.trim();
+        if field.is_empty() {
+            return Err(StructuralFilterParseError::EmptyField);
+        }
+        let targets = parse_structural_filter_targets(targets)?;
+        Ok(Self { field: field.to_owned(), targets })
+    }
+}
+
+fn parse_structural_filter_targets(raw: &str) -> Result<Vec<EntryId>, StructuralFilterParseError> {
+    let mut targets = Vec::new();
+    for raw_target in raw.split(',') {
+        let target = raw_target.trim();
+        if target.is_empty() {
+            return Err(StructuralFilterParseError::EmptyTarget);
+        }
+        targets.push(EntryId::new(target)?);
+    }
+    Ok(targets)
+}
+
+/// Error raised while parsing one structural query filter.
+#[derive(Debug, Error)]
+enum StructuralFilterParseError {
+    /// The argument does not contain the field-target separator.
+    #[error("expected FIELD=ENTRY_ID[,ENTRY_ID]")]
+    MissingEquals,
+    /// The structural field name is empty.
+    #[error("structural field name must not be empty")]
+    EmptyField,
+    /// The target entry id list contains a separator without a target.
+    #[error("structural filter contains an empty target")]
+    EmptyTarget,
+    /// A target entry id is invalid.
     #[error(transparent)]
     EntryId(#[from] EntryIdError),
 }
@@ -886,7 +941,7 @@ impl TopLevelEntryCommand {
                 let mut metadata =
                     EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
                 for (field, targets) in
-                    structural_targets_by_field(structural, &settings.structural)?
+                    structural_targets_by_predicate(structural, &settings.structural)?
                 {
                     metadata.set_structural_targets(field, targets);
                 }
@@ -921,7 +976,7 @@ impl TopLevelEntryCommand {
                 print_path_records(&records, args.format.unwrap_or_default())?;
                 Ok(ExitCode::SUCCESS)
             }
-            | TopLevelEntryCommand::Query { terms, exact_terms, exact, columns, format } => {
+            | TopLevelEntryCommand::Query { terms, exact_terms, has, columns, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
                 settings.witness = None;
@@ -933,13 +988,13 @@ impl TopLevelEntryCommand {
                 }
 
                 let vague_query = VagueEntryQuery::new().with_text_terms(terms);
-                let exact_query = exact_query_from_predicates(
+                let filtered_query = entry_query_from_filters(
                     EntryQuery::new().with_text_terms(exact_terms),
-                    exact,
+                    has,
                     &settings.structural,
                 )?;
                 let vague_matches = vague_query.select_entries(report.entries());
-                let matches = exact_query.select_entries(vague_matches);
+                let matches = filtered_query.select_entries(vague_matches);
                 let columns = columns.unwrap_or_default();
                 let format = format.unwrap_or_default();
                 print_query_results(&report, &matches, &columns, format)?;
@@ -1855,16 +1910,29 @@ fn resolve_lake_directory(
     Ok((config.resolve_lake(config_path), entry_directory_check_settings(config_path, &config)))
 }
 
-fn exact_query_from_predicates(
-    mut query: EntryQuery, predicates: Vec<StructuralPredicate>, structural: &StructuralSettings,
+fn entry_query_from_filters(
+    mut query: EntryQuery, filters: Vec<StructuralFilter>, structural: &StructuralSettings,
 ) -> Result<EntryQuery, CommandError> {
-    for (field, targets) in structural_targets_by_field(predicates, structural)? {
+    for (field, targets) in structural_filter_targets_by_field(filters, structural)? {
         query = query.with_structural_targets(field, targets);
     }
     Ok(query)
 }
 
-fn structural_targets_by_field(
+fn structural_filter_targets_by_field(
+    filters: Vec<StructuralFilter>, structural: &StructuralSettings,
+) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
+    let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
+    for filter in filters {
+        if !structural.contains_field(&filter.field) {
+            return Err(CommandError::UnconfiguredStructuralField(filter.field));
+        }
+        targets_by_field.entry(filter.field).or_default().extend(filter.targets);
+    }
+    Ok(targets_by_field)
+}
+
+fn structural_targets_by_predicate(
     predicates: Vec<StructuralPredicate>, structural: &StructuralSettings,
 ) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
     let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
@@ -2473,9 +2541,9 @@ mod tests {
         ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
         EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
         MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
-        StructuralPredicate, TideCommand, TideItemSelector, TideOutputFormat, TideReviewCommand,
-        TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs,
-        entry_path_records, exact_query_from_predicates, format_gen_link_report,
+        StructuralFilter, StructuralPredicate, TideCommand, TideItemSelector, TideOutputFormat,
+        TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand,
+        UnresolveArgs, entry_path_records, entry_query_from_filters, format_gen_link_report,
         format_human_table_with_width, format_path_table, format_query_json, format_query_table,
         format_witness_record, format_witness_records, rg_args_include_preprocessor,
     };
@@ -3681,15 +3749,18 @@ Body.
     }
 
     #[test]
-    fn query_accepts_exact_structural_predicate() {
-        let cli = Cli::parse_from(["sirno", "query", "--exact", "topic=concept"]);
+    fn query_accepts_structural_filter() {
+        let cli = Cli::parse_from(["sirno", "query", "--has", "topic=concept,methodology"]);
 
         assert!(matches!(
             cli.command,
-            Command::TopLevelEntry(TopLevelEntryCommand::Query { exact, .. })
-                if exact == vec![StructuralPredicate {
+            Command::TopLevelEntry(TopLevelEntryCommand::Query { has, .. })
+                if has == vec![StructuralFilter {
                     field: "topic".to_owned(),
-                    target: EntryId::new("concept").unwrap(),
+                    targets: vec![
+                        EntryId::new("concept").unwrap(),
+                        EntryId::new("methodology").unwrap(),
+                    ],
                 }]
         ));
     }
@@ -3699,7 +3770,7 @@ Body.
         let cli = Cli::parse_from([
             "sirno",
             "q",
-            "-x",
+            "--has",
             "topic=concept",
             "--columns",
             "id,path",
@@ -3707,7 +3778,7 @@ Body.
             "human",
         ]);
         let Command::TopLevelEntry(TopLevelEntryCommand::Query {
-            exact,
+            has,
             columns: Some(columns),
             format: Some(format),
             ..
@@ -3717,10 +3788,10 @@ Body.
         };
 
         assert_eq!(
-            exact,
-            vec![StructuralPredicate {
+            has,
+            vec![StructuralFilter {
                 field: "topic".to_owned(),
-                target: EntryId::new("concept").unwrap(),
+                targets: vec![EntryId::new("concept").unwrap()],
             }]
         );
         assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
@@ -3733,7 +3804,7 @@ Body.
             "sirno",
             "entry",
             "q",
-            "-x",
+            "--has",
             "topic=concept",
             "--columns",
             "id,path",
@@ -3743,7 +3814,7 @@ Body.
         let Command::Entry {
             command:
                 EntryCommand::TopLevel(TopLevelEntryCommand::Query {
-                    exact,
+                    has,
                     columns: Some(columns),
                     format: Some(format),
                     ..
@@ -3754,10 +3825,10 @@ Body.
         };
 
         assert_eq!(
-            exact,
-            vec![StructuralPredicate {
+            has,
+            vec![StructuralFilter {
                 field: "topic".to_owned(),
-                target: EntryId::new("concept").unwrap(),
+                targets: vec![EntryId::new("concept").unwrap()],
             }]
         );
         assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
@@ -3969,9 +4040,25 @@ Body.
     #[test]
     fn query_rejects_old_exact_structural_flags() {
         let error =
+            Cli::try_parse_from(["sirno", "query", "--exact", "topic=concept"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        let error = Cli::try_parse_from(["sirno", "query", "-x", "topic=concept"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        let error =
             Cli::try_parse_from(["sirno", "query", "--exact-topic", "concept"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn query_rejects_empty_has_target() {
+        let error = Cli::try_parse_from(["sirno", "query", "--has", "topic=concept,"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
     }
 
     #[test]
@@ -4027,10 +4114,10 @@ Body.
     }
 
     #[test]
-    fn exact_query_rejects_unconfigured_structural_field() {
-        let error = exact_query_from_predicates(
+    fn query_filter_rejects_unconfigured_structural_field() {
+        let error = entry_query_from_filters(
             EntryQuery::new(),
-            vec!["topic=concept".parse::<StructuralPredicate>().unwrap()],
+            vec!["topic=concept".parse::<StructuralFilter>().unwrap()],
             &StructuralSettings::default(),
         )
         .unwrap_err();
@@ -4041,17 +4128,34 @@ Body.
     }
 
     #[test]
-    fn exact_query_keeps_repeated_field_targets_disjunctive() {
+    fn query_filter_keeps_comma_separated_targets_disjunctive() {
         let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
         metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
         let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
         let settings =
             StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
-        let query = exact_query_from_predicates(
+        let query = entry_query_from_filters(
+            EntryQuery::new(),
+            vec!["topic=concept,meta".parse::<StructuralFilter>().unwrap()],
+            &settings,
+        )
+        .unwrap();
+
+        assert!(query.matches(&entry));
+    }
+
+    #[test]
+    fn query_filter_keeps_repeated_field_targets_disjunctive() {
+        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
+        let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
+        let settings =
+            StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
+        let query = entry_query_from_filters(
             EntryQuery::new(),
             vec![
-                "topic=concept".parse::<StructuralPredicate>().unwrap(),
-                "topic=meta".parse::<StructuralPredicate>().unwrap(),
+                "topic=concept".parse::<StructuralFilter>().unwrap(),
+                "topic=meta".parse::<StructuralFilter>().unwrap(),
             ],
             &settings,
         )

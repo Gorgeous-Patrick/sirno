@@ -1,6 +1,6 @@
 ---
 name: Query
-desc: Selection of Sirno entries through vague text and exact structural predicates.
+desc: Selection of Sirno entries through vague text and structural filters.
 category:
   - concept
 belongs:
@@ -27,10 +27,12 @@ Vague query is for recall.
 A user can search for nearby language without choosing the exact *structural field* first.
 Each text term must match somewhere in the expanded *entry* text.
 
-Exact query uses repeated `--exact field=entry-id` flags.
-Exact *structural fields* are conjunctive across fields and disjunctive inside one field.
-Two `--exact category=...` values mean either category.
-A `category` exact predicate plus a `refines` exact predicate requires both fields to match.
+Structural filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Query combines text terms and distinct *structural fields* with all-of logic.
+Inside one structural field,
+comma-separated values and repeated `--has` flags use any-of logic.
+`--has category=concept,meta` means either category.
+`--has category=concept --has refines=interfaces` requires both fields to match.
 
 Query output is presentation.
 `sirno query --columns` accepts a comma-separated list of columns.

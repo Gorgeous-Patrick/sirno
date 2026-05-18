@@ -58,8 +58,8 @@ When a packaged skill and the lake disagree, correct the skill, never the lake.
 Read the roster and the method.
 
 ```sh
-cargo run -- query --exact category=meta --columns id,desc
-cargo run -- query --exact belongs=agent-skills --columns id,path,desc
+cargo run -- query --has category=meta --columns id,desc
+cargo run -- query --has belongs=agent-skills --columns id,path,desc
 ```
 
 Read `agent-skills` and each discipline entry in full before rendering.

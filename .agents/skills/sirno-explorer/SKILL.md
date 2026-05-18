@@ -33,11 +33,11 @@ entry ids, why they matter, witness locations, and the code or docs they point t
 cargo run -- query TERMS --columns id,desc
 ```
 
-Use exact structural predicates when the route is known:
+Use structural filters when the route is known:
 
 ```sh
-cargo run -- query --exact FIELD=ENTRY_ID --columns id,desc
-cargo run -- query --exact FIELD=ENTRY_ID --exact OTHER_FIELD=OTHER_ENTRY_ID --columns id,desc
+cargo run -- query --has FIELD=ENTRY_ID --columns id,desc
+cargo run -- query --has FIELD=ENTRY_ID --has OTHER_FIELD=OTHER_ENTRY_ID --columns id,desc
 ```
 
 Read the `desc` field before narrowing the route.
@@ -82,16 +82,16 @@ Start vague for discovery:
 cargo run -- query parser metadata --columns id,desc
 ```
 
-Start exact when the user names a structural field or known entry id:
+Start structural when the user names a structural field or known entry id:
 
 ```sh
-cargo run -- query --exact FIELD=ENTRY_ID --columns id,desc
+cargo run -- query --has FIELD=ENTRY_ID --columns id,desc
 ```
 
-Combine vague and exact filters when useful:
+Combine vague terms and structural filters when useful:
 
 ```sh
-cargo run -- query generated footer --exact FIELD=ENTRY_ID --columns id,desc
+cargo run -- query generated footer --has FIELD=ENTRY_ID --columns id,desc
 ```
 
 Use `--columns id,path,desc` when you need entry file paths from the result set.

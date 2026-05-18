@@ -129,7 +129,9 @@ The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry
 `sirno query` reads the configured Markdown *lake*.
 `sirno entry query` is its grouped form.
 Its default mode is vague text query.
-Exact structural predicates use `-x, --exact FIELD=ENTRY_ID`.
+Structural filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Distinct fields narrow results.
+Comma-separated values and repeated same-field filters are alternatives.
 The `--columns` option selects output columns.
 The `-o, --format` option selects the output format.
 
