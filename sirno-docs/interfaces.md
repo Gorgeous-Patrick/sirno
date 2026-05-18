@@ -132,9 +132,9 @@ Artifact mutation commands refuse to change artifacts owned by a frozen *entry*.
 
 `sirno freeze ENTRY_ID` verifies that one public *entry* matches current Frost,
 adds `frozen:`,
-and removes write permission from that file and its artifact tree.
+and applies local file protection to that file and its artifact tree.
 `sirno melt ENTRY_ID` removes `frozen:` from one public *entry*
-and restores write permission to its file and artifact tree.
+and clears local file protection from its file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
 

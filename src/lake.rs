@@ -612,7 +612,7 @@ impl EntryDirectory {
                     })?;
                 }
                 if entry.metadata.frozen.is_some() {
-                    set_path_readonly(destination_path)?;
+                    freeze_path_best_effort(destination_path)?;
                 }
                 changed_paths.push(destination_path.to_path_buf());
                 continue;
@@ -625,7 +625,7 @@ impl EntryDirectory {
                     EntryDirectoryError::WriteFile { path: source_path.to_path_buf(), source }
                 })?;
                 if entry.metadata.frozen.is_some() {
-                    set_path_readonly(source_path)?;
+                    freeze_path_best_effort(source_path)?;
                 }
                 changed_paths.push(source_path.to_path_buf());
             }
@@ -694,6 +694,8 @@ impl EntryDirectory {
 
     /// Mark this directory as read-only.
     ///
+    /// Sirno removes ordinary write permission from managed paths.
+    /// It also applies the best-effort immutable guard used by frozen entries.
     /// Ignored paths are left untouched.
     pub fn set_readonly(
         &self, settings: &EntryDirectoryCheckSettings,
@@ -703,6 +705,7 @@ impl EntryDirectory {
 
     /// Mark this directory as writable.
     ///
+    /// Sirno clears its best-effort immutable guard before restoring ordinary write permission.
     /// Ignored paths are left untouched.
     pub fn set_writable(
         &self, settings: &EntryDirectoryCheckSettings,
@@ -979,7 +982,7 @@ impl EntryDirectory {
                     if !self.root.is_dir() {
                         return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
                     }
-                    set_path_writable(&self.root)?;
+                    melt_path_best_effort(&self.root)?;
                     let settings = EntryDirectoryCheckSettings {
                         ignore,
                         witness: None,
@@ -1018,11 +1021,7 @@ impl EntryDirectory {
                 && path.extension().and_then(|extension| extension.to_str()) == Some("md")
                 && Self::is_managed_entry_file(&path)?
             {
-                if Self::is_frozen_entry_file(&path)? {
-                    melt_path_best_effort(&path)?;
-                } else {
-                    set_path_writable(&path)?;
-                }
+                melt_path_best_effort(&path)?;
                 fs::remove_file(&path)?;
                 continue;
             }
@@ -1067,11 +1066,11 @@ impl EntryDirectory {
         }
 
         if writable {
-            set_path_writable(&self.root)?;
+            melt_path_best_effort(&self.root)?;
         }
         self.set_child_writability(&self.root, settings, writable)?;
         if !writable {
-            set_path_readonly(&self.root)?;
+            freeze_path_best_effort(&self.root)?;
         }
         Ok(())
     }
@@ -1095,13 +1094,13 @@ impl EntryDirectory {
                 if self.is_frozen_managed_path(&path)? {
                     continue;
                 }
-                set_path_writable(&path)?;
+                melt_path_best_effort(&path)?;
             }
             if file_type.is_dir() {
                 self.set_child_writability(&path, settings, writable)?;
             }
             if !writable {
-                set_path_readonly(&path)?;
+                freeze_path_best_effort(&path)?;
             }
         }
         Ok(())
@@ -1588,7 +1587,7 @@ fn add_readonly_checkout_warning(path: &Path, source: &str) -> Result<String, En
 }
 
 fn freeze_path_best_effort(path: &Path) -> Result<(), EntryDirectoryError> {
-    set_path_readonly(path)?;
+    set_path_writable_flag(path, false)?;
     if let Err(source) = FrozenPath::new(path).freeze() {
         trace!("immutable freeze unavailable: path={} error={source}", path.display());
     }
@@ -1607,10 +1606,6 @@ fn melt_tree_best_effort(root: &Path) -> Result<(), EntryDirectoryError> {
         melt_path_best_effort(path)?;
     }
     melt_path_best_effort(root)
-}
-
-fn set_path_readonly(path: &Path) -> Result<(), EntryDirectoryError> {
-    set_path_writable_flag(path, false)
 }
 
 fn set_path_writable(path: &Path) -> Result<(), EntryDirectoryError> {
@@ -2602,14 +2597,23 @@ Body.
         let root = temp.path().join("docs");
         entry_directory(&root).init().unwrap();
         let settings = EntryDirectoryCheckSettings::default();
+        let entry_path = root.join("concept.md");
 
         entry_directory(&root).set_readonly(&settings).unwrap();
-        assert!(fs::metadata(root.join("concept.md")).unwrap().permissions().readonly());
+        let entry_was_immutable = FrozenPath::new(&entry_path).is_frozen().unwrap_or(false);
+        let root_was_immutable = FrozenPath::new(&root).is_frozen().unwrap_or(false);
+        assert!(fs::metadata(&entry_path).unwrap().permissions().readonly());
         assert!(fs::metadata(&root).unwrap().permissions().readonly());
 
         entry_directory(&root).set_writable(&settings).unwrap();
-        assert!(!fs::metadata(root.join("concept.md")).unwrap().permissions().readonly());
+        assert!(!fs::metadata(&entry_path).unwrap().permissions().readonly());
         assert!(!fs::metadata(&root).unwrap().permissions().readonly());
+        if entry_was_immutable {
+            assert!(!FrozenPath::new(&entry_path).is_frozen().unwrap());
+        }
+        if root_was_immutable {
+            assert!(!FrozenPath::new(&root).is_frozen().unwrap());
+        }
     }
 
     #[test]

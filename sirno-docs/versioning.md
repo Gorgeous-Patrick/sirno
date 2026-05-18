@@ -98,8 +98,9 @@ After explicit version checkout,
 `Sirno.lock.toml` records `status = "checked-out"` and the selected snapshot reference.
 
 A normal checkout is immutable.
-Sirno removes write permission from the public *lake* root and managed *entry* files.
-It also removes write permission from managed artifact trees.
+Sirno applies local file protection to the public *lake* root,
+managed *entry* files,
+and managed artifact trees.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
 that marks the file as read-only and says not to edit it by hand.
 `sirno frost checkout VERSION --unsafe-mutable` leaves the checkout writable

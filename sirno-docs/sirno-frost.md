@@ -92,8 +92,9 @@ and preserves ignored paths.
 The grouped shortcut is `sirno frost defrost`.
 The grouped checkout command is `sirno frost checkout`.
 Explicit version checkout writes a visible read-only blockquote
-and removes write permission from the *lake* root and managed *entry* files.
-It also removes write permission from checked-out artifact trees.
+and applies local file protection to the *lake* root,
+managed *entry* files,
+and checked-out artifact trees.
 `--unsafe-mutable` leaves an explicit version checkout writable.
 
 `Sirno.lock.toml` records the public *lake* state relative to *frost*.

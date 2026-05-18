@@ -13,7 +13,7 @@ The metadata marker is canonical `frozen:` with no value.
 
 `sirno freeze ENTRY_ID` verifies that the public *entry* matches current Frost,
 adds the marker,
-and applies local file protection to the *entry* file.
+and applies local file protection to the *entry* file and artifact tree.
 `sirno melt ENTRY_ID` removes the marker and clears that local protection.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The command pair is the supported way to change the state.
@@ -27,7 +27,7 @@ Frost refuses the commit.
 Melt the *entry* before intentionally changing it.
 
 File permissions are a local enforcement layer.
-Sirno always removes ordinary write permission from the *entry* file.
+Sirno always removes ordinary write permission from protected files and directories.
 When the platform and process allow it,
 Sirno also applies the stronger immutable file guard.
 Frost comparison remains the authoritative protection against committing drift.

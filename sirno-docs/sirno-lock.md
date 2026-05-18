@@ -31,7 +31,9 @@ Sirno derives open workitems from the current waterline and frostline.
 The lock does not store a separate open worklist.
 
 A normal checkout is immutable.
-Sirno removes write permission from the public *lake* root and managed *entry* files.
+Sirno applies local file protection to the public *lake* root,
+managed *entry* files,
+and managed artifact trees.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
 that says the file is read-only and should not be edited by hand.
 `sirno checkout VERSION --unsafe-mutable` leaves the checkout writable

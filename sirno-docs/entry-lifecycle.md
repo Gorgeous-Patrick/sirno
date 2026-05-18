@@ -154,7 +154,9 @@ or to melt it before intentionally changing it.
 `historical` means the public file was materialized from an explicit Frost version.
 A normal version checkout is immutable:
 Sirno writes a read-only blockquote
-and removes write permission from managed entry files.
+and applies local file protection to the *lake* root,
+managed entry files,
+and managed artifact trees.
 `sirno checkout --latest` returns to the mutable current lake.
 `sirno checkout VERSION --unsafe-mutable` deliberately turns a historical version
 into a writable working baseline.
