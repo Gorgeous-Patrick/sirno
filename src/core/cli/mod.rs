@@ -42,8 +42,9 @@ use crate::core::dto::{QueryColumn, StructuralFieldState};
 use crate::core::error::OpenTideTutorial;
 #[cfg(test)]
 use crate::core::output::{
-    format_gen_link_report, format_json, format_query_json, format_query_table,
-    format_witness_record, format_witness_records,
+    format_config_comment_result, format_gen_link_report, format_json, format_lake_check_result,
+    format_query_json, format_query_table, format_render_result, format_witness_record,
+    format_witness_records,
 };
 #[cfg(test)]
 use crate::core::rg::rg_args_include_preprocessor;
@@ -1036,6 +1037,11 @@ impl TopLevelLakeCommand {
                 for diagnostic in report.diagnostics() {
                     println!("{}: {}", diagnostic.severity.label(), diagnostic.message());
                 }
+                if report.has_errors() {
+                    println!("check: failed in {}", frost.root().display());
+                } else {
+                    println!("check: warnings in {}", frost.root().display());
+                }
 
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
@@ -1271,14 +1277,6 @@ fn format_tide_review_waves(statuses: &[TideStatus]) -> String {
 
     let open_count = statuses.iter().filter(|status| !status.resolved).count();
     let review_entry_count = tide_review_entries_from_statuses(statuses).len();
-    let mut output = format!(
-        "tide: {open_count} open {} in {} {}\n{}: {review_entry_count} unique\n\n",
-        plural(open_count, "workitem", "workitems"),
-        waves.len(),
-        plural(waves.len(), "wave", "waves"),
-        plural(review_entry_count, "review entry", "review entries"),
-    );
-
     let rows = waves
         .iter()
         .flat_map(|wave| {
@@ -1288,7 +1286,10 @@ fn format_tide_review_waves(statuses: &[TideStatus]) -> String {
             })
         })
         .collect::<Vec<_>>();
-    output.push_str(&format_tide_wave_table(vec!["wave".to_owned(), "entry".to_owned()], rows));
+    let mut output = format_tide_wave_table(vec!["wave".to_owned(), "entry".to_owned()], rows);
+    output.push('\n');
+    output.push_str(&tide_summary_sentence(open_count, 0, waves.len(), review_entry_count));
+    output.push('\n');
 
     output
 }
@@ -1302,26 +1303,6 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
     let open_count = statuses.iter().filter(|status| !status.resolved).count();
     let resolved_count = statuses.len() - open_count;
     let review_entry_count = tide_review_entries_from_statuses(statuses).len();
-    let mut output = if resolved_count == 0 {
-        format!(
-            "tide: {open_count} open {} in {} {}\n",
-            plural(open_count, "workitem", "workitems"),
-            waves.len(),
-            plural(waves.len(), "wave", "waves"),
-        )
-    } else {
-        format!(
-            "tide: {open_count} open {}, {resolved_count} resolved in {} {}\n",
-            plural(open_count, "workitem", "workitems"),
-            waves.len(),
-            plural(waves.len(), "wave", "waves"),
-        )
-    };
-    output.push_str(&format!(
-        "{}: {review_entry_count} unique\n\n",
-        plural(review_entry_count, "review entry", "review entries"),
-    ));
-
     let rows = waves
         .iter()
         .flat_map(|wave| {
@@ -1341,7 +1322,7 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
             })
         })
         .collect::<Vec<_>>();
-    output.push_str(&format_tide_wave_table(
+    let mut output = format_tide_wave_table(
         vec![
             "wave".to_owned(),
             "entry".to_owned(),
@@ -1351,9 +1332,37 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
             "sources".to_owned(),
         ],
         rows,
+    );
+    output.push('\n');
+    output.push_str(&tide_summary_sentence(
+        open_count,
+        resolved_count,
+        waves.len(),
+        review_entry_count,
     ));
+    output.push('\n');
 
     output
+}
+
+fn tide_summary_sentence(
+    open_count: usize, resolved_count: usize, wave_count: usize, review_entry_count: usize,
+) -> String {
+    let resolved = if resolved_count == 0 {
+        String::new()
+    } else {
+        format!(
+            " and {resolved_count} resolved {}",
+            plural(resolved_count, "workitem", "workitems"),
+        )
+    };
+    format!(
+        "The tide has {open_count} open {}{resolved} in {wave_count} {}, \
+         with {review_entry_count} unique {}.",
+        plural(open_count, "workitem", "workitems"),
+        plural(wave_count, "wave", "waves"),
+        plural(review_entry_count, "review entry", "review entries"),
+    )
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

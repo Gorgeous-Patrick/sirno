@@ -127,45 +127,81 @@ pub(crate) fn print_status_result(result: &StatusResult) {
     if result.ok {
         println!("check: ok");
     } else {
-        println!("check: failed");
         print_diagnostics(&result.check.diagnostics);
+        println!("check: failed");
     }
 }
 
 pub(crate) fn print_lake_check_result(result: &LakeCheckResult) {
+    print!("{}", format_lake_check_result(result));
+}
+
+pub(crate) fn format_lake_check_result(result: &LakeCheckResult) -> String {
     if result.diagnostics.is_empty() {
-        println!("ok: {}", result.root);
+        return format!("ok: {}\n", result.root);
+    }
+
+    let mut output = format_diagnostics(&result.diagnostics);
+    output.push_str(&format!("{}\n", lake_check_summary(result)));
+    output
+}
+
+fn lake_check_summary(result: &LakeCheckResult) -> String {
+    if result.has_errors {
+        format!("check: failed in {}", result.root)
     } else {
-        print_diagnostics(&result.diagnostics);
+        format!("check: warnings in {}", result.root)
     }
 }
 
 pub(crate) fn print_render_result(result: &RenderResult) {
+    print!("{}", format_render_result(result));
+}
+
+pub(crate) fn format_render_result(result: &RenderResult) -> String {
     if result.diagnostics.is_empty() {
-        println!("{}", result.message);
-    } else {
-        print_diagnostics(&result.diagnostics);
+        return format!("{}\n", result.message);
     }
+
+    let mut output = format_diagnostics(&result.diagnostics);
+    output.push_str(&result.message);
+    output.push('\n');
+    output
 }
 
 pub(crate) fn print_config_comment_result(result: &ConfigCommentResult) {
-    println!("{}", result.message);
-    if result.changed {
-        return;
+    print!("{}", format_config_comment_result(result));
+}
+
+pub(crate) fn format_config_comment_result(result: &ConfigCommentResult) -> String {
+    let mut output = String::new();
+    if !result.changed {
+        for comment in &result.missing_comments {
+            output.push_str("missing: ");
+            output.push_str(comment);
+            output.push('\n');
+        }
     }
-    for comment in &result.missing_comments {
-        println!("missing: {comment}");
-    }
+    output.push_str(&result.message);
+    output.push('\n');
+    output
 }
 
 fn print_diagnostics(diagnostics: &[DiagnosticRecord]) {
+    print!("{}", format_diagnostics(diagnostics));
+}
+
+fn format_diagnostics(diagnostics: &[DiagnosticRecord]) -> String {
+    let mut output = String::new();
     for diagnostic in diagnostics {
         if let Some(path) = &diagnostic.path {
-            println!("{}: {}: {}", diagnostic.severity, path, diagnostic.message);
+            output
+                .push_str(&format!("{}: {}: {}\n", diagnostic.severity, path, diagnostic.message));
         } else {
-            println!("{}: {}", diagnostic.severity, diagnostic.message);
+            output.push_str(&format!("{}: {}\n", diagnostic.severity, diagnostic.message));
         }
     }
+    output
 }
 
 pub(crate) fn frost_state_label(lock: Option<&SirnoLock>) -> String {
@@ -201,15 +237,18 @@ pub(crate) fn format_gen_link_report(
         return format!("No changes in {}", root.display());
     }
 
-    let mut report = format!("Changes in {}:", root.display());
+    let mut report = String::new();
     for path in changed_paths {
-        report.push_str("\n- ");
+        report.push_str("- ");
         report.push_str(&path.display().to_string());
+        report.push('\n');
     }
-    report.push_str("\nTotal changes: ");
+    report.push_str("Total changes: ");
     report.push_str(&changed_paths.len().to_string());
     report.push('/');
     report.push_str(&entry_count.to_string());
+    report.push_str(" in ");
+    report.push_str(&root.display().to_string());
     report
 }
 
@@ -378,25 +417,44 @@ pub(crate) fn print_entry_directory_report(report: &EntryDirectoryReport) {
         return;
     }
 
+    print!("{}", format_entry_directory_report(report));
+}
+
+fn format_entry_directory_report(report: &EntryDirectoryReport) -> String {
+    let mut output = String::new();
     for diagnostic in report.file_diagnostics() {
-        println!(
-            "{}: {}: {}",
+        output.push_str(&format!(
+            "{}: {}: {}\n",
             diagnostic.severity.label(),
             diagnostic.path.display(),
             diagnostic.message
-        );
+        ));
     }
 
     for diagnostic in report.structural_report().diagnostics() {
         if let Some(path) = report.entry_path(&diagnostic.entry) {
-            println!(
-                "{}: {}: {}",
+            output.push_str(&format!(
+                "{}: {}: {}\n",
                 diagnostic.severity.label(),
                 path.display(),
                 diagnostic.message()
-            );
+            ));
         } else {
-            println!("{}: {}", diagnostic.severity.label(), diagnostic.message());
+            output.push_str(&format!(
+                "{}: {}\n",
+                diagnostic.severity.label(),
+                diagnostic.message()
+            ));
         }
+    }
+    output.push_str(&format!("{}\n", entry_directory_report_summary(report)));
+    output
+}
+
+fn entry_directory_report_summary(report: &EntryDirectoryReport) -> String {
+    if report.has_errors() {
+        format!("check: failed in {}", report.root().display())
+    } else {
+        format!("check: warnings in {}", report.root().display())
     }
 }

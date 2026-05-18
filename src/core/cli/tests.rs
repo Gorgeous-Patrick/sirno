@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 
 use clap::{CommandFactory, Parser};
 
-use crate::core::dto::SkillWrapperRecord;
+use crate::core::dto::{
+    ConfigCommentResult, DiagnosticRecord, LakeCheckResult, RenderResult, SkillWrapperRecord,
+};
 
 use super::OpenTideTutorial;
 
@@ -24,8 +26,9 @@ use super::{
     StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
     TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
     TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
-    format_gen_link_report, format_human_table_with_width, format_json, format_path_table,
-    format_query_json, format_query_table, format_skill_wrapper_table, format_tide_review_waves,
+    format_config_comment_result, format_gen_link_report, format_human_table_with_width,
+    format_json, format_lake_check_result, format_path_table, format_query_json,
+    format_query_table, format_render_result, format_skill_wrapper_table, format_tide_review_waves,
     format_tide_statuses, format_witness_record, format_witness_records,
     rg_args_include_preprocessor,
 };
@@ -1916,14 +1919,17 @@ fn tide_review_waves_merge_into_one_table() {
 
     let output = format_tide_review_waves(&statuses);
 
-    assert!(output.contains("tide: 3 open workitems in 2 waves"));
-    assert!(output.contains("review entries: 3 unique"));
+    assert!(
+        output.contains("The tide has 3 open workitems in 2 waves, with 3 unique review entries.")
+    );
+    assert!(!output.contains("review entries:"));
     assert_eq!(output.matches('┌').count(), 1);
     assert_eq!(heavy_wave_separator_count(&output), 1);
     assert!(output.contains("│ wave       ┆ entry"));
     assert!(output.contains("│ interfaces ┆ agent-skills │"));
     assert!(output.contains("│            ┆ form"));
     assert!(output.contains("│ tide       ┆ wave"));
+    assert_before(&output, "│ tide       ┆ wave", "The tide has 3 open workitems");
 }
 
 #[test]
@@ -1957,8 +1963,11 @@ fn tide_full_statuses_group_by_wave() {
 
     let output = format_tide_statuses(&statuses);
 
-    assert!(output.contains("tide: 2 open workitems, 1 resolved in 2 waves"));
-    assert!(output.contains("review entries: 2 unique"));
+    assert!(output.contains(
+        "The tide has 2 open workitems and 1 resolved workitem in 2 waves, \
+         with 2 unique review entries."
+    ));
+    assert!(!output.contains("review entries:"));
     assert_eq!(output.matches('┌').count(), 1);
     assert_eq!(heavy_wave_separator_count(&output), 1);
     assert!(output.contains("│ wave       ┆ entry"));
@@ -1968,6 +1977,7 @@ fn tide_full_statuses_group_by_wave() {
     assert!(output.contains("│            ┆ frost-versioning"));
     assert!(output.contains("lake,frost"));
     assert!(output.contains("resolved"));
+    assert_before(&output, "│            ┆ frost-versioning", "The tide has 2 open workitems");
 }
 
 #[test]
@@ -2936,7 +2946,7 @@ fn format_gen_link_report_lists_changed_paths() {
 
     assert_eq!(
         report,
-        "Changes in sirno-docs:\n- sirno-docs/concept.md\n- sirno-docs/entry.md\nTotal changes: 2/31"
+        "- sirno-docs/concept.md\n- sirno-docs/entry.md\nTotal changes: 2/31 in sirno-docs"
     );
 }
 
@@ -2945,4 +2955,51 @@ fn format_gen_link_report_summarizes_no_changes() {
     let report = format_gen_link_report(Path::new("sirno-docs"), 31, &[]);
 
     assert_eq!(report, "No changes in sirno-docs");
+}
+
+#[test]
+fn diagnostic_renderers_print_summary_last() {
+    let diagnostic = DiagnosticRecord {
+        severity: "error".to_owned(),
+        path: Some("sirno-docs/entry.md".to_owned()),
+        message: "dangling reference".to_owned(),
+    };
+    let check = format_lake_check_result(&LakeCheckResult {
+        ok: false,
+        root: "sirno-docs".to_owned(),
+        has_errors: true,
+        diagnostics: vec![diagnostic.clone()],
+    });
+    let render = format_render_result(&RenderResult {
+        ok: false,
+        dry: false,
+        root: "sirno-docs".to_owned(),
+        entry_count: 31,
+        changed_paths: Vec::new(),
+        diagnostics: vec![diagnostic],
+        message: "render blocked by check errors in sirno-docs".to_owned(),
+    });
+
+    assert_before(&check, "error: sirno-docs/entry.md", "check: failed in sirno-docs");
+    assert!(check.ends_with("check: failed in sirno-docs\n"));
+    assert_before(
+        &render,
+        "error: sirno-docs/entry.md",
+        "render blocked by check errors in sirno-docs",
+    );
+    assert!(render.ends_with("render blocked by check errors in sirno-docs\n"));
+}
+
+#[test]
+fn config_comment_report_prints_summary_last() {
+    let output = format_config_comment_result(&ConfigCommentResult {
+        ok: false,
+        changed: false,
+        config_path: "Sirno.toml".to_owned(),
+        missing_comments: vec!["Markdown entry lake path.".to_owned()],
+        message: "1 config comments missing in Sirno.toml".to_owned(),
+    });
+
+    assert_before(&output, "missing: Markdown entry lake path.", "1 config comments missing");
+    assert!(output.ends_with("1 config comments missing in Sirno.toml\n"));
 }

@@ -18,6 +18,8 @@ The `sirno::core` module is the shared command surface behind the CLI.
 The binary `main.rs` delegates process startup to that module.
 Reusable helpers in `sirno::core` return typed query, path, tide, and witness data
 before the CLI renders human text or JSON.
+Human CLI output prints records, tables, or diagnostics before command summary lines.
+Commands with no detail may print only their summary.
 MCP tools should call those typed helpers and prefer JSON rendering through the shared serializer.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
@@ -179,6 +181,7 @@ Multiple full regions are separated by a blank line, `---`, and another blank li
 
 `sirno tide status` reports entry ids that need dependency review,
 grouped by ripple id in one table.
+It prints a one-sentence summary after the table.
 `sirno tide status --full` reports open dependency review obligations in the same wave-grouped table.
 `sirno tide status --full --all` also reports resolved obligations.
 `sirno tide status -o, --format` selects `human` or `json` output.
@@ -196,6 +199,7 @@ The top-level forms `sirno resolve` and `sirno unresolve` select the same operat
 
 `sirno render` creates or replaces Sirno-owned *generated footer* regions.
 `sirno render -n, --dry` reports *generated footer* regions that would change without writing files.
+Render commands print changed paths or blocking diagnostics before their summary line.
 `--dry-run` is an alias for `--dry`.
 `sirno render delete` removes those regions.
 Render commands operate on the active *lake* path.
@@ -208,6 +212,7 @@ not a *lake* operation.
 It exits with failure when required comments are missing.
 `sirno util config --fix` rewrites `Sirno.toml` through the canonical config renderer
 when comments are missing.
+Config utility commands print missing comments before the summary line.
 Config utility commands reject `--lake-path` and `--frost-path`.
 
 `sirno util skills init` installs bundled Sirno skill wrappers
