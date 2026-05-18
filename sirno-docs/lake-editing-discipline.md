@@ -30,7 +30,9 @@ Create missing entries with the current entry-creation command so id validation 
 are correct.
 Then expand or revise the body with direct, reader-friendly prose.
 When editing design documents or design entries,
-apply the documentation-writing discipline documented by `design-doc-writer-skill`:
+use the repository's own design-document skill or documented manner first.
+If none exists, default to the discipline in `sirno://skills/design-doc-writer`,
+documented by `design-doc-writer-skill`:
 read the whole design route,
 order concepts by dependency and scope,
 write declarative, dry, precise prose,

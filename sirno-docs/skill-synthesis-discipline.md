@@ -31,8 +31,10 @@ A `meta` entry named by the Sirno skill roster and ending in `-discipline` is a 
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.
-Adjacent documentation-writing skills, such as `design-doc-writer-skill`,
-are also method inputs when Sirno skill work touches design prose.
+Repository-specific design-document skills or documented prose methods are the first method input
+when Sirno skill work touches design prose.
+If a repository has none,
+default to `sirno://skills/design-doc-writer` from `design-doc-writer-skill`.
 Their reusable content is reader evaluation,
 conceptual ordering,
 declarative precision,

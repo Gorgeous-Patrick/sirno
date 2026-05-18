@@ -41,7 +41,9 @@ It avoids motivational framing, rhetoric, and defensive rebuttal.
 It states the positive rule first when documenting a constraint,
 and uses definition by negation only when it prevents a likely confusion.
 
-Sirno skills use this entry as method input when they touch design documents or design entries.
+Sirno skills use this entry as method input only as the default design-document method.
+When a repository has its own design-document skill or documented manner,
+use that instead.
 Lake editing folds in its reader-evaluation and design-prose standards.
 Skill synthesis may read it as shared method,
 but this entry does not render a `.agents/skills/sirno-*` package.

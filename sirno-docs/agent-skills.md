@@ -55,7 +55,9 @@ and evaluate the result as a reader before and after editing.
 It also owns `.artifacts/design-doc-writer-skill/SKILL.full.md`,
 copied exactly from `.agents/skills/design-doc-writer/SKILL.md`.
 `src/mcp.rs` embeds that artifact as `sirno://skills/design-doc-writer`.
-Sirno skill work uses those habits whenever it touches design documents or design entries.
+Sirno skill work uses those habits only as the default design-document method.
+When a repository has its own design-document skill or documented manner,
+use that instead.
 The synthesis skill checks the Sirno skill roster
 and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
 It can run the extraction artifact in `--check` mode to detect drift,
