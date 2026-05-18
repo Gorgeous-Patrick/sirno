@@ -1532,6 +1532,15 @@ impl LoadedEntryDirectory {
                 ));
             }
         }
+        // sirno:witness:structural-check:begin
+        for delimiter in index.orphan_delimiters() {
+            self.file_diagnostics.push(EntryFileDiagnostic::new(
+                severity,
+                delimiter.path(),
+                delimiter.diagnostic_message(),
+            ));
+        }
+        // sirno:witness:structural-check:end
 
         Ok(())
     }
@@ -1819,9 +1828,17 @@ mod tests {
     }
 
     // sirno:witness:witness-fixture-isolation:begin
+    fn witness_begin(id: &str) -> String {
+        format!("{}{}{}{}", "// sirno", ":witness:", id, ":begin")
+    }
+
+    fn witness_end(id: &str) -> String {
+        format!("{}{}{}{}", "// sirno", ":witness:", id, ":end")
+    }
+
     fn witness_block(id: &str) -> String {
-        let opening = format!("{}{}{}{}", "// sirno", ":witness:", id, ":begin");
-        let closing = format!("{}{}{}{}", "// sirno", ":witness:", id, ":end");
+        let opening = witness_begin(id);
+        let closing = witness_end(id);
         format!("{opening}\nbody\n{closing}\n")
     }
     // sirno:witness:witness-fixture-isolation:end
@@ -2097,6 +2114,68 @@ Body.
 
         assert!(report.has_errors());
         assert!(report.file_diagnostics()[0].message.contains("missing entry `ghost-entry`"));
+    }
+
+    #[test]
+    fn check_reports_orphan_witness_begin_delimiter() {
+        let temp = tempfile::tempdir().unwrap();
+        let docs = temp.path().join("docs");
+        let src = temp.path().join("src");
+        fs::create_dir_all(&docs).unwrap();
+        fs::create_dir_all(&src).unwrap();
+        write_entry(
+            &docs,
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A concept.
+---
+
+Body.
+",
+        );
+        fs::write(src.join("lib.rs"), format!("{}\nbody\n", witness_begin("concept"))).unwrap();
+
+        let report = entry_directory(&docs)
+            .check_with_settings(CheckMode::Review, &witness_settings(temp.path()))
+            .unwrap();
+
+        assert!(report.has_errors());
+        assert_eq!(report.file_diagnostics()[0].severity, CheckSeverity::Error);
+        assert!(report.file_diagnostics()[0].message.contains("opening delimiter"));
+        assert!(report.file_diagnostics()[0].message.contains("no closing delimiter"));
+    }
+
+    #[test]
+    fn check_reports_orphan_witness_end_delimiter_as_edit_warning() {
+        let temp = tempfile::tempdir().unwrap();
+        let docs = temp.path().join("docs");
+        let src = temp.path().join("src");
+        fs::create_dir_all(&docs).unwrap();
+        fs::create_dir_all(&src).unwrap();
+        write_entry(
+            &docs,
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A concept.
+---
+
+Body.
+",
+        );
+        fs::write(src.join("lib.rs"), format!("body\n{}\n", witness_end("concept"))).unwrap();
+
+        let report = entry_directory(&docs)
+            .check_with_settings(CheckMode::Edit, &witness_settings(temp.path()))
+            .unwrap();
+
+        assert!(!report.has_errors());
+        assert_eq!(report.file_diagnostics()[0].severity, CheckSeverity::Warning);
+        assert!(report.file_diagnostics()[0].message.contains("closing delimiter"));
+        assert!(report.file_diagnostics()[0].message.contains("no opening delimiter"));
     }
 
     #[test]

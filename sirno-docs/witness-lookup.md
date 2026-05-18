@@ -27,6 +27,8 @@ Sirno reads `mosaika` match records into *witness* records keyed by *entry* id.
 The stored delimiter spans exclude leading indentation.
 Full output displays every line spanned by the matched block
 and preserves the matched text.
+The checker also scans the configured delimiter regexes as individual tokens.
+A delimiter token that is not consumed by a resolved block is reported as an orphan delimiter.
 
 When `sirno entry rename` updates *witness* sentinels,
 Sirno builds `mosaika` text edits from the captured id spans in the opening and closing delimiters.

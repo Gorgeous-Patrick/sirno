@@ -5,6 +5,7 @@
 //! accepts recursive directory members in addition to glob patterns.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use glob::glob;
@@ -17,6 +18,7 @@ use mosaika::syntax::{
     self as syn, Arrow, Delimiter, Effect, LogDestination, LogPipe, PipeName, RegexDelimiter,
     Transaction, Transform,
 };
+use regex::Regex;
 use thiserror::Error;
 use tracing::trace;
 
@@ -67,7 +69,8 @@ impl WitnessCheckSettings {
         );
         let files = self.resolve_member_files()?;
         let analysis = self.run_mosaika_analysis(&files)?;
-        let index = WitnessIndex::from_mosaika_matches(analysis.match_records())?;
+        let mut index = WitnessIndex::from_mosaika_matches(analysis.match_records())?;
+        index.set_orphan_delimiters(self.orphan_delimiters(&files, &index)?);
         trace!(file_count = files.len(), "scan_witnesses end");
         Ok(index)
     }
@@ -196,6 +199,20 @@ impl WitnessCheckSettings {
             .analyze()
             .map_err(WitnessError::Engine)
     }
+
+    fn orphan_delimiters(
+        &self, files: &[PathBuf], index: &WitnessIndex,
+    ) -> Result<Vec<WitnessDelimiterToken>, WitnessError> {
+        let resolved = index.resolved_delimiter_keys();
+        let mut orphans = self
+            .witness
+            .delimiter_tokens(files)?
+            .into_iter()
+            .filter(|token| !resolved.contains(&token.key()))
+            .collect::<Vec<_>>();
+        orphans.sort_by_key(WitnessDelimiterToken::sort_key);
+        Ok(orphans)
+    }
     // sirno:witness:witness-lookup:end
 }
 
@@ -203,6 +220,7 @@ impl WitnessCheckSettings {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WitnessIndex {
     records_by_entry: BTreeMap<EntryId, Vec<WitnessRecord>>,
+    orphan_delimiters: Vec<WitnessDelimiterToken>,
 }
 
 impl WitnessIndex {
@@ -229,6 +247,35 @@ impl WitnessIndex {
     /// Iterate over entry ids with at least one witness block.
     pub fn entry_ids(&self) -> impl Iterator<Item = &EntryId> {
         self.records_by_entry.keys()
+    }
+
+    pub(crate) fn orphan_delimiters(&self) -> &[WitnessDelimiterToken] {
+        &self.orphan_delimiters
+    }
+
+    fn set_orphan_delimiters(&mut self, orphan_delimiters: Vec<WitnessDelimiterToken>) {
+        self.orphan_delimiters = orphan_delimiters;
+    }
+
+    fn resolved_delimiter_keys(&self) -> BTreeSet<WitnessDelimiterKey> {
+        self.records_by_entry
+            .values()
+            .flat_map(|records| records.iter())
+            .flat_map(|record| {
+                [
+                    WitnessDelimiterKey::new(
+                        &record.path,
+                        WitnessDelimiterKind::Begin,
+                        record.opening,
+                    ),
+                    WitnessDelimiterKey::new(
+                        &record.path,
+                        WitnessDelimiterKind::End,
+                        record.closing,
+                    ),
+                ]
+            })
+            .collect()
     }
 
     // sirno:witness:witness-lookup:begin
@@ -278,6 +325,84 @@ pub struct WitnessRecord {
     pub body: String,
 }
 // sirno:witness:witness:end
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum WitnessDelimiterKind {
+    Begin,
+    End,
+}
+
+impl WitnessDelimiterKind {
+    fn label(self) -> &'static str {
+        match self {
+            | Self::Begin => "opening",
+            | Self::End => "closing",
+        }
+    }
+
+    fn missing_label(self) -> &'static str {
+        match self {
+            | Self::Begin => "closing",
+            | Self::End => "opening",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct WitnessDelimiterToken {
+    path: PathBuf,
+    kind: WitnessDelimiterKind,
+    span: WitnessSpan,
+    entry: EntryId,
+}
+
+impl WitnessDelimiterToken {
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub(crate) fn diagnostic_message(&self) -> String {
+        format!(
+            "repository witness {} delimiter for `{}` at {}:{} has no {} delimiter",
+            self.kind.label(),
+            self.entry,
+            self.span.start_line,
+            self.span.start_column,
+            self.kind.missing_label()
+        )
+    }
+
+    fn key(&self) -> WitnessDelimiterKey {
+        WitnessDelimiterKey::new(&self.path, self.kind, self.span)
+    }
+
+    fn sort_key(&self) -> WitnessDelimiterKey {
+        self.key()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct WitnessDelimiterKey {
+    path: PathBuf,
+    kind: WitnessDelimiterKind,
+    start_line: usize,
+    start_column: usize,
+    end_line: usize,
+    end_column: usize,
+}
+
+impl WitnessDelimiterKey {
+    fn new(path: &Path, kind: WitnessDelimiterKind, span: WitnessSpan) -> Self {
+        Self {
+            path: path.to_path_buf(),
+            kind,
+            start_line: span.start_line,
+            start_column: span.start_column,
+            end_line: span.end_line,
+            end_column: span.end_column,
+        }
+    }
+}
 
 /// One source span reported by `mosaika`.
 ///
@@ -423,11 +548,155 @@ impl WitnessSettings {
     fn transform_name(index: usize) -> String {
         format!("{WITNESS_TRANSFORM}-{index}")
     }
+
+    // sirno:witness:witness-lookup:begin
+    fn delimiter_tokens(
+        &self, files: &[PathBuf],
+    ) -> Result<Vec<WitnessDelimiterToken>, WitnessError> {
+        let regexes = self.delimiter_regexes()?;
+        let mut tokens = Vec::new();
+        for path in files {
+            let content = fs::read_to_string(path)
+                .map_err(|source| WitnessError::ReadFile { path: path.to_path_buf(), source })?;
+            let locator = WitnessLocator::new(&content);
+            for regex in &regexes {
+                regex.scan(&content, path, &locator, &mut tokens)?;
+            }
+        }
+        Ok(tokens)
+    }
+
+    fn delimiter_regexes(&self) -> Result<Vec<WitnessDelimiterRegex>, WitnessError> {
+        self.delimiters
+            .iter()
+            .enumerate()
+            .map(|(index, delimiter)| {
+                WitnessDelimiterRegex::new(index, &delimiter.begin, &delimiter.end)
+            })
+            .collect()
+    }
+    // sirno:witness:witness-lookup:end
 }
+
+// sirno:witness:witness-lookup:begin
+struct WitnessDelimiterRegex {
+    index: usize,
+    begin: Regex,
+    end: Regex,
+}
+
+impl WitnessDelimiterRegex {
+    fn new(index: usize, begin: &str, end: &str) -> Result<Self, WitnessError> {
+        Ok(Self {
+            index,
+            begin: compile_witness_delimiter_regex("witness.delimiters.begin", index, begin)?,
+            end: compile_witness_delimiter_regex("witness.delimiters.end", index, end)?,
+        })
+    }
+
+    fn scan(
+        &self, content: &str, path: &Path, locator: &WitnessLocator<'_>,
+        tokens: &mut Vec<WitnessDelimiterToken>,
+    ) -> Result<(), WitnessError> {
+        scan_witness_delimiter_regex(
+            &self.begin,
+            self.index,
+            WitnessDelimiterKind::Begin,
+            content,
+            path,
+            locator,
+            tokens,
+        )?;
+        scan_witness_delimiter_regex(
+            &self.end,
+            self.index,
+            WitnessDelimiterKind::End,
+            content,
+            path,
+            locator,
+            tokens,
+        )
+    }
+}
+
+fn compile_witness_delimiter_regex(
+    field: &'static str, index: usize, source: &str,
+) -> Result<Regex, WitnessError> {
+    let regex = Regex::new(source).map_err(|source| WitnessError::DelimiterRegex {
+        field,
+        index,
+        source,
+    })?;
+    if regex.captures_len() < 2 {
+        return Err(WitnessError::DelimiterCapture { field, index });
+    }
+    if regex.is_match("") {
+        return Err(WitnessError::DelimiterEmptyMatch { field, index });
+    }
+    Ok(regex)
+}
+
+fn scan_witness_delimiter_regex(
+    regex: &Regex, index: usize, kind: WitnessDelimiterKind, content: &str, path: &Path,
+    locator: &WitnessLocator<'_>, tokens: &mut Vec<WitnessDelimiterToken>,
+) -> Result<(), WitnessError> {
+    for captures in regex.captures_iter(content) {
+        let marker = captures.get(0).expect("regex captures include the full match");
+        let raw_entry = captures.get(1).ok_or(WitnessError::MissingTokenCapture {
+            path: path.to_path_buf(),
+            delimiter_index: index,
+            kind: kind.label(),
+        })?;
+        let entry =
+            EntryId::new(raw_entry.as_str()).map_err(|source| WitnessError::InvalidEntryId {
+                path: path.to_path_buf(),
+                marker: raw_entry.as_str().to_owned(),
+                source,
+            })?;
+        let mut span = locator.span(marker.start(), marker.end());
+        span.start_column += leading_whitespace_len(marker.as_str());
+        tokens.push(WitnessDelimiterToken { path: path.to_path_buf(), kind, span, entry });
+    }
+    Ok(())
+}
+
+struct WitnessLocator<'a> {
+    content: &'a str,
+    line_breaks: Vec<usize>,
+}
+
+impl<'a> WitnessLocator<'a> {
+    fn new(content: &'a str) -> Self {
+        Self { content, line_breaks: content.match_indices('\n').map(|(index, _)| index).collect() }
+    }
+
+    fn position(&self, byte_index: usize) -> (usize, usize) {
+        let line_index = self.line_breaks.partition_point(|index| *index < byte_index);
+        let line_start = if line_index == 0 { 0 } else { self.line_breaks[line_index - 1] + 1 };
+        let column = self.content[line_start..byte_index].chars().count() + 1;
+        (line_index + 1, column)
+    }
+
+    fn span(&self, start: usize, end: usize) -> WitnessSpan {
+        let (start_line, start_column) = self.position(start);
+        let (end_line, end_column) = self.position(end);
+        WitnessSpan { start_line, start_column, end_line, end_column }
+    }
+}
+// sirno:witness:witness-lookup:end
 
 /// Error raised while scanning repository witnesses.
 #[derive(Debug, Error)]
 pub enum WitnessError {
+    /// A configured repo member file could not be read.
+    #[error("failed to read repo member file {path}")]
+    ReadFile {
+        /// File selected by configured repo members.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// A configured repo member did not select any files.
     #[error("repo member did not select any files: {member}")]
     MissingMember {
@@ -474,6 +743,33 @@ pub enum WitnessError {
     /// The generated `mosaika` scheme is invalid.
     #[error("failed to build mosaika witness scheme")]
     Scheme(#[source] mosaika::semantics::SchemeError),
+    /// A witness delimiter regex is invalid.
+    #[error("{field} at index {index} contains an invalid regex")]
+    DelimiterRegex {
+        /// Config field that contained an invalid regex.
+        field: &'static str,
+        /// Zero-based delimiter pair index.
+        index: usize,
+        /// Regex parser error.
+        #[source]
+        source: regex::Error,
+    },
+    /// A witness delimiter regex does not capture an entry id.
+    #[error("{field} at index {index} must capture the entry id")]
+    DelimiterCapture {
+        /// Config field that did not declare a capture group.
+        field: &'static str,
+        /// Zero-based delimiter pair index.
+        index: usize,
+    },
+    /// A witness delimiter regex can match empty text.
+    #[error("{field} at index {index} must not match empty text")]
+    DelimiterEmptyMatch {
+        /// Config field that can match empty text.
+        field: &'static str,
+        /// Zero-based delimiter pair index.
+        index: usize,
+    },
     /// Mosaika witness analysis failed.
     #[error("failed to analyze mosaika witness matches")]
     Engine(#[source] mosaika::engine::EngineError),
@@ -513,6 +809,16 @@ pub enum WitnessError {
         delimiter_index: usize,
         /// Capture missing the editable span.
         capture_index: usize,
+    },
+    /// A configured witness delimiter matched without the required capture.
+    #[error("witness {kind} delimiter {delimiter_index} in {path} did not capture an entry id")]
+    MissingTokenCapture {
+        /// Repository path containing the delimiter.
+        path: PathBuf,
+        /// Zero-based delimiter pair index.
+        delimiter_index: usize,
+        /// Delimiter kind that matched.
+        kind: &'static str,
     },
     /// A witness block opened and closed with different entry ids.
     #[error("witness block in {path} opens for `{opening}` but closes for `{closing}`")]
