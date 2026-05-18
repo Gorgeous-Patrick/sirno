@@ -91,12 +91,6 @@ enum Command {
         #[command(subcommand)]
         command: TideCommand,
     },
-    /// Manage entry-owned artifact files.
-    Artifact {
-        /// Artifact command.
-        #[command(subcommand)]
-        command: ArtifactCommand,
-    },
     /// Utility commands.
     Util {
         /// Utility command.
@@ -179,15 +173,6 @@ enum TopLevelEntryCommand {
         body: Option<String>,
     },
     // sirno:witness:interfaces:end
-    /// Rename one entry id and its Sirno references.
-    // sirno:witness:interfaces:begin
-    Rename {
-        /// Existing entry id.
-        old_id: String,
-        /// New entry id.
-        new_id: String,
-    },
-    // sirno:witness:interfaces:end
     /// Freeze one current Frost entry and make its public file read-only.
     // sirno:witness:interfaces:begin
     Freeze {
@@ -236,6 +221,14 @@ enum TopLevelEntryCommand {
         /// Arguments forwarded to ripgrep before the lake path.
         #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
+    },
+    // sirno:witness:interfaces:end
+    /// Manage entry-owned artifact files.
+    // sirno:witness:interfaces:begin
+    Artifact {
+        /// Artifact command.
+        #[command(subcommand)]
+        command: ArtifactCommand,
     },
     // sirno:witness:interfaces:end
     /// Show repository witness blocks for one entry id.
@@ -292,12 +285,6 @@ enum EntryCommand {
     },
     /// Show filesystem paths related to one entry.
     Path(CliPathArgs),
-    /// Manage entry-owned artifact files.
-    Artifact {
-        /// Artifact command.
-        #[command(subcommand)]
-        command: ArtifactCommand,
-    },
     /// Query public Markdown entries.
     #[command(visible_alias = "q")]
     Query {
@@ -325,6 +312,12 @@ enum EntryCommand {
         #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
+    /// Manage entry-owned artifact files.
+    Artifact {
+        /// Artifact command.
+        #[command(subcommand)]
+        command: ArtifactCommand,
+    },
     /// Show repository witness blocks for one entry id.
     #[command(visible_aliases = ["w", "wit"])]
     Witness {
@@ -342,7 +335,6 @@ impl From<TopLevelEntryCommand> for EntryCommand {
             | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
                 Self::New { id, name, desc, structural, body }
             }
-            | TopLevelEntryCommand::Rename { old_id, new_id } => Self::Rename { old_id, new_id },
             | TopLevelEntryCommand::Freeze { id } => Self::Freeze { id },
             | TopLevelEntryCommand::Melt { id } => Self::Melt { id },
             | TopLevelEntryCommand::Path(args) => Self::Path(args),
@@ -352,6 +344,7 @@ impl From<TopLevelEntryCommand> for EntryCommand {
             | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
                 Self::Rg { with_generated_footer, args }
             }
+            | TopLevelEntryCommand::Artifact { command } => Self::Artifact { command },
             | TopLevelEntryCommand::Witness { id, full } => Self::Witness { id, full },
         }
     }
@@ -783,7 +776,6 @@ impl Cli {
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Tide { command } => command.run(&config_path, lake_path.as_deref()),
-            | Command::Artifact { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
         }
     }
@@ -849,7 +841,6 @@ impl EntryCommand {
                 print_path_records(&records, args.format.unwrap_or(CliPathOutputFormat::Human))?;
                 Ok(ExitCode::SUCCESS)
             }
-            | EntryCommand::Artifact { command } => command.run(config_path, lake_path),
             | EntryCommand::Query { terms, exact_terms, exact, fields, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
@@ -877,6 +868,7 @@ impl EntryCommand {
             | EntryCommand::Rg { with_generated_footer, args } => {
                 run_rg_command(lake_path, config_path, with_generated_footer, args)
             }
+            | EntryCommand::Artifact { command } => command.run(config_path, lake_path),
             | EntryCommand::Witness { id, full } => {
                 run_witness_command(config_path, lake_path, &id, full)
             }
@@ -3007,16 +2999,10 @@ Body.
 
     #[test]
     fn rename_accepts_entry_ids_and_aliases() {
-        let top_level = Cli::parse_from(["sirno", "rename", "old-entry", "new-entry"]);
         let entry = Cli::parse_from(["sirno", "entry", "rename", "old-entry", "new-entry"]);
         let short = Cli::parse_from(["sirno", "entry", "mv", "old-entry", "new-entry"]);
         let mnemonic = Cli::parse_from(["sirno", "entry", "move", "old-entry", "new-entry"]);
 
-        assert!(matches!(
-            top_level.command,
-            Command::TopLevelEntry(TopLevelEntryCommand::Rename { old_id, new_id })
-                if old_id == "old-entry" && new_id == "new-entry"
-        ));
         assert!(matches!(
             entry.command,
             Command::Entry { command: EntryCommand::Rename { old_id, new_id } }
@@ -3065,7 +3051,14 @@ Body.
     }
 
     #[test]
-    fn artifact_commands_accept_top_level_and_entry_alias() {
+    fn rename_rejects_top_level_form() {
+        let error = Cli::try_parse_from(["sirno", "rename", "old-entry", "new-entry"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
+    }
+
+    #[test]
+    fn artifact_commands_accept_top_level_and_entry_form() {
         let list = Cli::parse_from(["sirno", "artifact", "list", "alpha"]);
         let add = Cli::parse_from([
             "sirno",
@@ -3088,7 +3081,9 @@ Body.
 
         assert!(matches!(
             list.command,
-            Command::Artifact { command: ArtifactCommand::List { id } } if id == "alpha"
+            Command::TopLevelEntry(TopLevelEntryCommand::Artifact {
+                command: ArtifactCommand::List { id },
+            }) if id == "alpha"
         ));
         assert!(matches!(
             add.command,
@@ -3100,9 +3095,9 @@ Body.
         ));
         assert!(matches!(
             rename.command,
-            Command::Artifact {
+            Command::TopLevelEntry(TopLevelEntryCommand::Artifact {
                 command: ArtifactCommand::Rename { id, old_path, new_path },
-            } if id == "alpha"
+            }) if id == "alpha"
                 && old_path == Path::new("images/logo.png")
                 && new_path == Path::new("images/wordmark.png")
         ));
@@ -3113,6 +3108,39 @@ Body.
                     command: ArtifactCommand::Remove { id, artifact_path },
                 },
             } if id == "alpha" && artifact_path == Path::new("logo.png")
+        ));
+    }
+
+    #[test]
+    fn artifact_entry_form_matches_top_level_form() {
+        let list = Cli::parse_from(["sirno", "entry", "artifact", "list", "alpha"]);
+        let rename = Cli::parse_from([
+            "sirno",
+            "entry",
+            "artifact",
+            "mv",
+            "alpha",
+            "images/logo.png",
+            "images/wordmark.png",
+        ]);
+
+        assert!(matches!(
+            list.command,
+            Command::Entry {
+                command: EntryCommand::Artifact {
+                    command: ArtifactCommand::List { id },
+                },
+            } if id == "alpha"
+        ));
+        assert!(matches!(
+            rename.command,
+            Command::Entry {
+                command: EntryCommand::Artifact {
+                    command: ArtifactCommand::Rename { id, old_path, new_path },
+                },
+            } if id == "alpha"
+                && old_path == Path::new("images/logo.png")
+                && new_path == Path::new("images/wordmark.png")
         ));
     }
 
@@ -3166,6 +3194,7 @@ Body.
             "sirno",
             "--config",
             config_path.to_str().unwrap(),
+            "entry",
             "artifact",
             "add",
             "alpha",
@@ -3191,6 +3220,7 @@ Body.
             "sirno",
             "--config",
             config_path.to_str().unwrap(),
+            "entry",
             "artifact",
             "rm",
             "alpha",

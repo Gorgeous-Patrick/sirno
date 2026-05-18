@@ -24,8 +24,8 @@ An *entry artifact* belongs to the *entry* itself and moves with that *entry* wh
 
 `sirno path ENTRY_ID` shows the public and Frost paths related to an *entry*.
 It includes artifact paths by default and excludes *repository witness* paths.
-`sirno artifact` manages owner-relative artifact paths.
-Its grouped alias is `sirno entry artifact`.
+`sirno artifact` manages owner-relative artifact paths as a top-level entry operation.
+Its grouped form is `sirno entry artifact`.
 Artifact mutation commands preserve the same protection rule as direct file edits:
 a frozen *entry* blocks changes to its artifact tree.
 

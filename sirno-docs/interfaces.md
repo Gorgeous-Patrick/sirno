@@ -22,7 +22,7 @@ Common command aliases keep terminal use compact:
 and `defrost` for `checkout`.
 Entry-centric operations also live under `sirno entry`.
 Storage-wide lake operations also live under `sirno lake`.
-Entry artifact operations also live under `sirno artifact`.
+Entry artifact operations also have the top-level `sirno artifact` form.
 Frost operations also live under `sirno frost`.
 When a top-level command delegates to a group,
 the grouped spelling uses the same subcommands and aliases.
@@ -35,7 +35,7 @@ select the same Frost operations as their grouped `sirno frost ...` forms.
 Public lake setup and path moves use `sirno lake init` and `sirno lake move`.
 Top-level `sirno init` and `sirno move` are reserved commands.
 For artifact mutation,
-`sirno artifact ...` and `sirno entry artifact ...` select the same operation.
+`sirno artifact ...` and `sirno entry artifact ...` select the same entry operation.
 Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
