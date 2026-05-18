@@ -11,7 +11,7 @@ use std::{env, fmt};
 
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
-use comfy_table::{ContentArrangement, Table, presets::UTF8_FULL_CONDENSED};
+use comfy_table::{ContentArrangement, Table, presets::UTF8_FULL};
 use indexmap::IndexMap;
 use serde::{Deserialize, ser::SerializeMap};
 use sirno::{
@@ -2163,7 +2163,7 @@ fn format_human_table_with_width(
     headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
 ) -> String {
     let mut table = Table::new();
-    table.load_preset(UTF8_FULL_CONDENSED);
+    table.load_preset(UTF8_FULL);
     table.set_content_arrangement(ContentArrangement::Dynamic);
     if let Some(width) = width {
         table.set_width(width);
@@ -3902,6 +3902,7 @@ Body.
 │ id   │
 ╞══════╡
 │ 界界 │
+├╌╌╌╌╌╌┤
 │ aaa  │
 └──────┘
 "
