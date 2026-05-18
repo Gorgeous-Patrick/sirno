@@ -14,6 +14,11 @@ The CLI is the first operational interface.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
 move configured storage paths, maintain *generated footer* links,
 manage optional Frost snapshots, and manage the active *tide*.
+The `sirno::core` module is the shared command surface behind the CLI.
+The binary `main.rs` delegates process startup to that module.
+Reusable helpers in `sirno::core` return typed query, path, tide, and witness data
+before the CLI renders human text or JSON.
+MCP tools should call those typed helpers and prefer JSON rendering through the shared serializer.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
