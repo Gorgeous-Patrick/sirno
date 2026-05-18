@@ -43,7 +43,7 @@ In a terminal, the table detects the available width and wraps cell content.
 When the selected columns cannot fit, Sirno keeps the leftmost columns that fit
 and appends a `...` column to show that columns were omitted.
 When no format is supplied,
-query uses `json`.
+query uses `human`.
 
 ---
 

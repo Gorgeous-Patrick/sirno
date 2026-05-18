@@ -321,11 +321,12 @@ struct EntryPathArgs {
 
 /// CLI path lookup output renderer.
 // sirno:witness:interfaces:begin
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum PathOutputFormat {
     /// Print a JSON array of path records.
     Json,
     /// Print a Unicode table.
+    #[default]
     Human,
     /// Print only paths, one per line.
     Paths,
@@ -390,11 +391,12 @@ impl From<CheckModeArg> for CheckMode {
 }
 
 /// CLI query output renderer.
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum QueryOutputFormat {
     /// Print a JSON array of objects.
     Json,
     /// Print a Unicode table.
+    #[default]
     Human,
 }
 
@@ -649,11 +651,12 @@ struct UnresolveArgs {
 }
 
 /// CLI tide output renderer.
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum TideOutputFormat {
     /// Print a JSON object.
     Json,
     /// Print a human-readable list.
+    #[default]
     Human,
 }
 
@@ -915,7 +918,7 @@ impl TopLevelEntryCommand {
             }
             | TopLevelEntryCommand::Path(args) => {
                 let records = entry_path_records(config_path, lake_path, &args)?;
-                print_path_records(&records, args.format.unwrap_or(PathOutputFormat::Human))?;
+                print_path_records(&records, args.format.unwrap_or_default())?;
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Query { terms, exact_terms, exact, columns, format } => {
@@ -938,7 +941,7 @@ impl TopLevelEntryCommand {
                 let vague_matches = vague_query.select_entries(report.entries());
                 let matches = exact_query.select_entries(vague_matches);
                 let columns = columns.unwrap_or_default();
-                let format = format.unwrap_or(QueryOutputFormat::Json);
+                let format = format.unwrap_or_default();
                 print_query_results(&report, &matches, &columns, format)?;
                 Ok(ExitCode::SUCCESS)
             }
@@ -1267,7 +1270,7 @@ impl TideCommand {
                 let context = TideContext::load(config_path, lake_path)?;
                 let lock = context.load_lock_or_current()?;
                 let tide = context.tide(&lock)?;
-                let format = format.unwrap_or(TideOutputFormat::Human);
+                let format = format.unwrap_or_default();
                 print_tide_status(&tide, all, format)?;
                 Ok(if tide.is_clear() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
             }
@@ -2470,7 +2473,7 @@ mod tests {
         ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
         EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
         MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
-        StructuralPredicate, TideCommand, TideItemSelector, TideReviewCommand,
+        StructuralPredicate, TideCommand, TideItemSelector, TideOutputFormat, TideReviewCommand,
         TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs,
         entry_path_records, exact_query_from_predicates, format_gen_link_report,
         format_human_table_with_width, format_path_table, format_query_json, format_query_table,
@@ -3800,6 +3803,13 @@ Body.
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn table_output_formats_default_to_human() {
+        assert!(matches!(PathOutputFormat::default(), PathOutputFormat::Human));
+        assert!(matches!(QueryOutputFormat::default(), QueryOutputFormat::Human));
+        assert!(matches!(TideOutputFormat::default(), TideOutputFormat::Human));
     }
 
     #[test]
