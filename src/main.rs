@@ -11,6 +11,7 @@ use std::{env, fmt};
 
 use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
+use comfy_table::{ContentArrangement, Table, presets::UTF8_FULL_CONDENSED};
 use indexmap::IndexMap;
 use serde::{Deserialize, ser::SerializeMap};
 use sirno::{
@@ -23,6 +24,7 @@ use sirno::{
     WitnessRecord,
 };
 use thiserror::Error;
+use unicode_width::UnicodeWidthStr;
 
 const RG_PREPROCESSOR_ARGV0_PREFIX: &str = "sirno-rg-preprocess-";
 
@@ -323,7 +325,7 @@ struct EntryPathArgs {
 enum PathOutputFormat {
     /// Print a JSON array of path records.
     Json,
-    /// Print an aligned table.
+    /// Print a Unicode table.
     Human,
     /// Print only paths, one per line.
     Paths,
@@ -392,7 +394,7 @@ impl From<CheckModeArg> for CheckMode {
 enum QueryOutputFormat {
     /// Print a JSON array of objects.
     Json,
-    /// Print an aligned table.
+    /// Print a Unicode table.
     Human,
 }
 
@@ -2082,19 +2084,8 @@ fn print_path_records(
 
 fn format_path_table(records: &[PathRecord]) -> String {
     let headers = ["kind", "path"];
-    let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
-    for record in records {
-        widths[0] = widths[0].max(cell_width(record.kind));
-        widths[1] = widths[1].max(cell_width(&record.path));
-    }
-
-    let mut table = String::new();
-    push_query_table_row(&mut table, headers, &widths);
-    push_query_table_separator(&mut table, &widths);
-    for record in records {
-        push_query_table_row(&mut table, [record.kind, record.path.as_str()], &widths);
-    }
-    table
+    let rows = records.iter().map(|record| [record.kind, record.path.as_str()]);
+    format_human_table(headers, rows)
 }
 
 fn query_result_rows(
@@ -2153,47 +2144,74 @@ impl serde::Serialize for QueryJsonRecord<'_> {
 
 fn format_query_table(columns: &QueryColumns, rows: &[Vec<String>]) -> String {
     let headers = columns.columns.iter().map(|column| column.label()).collect::<Vec<_>>();
-    let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
-    for row in rows {
-        for (index, cell) in row.iter().enumerate() {
-            widths[index] = widths[index].max(cell_width(cell));
+    format_human_table(headers, rows.iter().map(|row| row.iter().map(String::as_str)))
+}
+
+fn format_human_table<'a>(
+    headers: impl IntoIterator<Item = &'a str>,
+    rows: impl IntoIterator<Item = impl IntoIterator<Item = &'a str>>,
+) -> String {
+    let headers = headers.into_iter().map(str::to_owned).collect::<Vec<_>>();
+    let rows = rows
+        .into_iter()
+        .map(|row| row.into_iter().map(str::to_owned).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    format_human_table_with_width(headers, rows, None)
+}
+
+fn format_human_table_with_width(
+    headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
+) -> String {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL_CONDENSED);
+    table.set_content_arrangement(ContentArrangement::Dynamic);
+    if let Some(width) = width {
+        table.set_width(width);
+    }
+    let (headers, rows) = elide_human_table_columns(headers, rows, table.width());
+    table.set_header(headers);
+    table.add_rows(rows);
+    let mut output = table.to_string();
+    output.push('\n');
+    output
+}
+
+fn elide_human_table_columns(
+    headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
+) -> (Vec<String>, Vec<Vec<String>>) {
+    let Some(width) = width.map(usize::from) else {
+        return (headers, rows);
+    };
+    if headers.len() <= 2 || min_table_width(&headers) <= width {
+        return (headers, rows);
+    }
+
+    for visible in (1..headers.len()).rev() {
+        let mut candidate_headers = headers.iter().take(visible).cloned().collect::<Vec<_>>();
+        candidate_headers.push("...".to_owned());
+        if min_table_width(&candidate_headers) <= width {
+            let candidate_rows = rows
+                .into_iter()
+                .map(|row| {
+                    let mut cells = row.into_iter().take(visible).collect::<Vec<_>>();
+                    cells.push("...".to_owned());
+                    cells
+                })
+                .collect();
+            return (candidate_headers, candidate_rows);
         }
     }
 
-    let mut table = String::new();
-    push_query_table_row(&mut table, headers.iter().copied(), &widths);
-    push_query_table_separator(&mut table, &widths);
-    for row in rows {
-        push_query_table_row(&mut table, row.iter().map(String::as_str), &widths);
-    }
-    table
+    (
+        headers.into_iter().take(1).collect(),
+        rows.into_iter().map(|row| row.into_iter().take(1).collect()).collect(),
+    )
 }
 
-fn push_query_table_row<'a>(
-    table: &mut String, cells: impl IntoIterator<Item = &'a str>, widths: &[usize],
-) {
-    table.push('|');
-    for (cell, width) in cells.into_iter().zip(widths) {
-        table.push(' ');
-        table.push_str(cell);
-        table.push_str(&" ".repeat(width.saturating_sub(cell_width(cell))));
-        table.push_str(" |");
-    }
-    table.push('\n');
-}
-
-fn push_query_table_separator(table: &mut String, widths: &[usize]) {
-    table.push('|');
-    for width in widths {
-        table.push(' ');
-        table.push_str(&"-".repeat(*width));
-        table.push_str(" |");
-    }
-    table.push('\n');
-}
-
-fn cell_width(cell: &str) -> usize {
-    cell.chars().count()
+fn min_table_width(headers: &[String]) -> usize {
+    headers.iter().map(|header| UnicodeWidthStr::width(header.as_str()).max(1)).sum::<usize>()
+        + headers.len() * 3
+        + 1
 }
 
 fn print_entry_directory_report(report: &EntryDirectoryReport) {
@@ -2454,9 +2472,9 @@ mod tests {
         MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
         StructuralPredicate, TideCommand, TideItemSelector, TideReviewCommand,
         TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs,
-        entry_path_records, exact_query_from_predicates, format_gen_link_report, format_path_table,
-        format_query_json, format_query_table, format_witness_record, format_witness_records,
-        rg_args_include_preprocessor,
+        entry_path_records, exact_query_from_predicates, format_gen_link_report,
+        format_human_table_with_width, format_path_table, format_query_json, format_query_table,
+        format_witness_record, format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -3862,9 +3880,77 @@ Body.
         assert_eq!(
             table,
             "\
-| id    | desc      |
-| ----- | --------- |
-| query | Selection |
+┌───────┬───────────┐
+│ id    ┆ desc      │
+╞═══════╪═══════════╡
+│ query ┆ Selection │
+└───────┴───────────┘
+"
+        );
+    }
+
+    #[test]
+    fn query_table_uses_unicode_display_width() {
+        let columns = "id".parse::<QueryColumns>().unwrap();
+        let table =
+            format_query_table(&columns, &[vec!["界界".to_owned()], vec!["aaa".to_owned()]]);
+
+        assert_eq!(
+            table,
+            "\
+┌──────┐
+│ id   │
+╞══════╡
+│ 界界 │
+│ aaa  │
+└──────┘
+"
+        );
+    }
+
+    #[test]
+    fn human_table_wraps_to_explicit_width() {
+        let table = format_human_table_with_width(
+            vec!["id".to_owned(), "desc".to_owned()],
+            vec![vec!["query".to_owned(), "one two three".to_owned()]],
+            Some(18),
+        );
+
+        assert_eq!(
+            table,
+            "\
+┌───────┬────────┐
+│ id    ┆ desc   │
+╞═══════╪════════╡
+│ query ┆ one    │
+│       ┆ two    │
+│       ┆ three  │
+└───────┴────────┘
+"
+        );
+    }
+
+    #[test]
+    fn human_table_elides_columns_when_width_is_too_small() {
+        let table = format_human_table_with_width(
+            vec!["id".to_owned(), "name".to_owned(), "path".to_owned(), "desc".to_owned()],
+            vec![vec![
+                "a".to_owned(),
+                "Beta".to_owned(),
+                "sirno-docs/a.md".to_owned(),
+                "A compact entry.".to_owned(),
+            ]],
+            Some(19),
+        );
+
+        assert_eq!(
+            table,
+            "\
+┌────┬──────┬─────┐
+│ id ┆ name ┆ ... │
+╞════╪══════╪═════╡
+│ a  ┆ Beta ┆ ... │
+└────┴──────┴─────┘
 "
         );
     }

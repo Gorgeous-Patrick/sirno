@@ -38,7 +38,10 @@ The printable columns are `id`, `name`, `path`, and `desc`.
 When no columns are supplied,
 query selects `id,path,name`.
 `--format json` prints a JSON array of objects with the selected columns.
-`--format human` prints the same selected columns as an aligned table for interactive use.
+`--format human` prints the same selected columns as a bordered Unicode table.
+In a terminal, the table detects the available width and wraps cell content.
+When the selected columns cannot fit, Sirno keeps the leftmost columns that fit
+and appends a `...` column to show that columns were omitted.
 When no format is supplied,
 query uses `json`.
 
