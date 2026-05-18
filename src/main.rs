@@ -109,45 +109,15 @@ enum Command {
     // sirno:witness:interfaces:end
 }
 
-/// Supported public lake commands.
+/// Supported public entry commands.
 #[derive(Debug, Subcommand)]
-enum LakeCommand {
-    /// Create a Sirno config and ordinary seed entries.
-    // sirno:witness:interfaces:begin
-    Init {
-        /// Public Markdown entry lake path written to Sirno.toml.
-        lake: Option<PathBuf>,
-    },
-    /// Move the configured public Markdown entry lake.
-    #[command(visible_alias = "mv")]
-    Move(LakeMoveArgs),
-    /// Run a top-level lake operation under `sirno lake`.
+enum EntryCommand {
+    /// Run a top-level entry operation under `sirno entry`.
     #[command(flatten)]
-    TopLevel(TopLevelLakeCommand),
-    // sirno:witness:interfaces:end
-}
-
-/// Supported top-level public lake commands.
-#[derive(Debug, Subcommand)]
-enum TopLevelLakeCommand {
-    /// Check current entry structure.
-    Check {
-        /// Check boundary.
-        #[arg(short = 'm', long, value_enum)]
-        mode: Option<CliCheckMode>,
-    },
-    /// Render Markdown links in entry footers.
-    Render {
-        /// Report rendered-footer changes without writing files.
-        #[arg(short = 'n', long, visible_alias = "dry-run")]
-        dry: bool,
-        /// Render command.
-        #[command(subcommand)]
-        command: Option<RenderCommand>,
-    },
-    /// Show the current Sirno project status.
-    #[command(visible_alias = "st")]
-    Status,
+    TopLevel(TopLevelEntryCommand),
+    /// Rename one entry id and its Sirno references.
+    #[command(visible_aliases = ["mv", "move"])]
+    Rename(EntryRenameArgs),
 }
 
 /// Supported top-level public entry commands.
@@ -243,6 +213,47 @@ enum TopLevelEntryCommand {
     // sirno:witness:interfaces:end
 }
 
+/// Supported public lake commands.
+#[derive(Debug, Subcommand)]
+enum LakeCommand {
+    /// Create a Sirno config and ordinary seed entries.
+    // sirno:witness:interfaces:begin
+    Init {
+        /// Public Markdown entry lake path written to Sirno.toml.
+        lake: Option<PathBuf>,
+    },
+    /// Move the configured public Markdown entry lake.
+    #[command(visible_alias = "mv")]
+    Move(LakeMoveArgs),
+    /// Run a top-level lake operation under `sirno lake`.
+    #[command(flatten)]
+    TopLevel(TopLevelLakeCommand),
+    // sirno:witness:interfaces:end
+}
+
+/// Supported top-level public lake commands.
+#[derive(Debug, Subcommand)]
+enum TopLevelLakeCommand {
+    /// Check current entry structure.
+    Check {
+        /// Check boundary.
+        #[arg(short = 'm', long, value_enum)]
+        mode: Option<CliCheckMode>,
+    },
+    /// Render Markdown links in entry footers.
+    Render {
+        /// Report rendered-footer changes without writing files.
+        #[arg(short = 'n', long, visible_alias = "dry-run")]
+        dry: bool,
+        /// Render command.
+        #[command(subcommand)]
+        command: Option<RenderCommand>,
+    },
+    /// Show the current Sirno project status.
+    #[command(visible_alias = "st")]
+    Status,
+}
+
 /// Supported top-level move wrappers.
 // sirno:witness:interfaces:begin
 #[derive(Debug, Subcommand)]
@@ -278,17 +289,6 @@ struct FrostMoveArgs {
     frost: PathBuf,
 }
 // sirno:witness:interfaces:end
-
-/// Supported public entry commands.
-#[derive(Debug, Subcommand)]
-enum EntryCommand {
-    /// Run a top-level entry operation under `sirno entry`.
-    #[command(flatten)]
-    TopLevel(TopLevelEntryCommand),
-    /// Rename one entry id and its Sirno references.
-    #[command(visible_aliases = ["mv", "move"])]
-    Rename(EntryRenameArgs),
-}
 
 /// Arguments for entry path lookup.
 // sirno:witness:interfaces:begin
