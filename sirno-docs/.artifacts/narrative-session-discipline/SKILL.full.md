@@ -21,6 +21,13 @@ Treat entries as the durable source of knowledge.
 The narrative chooses sequence, prerequisites, pressure, and deferral.
 It should not duplicate the whole lake.
 
+## MCP Project Resolution
+
+When using Sirno through MCP, call `cwd` with the repository root before project tools
+if the server started without `--config`.
+Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
+Call `cwd` again before switching projects in the same server process.
+
 ## Reader Pull
 
 Make knowledge feel worth moving toward before making it complete.

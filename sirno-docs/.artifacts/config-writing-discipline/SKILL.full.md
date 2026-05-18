@@ -17,6 +17,13 @@ witness syntax, optional storage surfaces, and policy tables.
 This full skill text is served as the MCP resource `sirno://skills/sirno-config-writer`.
 It follows the `config-writing-discipline` lake entry.
 
+## MCP Project Resolution
+
+When using Sirno through MCP, call `cwd` with the repository root before project tools
+if the server started without `--config`.
+Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
+Call `cwd` again before switching projects in the same server process.
+
 ## Workflow
 
 Prefer Sirno commands for routine config writes:

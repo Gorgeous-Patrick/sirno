@@ -31,6 +31,11 @@ Each rostered Sirno discipline owns two skill artifacts.
 and served as a `sirno://skills/sirno-*` MCP resource.
 `SKILL.md` is the packaged wrapper copied word-for-word into `.agents/skills/sirno-*/SKILL.md`.
 The wrapper tells an agent to read the MCP resource before doing skill work.
+MCP-hosted Sirno skills must bind the active project through the server current working directory.
+When a Sirno MCP server starts without `--config`,
+call its `cwd` tool with the repository root before project tools.
+Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
+Call `cwd` again before switching projects in the same server process.
 
 This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
