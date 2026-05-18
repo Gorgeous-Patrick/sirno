@@ -15,12 +15,27 @@ refines:
 The README is the first-impression route for Sirno.
 
 It should state a precise compiler-flavored definition at the top before the mascot image.
-The definition should explain `nominal objects` concisely:
-each design object is identified first by its *entry* id.
+The definition should name Sirno as a development harness for project design.
+The definition should explain the full name directly:
+`Semantic`, `Intermediate`, `Representation`, `Nominal`, and `Objects`.
+It should say that entries carry design meaning.
+It should say that the *lake* sits between intent and implementation.
+It should say that entries, structural fields, and *witnesses* give that meaning form.
+It should say that each design object is named first by an *entry* id.
+It should then show the main Sirno features as a short list,
+with each item beginning with Sirno terminology:
+`Lake`, `Entry`, `Witness`, `Frost`, and `Tide`.
+The list should explain that the *lake* is queryable and misty,
+that an *entry* is a named design object,
+that a *witness* ties a design claim back to the code, tests, config files,
+or assets it describes,
+that Frost stores frozen *lake* snapshots,
+and that the *tide* is the design review worklist between *frost* commits,
+preventing locally reasonable changes from freezing into suboptimal design.
 
 Right after the mascot image, the README should carry a `TL;DR` section.
 The `TL;DR` compresses the project model into one short paragraph:
-a queryable *lake* of small named *entries* with stable ids, metadata edges,
+a queryable *lake* of small named *entries* with stable ids, structural field edges,
 and *witnesses* back to *repository* artifacts.
 It then appends an interactive onboarding invitation,
 a `$sirno-narrative-session` prompt grounded in `sirno-docs/introduction.md`,
@@ -59,7 +74,7 @@ show concrete commands for trying the *lake*,
 and point into the *lake* for durable detail.
 
 The *repository witnesses* for this *entry* are hidden Markdown comments in `README.md`.
-They mark the motivation and the four principle sections.
+They mark the opening definition, the motivation, and the four principle sections.
 
 ---
 

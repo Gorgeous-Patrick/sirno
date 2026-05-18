@@ -3,11 +3,21 @@
 *Semantic Intermediate Representation of Nominal Objects*
 
 <!-- sirno:witness:readme:begin -->
-Sirno is a Rust toolchain that gives project design a semantic intermediate representation.
-Design lowers into a queryable misty *lake* of named Markdown *entries*:
-entry identifiers act as symbols, metadata records edges,
-and witnesses point back to source artifacts to avoid documentation drift.
-As such, each design *object* is given an identifier, hence *nominal*.
+Sirno is a development harness for project design.
+Its full name is literal: a Semantic Intermediate Representation of Nominal Objects.
+It is *semantic* because entries carry design meaning.
+It is *intermediate* because the *lake* sits between intent and implementation.
+It is a *representation* because entries, structural fields, and witnesses give that meaning form.
+It is *nominal* because each design *object* is named first by an entry id.
+
+- *Lake*: a queryable, misty collection of Markdown *entries*.
+- *Entry*: a named design object whose id acts as a symbol.
+- *Witness*: a link from a design claim back to the code, tests, config files, or assets it describes.
+- *Frost*: history for frozen *lake* snapshots.
+- *Tide*: the design review worklist between *frost* commits,
+  preventing locally reasonable changes from freezing into suboptimal design.
+
+This is the dawn of documentation-driven development.
 <!-- sirno:witness:readme:end -->
 
 <p align="center">
@@ -21,7 +31,7 @@ As such, each design *object* is given an identifier, hence *nominal*.
 ## TL;DR
 
 Sirno keeps project design in a queryable *lake* of small, named Markdown *entries*.
-Each entry has a stable id, metadata edges, and witnesses linking back to code, tests, or assets,
+Each entry has a stable id, structural field edges, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
 
 New here? Start with an interactive onboarding session:
