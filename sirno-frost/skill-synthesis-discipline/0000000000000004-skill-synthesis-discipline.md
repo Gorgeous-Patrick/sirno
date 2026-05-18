@@ -1,0 +1,111 @@
+---
+desc: The agent procedure for rebuilding MCP skill resources and installed skill wrappers.
+lifecycle: Active
+name: Skill Synthesis Discipline
+structural:
+  category:
+  - meta
+  belongs:
+  - agent-skills
+artifacts:
+- SKILL.full.md
+- SKILL.md
+---
+
+Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resources
+from the lake's `meta`-categorized entries.
+Its full MCP resource text lives in the `SKILL.full.md` entry artifact
+and is embedded by `src/mcp.rs` as `sirno://skills/sirno-skill-synthesizer`.
+Its packaged wrapper lives in the `SKILL.md` entry artifact
+and renders to `.agents/skills/sirno-skill-synthesizer/SKILL.md`.
+Each rostered discipline entry owns the same pair:
+`SKILL.full.md` for the MCP resource payload
+and `SKILL.md` for the installed wrapper.
+
+Read the sources first.
+Read `Sirno.toml` for the lake path,
+then `agent-skills` for the skill roster and the handoffs between skills,
+then every `meta`-categorized entry through `sirno query`.
+The lake is authoritative.
+The full resource and wrapper are reproducible surfaces.
+
+Separate disciplines from shared method.
+A `meta` entry named by the Sirno skill roster and ending in `-discipline` is a skill source.
+The other `meta` entries carry vocabulary, principles, perspective, and design authority.
+They are cross-cutting method that every skill must respect,
+not skills in their own right.
+Repository-specific design-document skills or documented prose methods are the first method input
+when Sirno skill work touches design prose.
+If a repository has none,
+default to `sirno://skills/design-doc-writer` from `design-doc-writer-skill`.
+Their reusable content is reader evaluation,
+conceptual ordering,
+declarative precision,
+and whole-document coherence.
+They do not become skill sources unless the Sirno skill roster adds them.
+They may own full MCP resource artifacts without rendering installed Sirno wrappers.
+
+Map each discipline to one MCP resource and one wrapper package.
+A skill discipline owns exactly one `SKILL.full.md` resource artifact,
+one `SKILL.md` wrapper artifact,
+and one `.agents/skills/sirno-<role>/SKILL.md` installed wrapper package.
+The target package path is written in the discipline body until the project defines
+a structural field for skill packages.
+Keep the existing skill directory name and do not invent a new role
+unless `agent-skills` adds one to the roster.
+Every rostered Sirno discipline should have both artifacts and a package,
+and every `sirno-*` package should trace back to a discipline.
+
+Split full procedure from wrapper.
+The full `SKILL.full.md` artifact operationalizes its discipline plus the shared `meta` method
+it depends on.
+Frontmatter `name` is the skill directory id.
+`description` states when to use the skill and the triggers that should invoke it.
+The full body turns durable procedure into concrete steps and current commands.
+The full artifact must include the discipline's failure paths:
+missing sources, unavailable commands, blocked validation,
+absent evidence, and design changes that must reflect back into the lake.
+The wrapper `SKILL.md` artifact keeps the same frontmatter,
+names the matching `sirno://skills/sirno-*` resource,
+and instructs the agent to read that resource before working.
+Do not duplicate the full procedure in the wrapper.
+Config-writing procedure lives in the config-writer skill.
+Other full resources should hand off `Sirno.toml` edits to that skill
+instead of copying the schema checklist.
+
+Routine project initialization installs wrappers by default.
+Use the Rust utility command to refresh wrappers after initialization.
+Run it from the repository root:
+
+```sh
+cargo run -- util skills init
+```
+
+Use `cargo run -- util skills check` at review boundaries
+to fail when an installed wrapper has drifted.
+Use `cargo run -- util skills list` when auditing bundled wrapper constants and targets.
+The command uses compile-time constants from the `SKILL.md` artifacts.
+It does not parse the lake at runtime.
+
+Inspect the current Sirno CLI before writing commands into a skill.
+A full skill resource that names a missing command is worse than one that only names
+the procedure.
+
+Keep the lake the source of truth.
+When a skill resource, wrapper, and the lake disagree,
+correct the artifact or wrapper, never the lake.
+This discipline is itself a skill source;
+the synthesizer rebuilds its own full resource and wrapper the same way it rebuilds the others.
+
+Validate after writing.
+Run render maintenance if lake metadata changed,
+then the review-mode structural check.
+Confirm each `SKILL.md` has valid frontmatter,
+confirm each `SKILL.full.md` has valid frontmatter,
+and that the disciplines, resources, wrappers, and packages still correspond one to one.
+If a package exists without a discipline,
+either add the missing discipline to the lake or report the package as outside the reproducible set.
+If a discipline exists without a package,
+create the package only when the roster says the skill should ship.
+If a full skill resource would need behavior the lake does not commit,
+leave that behavior out and report the missing design instead of inventing it.
