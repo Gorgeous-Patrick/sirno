@@ -24,12 +24,15 @@ If the *ripple* entry changes again before commit,
 the matching resolution no longer applies.
 Changes to the reviewed neighbor do not reopen that workitem.
 
-`sirno tide status` prints one table with a wave column.
-Each wave starts with its ripple id and lists the entries that still need review.
-Wave boundaries use heavy double separators.
+`sirno tide status` prints one table grouped by wave.
+The wave is the ripple entry whose change created the review obligation.
+Each wave group lists the entries that still need review.
+Group boundaries use heavy double separators.
+`sirno tide status --by entry` groups output by the entry that needs review,
+then lists the reasons for reviewing it.
 A one-sentence summary follows the table.
 `sirno tide status --show full` prints full open workitem statuses
-in the same wave-grouped table.
+in the same grouped table.
 `sirno tide status --show all` includes resolved workitem statuses.
 `sirno resolve` records explicit review.
 `sirno resolve --infer` resolves workitems whose neighbor is also in the current ripple set,

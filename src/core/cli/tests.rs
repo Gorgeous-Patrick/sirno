@@ -24,12 +24,13 @@ use super::{
     FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat,
     QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
     StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
-    TideOutputFormat, TideReviewCommand, TideStatusMode, TopLevelEntryCommand,
+    TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
     TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
     entry_query_from_filters, format_config_comment_result, format_gen_link_report,
     format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
     format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
-    format_tide_review_waves, format_tide_statuses, format_witness_record, format_witness_records,
+    format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
+    format_tide_statuses_by_entry, format_witness_record, format_witness_records,
     rg_args_include_preprocessor,
 };
 
@@ -998,6 +999,45 @@ fn tide_status_accepts_show_modes() {
 }
 
 #[test]
+fn tide_status_accepts_grouping_modes() {
+    let default = Cli::parse_from(["sirno", "tide", "status"]);
+    let wave = Cli::parse_from(["sirno", "tide", "status", "--by", "wave"]);
+    let entry = Cli::parse_from(["sirno", "tide", "status", "--by", "entry"]);
+    let full_entry =
+        Cli::parse_from(["sirno", "tide", "status", "--show", "full", "--by", "entry"]);
+
+    assert!(matches!(
+        default.command,
+        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Wave, .. } }
+    ));
+    assert!(matches!(
+        wave.command,
+        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Wave, .. } }
+    ));
+    assert!(matches!(
+        entry.command,
+        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Entry, .. } }
+    ));
+    assert!(matches!(
+        full_entry.command,
+        Command::Tide {
+            command: TideCommand::Status {
+                show: TideStatusMode::Full,
+                by: TideStatusGrouping::Entry,
+                ..
+            }
+        }
+    ));
+}
+
+#[test]
+fn tide_status_rejects_reason_grouping() {
+    let error = Cli::try_parse_from(["sirno", "tide", "status", "--by", "reason"]).unwrap_err();
+
+    assert_eq!(error.kind(), clap::error::ErrorKind::InvalidValue);
+}
+
+#[test]
 fn tide_status_rejects_old_full_and_all_flags() {
     let full = Cli::try_parse_from(["sirno", "tide", "status", "--full"]).unwrap_err();
     let all = Cli::try_parse_from(["sirno", "tide", "status", "--all"]).unwrap_err();
@@ -1940,6 +1980,49 @@ fn tide_review_waves_merge_into_one_table() {
 }
 
 #[test]
+fn tide_review_entries_group_by_review_entry() {
+    let statuses = vec![
+        tide_status_fixture(
+            "interfaces",
+            "belongs",
+            StructuralEdgeDirection::Clique,
+            "agent-skills",
+            &[TideSource::Lake],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "refines",
+            StructuralEdgeDirection::From,
+            "agent-skills",
+            &[TideSource::Frost],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "belongs",
+            StructuralEdgeDirection::To,
+            "form",
+            &[TideSource::Lake],
+            false,
+        ),
+    ];
+
+    let output = format_tide_review_entries(&statuses);
+
+    assert!(
+        output.contains("The tide has 3 open workitems in 2 waves, with 2 unique review entries.")
+    );
+    assert_eq!(output.matches('┌').count(), 1);
+    assert_eq!(heavy_wave_separator_count(&output), 1);
+    assert!(output.contains("│ entry        ┆ reason"));
+    assert!(output.contains("│ agent-skills ┆ interfaces"));
+    assert!(output.contains("│              ┆ tide"));
+    assert!(output.contains("│ form         ┆ tide"));
+    assert_before(&output, "│ form         ┆ tide", "The tide has 3 open workitems");
+}
+
+#[test]
 fn tide_full_statuses_group_by_wave() {
     let statuses = vec![
         tide_status_fixture(
@@ -1985,6 +2068,54 @@ fn tide_full_statuses_group_by_wave() {
     assert!(output.contains("lake,frost"));
     assert!(output.contains("resolved"));
     assert_before(&output, "│            ┆ frost-versioning", "The tide has 2 open workitems");
+}
+
+#[test]
+fn tide_full_statuses_group_by_review_entry() {
+    let statuses = vec![
+        tide_status_fixture(
+            "interfaces",
+            "belongs",
+            StructuralEdgeDirection::Clique,
+            "agent-skills",
+            &[TideSource::Lake],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "refines",
+            StructuralEdgeDirection::From,
+            "agent-skills",
+            &[TideSource::Lake, TideSource::Frost],
+            false,
+        ),
+        tide_status_fixture(
+            "tide",
+            "belongs",
+            StructuralEdgeDirection::To,
+            "frost-versioning",
+            &[TideSource::Lake],
+            true,
+        ),
+    ];
+
+    let output = format_tide_statuses_by_entry(&statuses);
+
+    assert!(output.contains(
+        "The tide has 2 open workitems and 1 resolved workitem in 2 waves, \
+         with 1 unique review entry."
+    ));
+    assert_eq!(output.matches('┌').count(), 1);
+    assert_eq!(heavy_wave_separator_count(&output), 1);
+    assert!(output.contains("│ entry"));
+    assert!(output.contains("┆ reason"));
+    assert!(output.contains("│ agent-skills"));
+    assert!(output.contains("┆ interfaces"));
+    assert!(output.contains("┆ tide"));
+    assert!(output.contains("│ frost-versioning"));
+    assert!(output.contains("lake,frost"));
+    assert!(output.contains("resolved"));
+    assert_before(&output, "│ frost-versioning", "The tide has 2 open workitems");
 }
 
 #[test]

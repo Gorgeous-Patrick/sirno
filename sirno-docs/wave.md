@@ -27,9 +27,9 @@ each ripple produces its own wave.
 The active *tide* is the union of those waves.
 If two waves point at the same neighbor,
 they remain separate when their `(ripple, field, direction, neighbor)` tuples differ.
-Human tide status output uses a wave column to group review entries and full workitem rows,
-so a reviewer can read one changed entry and its review surface together.
-Wave boundaries use heavy double separators.
+Human tide status output can group review entries and full workitem rows by wave.
+The displayed wave is the ripple entry that produced the wave.
+Group boundaries use heavy double separators.
 
 ---
 

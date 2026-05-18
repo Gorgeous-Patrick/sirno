@@ -550,6 +550,9 @@ enum TideCommand {
         /// Select review entries, full open workitems, or all workitems.
         #[arg(long, value_enum, default_value_t = TideStatusMode::Review)]
         show: TideStatusMode,
+        /// Group human output by wave or review entry.
+        #[arg(long, value_enum, default_value_t = TideStatusGrouping::Wave)]
+        by: TideStatusGrouping,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
         format: Option<TideOutputFormat>,
@@ -561,6 +564,16 @@ enum TideCommand {
     Reset,
 }
 // sirno:witness:tide:end
+
+/// Human grouping for tide status output.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
+enum TideStatusGrouping {
+    /// Group by the changed ripple entry that caused review.
+    #[default]
+    Wave,
+    /// Group by the entry that needs review.
+    Entry,
+}
 
 /// Supported tide review commands.
 #[derive(Debug, Subcommand)]
@@ -1138,12 +1151,12 @@ impl TideCommand {
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
     ) -> Result<ExitCode, CommandError> {
         match self {
-            | TideCommand::Status { show, format } => {
+            | TideCommand::Status { show, by, format } => {
                 let context = CoreContext::from_cli_paths(config_path, lake_path);
                 let format = format.unwrap_or_default();
                 if show.includes_workitems() {
                     let statuses = context.tide_statuses(show)?;
-                    print_tide_statuses(&statuses, format)?;
+                    print_tide_statuses(&statuses, by, format)?;
                     Ok(if statuses.iter().all(|status| status.resolved) {
                         ExitCode::SUCCESS
                     } else {
@@ -1151,7 +1164,7 @@ impl TideCommand {
                     })
                 } else {
                     let statuses = context.tide_statuses(show)?;
-                    print_tide_review_waves(&statuses, format)?;
+                    print_tide_review_waves(&statuses, by, format)?;
                     Ok(if statuses.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
                 }
             }
@@ -1232,21 +1245,21 @@ fn tide_selection_from_items(items: Vec<TideItemSelector>) -> TideSelectionReque
 }
 
 fn print_tide_statuses(
-    statuses: &[TideStatus], format: TideOutputFormat,
+    statuses: &[TideStatus], grouping: TideStatusGrouping, format: TideOutputFormat,
 ) -> Result<(), CommandError> {
     match format {
         | TideOutputFormat::Json => {
             print_json(statuses)?;
         }
         | TideOutputFormat::Human => {
-            print!("{}", format_tide_statuses(statuses));
+            print!("{}", format_tide_statuses_grouped(statuses, grouping));
         }
     }
     Ok(())
 }
 
 fn print_tide_review_waves(
-    statuses: &[TideStatus], format: TideOutputFormat,
+    statuses: &[TideStatus], grouping: TideStatusGrouping, format: TideOutputFormat,
 ) -> Result<(), CommandError> {
     match format {
         | TideOutputFormat::Json => {
@@ -1254,7 +1267,7 @@ fn print_tide_review_waves(
             print_json(&entries)?;
         }
         | TideOutputFormat::Human => {
-            print!("{}", format_tide_review_waves(statuses));
+            print!("{}", format_tide_review_waves_grouped(statuses, grouping));
         }
     }
     Ok(())
@@ -1264,6 +1277,21 @@ fn print_tide_review_waves(
 struct TideReviewWave {
     ripple: EntryId,
     entries: Vec<EntryId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TideReviewEntryGroup {
+    entry: EntryId,
+    ripples: Vec<EntryId>,
+}
+
+fn format_tide_review_waves_grouped(
+    statuses: &[TideStatus], grouping: TideStatusGrouping,
+) -> String {
+    match grouping {
+        | TideStatusGrouping::Wave => format_tide_review_waves(statuses),
+        | TideStatusGrouping::Entry => format_tide_review_entries(statuses),
+    }
 }
 
 fn format_tide_review_waves(statuses: &[TideStatus]) -> String {
@@ -1279,16 +1307,55 @@ fn format_tide_review_waves(statuses: &[TideStatus]) -> String {
         .flat_map(|wave| {
             wave.entries.iter().enumerate().map(|(index, entry)| {
                 let ripple = if index == 0 { wave.ripple.to_string() } else { String::new() };
-                TideWaveTableRow { starts_wave: index == 0, cells: vec![ripple, entry.to_string()] }
+                TideGroupedTableRow {
+                    starts_group: index == 0,
+                    cells: vec![ripple, entry.to_string()],
+                }
             })
         })
         .collect::<Vec<_>>();
-    let mut output = format_tide_wave_table(vec!["wave".to_owned(), "entry".to_owned()], rows);
+    let mut output = format_tide_grouped_table(vec!["wave".to_owned(), "entry".to_owned()], rows);
     output.push('\n');
     output.push_str(&tide_summary_sentence(open_count, 0, waves.len(), review_entry_count));
     output.push('\n');
 
     output
+}
+
+fn format_tide_review_entries(statuses: &[TideStatus]) -> String {
+    let entries = tide_review_entry_groups(statuses);
+    if entries.is_empty() {
+        return "tide: clear\n".to_owned();
+    }
+
+    let waves = tide_review_waves(statuses);
+    let open_count = statuses.iter().filter(|status| !status.resolved).count();
+    let review_entry_count = entries.len();
+    let rows = entries
+        .iter()
+        .flat_map(|group| {
+            group.ripples.iter().enumerate().map(|(index, ripple)| {
+                let entry = if index == 0 { group.entry.to_string() } else { String::new() };
+                TideGroupedTableRow {
+                    starts_group: index == 0,
+                    cells: vec![entry, ripple.to_string()],
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut output = format_tide_grouped_table(vec!["entry".to_owned(), "reason".to_owned()], rows);
+    output.push('\n');
+    output.push_str(&tide_summary_sentence(open_count, 0, waves.len(), review_entry_count));
+    output.push('\n');
+
+    output
+}
+
+fn format_tide_statuses_grouped(statuses: &[TideStatus], grouping: TideStatusGrouping) -> String {
+    match grouping {
+        | TideStatusGrouping::Wave => format_tide_statuses(statuses),
+        | TideStatusGrouping::Entry => format_tide_statuses_by_entry(statuses),
+    }
 }
 
 fn format_tide_statuses(statuses: &[TideStatus]) -> String {
@@ -1305,8 +1372,8 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
         .flat_map(|wave| {
             wave.statuses.iter().enumerate().map(|(index, status)| {
                 let ripple = if index == 0 { wave.ripple.to_string() } else { String::new() };
-                TideWaveTableRow {
-                    starts_wave: index == 0,
+                TideGroupedTableRow {
+                    starts_group: index == 0,
                     cells: vec![
                         ripple,
                         status.workitem.neighbor.to_string(),
@@ -1319,10 +1386,62 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
             })
         })
         .collect::<Vec<_>>();
-    let mut output = format_tide_wave_table(
+    let mut output = format_tide_grouped_table(
         vec![
             "wave".to_owned(),
             "entry".to_owned(),
+            "state".to_owned(),
+            "field".to_owned(),
+            "direction".to_owned(),
+            "sources".to_owned(),
+        ],
+        rows,
+    );
+    output.push('\n');
+    output.push_str(&tide_summary_sentence(
+        open_count,
+        resolved_count,
+        waves.len(),
+        review_entry_count,
+    ));
+    output.push('\n');
+
+    output
+}
+
+fn format_tide_statuses_by_entry(statuses: &[TideStatus]) -> String {
+    let entries = tide_status_entry_groups(statuses);
+    if entries.is_empty() {
+        return "tide: clear\n".to_owned();
+    }
+
+    let waves = tide_status_waves(statuses);
+    let open_count = statuses.iter().filter(|status| !status.resolved).count();
+    let resolved_count = statuses.len() - open_count;
+    let review_entry_count = tide_review_entries_from_statuses(statuses).len();
+    let rows = entries
+        .iter()
+        .flat_map(|group| {
+            group.statuses.iter().enumerate().map(|(index, status)| {
+                let entry = if index == 0 { group.entry.to_string() } else { String::new() };
+                TideGroupedTableRow {
+                    starts_group: index == 0,
+                    cells: vec![
+                        entry,
+                        status.workitem.ripple.to_string(),
+                        tide_state_label(status).to_owned(),
+                        status.workitem.field.clone(),
+                        status.workitem.direction.to_string(),
+                        tide_sources_label(status),
+                    ],
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut output = format_tide_grouped_table(
+        vec![
+            "entry".to_owned(),
+            "reason".to_owned(),
             "state".to_owned(),
             "field".to_owned(),
             "direction".to_owned(),
@@ -1363,30 +1482,30 @@ fn tide_summary_sentence(
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct TideWaveTableRow {
+struct TideGroupedTableRow {
     cells: Vec<String>,
-    starts_wave: bool,
+    starts_group: bool,
 }
 
-fn format_tide_wave_table(headers: Vec<String>, rows: Vec<TideWaveTableRow>) -> String {
-    let wave_start_rows = rows
+fn format_tide_grouped_table(headers: Vec<String>, rows: Vec<TideGroupedTableRow>) -> String {
+    let group_start_rows = rows
         .iter()
         .enumerate()
-        .filter_map(|(index, row)| row.starts_wave.then_some(index))
+        .filter_map(|(index, row)| row.starts_group.then_some(index))
         .filter(|index| *index > 0)
         .collect::<Vec<_>>();
     let rows = rows.into_iter().map(|row| row.cells).collect::<Vec<_>>();
     let table = format_human_table_with_width(headers, rows, None);
-    strengthen_tide_wave_separators(&table, &wave_start_rows)
+    strengthen_tide_group_separators(&table, &group_start_rows)
 }
 
-fn strengthen_tide_wave_separators(table: &str, wave_start_rows: &[usize]) -> String {
-    if wave_start_rows.is_empty() {
+fn strengthen_tide_group_separators(table: &str, group_start_rows: &[usize]) -> String {
+    if group_start_rows.is_empty() {
         return table.to_owned();
     }
 
     let mut lines = table.lines().map(str::to_owned).collect::<Vec<_>>();
-    for row_index in wave_start_rows {
+    for row_index in group_start_rows {
         if let Some(separator) = lines.get_mut(tide_row_separator_index(*row_index)) {
             *separator = heavy_table_separator(separator);
         }
@@ -1426,6 +1545,12 @@ struct TideStatusWave<'a> {
     statuses: Vec<&'a TideStatus>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TideStatusEntryGroup<'a> {
+    entry: EntryId,
+    statuses: Vec<&'a TideStatus>,
+}
+
 fn tide_review_waves(statuses: &[TideStatus]) -> Vec<TideReviewWave> {
     let mut entries_by_ripple = BTreeMap::<EntryId, BTreeSet<EntryId>>::new();
     for status in statuses.iter().filter(|status| !status.resolved) {
@@ -1441,6 +1566,24 @@ fn tide_review_waves(statuses: &[TideStatus]) -> Vec<TideReviewWave> {
         .collect()
 }
 
+fn tide_review_entry_groups(statuses: &[TideStatus]) -> Vec<TideReviewEntryGroup> {
+    let mut ripples_by_entry = BTreeMap::<EntryId, BTreeSet<EntryId>>::new();
+    for status in statuses.iter().filter(|status| !status.resolved) {
+        ripples_by_entry
+            .entry(status.workitem.neighbor.clone())
+            .or_default()
+            .insert(status.workitem.ripple.clone());
+    }
+
+    ripples_by_entry
+        .into_iter()
+        .map(|(entry, ripples)| TideReviewEntryGroup {
+            entry,
+            ripples: ripples.into_iter().collect(),
+        })
+        .collect()
+}
+
 fn tide_status_waves(statuses: &[TideStatus]) -> Vec<TideStatusWave<'_>> {
     let mut statuses_by_ripple = BTreeMap::<EntryId, Vec<&TideStatus>>::new();
     for status in statuses {
@@ -1450,6 +1593,21 @@ fn tide_status_waves(statuses: &[TideStatus]) -> Vec<TideStatusWave<'_>> {
     statuses_by_ripple
         .into_iter()
         .map(|(ripple, statuses)| TideStatusWave { ripple, statuses })
+        .collect()
+}
+
+fn tide_status_entry_groups(statuses: &[TideStatus]) -> Vec<TideStatusEntryGroup<'_>> {
+    let mut statuses_by_entry = BTreeMap::<EntryId, Vec<&TideStatus>>::new();
+    for status in statuses {
+        statuses_by_entry.entry(status.workitem.neighbor.clone()).or_default().push(status);
+    }
+
+    statuses_by_entry
+        .into_iter()
+        .map(|(entry, mut statuses)| {
+            statuses.sort_by(|left, right| left.workitem.cmp(&right.workitem));
+            TideStatusEntryGroup { entry, statuses }
+        })
         .collect()
 }
 

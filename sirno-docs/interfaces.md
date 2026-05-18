@@ -180,11 +180,15 @@ A blank line separates the summary from that region.
 Multiple full regions are separated by a blank line, `---`, and another blank line.
 
 `sirno tide status` reports entry ids that need dependency review,
-grouped by ripple id in one table.
+grouped by wave in one table.
+The wave is the ripple entry whose change created the review obligation.
 It prints a one-sentence summary after the table.
+`sirno tide status --by entry` groups the same output by the entry that needs review,
+then labels the ripple entries as reasons.
 `sirno tide status --show full` reports open dependency review obligations
-in the same wave-grouped table.
+in the same grouped table.
 `sirno tide status --show all` also reports resolved obligations.
+`sirno tide status --by wave` selects the default wave grouping explicitly.
 `sirno tide status -o, --format` selects `human` or `json` output.
 The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.
 The top-level forms `sirno resolve` and `sirno unresolve` select the same operations.
