@@ -122,7 +122,7 @@ project configuration, structural checks, generated footers,
 querying, lake-local ripgrep search, witness lookup, entry freezing,
 and optional Sirno Frost snapshots over `eter`.
 
-Sirno Frost is initialized separately with `sirno frost init`.
+`sirno init` initializes a new public *lake* and private Frost store together.
 Use `sirno commit` and `sirno checkout` for the usual Frost snapshot cycle.
 `Sirno.lock.toml` records whether the public *lake* is current
 or checked out to a frozen version.

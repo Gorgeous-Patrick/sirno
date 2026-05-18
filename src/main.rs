@@ -54,11 +54,17 @@ enum Command {
     /// Run a Frost snapshot operation at the top level.
     #[command(flatten)]
     TopLevelFrost(TopLevelFrostCommand),
-    /// Reserved top-level initialization command.
+    /// Create a Sirno config, public lake, and Frost store.
     Init {
-        /// Reserved arguments.
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
-        args: Vec<OsString>,
+        /// Monograph path written to Sirno.toml.
+        #[arg(long)]
+        mono: Option<PathBuf>,
+        /// Public Markdown entry lake path written to Sirno.toml.
+        #[arg(long)]
+        lake: Option<PathBuf>,
+        /// Sirno Frost path written to Sirno.toml.
+        #[arg(long = "frost-path")]
+        frost_path: Option<PathBuf>,
     },
     /// Reserved top-level move command.
     #[command(visible_alias = "mv")]
@@ -770,7 +776,9 @@ impl Cli {
             }
             | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelFrost(command) => command.run(&config_path, lake_path.as_deref()),
-            | Command::Init { .. } => Err(CliError::ReservedTopLevelCommand("init")),
+            | Command::Init { mono, lake, frost_path } => {
+                run_top_level_init(mono, lake, frost_path, &config_path, lake_path.as_deref())
+            }
             | Command::Move { .. } => Err(CliError::ReservedTopLevelCommand("move")),
             | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
@@ -779,6 +787,14 @@ impl Cli {
             | Command::Util { command } => command.run(),
         }
     }
+}
+
+fn run_top_level_init(
+    mono: Option<PathBuf>, lake: Option<PathBuf>, frost_path: Option<PathBuf>, config_path: &Path,
+    lake_path: Option<&Path>,
+) -> Result<ExitCode, CliError> {
+    LakeCommand::Init { mono, lake }.run(config_path, lake_path)?;
+    FrostCommand::Init { frost_path }.run(config_path, lake_path)
 }
 
 impl EntryCommand {
@@ -882,7 +898,7 @@ impl LakeCommand {
             | LakeCommand::Init { mono, lake } => {
                 let mut config = SirnoConfig::new(
                     lake.or_else(|| lake_path.map(Path::to_path_buf))
-                        .unwrap_or_else(default_lake_path),
+                        .unwrap_or_else(|| default_lake_path(config_path)),
                 );
                 if let Some(mono) = mono {
                     config = config.with_mono(mono);
@@ -1129,7 +1145,7 @@ impl FrostCommand {
                 let existing_frost = config.frost.as_ref().map(|settings| settings.path.clone());
                 let frost_path = frost_path
                     .or_else(|| existing_frost.clone())
-                    .unwrap_or_else(default_frost_path);
+                    .unwrap_or_else(|| default_frost_path(config_path));
                 if let Some(existing_frost) = existing_frost
                     && existing_frost != frost_path
                 {
@@ -1665,12 +1681,30 @@ fn default_config_path() -> PathBuf {
     PathBuf::from(CONFIG_FILE_NAME)
 }
 
-fn default_lake_path() -> PathBuf {
-    PathBuf::from("docs")
+fn default_lake_path(config_path: &Path) -> PathBuf {
+    default_repo_path(config_path, "lake")
 }
 
-fn default_frost_path() -> PathBuf {
-    PathBuf::from("sirno-frost")
+fn default_frost_path(config_path: &Path) -> PathBuf {
+    default_repo_path(config_path, "frost")
+}
+
+fn default_repo_path(config_path: &Path, suffix: &str) -> PathBuf {
+    let mut name = default_repo_name(config_path);
+    name.push("-");
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+fn default_repo_name(config_path: &Path) -> OsString {
+    let config_dir = match config_path.parent().filter(|path| !path.as_os_str().is_empty()) {
+        | Some(path) if path == Path::new(".") => env::current_dir().ok(),
+        | Some(path) => Some(path.to_path_buf()),
+        | None => env::current_dir().ok(),
+    };
+    config_dir
+        .and_then(|path| path.file_name().map(OsString::from))
+        .unwrap_or_else(|| OsString::from("sirno"))
 }
 
 fn artifact_path_from_cli(path: &Path) -> Result<EntryArtifactPath, CliError> {
@@ -2360,11 +2394,55 @@ mod tests {
     }
 
     #[test]
-    fn init_is_reserved_at_top_level() {
-        let cli = Cli::parse_from(["sirno", "init", "--frost-path", "sirno-frost"]);
+    fn top_level_init_initializes_lake_and_frost() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("alpha-project");
+        fs::create_dir(&repo).unwrap();
+        let config_path = repo.join(CONFIG_FILE_NAME);
 
-        assert!(matches!(cli.command, Command::Init { .. }));
-        assert!(matches!(cli.run(), Err(CliError::ReservedTopLevelCommand("init"))));
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "init"])
+            .run()
+            .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        let lock = SirnoLock::from_file(repo.join(LOCK_FILE_NAME)).unwrap();
+        assert_eq!(config.lake.path, PathBuf::from("alpha-project-lake"));
+        assert_eq!(
+            config.frost,
+            Some(FrostSettings { path: PathBuf::from("alpha-project-frost") })
+        );
+        assert!(repo.join("alpha-project-lake").join("concept.md").exists());
+        assert!(repo.join("alpha-project-frost").join("Eter.lock.toml").exists());
+        assert_eq!(lock.frost.status, FrostLockStatus::Current);
+        assert_eq!(lock.frost.version, Eterator::EMPTY.version());
+    }
+
+    #[test]
+    fn top_level_init_accepts_explicit_paths() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "init",
+            "--mono",
+            "DESIGN.md",
+            "--lake",
+            "custom-lake",
+            "--frost-path",
+            "custom-frost",
+        ])
+        .run()
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.mono.unwrap().path, PathBuf::from("DESIGN.md"));
+        assert_eq!(config.lake.path, PathBuf::from("custom-lake"));
+        assert_eq!(config.frost.unwrap().path, PathBuf::from("custom-frost"));
+        assert!(temp.path().join("custom-lake").join("concept.md").exists());
+        assert!(temp.path().join("custom-frost").join("Eter.lock.toml").exists());
     }
 
     #[test]
@@ -2470,9 +2548,11 @@ mod tests {
     #[test]
     fn frost_init_creates_empty_version_zero_store() {
         let temp = tempfile::tempdir().unwrap();
-        let config_path = temp.path().join(CONFIG_FILE_NAME);
-        let docs = temp.path().join("docs");
-        let frost_path = temp.path().join("sirno-frost");
+        let repo = temp.path().join("frost-project");
+        fs::create_dir(&repo).unwrap();
+        let config_path = repo.join(CONFIG_FILE_NAME);
+        let docs = repo.join("docs");
+        let frost_path = repo.join("frost-project-frost");
         SirnoConfig::new("docs").write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
         fs::write(
@@ -2493,7 +2573,7 @@ Body.
             .unwrap();
 
         let config = SirnoConfig::from_file(&config_path).unwrap();
-        let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
+        let lock = SirnoLock::from_file(repo.join(LOCK_FILE_NAME)).unwrap();
         let frost = SirnoFrost::open(&frost_path).unwrap();
         let mut frost_paths = fs::read_dir(&frost_path)
             .unwrap()
@@ -2501,7 +2581,10 @@ Body.
             .collect::<Vec<_>>();
         frost_paths.sort();
 
-        assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("sirno-frost") }));
+        assert_eq!(
+            config.frost,
+            Some(FrostSettings { path: PathBuf::from("frost-project-frost") })
+        );
         assert_eq!(lock.frost.status, FrostLockStatus::Current);
         assert_eq!(lock.frost.version, Eterator::EMPTY.version());
         assert_eq!(frost.current_version().unwrap(), Eterator::EMPTY);

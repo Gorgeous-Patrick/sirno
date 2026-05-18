@@ -108,7 +108,7 @@ they are not drawn as lifecycle transitions.
 ## State Definitions
 
 `absent` means no managed Markdown file exists for the *entry* id in the waterline.
-`sirno new`, `sirno lake init`, manual file creation,
+`sirno new`, `sirno init`, `sirno lake init`, manual file creation,
 or checkout of a live Frost entry can create the file.
 If an entry is absent from the waterline but live in the frostline,
 `sirno commit` records a lifecycle deletion marker.
@@ -173,10 +173,11 @@ report structure,
 or inspect configured repository evidence.
 
 Storage commands affect the frame around entries.
+`sirno init` creates the public lake and private Frost path together.
 `sirno lake move PATH` moves the public lake path.
 `sirno frost init` and `sirno frost move PATH` configure or move the private Frost path.
 They do not change one entry file's lifecycle state by themselves.
-Top-level `sirno init` and `sirno move` are reserved commands.
+Top-level `sirno move` is a reserved command.
 
 ---
 

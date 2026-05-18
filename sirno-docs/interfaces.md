@@ -30,10 +30,11 @@ For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
+`sirno init` initializes the public *lake* and private *frost* store together.
 `sirno commit`, `sirno checkout`, and `sirno defrost`
 select the same Frost operations as their grouped `sirno frost ...` forms.
-Public lake setup and path moves use `sirno lake init` and `sirno lake move`.
-Top-level `sirno init` and `sirno move` are reserved commands.
+Public lake setup and path moves also live under `sirno lake`.
+Top-level `sirno move` is a reserved command.
 For artifact mutation,
 `sirno artifact ...` and `sirno entry artifact ...` select the same entry operation.
 Those commands should remain plain enough to use from a terminal
@@ -43,7 +44,13 @@ and stable enough for agents and skills to call.
 It reports the config path, *monograph* state, *lake* path, optional *frost* path,
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
-`sirno lake init` creates a Sirno config and ordinary seed entries.
+`sirno init` creates a Sirno config, ordinary seed entries,
+and an empty Frost version `0`.
+By default, it names those paths from the directory that contains `Sirno.toml`:
+`<repo>-lake` for the public *lake* and `<repo>-frost` for the private *frost* path.
+`sirno init --lake PATH` chooses a non-default public *lake* path.
+`sirno init --frost-path PATH` chooses a non-default private *frost* path.
+`sirno lake init` creates a Sirno config and ordinary seed entries without configuring Frost.
 `sirno lake move PATH` changes the configured public *lake* path
 and renames the current *lake* directory on the filesystem.
 `sirno lake mv PATH` is its short form.
