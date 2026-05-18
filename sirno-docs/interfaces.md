@@ -77,6 +77,8 @@ and records empty version `0`.
 and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.
 `sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
+Path moves create missing destination parents and refuse existing destinations.
+A destination inside the moved path is handled through temporary staging.
 `sirno commit` freezes the current public *lake*
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 `sirno frost commit` is its grouped form.

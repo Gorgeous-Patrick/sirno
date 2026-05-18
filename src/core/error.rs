@@ -92,10 +92,10 @@ pub enum CommandError {
     /// An artifact source path did not have a file name for the default artifact path.
     #[error("artifact source has no file name: {0}")]
     ArtifactSourceHasNoFileName(PathBuf),
-    /// A configured lake move cannot replace an existing destination.
+    /// A configured path move cannot replace an existing destination.
     #[error("move destination already exists: {0}")]
     MoveDestinationExists(PathBuf),
-    /// A configured lake move could not inspect its destination.
+    /// A configured path move could not inspect its destination.
     #[error("failed to inspect move destination {path}")]
     ReadMoveDestination {
         /// Destination path that could not be inspected.
@@ -104,7 +104,25 @@ pub enum CommandError {
         #[source]
         source: std::io::Error,
     },
-    /// A configured lake path could not be moved.
+    /// A configured path move could not prepare a temporary staging path.
+    #[error("failed to prepare move staging path near {path}")]
+    PrepareMoveStagingPath {
+        /// Directory where the staging path would be created.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A configured path move could not create the destination parent.
+    #[error("failed to create move destination parent {path}")]
+    CreateMoveDestinationParent {
+        /// Destination parent path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A configured path could not be moved.
     #[error("failed to move {source_path} to {destination_path}")]
     MovePath {
         /// Source path configured before the move.
@@ -114,6 +132,23 @@ pub enum CommandError {
         /// Underlying I/O error.
         #[source]
         source: std::io::Error,
+    },
+    /// A configured path move failed after staging and could not restore the source path.
+    #[error(
+        "failed to move {source_path} to {destination_path}; rollback from {staging_path} failed: {rollback}"
+    )]
+    MovePathRollback {
+        /// Source path configured before the move.
+        source_path: PathBuf,
+        /// Destination path configured by the move.
+        destination_path: PathBuf,
+        /// Temporary staging path that still holds the moved directory.
+        staging_path: PathBuf,
+        /// Underlying move error.
+        #[source]
+        source: std::io::Error,
+        /// Rollback rename error.
+        rollback: std::io::Error,
     },
     /// A config write failed after a configured path was moved, and the rollback also failed.
     #[error(

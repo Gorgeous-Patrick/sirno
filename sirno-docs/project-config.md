@@ -51,6 +51,8 @@ When a setup part is skipped, its path option is not accepted.
 `sirno move lake PATH` and `sirno move frost PATH`
 select the same path moves from the top-level move group.
 `sirno mv ...` is the short form for those wrappers.
+Path moves create missing destination parents and refuse existing destinations.
+A destination inside the moved path is handled through temporary staging.
 
 `Sirno.lock.toml` records the public *lake*'s *frost* state when Sirno Frost is configured.
 It lives next to `Sirno.toml`.

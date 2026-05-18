@@ -2048,6 +2048,61 @@ fn lake_move_moves_lake_and_rewrites_config() {
 }
 
 #[test]
+fn lake_mv_creates_destination_parent() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let old_lake = temp.path().join("docs");
+    let new_lake = temp.path().join("sirno-lakes").join("sirno");
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    fs::create_dir(&old_lake).unwrap();
+    fs::write(old_lake.join("entry.md"), "entry").unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "lake",
+        "mv",
+        "sirno-lakes/sirno",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(config.lake.path, PathBuf::from("sirno-lakes/sirno"));
+    assert!(!old_lake.exists());
+    assert!(new_lake.join("entry.md").exists());
+}
+
+#[test]
+fn lake_mv_allows_destination_inside_current_lake() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let old_lake = temp.path().join("docs");
+    let new_lake = old_lake.join("sirno");
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    fs::create_dir(&old_lake).unwrap();
+    fs::write(old_lake.join("entry.md"), "entry").unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "lake",
+        "mv",
+        "docs/sirno",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(config.lake.path, PathBuf::from("docs/sirno"));
+    assert!(old_lake.exists());
+    assert!(!old_lake.join("entry.md").exists());
+    assert!(new_lake.join("entry.md").exists());
+}
+
+#[test]
 fn lake_move_refuses_existing_destination() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
@@ -2100,6 +2155,64 @@ fn frost_move_moves_frost_and_rewrites_config() {
     assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("frost") }));
     assert_before(&source, "[structural.zeta]", "[structural.area]");
     assert!(!old_frost.exists());
+    assert!(new_frost.join("row").exists());
+}
+
+#[test]
+fn frost_mv_creates_destination_parent() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let old_frost = temp.path().join("sirno-frost");
+    let new_frost = temp.path().join("sirno-lakes").join("sirno-frost");
+    SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+    fs::create_dir(&old_frost).unwrap();
+    fs::write(old_frost.join("row"), "frost").unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "frost",
+        "mv",
+        "sirno-lakes/sirno-frost",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(
+        config.frost,
+        Some(FrostSettings { path: PathBuf::from("sirno-lakes/sirno-frost") })
+    );
+    assert!(!old_frost.exists());
+    assert!(new_frost.join("row").exists());
+}
+
+#[test]
+fn frost_mv_allows_destination_inside_current_frost() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let old_frost = temp.path().join("sirno-frost");
+    let new_frost = old_frost.join("sirno");
+    SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+    fs::create_dir(&old_frost).unwrap();
+    fs::write(old_frost.join("row"), "frost").unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "frost",
+        "mv",
+        "sirno-frost/sirno",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("sirno-frost/sirno") }));
+    assert!(old_frost.exists());
+    assert!(!old_frost.join("row").exists());
     assert!(new_frost.join("row").exists());
 }
 

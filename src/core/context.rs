@@ -883,9 +883,11 @@ impl CoreContext {
 fn move_configured_path_and_write_config(
     source: &Path, destination: &Path, config: &SirnoConfig, config_path: &Path,
 ) -> Result<bool, CommandError> {
-    let moved = move_configured_path(source, destination)?;
+    let move_result = move_configured_path(source, destination)?;
     if let Err(config_error) = config.write(config_path) {
-        if moved && let Err(rollback) = fs::rename(destination, source) {
+        if move_result.moved()
+            && let Err(rollback) = rollback_configured_path(source, destination, move_result)
+        {
             return Err(CommandError::MoveConfigWriteRollback {
                 source_path: source.to_path_buf(),
                 destination_path: destination.to_path_buf(),
@@ -895,29 +897,198 @@ fn move_configured_path_and_write_config(
         }
         return Err(CommandError::Config(config_error));
     }
-    Ok(moved)
+    Ok(move_result.moved())
 }
 
-fn move_configured_path(source: &Path, destination: &Path) -> Result<bool, CommandError> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ConfiguredPathMove {
+    Unchanged,
+    Direct,
+    Nested,
+}
+
+impl ConfiguredPathMove {
+    fn moved(self) -> bool {
+        !matches!(self, Self::Unchanged)
+    }
+}
+
+fn move_configured_path(
+    source: &Path, destination: &Path,
+) -> Result<ConfiguredPathMove, CommandError> {
     if source == destination {
-        return Ok(false);
+        return Ok(ConfiguredPathMove::Unchanged);
     }
-    match fs::symlink_metadata(destination) {
-        | Ok(_) => return Err(CommandError::MoveDestinationExists(destination.to_path_buf())),
-        | Err(source) if source.kind() == ErrorKind::NotFound => {}
-        | Err(source) => {
-            return Err(CommandError::ReadMoveDestination {
-                path: destination.to_path_buf(),
-                source,
-            });
-        }
+
+    ensure_move_destination_missing(destination)?;
+    if destination.starts_with(source) {
+        move_configured_path_nested(source, destination)?;
+        return Ok(ConfiguredPathMove::Nested);
     }
+
+    create_move_destination_parent(destination)?;
     fs::rename(source, destination).map_err(|error| CommandError::MovePath {
         source_path: source.to_path_buf(),
         destination_path: destination.to_path_buf(),
         source: error,
     })?;
-    Ok(true)
+    Ok(ConfiguredPathMove::Direct)
+}
+
+fn ensure_move_destination_missing(destination: &Path) -> Result<(), CommandError> {
+    match fs::symlink_metadata(destination) {
+        | Ok(_) => Err(CommandError::MoveDestinationExists(destination.to_path_buf())),
+        | Err(source) if source.kind() == ErrorKind::NotFound => Ok(()),
+        | Err(source) => {
+            Err(CommandError::ReadMoveDestination { path: destination.to_path_buf(), source })
+        }
+    }
+}
+
+fn create_move_destination_parent(destination: &Path) -> Result<(), CommandError> {
+    let Some(parent) = move_destination_parent(destination) else {
+        return Ok(());
+    };
+    create_move_destination_parent_io(destination).map_err(|source| {
+        CommandError::CreateMoveDestinationParent { path: parent.to_path_buf(), source }
+    })
+}
+
+fn move_configured_path_nested(source: &Path, destination: &Path) -> Result<(), CommandError> {
+    let staging_parent = move_staging_parent(source);
+    let staging = move_staging_path(source).map_err(|source| {
+        CommandError::PrepareMoveStagingPath { path: staging_parent.to_path_buf(), source }
+    })?;
+
+    fs::rename(source, &staging).map_err(|error| CommandError::MovePath {
+        source_path: source.to_path_buf(),
+        destination_path: destination.to_path_buf(),
+        source: error,
+    })?;
+
+    if let Err(error) = create_move_destination_parent_io(destination) {
+        if let Err(rollback) = rollback_nested_staging_path(&staging, source, destination) {
+            return Err(CommandError::MovePathRollback {
+                source_path: source.to_path_buf(),
+                destination_path: destination.to_path_buf(),
+                staging_path: staging,
+                source: error,
+                rollback,
+            });
+        }
+        let parent = move_destination_parent(destination)
+            .expect("destination parent exists after create failed");
+        return Err(CommandError::CreateMoveDestinationParent {
+            path: parent.to_path_buf(),
+            source: error,
+        });
+    }
+
+    if let Err(error) = fs::rename(&staging, destination) {
+        if let Err(rollback) = rollback_nested_staging_path(&staging, source, destination) {
+            return Err(CommandError::MovePathRollback {
+                source_path: source.to_path_buf(),
+                destination_path: destination.to_path_buf(),
+                staging_path: staging,
+                source: error,
+                rollback,
+            });
+        }
+        return Err(CommandError::MovePath {
+            source_path: source.to_path_buf(),
+            destination_path: destination.to_path_buf(),
+            source: error,
+        });
+    }
+
+    Ok(())
+}
+
+fn rollback_configured_path(
+    source: &Path, destination: &Path, move_result: ConfiguredPathMove,
+) -> std::io::Result<()> {
+    match move_result {
+        | ConfiguredPathMove::Unchanged => Ok(()),
+        | ConfiguredPathMove::Direct => fs::rename(destination, source),
+        | ConfiguredPathMove::Nested => rollback_nested_destination(source, destination),
+    }
+}
+
+fn rollback_nested_destination(source: &Path, destination: &Path) -> std::io::Result<()> {
+    let staging = move_staging_path(source)?;
+    fs::rename(destination, &staging)?;
+    remove_empty_nested_destination_parent(source, destination)?;
+    fs::rename(staging, source)
+}
+
+fn rollback_nested_staging_path(
+    staging: &Path, source: &Path, destination: &Path,
+) -> std::io::Result<()> {
+    remove_empty_nested_destination_parent(source, destination)
+        .and_then(|()| fs::rename(staging, source))
+}
+
+fn remove_empty_nested_destination_parent(
+    source: &Path, destination: &Path,
+) -> std::io::Result<()> {
+    let mut path = destination.parent();
+    while let Some(parent) = path {
+        if !parent.starts_with(source) {
+            break;
+        }
+
+        match fs::remove_dir(parent) {
+            | Ok(()) => {}
+            | Err(error) if error.kind() == ErrorKind::NotFound => {}
+            | Err(error) => return Err(error),
+        }
+
+        if parent == source {
+            break;
+        }
+        path = parent.parent();
+    }
+    Ok(())
+}
+
+fn move_destination_parent(destination: &Path) -> Option<&Path> {
+    destination.parent().filter(|parent| !parent.as_os_str().is_empty())
+}
+
+fn create_move_destination_parent_io(destination: &Path) -> std::io::Result<()> {
+    let Some(parent) = move_destination_parent(destination) else {
+        return Ok(());
+    };
+    fs::create_dir_all(parent)
+}
+
+fn move_staging_parent(source: &Path) -> &Path {
+    source
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+}
+
+fn move_staging_path(source: &Path) -> std::io::Result<PathBuf> {
+    let parent = move_staging_parent(source);
+    let source_name = source.file_name().map(OsString::from).unwrap_or_else(|| "path".into());
+
+    for index in 0..1000 {
+        let mut name = OsString::from(".sirno-move-");
+        name.push(&source_name);
+        name.push(format!("-{}-{index}", std::process::id()));
+        let candidate = parent.join(name);
+        match fs::symlink_metadata(&candidate) {
+            | Ok(_) => {}
+            | Err(error) if error.kind() == ErrorKind::NotFound => return Ok(candidate),
+            | Err(error) => return Err(error),
+        }
+    }
+
+    Err(std::io::Error::new(
+        ErrorKind::AlreadyExists,
+        format!("move staging paths are unavailable near {}", parent.display()),
+    ))
 }
 
 struct FrostContext {

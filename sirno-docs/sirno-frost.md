@@ -41,7 +41,10 @@ It does not immediately import or commit the public *lake*.
 and writes the new path back to `[frost].path`.
 `sirno frost mv PATH` is its short form.
 `sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
-The move refuses to replace an existing destination.
+The move creates missing destination parents and refuses to replace an existing destination.
+When `PATH` is inside the current *frost* path,
+Sirno stages the directory through a temporary sibling
+and recreates the parent path before placing the moved *frost* path at `PATH`.
 
 A *frost* commit imports the selected public *entry* set and its lake-owned artifacts.
 The public directory must pass review-mode checks before any snapshot is written.

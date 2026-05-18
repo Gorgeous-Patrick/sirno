@@ -20,7 +20,10 @@ but structured enough that changes leave visible *ripples*.
 and writes the new path back to `[lake].path`.
 `sirno lake mv PATH` is its short form.
 `sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
-The move refuses to replace an existing destination.
+The move creates missing destination parents and refuses to replace an existing destination.
+When `PATH` is inside the current *lake* path,
+Sirno stages the directory through a temporary sibling
+and recreates the parent path before placing the moved *lake* at `PATH`.
 
 The *lake* is the human-readable intermediate representation:
 text first, structured enough for tools,
