@@ -52,10 +52,17 @@ that first commit may surface the whole public *lake* as a bootstrap review work
 because the frostline is still empty.
 A *frost* commit imports the selected public *entry* set and attached artifacts.
 It writes one `eter` transaction.
-The transaction contains changed *entries*, changed artifacts, and lifecycle deletions.
-Unchanged live *entries* and artifacts do not receive new version files.
-They remain part of the new *lake* snapshot through `eter` snapshot reads.
+The transaction contains changed *entries*,
+entries whose artifact manifests changed,
+and lifecycle deletions.
+Changed artifact bytes are written into owner entry version directories.
+Unchanged live *entries* and artifacts do not receive new content files.
+Unchanged *entries* remain part of the new *lake* snapshot through `eter` snapshot reads.
+Unchanged artifact bytes remain available through older owner entry version directories.
 All rows written by the transaction receive the same snapshot coordinate.
+An *entry* row stores the artifact path manifest for that *entry* version.
+That manifest records artifact existence;
+missing paths are deletions at that version.
 Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
 Generated links remain a public *lake* projection.
@@ -101,7 +108,8 @@ Committing a mutable *lake* creates a new current version.
 Sirno refuses to commit an immutable checkout.
 
 Versioning is field-level in `eter` and *entry*-level in Sirno.
-Artifact bytes are versioned as separate Frost objects owned by an *entry* id and path.
+Artifact manifests are versioned as fields on their owner *entry* rows.
+Artifact bytes are versioned as sparse files under matching entry-version directories.
 Sirno may expose *entry* history, diffs, and restore operations by reading fields at successive snapshots.
 It presents those results as changes to *entries* and *structural fields*.
 The public *entry* schema remains unchanged.

@@ -20,15 +20,19 @@ The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
 Each *entry* is stored under its stable id.
 The backend records `name`, `desc`, ordered structural metadata,
+an artifact manifest,
 and Markdown body as typed fields.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer
 while preserving the public *entry* schema.
 Structural field order stays in Sirno's typed structural metadata,
 so a Frost round trip renders the same order back to Markdown.
-Each artifact is stored as a private backend object keyed by its owner *entry* id
-and owner-relative artifact path.
-Artifact bytes are stored separately from the *entry* row.
+The artifact manifest stores owner-relative paths for one *entry* version.
+Changed artifact bytes are stored beside the entry's Markdown snapshot
+in a matching version directory.
+For the filesystem backend,
+that directory uses the same version prefix and entry id as the Markdown file.
+Unchanged artifact bytes are read from older matching version directories.
 
 `sirno frost init [PATH]` configures Sirno Frost when needed
 and records the empty snapshot as version `0`.
@@ -49,8 +53,12 @@ and refuses a frozen entry bundle that differs from that snapshot.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are public *lake* projections.
 The commit writes one `eter` transaction and returns a `SnapshotRef`.
-The transaction contains only changed *entries*, changed artifacts, and lifecycle deletion markers.
-Unchanged live *entries* and artifacts are inherited from earlier version files at read time.
+The transaction contains changed *entries*,
+entries whose artifact manifests changed,
+and lifecycle deletion markers.
+Only changed artifact bytes receive files in the new version directory.
+Unchanged live *entries* are inherited from earlier version files at read time.
+Unchanged artifact bytes are inherited from earlier version directories.
 That snapshot reference names the whole committed *lake* state.
 For the filesystem backend,
 `Eter.lock.toml` stores the committed version boundary.

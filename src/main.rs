@@ -1971,15 +1971,6 @@ fn entry_path_records(
             "frost-entry",
             output_path(SirnoFrost::entry_storage_path(&frost, &id)?, args.absolute)?,
         ));
-        for artifact in &artifacts {
-            records.push(PathRecord::new(
-                "frost-artifact",
-                output_path(
-                    SirnoFrost::artifact_storage_path(&frost, &id, &artifact.path)?,
-                    args.absolute,
-                )?,
-            ));
-        }
     }
 
     Ok(records)
@@ -3450,7 +3441,7 @@ Body.
         let kinds = records.iter().map(|record| record.kind).collect::<Vec<_>>();
         let table = format_path_table(&records);
 
-        assert_eq!(kinds, ["entry", "artifact-root", "artifact", "frost-entry", "frost-artifact"]);
+        assert_eq!(kinds, ["entry", "artifact-root", "artifact", "frost-entry"]);
         assert!(!table.contains("witness"));
         assert!(table.contains(".artifacts"));
         assert!(table.contains("sirno-frost"));

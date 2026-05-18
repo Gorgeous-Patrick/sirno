@@ -97,7 +97,7 @@ Authored prose outside *generated footer* regions remains user-owned.
 `sirno path ENTRY_ID` prints filesystem paths related to one *entry*.
 Its default output includes the public Markdown *entry* path,
 the public `.artifacts/<entry-id>/` tree,
-and private Frost backend paths when Frost is configured.
+and the private Frost entry root when Frost is configured.
 It excludes *repository witness* paths.
 The grouped form is `sirno entry path ENTRY_ID`.
 The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
