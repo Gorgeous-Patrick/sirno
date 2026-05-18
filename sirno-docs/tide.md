@@ -26,10 +26,13 @@ Changes to the reviewed neighbor do not reopen that workitem.
 
 `sirno tide status` prints open workitems by default.
 `sirno tide status --all` includes resolved workitems.
-`sirno tide resolve` records explicit review.
-`sirno tide resolve --infer` resolves workitems whose neighbor is also in the current ripple set,
+`sirno resolve` records explicit review.
+`sirno resolve --infer` resolves workitems whose neighbor is also in the current ripple set,
 including neighbors deleted from the waterline.
-`sirno tide reopen` removes matching resolutions.
+`sirno unresolve` removes matching resolutions.
+`sirno reopen` is an alias for `sirno unresolve`.
+The grouped forms are `sirno tide resolve` and `sirno tide unresolve`.
+`sirno tide reopen` is an alias for `sirno tide unresolve`.
 `sirno tide reset` clears all tide resolutions from the lock.
 
 `sirno commit` requires a clear *tide*.

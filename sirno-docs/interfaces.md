@@ -164,10 +164,17 @@ Multiple full regions are separated by a blank line, `---`, and another blank li
 
 `sirno tide status` reports open dependency review obligations.
 `sirno tide status --all` also reports resolved obligations.
-`sirno tide resolve ENTRY_ID` resolves open workitems whose neighbor is that *entry*.
-`sirno tide resolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` resolves one full workitem tuple.
-`sirno tide resolve --infer` resolves open workitems whose neighbor also appears in the ripple set.
-`sirno tide reopen` removes matching resolutions.
+`sirno tide status -o, --format` selects `human` or `json` output.
+The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.
+The top-level forms `sirno resolve` and `sirno unresolve` select the same operations.
+`sirno resolve ENTRY_ID` resolves open workitems whose neighbor is that *entry*.
+`sirno resolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` resolves one full workitem tuple.
+`sirno resolve --infer` resolves open workitems whose neighbor also appears in the ripple set.
+`sirno resolve --json JSON` resolves full workitem tuples encoded as JSON.
+`sirno unresolve ENTRY_ID` removes resolutions whose neighbor is that *entry*.
+`sirno unresolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` removes one full workitem resolution.
+`sirno reopen` is an alias for `sirno unresolve`.
+`sirno tide reopen` is an alias for `sirno tide unresolve`.
 `sirno tide reset` clears tide resolution state.
 
 `sirno render` creates or replaces Sirno-owned *generated footer* regions.

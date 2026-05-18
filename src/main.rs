@@ -57,6 +57,9 @@ enum Command {
     /// Run a Frost snapshot operation at the top level.
     #[command(flatten)]
     TopLevelFrost(TopLevelFrostCommand),
+    /// Run a tide review operation at the top level.
+    #[command(flatten)]
+    TopLevelTide(TideReviewCommand),
     /// Create a Sirno config, public lake, and Frost store.
     Init {
         /// Monograph path written to Sirno.toml.
@@ -603,28 +606,45 @@ enum TideCommand {
         #[arg(short = 'o', long, value_enum)]
         format: Option<TideOutputFormat>,
     },
-    /// Resolve tide workitems.
-    Resolve {
-        /// Resolve workitems whose neighbor also appears in the current ripple set.
-        #[arg(long, conflicts_with_all = ["items", "json"])]
-        infer: bool,
-        /// JSON array of full workitem tuples.
-        #[arg(long, conflicts_with_all = ["infer", "items"])]
-        json: Option<String>,
-        /// Entry ids or full workitem tuples.
-        #[arg(required_unless_present_any = ["infer", "json"])]
-        items: Vec<TideItemSelector>,
-    },
-    /// Reopen resolved tide workitems.
-    Reopen {
-        /// Entry ids or full workitem tuples.
-        #[arg(required = true)]
-        items: Vec<TideItemSelector>,
-    },
+    /// Run a tide review operation.
+    #[command(flatten)]
+    Review(TideReviewCommand),
     /// Clear all tide resolutions from the lock.
     Reset,
 }
 // sirno:witness:tide:end
+
+/// Supported tide review commands.
+#[derive(Debug, Subcommand)]
+enum TideReviewCommand {
+    /// Resolve tide workitems.
+    Resolve(ResolveArgs),
+    /// Remove resolved marks from tide workitems.
+    #[command(visible_alias = "reopen")]
+    Unresolve(UnresolveArgs),
+}
+
+/// Arguments for resolving tide workitems.
+#[derive(Debug, Args)]
+struct ResolveArgs {
+    /// Resolve workitems whose neighbor also appears in the current ripple set.
+    #[arg(long, conflicts_with_all = ["items", "json"])]
+    infer: bool,
+    /// JSON array of full workitem tuples.
+    #[arg(long, conflicts_with_all = ["infer", "items"])]
+    json: Option<String>,
+    /// Entry ids or full workitem tuples.
+    #[arg(required_unless_present_any = ["infer", "json"])]
+    items: Vec<TideItemSelector>,
+}
+
+/// Arguments for removing resolved marks from tide workitems.
+#[derive(Debug, Args)]
+struct UnresolveArgs {
+    /// Entry ids or full workitem tuples.
+    #[arg(required = true)]
+    items: Vec<TideItemSelector>,
+}
 
 /// CLI tide output renderer.
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -717,6 +737,12 @@ impl Cli {
                 command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
             }
             | Command::TopLevelFrost(command) => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::TopLevelTide(command) => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
@@ -1243,36 +1269,7 @@ impl TideCommand {
                 print_tide_status(&tide, all, format)?;
                 Ok(if tide.is_clear() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
             }
-            | TideCommand::Resolve { infer, json, items } => {
-                let context = TideContext::load(config_path, lake_path)?;
-                let mut lock = context.load_lock_or_current()?;
-                let tide = context.tide(&lock)?;
-                let (resolutions, count) = if infer {
-                    tide.resolve_where(|status| {
-                        tide.ripple_ids().contains(&status.workitem.neighbor)
-                    })
-                } else if let Some(json) = json {
-                    let workitems = tide_workitems_from_json(&json)?;
-                    tide.resolve_where(|status| workitems.contains(&status.workitem))
-                } else {
-                    tide.resolve_where(|status| tide_item_matches(&items, status))
-                };
-                lock.tide.set_resolved(resolutions);
-                lock.write(&context.lock_path)?;
-                println!("resolved {count} tide workitems");
-                Ok(ExitCode::SUCCESS)
-            }
-            | TideCommand::Reopen { items } => {
-                let context = TideContext::load(config_path, lake_path)?;
-                let mut lock = context.load_lock_or_current()?;
-                let tide = context.tide(&lock)?;
-                let (resolutions, count) =
-                    tide.reopen_where(|status| tide_item_matches(&items, status));
-                lock.tide.set_resolved(resolutions);
-                lock.write(&context.lock_path)?;
-                println!("reopened {count} tide workitems");
-                Ok(ExitCode::SUCCESS)
-            }
+            | TideCommand::Review(command) => command.run(config_path, lake_path),
             | TideCommand::Reset => {
                 let context = TideContext::load(config_path, lake_path)?;
                 let mut lock = context.load_lock_or_current()?;
@@ -1283,6 +1280,49 @@ impl TideCommand {
                 Ok(ExitCode::SUCCESS)
             }
         }
+    }
+}
+
+impl TideReviewCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        match self {
+            | Self::Resolve(args) => args.run(config_path, lake_path),
+            | Self::Unresolve(args) => args.run(config_path, lake_path),
+        }
+    }
+}
+
+impl ResolveArgs {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let context = TideContext::load(config_path, lake_path)?;
+        let mut lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        let (resolutions, count) = if self.infer {
+            tide.resolve_where(|status| tide.ripple_ids().contains(&status.workitem.neighbor))
+        } else if let Some(json) = self.json {
+            let workitems = tide_workitems_from_json(&json)?;
+            tide.resolve_where(|status| workitems.contains(&status.workitem))
+        } else {
+            tide.resolve_where(|status| tide_item_matches(&self.items, status))
+        };
+        lock.tide.set_resolved(resolutions);
+        lock.write(&context.lock_path)?;
+        println!("resolved {count} tide workitems");
+        Ok(ExitCode::SUCCESS)
+    }
+}
+
+impl UnresolveArgs {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let context = TideContext::load(config_path, lake_path)?;
+        let mut lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        let (resolutions, count) =
+            tide.reopen_where(|status| tide_item_matches(&self.items, status));
+        lock.tide.set_resolved(resolutions);
+        lock.write(&context.lock_path)?;
+        println!("unresolved {count} tide workitems");
+        Ok(ExitCode::SUCCESS)
     }
 }
 
@@ -2226,7 +2266,7 @@ impl fmt::Display for OpenTideTutorial {
             writeln!(formatter, "the full lake to an empty frostline.")?;
         }
         writeln!(formatter, "Inspect the work with `sirno tide status`.")?;
-        writeln!(formatter, "Resolve reviewed work with `sirno tide resolve ...`,",)?;
+        writeln!(formatter, "Resolve reviewed work with `sirno resolve ...`,",)?;
         writeln!(
             formatter,
             "or choose the current lake as the baseline with `sirno commit --unsafe-resolve-all`.",
@@ -2411,11 +2451,12 @@ mod tests {
     use crate::{
         ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
         EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
-        MoveCommand, PathOutputFormat, QueryField, QueryFields, QueryOutputFormat,
-        StructuralPredicate, TideCommand, TideItemSelector, TopLevelEntryCommand,
-        TopLevelFrostCommand, TopLevelLakeCommand, entry_path_records, exact_query_from_predicates,
-        format_gen_link_report, format_path_table, format_query_json, format_query_table,
-        format_witness_record, format_witness_records, rg_args_include_preprocessor,
+        MoveCommand, PathOutputFormat, QueryField, QueryFields, QueryOutputFormat, ResolveArgs,
+        StructuralPredicate, TideCommand, TideItemSelector, TideReviewCommand,
+        TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs,
+        entry_path_records, exact_query_from_predicates, format_gen_link_report, format_path_table,
+        format_query_json, format_query_table, format_witness_record, format_witness_records,
+        rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -3065,21 +3106,21 @@ Body.
         assert!(matches!(
             neighbor.command,
             Command::Tide {
-                command: TideCommand::Resolve {
+                command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                     items,
                     infer: false,
                     json: None
-                }
+                }))
             } if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
         ));
         assert!(matches!(
             tuple.command,
             Command::Tide {
-                command: TideCommand::Resolve {
+                command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                     items,
                     infer: false,
                     json: None
-                }
+                }))
             } if matches!(&items[..], [TideItemSelector::Workitem(workitem)]
                 if workitem.to_string() == "alpha,belongs,to,beta")
         ));
@@ -3098,11 +3139,22 @@ Body.
 
         assert!(matches!(
             infer.command,
-            Command::Tide { command: TideCommand::Resolve { infer: true, .. } }
+            Command::Tide {
+                command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+                    infer: true,
+                    ..
+                }))
+            }
         ));
         assert!(matches!(
             json.command,
-            Command::Tide { command: TideCommand::Resolve { json: Some(_), infer: false, .. } }
+            Command::Tide {
+                command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+                    json: Some(_),
+                    infer: false,
+                    ..
+                }))
+            }
         ));
     }
 
@@ -3111,6 +3163,89 @@ Body.
         let error = Cli::try_parse_from(["sirno", "tide", "resolve"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+    }
+
+    #[test]
+    fn top_level_resolve_accepts_tide_resolve_args() {
+        let neighbor = Cli::parse_from(["sirno", "resolve", "beta"]);
+        let tuple = Cli::parse_from(["sirno", "resolve", "alpha,belongs,to,beta"]);
+        let infer = Cli::parse_from(["sirno", "resolve", "--infer"]);
+        let json = Cli::parse_from([
+            "sirno",
+            "resolve",
+            "--json",
+            r#"{"ripple":"alpha","field":"belongs","direction":"to","neighbor":"beta"}"#,
+        ]);
+
+        assert!(matches!(
+            neighbor.command,
+            Command::TopLevelTide(TideReviewCommand::Resolve(ResolveArgs {
+                items,
+                infer: false,
+                json: None
+            })) if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        ));
+        assert!(matches!(
+            tuple.command,
+            Command::TopLevelTide(TideReviewCommand::Resolve(ResolveArgs {
+                items,
+                infer: false,
+                json: None
+            })) if matches!(&items[..], [TideItemSelector::Workitem(workitem)]
+                if workitem.to_string() == "alpha,belongs,to,beta")
+        ));
+        assert!(matches!(
+            infer.command,
+            Command::TopLevelTide(TideReviewCommand::Resolve(ResolveArgs { infer: true, .. }))
+        ));
+        assert!(matches!(
+            json.command,
+            Command::TopLevelTide(TideReviewCommand::Resolve(ResolveArgs {
+                json: Some(_),
+                infer: false,
+                ..
+            }))
+        ));
+    }
+
+    #[test]
+    fn top_level_resolve_requires_selector_json_or_infer() {
+        let error = Cli::try_parse_from(["sirno", "resolve"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+    }
+
+    #[test]
+    fn unresolve_accepts_top_level_grouped_and_reopen_alias() {
+        let top_level = Cli::parse_from(["sirno", "unresolve", "beta"]);
+        let top_level_alias = Cli::parse_from(["sirno", "reopen", "beta"]);
+        let grouped = Cli::parse_from(["sirno", "tide", "unresolve", "beta"]);
+        let alias = Cli::parse_from(["sirno", "tide", "reopen", "beta"]);
+
+        assert!(matches!(
+            top_level.command,
+            Command::TopLevelTide(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+                if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        ));
+        assert!(matches!(
+            top_level_alias.command,
+            Command::TopLevelTide(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+                if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        ));
+        assert!(matches!(
+            grouped.command,
+            Command::Tide {
+                command: TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+            }
+                if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        ));
+        assert!(matches!(
+            alias.command,
+            Command::Tide {
+                command: TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+            }
+                if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        ));
     }
 
     #[test]
