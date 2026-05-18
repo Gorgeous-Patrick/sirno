@@ -27,7 +27,7 @@ Create missing entries with the current entry-creation command so id validation 
 are correct.
 Then expand or revise the body with direct, reader-friendly prose.
 When editing design documents or design entries,
-apply the documentation-writing discipline used by `design-doc-writer`:
+apply the documentation-writing discipline documented by `design-doc-writer-skill`:
 read the whole design route,
 order concepts by dependency and scope,
 write declarative, dry, precise prose,

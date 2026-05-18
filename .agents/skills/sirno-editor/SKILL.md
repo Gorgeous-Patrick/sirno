@@ -174,7 +174,7 @@ but more durable than a plan item.
 4. Create missing entries through Sirno's current entry-creation command when available.
 5. Expand or revise bodies with direct, reader-friendly prose.
 6. When editing design documents or design entries,
-   apply the documentation-writing discipline used by `design-doc-writer`:
+   apply the documentation-writing discipline documented by `design-doc-writer-skill`:
    read the whole design route, order concepts by dependency and scope,
    write declarative, dry, precise prose, merge avoidable overlap,
    and keep one idea per paragraph.

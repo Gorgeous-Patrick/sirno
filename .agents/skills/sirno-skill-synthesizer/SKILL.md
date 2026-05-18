@@ -26,10 +26,11 @@ Read `Sirno.toml` for the lake path,
 and every `meta`-categorized entry for the method the skills render.
 
 Separate disciplines from shared method.
-A `meta` entry that `belongs: agent-skills` and defines a skill procedure is a skill source.
+A `meta` entry named by the Sirno skill roster and ending in `-discipline`
+is a package source.
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method every skill must respect, not skills in their own right.
-Adjacent documentation-writing skills, such as `design-doc-writer`,
+Adjacent documentation-writing skills, such as `design-doc-writer-skill`,
 are also method inputs when Sirno skill work touches design prose.
 Their reusable content is reader evaluation,
 conceptual ordering,
@@ -43,8 +44,8 @@ The target package path is written in the discipline body until the project defi
 a structural field for skill packages.
 Keep the existing skill directory name.
 Do not invent a new role unless `agent-skills` adds one to the roster.
-Every `belongs: agent-skills` discipline should have a package,
-and every package should trace back to a discipline.
+Every rostered Sirno discipline should have a package,
+and every `sirno-*` package should trace back to a discipline.
 
 Render, do not reinterpret.
 A packaged skill operationalizes its discipline plus the shared `meta` method it depends on.
@@ -65,7 +66,8 @@ Read `agent-skills` and each discipline entry in full before rendering.
 Read a matched entry rather than working from the `desc` line alone.
 
 Classify the `meta` entries.
-The `belongs: agent-skills` discipline entries are skill sources, one package each.
+The rostered `*-discipline` entries are skill sources, one package each.
+Adjacent skill entries in the same neighborhood are shared method inputs.
 The remaining `meta` entries are shared method.
 Fold the shared method into the skills that depend on it,
 for example design authority and the structural-field model into the editor skill.

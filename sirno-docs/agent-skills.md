@@ -23,7 +23,7 @@ so the skill set stays a reproducible surface of the method rather than prose th
 This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
 so a skill can be rebuilt from the lake rather than only from its packaged prose.
-Each discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
+Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
 The discipline entries are `lake-editing-discipline`, `lake-exploration-discipline`,
 `witness-linking-discipline`, `narrative-session-discipline`,
 and `skill-synthesis-discipline`.
@@ -34,10 +34,11 @@ to creating or refining it.
 Exploration switches to the editor skill when the task changes from reading entries to editing them.
 The editor skill defers to the repository documentation-writing skills for `README`, `DESIGN`,
 and `METHODOLOGY` prose, because those documents have their own roles and style.
-The `design-doc-writer` skill is the adjacent meta-management skill for design documents.
-Here, meta-management means maintaining design documents about the project and its method.
-It is not part of the five packaged Sirno skills.
-The `design-doc-writer` skill contributes reusable design-document habits:
+The `design-doc-writer-skill` entry documents the adjacent meta-management skill
+for design documents.
+It is documented in this lake as a method input,
+not as part of the five packaged Sirno skills.
+`design-doc-writer-skill` contributes reusable design-document habits:
 read the whole design document,
 order sections by conceptual dependency and scope,
 write declarative, dry, precise prose,
@@ -62,6 +63,7 @@ This keeps the lake the source of truth and the skills its reproducible surface.
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
+  - [design-doc-writer-skill](design-doc-writer-skill.md)
   - [lake-editing-discipline](lake-editing-discipline.md)
   - [lake-exploration-discipline](lake-exploration-discipline.md)
   - [narrative-session-discipline](narrative-session-discipline.md)
