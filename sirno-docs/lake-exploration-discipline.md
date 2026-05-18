@@ -9,6 +9,7 @@ belongs:
 
 Exploration reads a Sirno-managed repository from the lake outward.
 It renders to `.agents/skills/sirno-explorer/SKILL.md`.
+Its exact packaged skill text lives in the `SKILL.md` entry artifact.
 
 The lake is the project map and witness blocks are the evidence for entry claims.
 The goal is a small, grounded route: entry ids, why they matter, witness locations,

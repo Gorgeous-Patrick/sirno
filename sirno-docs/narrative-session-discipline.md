@@ -9,6 +9,7 @@ belongs:
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.
 It renders to `.agents/skills/sirno-narrative-session/SKILL.md`.
+Its exact packaged skill text lives in the `SKILL.md` entry artifact.
 
 Read the route sources first.
 Read `Sirno.toml` for the lake path,

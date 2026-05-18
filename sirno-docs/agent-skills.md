@@ -19,6 +19,10 @@ The narrative-session skill conducts an adaptive route through lake knowledge
 and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the packaged Sirno skills from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
+The extraction script lives as an artifact on `skill-synthesis-discipline`:
+`.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py`.
+Each packaged Sirno skill is sourced word-for-word from a `SKILL.md` artifact
+owned by its discipline entry.
 
 This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
@@ -47,6 +51,10 @@ and evaluate the result as a reader before and after editing.
 Sirno skill work uses those habits whenever it touches design documents or design entries.
 The synthesis skill checks the Sirno skill roster and reports any discipline or package
 that no longer has a counterpart.
+It can run the extraction artifact in `--check` mode to detect drift,
+or `--write` mode to refresh the packaged skills.
+The script copies exact artifacts;
+it does not ask a model to rewrite the skill text.
 
 A skill is an operational rendering of lake method, not a separate authority.
 When a skill and the lake disagree, the lake and `Sirno.toml` win,

@@ -9,6 +9,7 @@ belongs:
 
 Lake editing follows a fixed procedure so the lake stays precise and reviewable.
 It renders to `.agents/skills/sirno-editor/SKILL.md`.
+Its exact packaged skill text lives in the `SKILL.md` entry artifact.
 
 Read first.
 Read repository instructions, `Sirno.toml`, the configured monograph when present,

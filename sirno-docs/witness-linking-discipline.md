@@ -9,6 +9,7 @@ belongs:
 
 Witness linking connects an entry claim to the repository region that makes it inspectable.
 It renders to `.agents/skills/sirno-witness/SKILL.md`.
+Its exact packaged skill text lives in the `SKILL.md` entry artifact.
 
 Read the target entry before touching code.
 Understand the claim, its structural fields, and any body guidance about what the evidence should

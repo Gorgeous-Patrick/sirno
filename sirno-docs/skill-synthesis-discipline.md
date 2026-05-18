@@ -9,6 +9,12 @@ belongs:
 
 Skill synthesis rebuilds the packaged Sirno skills from the lake's `meta`-categorized entries.
 It renders to `.agents/skills/sirno-skill-synthesizer/SKILL.md`.
+Its exact packaged skill text lives in the `SKILL.md` entry artifact.
+Its mechanical extraction script is the entry artifact
+`.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py`.
+Each rostered discipline entry also owns a `SKILL.md` artifact.
+That artifact is the exact package text for the corresponding `.agents/skills/sirno-*`
+skill.
 
 Read the sources first.
 Read `Sirno.toml` for the lake path,
@@ -38,15 +44,27 @@ unless `agent-skills` adds one to the roster.
 Every rostered Sirno discipline should have a package,
 and every `sirno-*` package should trace back to a discipline.
 
-Render, do not reinterpret.
-A packaged skill operationalizes its discipline plus the shared `meta` method it depends on.
-Frontmatter `name` is the skill directory id;
+Copy, do not reinterpret.
+A packaged skill is the exact `SKILL.md` artifact owned by its discipline entry.
+That artifact operationalizes its discipline plus the shared `meta` method it depends on.
+Frontmatter `name` is the skill directory id.
 `description` states when to use the skill and the triggers that should invoke it.
 The body turns durable procedure into concrete steps and current commands.
-Add nothing the lake does not commit, and drop nothing the discipline requires.
-Include the discipline's failure paths in the rendered skill.
-These paths cover missing sources, unavailable commands, blocked validation,
+The artifact must include the discipline's failure paths:
+missing sources, unavailable commands, blocked validation,
 absent evidence, and design changes that must reflect back into the lake.
+
+Use the extraction artifact for routine rendering.
+Run it from the repository root:
+
+```sh
+python3 sirno-docs/.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py --write
+```
+
+Use `--check` at review boundaries to fail when a packaged skill has drifted.
+Use `--list` when auditing which lake entries render packages.
+The script copies ordinary `SKILL.md` files;
+generated skills should read as normal procedure, not as a dump of lake metadata.
 
 Inspect the current Sirno CLI before writing commands into a skill.
 A skill that names a missing command is worse than one that only names the procedure.
