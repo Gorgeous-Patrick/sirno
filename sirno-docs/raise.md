@@ -4,8 +4,6 @@ desc: The movement from Sirno entries into a readable monograph.
 category:
   - concept
 belongs:
-  - transform-cycle
-refines:
   - transform
 ---
 
@@ -42,7 +40,7 @@ The fix may belong in the *lake* before the *monograph* can be made elegant.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [transform-cycle](transform-cycle.md)
+  - [transform](transform.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

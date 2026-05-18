@@ -4,8 +4,6 @@ desc: The movement from the monograph into the Sirno Lake.
 category:
   - concept
 belongs:
-  - transform-cycle
-refines:
   - transform
 ---
 
@@ -43,7 +41,7 @@ That makes review and future reflection less dependent on remembering the origin
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [transform-cycle](transform-cycle.md)
+  - [transform](transform.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

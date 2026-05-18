@@ -1,6 +1,6 @@
 ---
 name: Transform
-desc: A concept that names movement between Sirno forms.
+desc: The concept and review neighborhood for movement between Sirno forms.
 category:
   - concept
 belongs:
@@ -11,6 +11,7 @@ A *transform* names a kind of work between Sirno *forms*.
 
 Sirno uses four *transform* names:
 `lower`, `raise`, `realize`, and `reflect`.
+They form the review neighborhood for work that moves design among forms.
 
 Their direct names are also useful:
 `mono-to-sirno`, `sirno-to-mono`, `sirno-to-repo`, and `repo-to-sirno`.
@@ -32,6 +33,9 @@ and `sirno` raises into `mono`.
 The loop is conceptual, not automatic authority.
 Each *transform* should still be performed with judgment about the current source of truth.
 
+A reviewer who touches one movement should visit the other movements through this entry.
+The round trip matters because a change to one movement usually changes what the others must preserve.
+
 This vocabulary also helps skills stay focused.
 A lowering skill should preserve narrative intent while creating *entries*.
 A realization skill should inspect *entries* before editing code.
@@ -44,6 +48,10 @@ A raising skill should compose a readable *monograph*.
 
 - belongs (to):
   - [form](form.md)
-- belongs (from): (none)
+- belongs (from):
+  - [lower](lower.md)
+  - [raise](raise.md)
+  - [realize](realize.md)
+  - [reflect](reflect.md)
 
 > **Sirno generated links end.**

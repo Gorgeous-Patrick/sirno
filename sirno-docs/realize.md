@@ -4,8 +4,6 @@ desc: The movement from Sirno entries into repository implementation.
 category:
   - concept
 belongs:
-  - transform-cycle
-refines:
   - transform
 ---
 
@@ -44,7 +42,7 @@ and find the *entry* that gave the commitment a name.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [transform-cycle](transform-cycle.md)
+  - [transform](transform.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
