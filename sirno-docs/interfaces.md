@@ -20,7 +20,7 @@ for commands that read or write the active *lake*.
 The global `-F, --frost-path PATH` option selects a Frost path for direct Frost checks.
 Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
-and `defrost` for `checkout`.
+and `defrost` for latest Frost checkout.
 Entry-centric operations also live under `sirno entry`.
 Storage-wide lake operations also live under `sirno lake`.
 Entry artifact operations also have the top-level `sirno artifact` form.
@@ -32,8 +32,9 @@ select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
 `sirno init` initializes the public *lake* and private *frost* store together.
-`sirno commit`, `sirno checkout`, and `sirno defrost`
-select the same Frost operations as their grouped `sirno frost ...` forms.
+`sirno commit` and `sirno checkout` select the same Frost operations
+as their grouped `sirno frost ...` forms.
+`sirno defrost` selects latest Frost checkout.
 Public lake setup and path moves also live under `sirno lake`.
 Top-level `sirno move` groups the three mutation moves:
 `sirno move entry OLD_ID NEW_ID`, `sirno move lake PATH`, and `sirno move frost PATH`.
@@ -75,9 +76,10 @@ this failure can include tutorial text controlled by `[tutorial].frost_commit_ti
 and `[tutorial].frost_bootstrap_tide`.
 `sirno commit --unsafe-resolve-all` bypasses that gate for the current commit.
 `sirno checkout --latest` materializes the latest version as a mutable public *lake*.
+`sirno defrost` is shorthand for `sirno checkout --latest`.
 `sirno checkout VERSION` materializes one older version into the public *lake*.
-`sirno defrost` is an alias for `sirno checkout`.
-The grouped forms are `sirno frost checkout` and `sirno frost defrost`.
+The grouped checkout command is `sirno frost checkout`.
+The grouped latest shortcut is `sirno frost defrost`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
 
 `sirno new` creates one Markdown *entry* from typed command-line metadata.
