@@ -36,7 +36,8 @@ For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
-`sirno init` initializes the public *lake* and private *frost* store together.
+`sirno init` initializes the public *lake*, private *frost* store,
+and packaged skill wrappers together.
 `sirno commit` and `sirno checkout` select the same Frost operations
 as their grouped `sirno frost ...` forms.
 `sirno defrost` selects latest Frost checkout.
@@ -55,11 +56,15 @@ It reports the config path, *monograph* state, *lake* path, optional *frost* pat
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
 `sirno init` creates a Sirno config, ordinary seed entries,
-and an empty Frost version `0`.
+an empty Frost version `0`, and packaged skill wrappers.
 By default, it names those paths from the directory that contains `Sirno.toml`:
 `<repo>-lake` for the public *lake* and `<repo>-frost` for the private *frost* path.
 `sirno init --lake PATH` chooses a non-default public *lake* path.
 `sirno init --frost PATH` chooses a non-default private *frost* path.
+`sirno init --no-lake`, `--no-frost`, and `--no-skills`
+skip their corresponding setup parts.
+The config is still written when another selected setup part needs it.
+When a setup part is skipped, its path option is not accepted.
 `sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring Frost.
 `sirno lake move PATH` changes the configured public *lake* path
 and renames the current *lake* directory on the filesystem.

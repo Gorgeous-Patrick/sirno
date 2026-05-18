@@ -22,7 +22,8 @@ from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
 `src/core/context.rs` bundles the packaged wrappers as compile-time constants
 from the lake-owned `SKILL.md` artifact files.
-`sirno util skills init` installs those bundled wrappers.
+`sirno init` installs those bundled wrappers by default.
+`sirno util skills init` refreshes those bundled wrappers.
 `sirno util skills check` detects installed wrapper drift.
 Each rostered Sirno discipline owns two skill artifacts.
 `SKILL.full.md` is the full Markdown skill text embedded by `src/mcp.rs`
@@ -63,7 +64,7 @@ use that instead.
 The synthesis skill checks the Sirno skill roster
 and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
 It can run `sirno util skills check` to detect installed wrapper drift,
-or `sirno util skills init` to refresh the packaged wrappers.
+or `sirno util skills init` to refresh the packaged wrappers after project initialization.
 The command copies exact bundled wrapper constants;
 it does not ask a model to rewrite the skill text.
 

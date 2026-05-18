@@ -107,7 +107,8 @@ name the matching `sirno://skills/sirno-*` MCP resource,
 and require the agent to read that resource before doing the work.
 Do not duplicate the full procedure in the wrapper.
 
-Install wrappers with the Sirno utility command:
+Routine project initialization installs wrappers by default.
+Use the Sirno utility command to refresh wrappers after initialization.
 
 ```sh
 cargo run -- util skills init

@@ -173,7 +173,7 @@ report structure,
 or inspect configured repository evidence.
 
 Storage commands affect the frame around entries.
-`sirno init` creates the public lake and private Frost path together.
+`sirno init` creates the public lake, private Frost path, and packaged skill wrappers together.
 `sirno lake move PATH` moves the public lake path.
 `sirno frost init` and `sirno frost move PATH` configure or move the private Frost path.
 `sirno move lake PATH` and `sirno move frost PATH` select the same storage moves.

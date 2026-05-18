@@ -65,7 +65,8 @@ names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
 
-Use the Rust utility command for routine wrapper installation.
+Routine project initialization installs wrappers by default.
+Use the Rust utility command to refresh wrappers after initialization.
 Run it from the repository root:
 
 ```sh

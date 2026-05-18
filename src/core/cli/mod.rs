@@ -15,9 +15,9 @@ use crate::core::context::{default_config_path, default_lake_path};
 use crate::core::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathRecord, PathSelection,
-    QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, TideOutputFormat, TideResolveRequest,
-    TideSelectionRequest,
+    QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
+    TideResolveRequest, TideSelectionRequest,
 };
 use crate::core::error::CommandError;
 use crate::core::output::{
@@ -68,7 +68,7 @@ pub struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Create a Sirno config, public lake, and Frost store.
+    /// Create a Sirno config, public lake, Frost store, and skill wrappers.
     Init {
         /// Monograph path written to Sirno.toml.
         #[arg(long)]
@@ -79,6 +79,15 @@ enum Command {
         /// Sirno Frost path written to Sirno.toml.
         #[arg(long)]
         frost: Option<PathBuf>,
+        /// Skip public lake initialization.
+        #[arg(long = "no-lake", conflicts_with_all = ["mono", "lake"])]
+        no_lake: bool,
+        /// Skip Sirno Frost initialization.
+        #[arg(long = "no-frost", conflicts_with = "frost")]
+        no_frost: bool,
+        /// Skip packaged skill wrapper initialization.
+        #[arg(long = "no-skills")]
+        no_skills: bool,
     },
     /// Move an entry, the public lake path, or the Frost path.
     #[command(visible_alias = "mv")]
@@ -684,11 +693,19 @@ impl Cli {
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
-            | Command::Init { mono, lake, frost } => {
+            | Command::Init { mono, lake, frost, no_lake, no_frost, no_skills } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
-                run_top_level_init(mono, lake, frost, &config_path, lake_path.as_deref())
+                let request = TopLevelInitRequest {
+                    mono,
+                    lake,
+                    frost,
+                    init_lake: !no_lake,
+                    init_frost: !no_frost,
+                    init_skills: !no_skills,
+                };
+                run_top_level_init(request, &config_path, lake_path.as_deref())
             }
             | Command::Move { command } => {
                 command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
@@ -769,12 +786,52 @@ impl MoveCommand {
     }
 }
 
+#[derive(Debug)]
+struct TopLevelInitRequest {
+    mono: Option<PathBuf>,
+    lake: Option<PathBuf>,
+    frost: Option<PathBuf>,
+    init_lake: bool,
+    init_frost: bool,
+    init_skills: bool,
+}
+
 fn run_top_level_init(
-    mono: Option<PathBuf>, lake: Option<PathBuf>, frost: Option<PathBuf>, config_path: &Path,
-    lake_path: Option<&Path>,
+    request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
-    run_lake_init(mono, lake, config_path, lake_path)?;
-    FrostCommand::Init { frost }.run(config_path, lake_path)
+    let mut initialized = false;
+    if request.init_lake {
+        run_lake_init(request.mono, request.lake, config_path, lake_path)?;
+        initialized = true;
+    }
+    if request.init_frost {
+        if !request.init_lake {
+            ensure_config_for_top_level_frost(config_path, lake_path)?;
+        }
+        FrostCommand::Init { frost: request.frost }.run(config_path, lake_path)?;
+        initialized = true;
+    }
+    if request.init_skills {
+        run_skill_wrappers_init(config_path)?;
+        initialized = true;
+    }
+    if !initialized {
+        println!("nothing initialized");
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+fn ensure_config_for_top_level_frost(
+    config_path: &Path, lake_path: Option<&Path>,
+) -> Result<(), CommandError> {
+    if config_path.exists() {
+        return Ok(());
+    }
+    let config = SirnoConfig::new(
+        lake_path.map(Path::to_path_buf).unwrap_or_else(|| default_lake_path(config_path)),
+    );
+    config.write_new(config_path)?;
+    Ok(())
 }
 
 fn run_lake_init(
@@ -1268,10 +1325,20 @@ impl SkillCommand {
             | SkillCommand::Check => context.skill_wrappers_check()?,
             | SkillCommand::List => context.skill_wrappers_list()?,
         };
-        print!("{}", format_skill_wrapper_table(&result.records));
-        println!("{}", result.message);
-        Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+        Ok(print_skill_wrapper_result(result))
     }
+}
+
+fn run_skill_wrappers_init(config_path: &Path) -> Result<(), CommandError> {
+    let result = CoreContext::new(config_path.to_path_buf()).skill_wrappers_init()?;
+    print_skill_wrapper_result(result);
+    Ok(())
+}
+
+fn print_skill_wrapper_result(result: SkillWrapperResult) -> ExitCode {
+    print!("{}", format_skill_wrapper_table(&result.records));
+    println!("{}", result.message);
+    if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE }
 }
 
 fn run_witness_command(

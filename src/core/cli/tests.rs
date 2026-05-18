@@ -88,6 +88,7 @@ fn top_level_init_initializes_lake_and_frost() {
     assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("alpha-project-frost") }));
     assert!(repo.join("alpha-project-lake").join("concept.md").exists());
     assert!(repo.join("alpha-project-frost").join("Eter.lock.toml").exists());
+    assert!(repo.join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists());
     assert_eq!(lock.frost.status, FrostLockStatus::Current);
     assert_eq!(lock.frost.version, Eterator::EMPTY.version());
 }
@@ -118,6 +119,122 @@ fn top_level_init_accepts_explicit_paths() {
     assert_eq!(config.frost.unwrap().path, PathBuf::from("custom-frost"));
     assert!(temp.path().join("custom-lake").join("concept.md").exists());
     assert!(temp.path().join("custom-frost").join("Eter.lock.toml").exists());
+    assert!(
+        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+    );
+}
+
+#[test]
+fn top_level_init_can_skip_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let repo_name = temp.path().file_name().unwrap().to_string_lossy();
+    let lake = PathBuf::from(format!("{repo_name}-lake"));
+    let frost = PathBuf::from(format!("{repo_name}-frost"));
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "init", "--no-skills"])
+        .run()
+        .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    let configured_frost = config.frost.as_ref().unwrap().path.clone();
+    assert_eq!(config.lake.path, lake);
+    assert_eq!(configured_frost, frost);
+    assert!(temp.path().join(&config.lake.path).join("concept.md").exists());
+    assert!(temp.path().join(configured_frost).join("Eter.lock.toml").exists());
+    assert!(!temp.path().join(".agents").join("skills").exists());
+}
+
+#[test]
+fn top_level_init_can_skip_frost_and_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let repo_name = temp.path().file_name().unwrap().to_string_lossy();
+    let lake = PathBuf::from(format!("{repo_name}-lake"));
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "init",
+        "--no-frost",
+        "--no-skills",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(config.lake.path, lake);
+    assert!(config.frost.is_none());
+    assert!(temp.path().join(&config.lake.path).join("concept.md").exists());
+    assert!(!temp.path().join(LOCK_FILE_NAME).exists());
+    assert!(!temp.path().join(".agents").join("skills").exists());
+}
+
+#[test]
+fn top_level_init_can_skip_lake_and_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let repo_name = temp.path().file_name().unwrap().to_string_lossy();
+    let lake = PathBuf::from(format!("{repo_name}-lake"));
+    let frost = PathBuf::from(format!("{repo_name}-frost"));
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "init",
+        "--no-lake",
+        "--no-skills",
+    ])
+    .run()
+    .unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    let configured_frost = config.frost.as_ref().unwrap().path.clone();
+    assert_eq!(config.lake.path, lake);
+    assert_eq!(configured_frost, frost);
+    assert!(!temp.path().join(&config.lake.path).exists());
+    assert!(temp.path().join(configured_frost).join("Eter.lock.toml").exists());
+    assert!(temp.path().join(LOCK_FILE_NAME).exists());
+    assert!(!temp.path().join(".agents").join("skills").exists());
+}
+
+#[test]
+fn top_level_init_can_skip_lake_and_frost() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "init",
+        "--no-lake",
+        "--no-frost",
+    ])
+    .run()
+    .unwrap();
+
+    assert!(!config_path.exists());
+    assert!(!temp.path().join("sirno-lake").exists());
+    assert!(!temp.path().join("sirno-frost").exists());
+    assert!(
+        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+    );
+}
+
+#[test]
+fn top_level_init_rejects_path_flags_for_disabled_parts() {
+    let no_lake_with_lake = Cli::try_parse_from(["sirno", "init", "--no-lake", "--lake", "docs"]);
+    let no_lake_with_mono =
+        Cli::try_parse_from(["sirno", "init", "--no-lake", "--mono", "DESIGN.md"]);
+    let no_frost_with_frost =
+        Cli::try_parse_from(["sirno", "init", "--no-frost", "--frost", "sirno-frost"]);
+
+    assert!(no_lake_with_lake.is_err());
+    assert!(no_lake_with_mono.is_err());
+    assert!(no_frost_with_frost.is_err());
 }
 
 #[test]

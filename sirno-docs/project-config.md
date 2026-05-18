@@ -29,11 +29,16 @@ The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 The CLI `-F, --frost-path PATH` option selects a Frost path for one direct Frost check.
 
 A project can use Sirno without a configured *monograph*, repo members, or Sirno Frost.
-`sirno init` creates the config, public *entry lake*, and private Sirno Frost path.
+`sirno init` creates the config, public *entry lake*, private Sirno Frost path,
+and packaged skill wrappers.
 Its default paths are derived from the directory that contains `Sirno.toml`:
 `<repo>-lake` for `[lake].path` and `<repo>-frost` for `[frost].path`.
 `sirno init --lake PATH` chooses a non-default public *lake* path.
 `sirno init --frost PATH` chooses a non-default private *frost* path.
+`sirno init --no-lake`, `--no-frost`, and `--no-skills`
+skip their corresponding setup parts.
+The config is still written when another selected setup part needs it.
+When a setup part is skipped, its path option is not accepted.
 `sirno lake init [PATH]` creates the config and public *entry lake* without configuring Frost.
 `sirno lake move PATH` changes `[lake].path` and renames the public *lake* directory.
 `sirno lake mv PATH` is its short form.
