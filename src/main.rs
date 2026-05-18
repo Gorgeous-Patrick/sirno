@@ -136,7 +136,7 @@ enum TopLevelEntryCommand {
         desc: String,
         /// Structural metadata target as FIELD=ENTRY_ID.
         #[arg(long = "structural", value_name = "FIELD=ENTRY_ID")]
-        structural: Vec<CliStructuralPredicate>,
+        structural: Vec<StructuralPredicate>,
         /// Initial Markdown body.
         #[arg(short = 'b', long)]
         body: Option<String>,
@@ -159,7 +159,7 @@ enum TopLevelEntryCommand {
     // sirno:witness:interfaces:end
     /// Show filesystem paths related to one entry.
     // sirno:witness:interfaces:begin
-    Path(CliPathArgs),
+    Path(EntryPathArgs),
     // sirno:witness:interfaces:end
     /// Query public Markdown entries.
     // sirno:witness:interfaces:begin
@@ -172,13 +172,13 @@ enum TopLevelEntryCommand {
         exact_terms: Vec<String>,
         /// Exact structural predicate as FIELD=ENTRY_ID.
         #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
-        exact: Vec<CliStructuralPredicate>,
+        exact: Vec<StructuralPredicate>,
         /// Comma-separated output fields: id, name, path, desc.
         #[arg(short = 'f', long, value_name = "FIELDS")]
-        fields: Option<CliQueryFields>,
+        fields: Option<QueryFields>,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
-        format: Option<CliQueryOutputFormat>,
+        format: Option<QueryOutputFormat>,
     },
     // sirno:witness:interfaces:end
     /// Run ripgrep in the configured public Markdown lake.
@@ -238,7 +238,7 @@ enum TopLevelLakeCommand {
     Check {
         /// Check boundary.
         #[arg(short = 'm', long, value_enum)]
-        mode: Option<CliCheckMode>,
+        mode: Option<CheckModeArg>,
     },
     /// Render Markdown links in entry footers.
     Render {
@@ -293,7 +293,7 @@ struct FrostMoveArgs {
 /// Arguments for entry path lookup.
 // sirno:witness:interfaces:begin
 #[derive(Clone, Debug, Args)]
-struct CliPathArgs {
+struct EntryPathArgs {
     /// Entry id whose paths should be shown.
     id: String,
     /// Show the public Markdown entry file path.
@@ -310,14 +310,14 @@ struct CliPathArgs {
     absolute: bool,
     /// Output format.
     #[arg(short = 'o', long, value_enum)]
-    format: Option<CliPathOutputFormat>,
+    format: Option<PathOutputFormat>,
 }
 // sirno:witness:interfaces:end
 
 /// CLI path lookup output renderer.
 // sirno:witness:interfaces:begin
 #[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliPathOutputFormat {
+enum PathOutputFormat {
     /// Print a JSON array of path records.
     Json,
     /// Print an aligned table.
@@ -368,7 +368,7 @@ enum ArtifactCommand {
 
 /// CLI representation of check boundaries.
 #[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliCheckMode {
+enum CheckModeArg {
     /// Editing boundary: dangling references are warnings.
     Edit,
     /// Review boundary: dangling references are errors.
@@ -377,7 +377,7 @@ enum CliCheckMode {
 
 /// CLI query output renderer.
 #[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliQueryOutputFormat {
+enum QueryOutputFormat {
     /// Print a JSON array of objects.
     Json,
     /// Print an aligned table.
@@ -386,29 +386,29 @@ enum CliQueryOutputFormat {
 
 /// CLI query output field list.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct CliQueryFields {
-    fields: Vec<CliQueryField>,
+struct QueryFields {
+    fields: Vec<QueryField>,
 }
 
-impl Default for CliQueryFields {
+impl Default for QueryFields {
     fn default() -> Self {
-        Self { fields: vec![CliQueryField::Id, CliQueryField::Path, CliQueryField::Name] }
+        Self { fields: vec![QueryField::Id, QueryField::Path, QueryField::Name] }
     }
 }
 
-impl FromStr for CliQueryFields {
-    type Err = CliQueryFieldsParseError;
+impl FromStr for QueryFields {
+    type Err = QueryFieldsParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         if raw.trim().is_empty() {
-            return Err(CliQueryFieldsParseError::Empty);
+            return Err(QueryFieldsParseError::Empty);
         }
 
         let mut fields = Vec::new();
         for raw_field in raw.split(',') {
             let field = raw_field.trim();
             if field.is_empty() {
-                return Err(CliQueryFieldsParseError::EmptyField);
+                return Err(QueryFieldsParseError::EmptyField);
             }
             fields.push(field.parse()?);
         }
@@ -419,7 +419,7 @@ impl FromStr for CliQueryFields {
 
 /// One field printable by `sirno query`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CliQueryField {
+enum QueryField {
     /// Entry id.
     Id,
     /// Human-readable entry name.
@@ -430,8 +430,8 @@ enum CliQueryField {
     Desc,
 }
 
-impl FromStr for CliQueryField {
-    type Err = CliQueryFieldsParseError;
+impl FromStr for QueryField {
+    type Err = QueryFieldsParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         match raw {
@@ -439,12 +439,12 @@ impl FromStr for CliQueryField {
             | "name" => Ok(Self::Name),
             | "path" => Ok(Self::Path),
             | "desc" => Ok(Self::Desc),
-            | field => Err(CliQueryFieldsParseError::UnknownField(field.to_owned())),
+            | field => Err(QueryFieldsParseError::UnknownField(field.to_owned())),
         }
     }
 }
 
-impl CliQueryField {
+impl QueryField {
     fn label(self) -> &'static str {
         match self {
             | Self::Id => "id",
@@ -457,7 +457,7 @@ impl CliQueryField {
 
 /// Error raised while parsing one `--fields` field list.
 #[derive(Debug, Error)]
-enum CliQueryFieldsParseError {
+enum QueryFieldsParseError {
     /// The list contains no fields.
     #[error("query fields must include at least one field")]
     Empty,
@@ -471,20 +471,20 @@ enum CliQueryFieldsParseError {
 
 /// Structural metadata predicate parsed from `FIELD=ENTRY_ID`.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct CliStructuralPredicate {
+struct StructuralPredicate {
     field: String,
     target: EntryId,
 }
 
-impl FromStr for CliStructuralPredicate {
-    type Err = CliStructuralPredicateParseError;
+impl FromStr for StructuralPredicate {
+    type Err = StructuralPredicateParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         let Some((field, target)) = raw.split_once('=') else {
-            return Err(CliStructuralPredicateParseError::MissingEquals);
+            return Err(StructuralPredicateParseError::MissingEquals);
         };
         if field.is_empty() {
-            return Err(CliStructuralPredicateParseError::EmptyField);
+            return Err(StructuralPredicateParseError::EmptyField);
         }
         let target = EntryId::new(target)?;
         Ok(Self { field: field.to_owned(), target })
@@ -493,7 +493,7 @@ impl FromStr for CliStructuralPredicate {
 
 /// Error raised while parsing one structural `FIELD=ENTRY_ID` argument.
 #[derive(Debug, Error)]
-enum CliStructuralPredicateParseError {
+enum StructuralPredicateParseError {
     /// The argument does not contain the field-target separator.
     #[error("expected FIELD=ENTRY_ID")]
     MissingEquals,
@@ -507,15 +507,15 @@ enum CliStructuralPredicateParseError {
 
 /// Tide item selector parsed from one CLI argument.
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum CliTideItem {
+enum TideItemSelector {
     /// Select every open workitem whose neighbor matches this entry.
     Neighbor(EntryId),
     /// Select one full workitem tuple.
     Workitem(TideWorkitem),
 }
 
-impl FromStr for CliTideItem {
-    type Err = CliTideItemParseError;
+impl FromStr for TideItemSelector {
+    type Err = TideItemSelectorParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         if raw.contains(',') {
@@ -527,7 +527,7 @@ impl FromStr for CliTideItem {
 
 /// Error raised while parsing one tide item selector.
 #[derive(Debug, Error)]
-enum CliTideItemParseError {
+enum TideItemSelectorParseError {
     /// Entry id parsing failed.
     #[error(transparent)]
     EntryId(#[from] EntryIdError),
@@ -538,7 +538,7 @@ enum CliTideItemParseError {
 
 /// CLI shell target for completion generation.
 #[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliCompletionShell {
+enum CompletionShell {
     /// Bash completion script.
     Bash,
     /// Elvish completion script.
@@ -559,7 +559,7 @@ enum UtilCommand {
     Completion {
         /// Shell whose completion script should be generated.
         #[arg(value_enum)]
-        shell: CliCompletionShell,
+        shell: CompletionShell,
     },
 }
 
@@ -614,7 +614,7 @@ enum TideCommand {
         all: bool,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
-        format: Option<CliTideOutputFormat>,
+        format: Option<TideOutputFormat>,
     },
     /// Resolve tide workitems.
     Resolve {
@@ -626,13 +626,13 @@ enum TideCommand {
         json: Option<String>,
         /// Entry ids or full workitem tuples.
         #[arg(required_unless_present_any = ["infer", "json"])]
-        items: Vec<CliTideItem>,
+        items: Vec<TideItemSelector>,
     },
     /// Reopen resolved tide workitems.
     Reopen {
         /// Entry ids or full workitem tuples.
         #[arg(required = true)]
-        items: Vec<CliTideItem>,
+        items: Vec<TideItemSelector>,
     },
     /// Clear all tide resolutions from the lock.
     Reset,
@@ -641,7 +641,7 @@ enum TideCommand {
 
 /// CLI tide output renderer.
 #[derive(Clone, Copy, Debug, ValueEnum)]
-enum CliTideOutputFormat {
+enum TideOutputFormat {
     /// Print a JSON object.
     Json,
     /// Print a human-readable list.
@@ -655,23 +655,23 @@ enum RenderCommand {
     Delete,
 }
 
-impl From<CliCheckMode> for CheckMode {
-    fn from(value: CliCheckMode) -> Self {
+impl From<CheckModeArg> for CheckMode {
+    fn from(value: CheckModeArg) -> Self {
         match value {
-            | CliCheckMode::Edit => CheckMode::Edit,
-            | CliCheckMode::Review => CheckMode::Review,
+            | CheckModeArg::Edit => CheckMode::Edit,
+            | CheckModeArg::Review => CheckMode::Review,
         }
     }
 }
 
-impl From<CliCompletionShell> for Shell {
-    fn from(value: CliCompletionShell) -> Self {
+impl From<CompletionShell> for Shell {
+    fn from(value: CompletionShell) -> Self {
         match value {
-            | CliCompletionShell::Bash => Shell::Bash,
-            | CliCompletionShell::Elvish => Shell::Elvish,
-            | CliCompletionShell::Fish => Shell::Fish,
-            | CliCompletionShell::PowerShell => Shell::PowerShell,
-            | CliCompletionShell::Zsh => Shell::Zsh,
+            | CompletionShell::Bash => Shell::Bash,
+            | CompletionShell::Elvish => Shell::Elvish,
+            | CompletionShell::Fish => Shell::Fish,
+            | CompletionShell::PowerShell => Shell::PowerShell,
+            | CompletionShell::Zsh => Shell::Zsh,
         }
     }
 }
@@ -697,14 +697,14 @@ fn main() -> ExitCode {
 }
 
 impl Cli {
-    fn run(self) -> Result<ExitCode, CliError> {
+    fn run(self) -> Result<ExitCode, CommandError> {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
             | Command::TopLevelEntry(command) => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
             }
@@ -713,13 +713,13 @@ impl Cli {
             }
             | Command::TopLevelFrost(command) => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
             }
             | Command::Init { mono, lake, frost } => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 run_top_level_init(mono, lake, frost, &config_path, lake_path.as_deref())
             }
@@ -728,7 +728,7 @@ impl Cli {
             }
             | Command::Entry { command } => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
             }
@@ -737,19 +737,19 @@ impl Cli {
             }
             | Command::Frost { command } => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
             }
             | Command::Tide { command } => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
             }
             | Command::Util { command } => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run()
             }
@@ -760,23 +760,23 @@ impl Cli {
 impl MoveCommand {
     fn run(
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | Self::Entry(args) => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 args.run(config_path, lake_path)
             }
             | Self::Lake(args) => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 args.run(config_path)
             }
             | Self::Frost(args) => {
                 if frost_path.is_some() {
-                    return Err(CliError::FrostPathRequiresCheck);
+                    return Err(CommandError::FrostPathRequiresCheck);
                 }
                 args.run(config_path)
             }
@@ -787,14 +787,14 @@ impl MoveCommand {
 fn run_top_level_init(
     mono: Option<PathBuf>, lake: Option<PathBuf>, frost: Option<PathBuf>, config_path: &Path,
     lake_path: Option<&Path>,
-) -> Result<ExitCode, CliError> {
+) -> Result<ExitCode, CommandError> {
     run_lake_init(mono, lake, config_path, lake_path)?;
     FrostCommand::Init { frost }.run(config_path, lake_path)
 }
 
 fn run_lake_init(
     mono: Option<PathBuf>, lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
-) -> Result<ExitCode, CliError> {
+) -> Result<ExitCode, CommandError> {
     let mut config = SirnoConfig::new(
         lake.or_else(|| lake_path.map(Path::to_path_buf))
             .unwrap_or_else(|| default_lake_path(config_path)),
@@ -815,7 +815,7 @@ fn run_lake_init(
 }
 
 impl EntryCommand {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | EntryCommand::TopLevel(command) => command.run(config_path, lake_path),
             | EntryCommand::Rename(args) => args.run(config_path, lake_path),
@@ -824,7 +824,7 @@ impl EntryCommand {
 }
 
 impl EntryRenameArgs {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
         let old_id = EntryId::new(&self.old_id)?;
         let new_id = EntryId::new(&self.new_id)?;
@@ -842,7 +842,7 @@ impl EntryRenameArgs {
 }
 
 impl TopLevelEntryCommand {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
                 let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
@@ -882,7 +882,7 @@ impl TopLevelEntryCommand {
             }
             | TopLevelEntryCommand::Path(args) => {
                 let records = entry_path_records(config_path, lake_path, &args)?;
-                print_path_records(&records, args.format.unwrap_or(CliPathOutputFormat::Human))?;
+                print_path_records(&records, args.format.unwrap_or(PathOutputFormat::Human))?;
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
@@ -905,7 +905,7 @@ impl TopLevelEntryCommand {
                 let vague_matches = vague_query.select_entries(report.entries());
                 let matches = exact_query.select_entries(vague_matches);
                 let fields = fields.unwrap_or_default();
-                let format = format.unwrap_or(CliQueryOutputFormat::Json);
+                let format = format.unwrap_or(QueryOutputFormat::Json);
                 print_query_results(&report, &matches, &fields, format)?;
                 Ok(ExitCode::SUCCESS)
             }
@@ -923,10 +923,10 @@ impl TopLevelEntryCommand {
 impl LakeCommand {
     fn run(
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | LakeCommand::Init { .. } | LakeCommand::Move(_) if frost_path.is_some() => {
-                Err(CliError::FrostPathRequiresCheck)
+                Err(CommandError::FrostPathRequiresCheck)
             }
             | LakeCommand::Init { lake } => run_lake_init(None, lake, config_path, lake_path),
             | LakeCommand::Move(args) => args.run(config_path),
@@ -936,7 +936,7 @@ impl LakeCommand {
 }
 
 impl LakeMoveArgs {
-    fn run(self, config_path: &Path) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
         let old_lake = config.resolve_lake(config_path);
         let config = config.with_lake(self.lake);
@@ -951,13 +951,13 @@ impl LakeMoveArgs {
 impl TopLevelLakeCommand {
     fn run(
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelLakeCommand::Check { mode } => {
                 if lake_path.is_some() && frost_path.is_some() {
-                    return Err(CliError::LakePathWithFrostPath);
+                    return Err(CommandError::LakePathWithFrostPath);
                 }
-                let mode = mode.unwrap_or(CliCheckMode::Review);
+                let mode = mode.unwrap_or(CheckModeArg::Review);
                 if lake_path.is_some() {
                     let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
                     let report =
@@ -1001,7 +1001,7 @@ impl TopLevelLakeCommand {
             | TopLevelLakeCommand::Render { .. } | TopLevelLakeCommand::Status
                 if frost_path.is_some() =>
             {
-                Err(CliError::FrostPathRequiresCheck)
+                Err(CommandError::FrostPathRequiresCheck)
             }
             | TopLevelLakeCommand::Render { command, dry } => match command {
                 | None => {
@@ -1034,7 +1034,7 @@ impl TopLevelLakeCommand {
                 }
                 | Some(RenderCommand::Delete) => {
                     if dry {
-                        return Err(CliError::DryWithRenderSubcommand);
+                        return Err(CommandError::DryWithRenderSubcommand);
                     }
                     let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                     settings.witness = None;
@@ -1075,7 +1075,7 @@ impl TopLevelLakeCommand {
 impl TopLevelFrostCommand {
     fn run(
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelFrostCommand::Commit { unsafe_resolve_all } => {
                 let context = FrostContext::load(config_path, lake_path)?;
@@ -1086,7 +1086,7 @@ impl TopLevelFrostCommand {
                     let lock = tide_context.load_lock_or_current()?;
                     let tide = tide_context.tide(&lock)?;
                     if !tide.is_clear() {
-                        return Err(CliError::OpenTide {
+                        return Err(CommandError::OpenTide {
                             count: tide.open_statuses().count(),
                             tutorial: OpenTideTutorial::new(
                                 context.tutorial,
@@ -1121,7 +1121,7 @@ impl TopLevelFrostCommand {
                     )?)?
                 };
                 if snapshot.version() == Eterator::EMPTY.version() {
-                    return Err(CliError::InvalidFrostVersion(snapshot.version()));
+                    return Err(CommandError::InvalidFrostVersion(snapshot.version()));
                 }
                 let paths = frost.checkout_entry_directory(
                     snapshot,
@@ -1164,7 +1164,7 @@ impl TopLevelFrostCommand {
 impl FrostCommand {
     fn run(
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | FrostCommand::Init { frost } => {
                 let config = SirnoConfig::from_file(config_path)?;
@@ -1175,7 +1175,7 @@ impl FrostCommand {
                 if let Some(existing_frost) = existing_frost
                     && existing_frost != frost
                 {
-                    return Err(CliError::FrostAlreadyConfigured(existing_frost));
+                    return Err(CommandError::FrostAlreadyConfigured(existing_frost));
                 }
 
                 let needs_config_write = config.frost.is_none();
@@ -1204,10 +1204,10 @@ impl FrostCommand {
 }
 
 impl FrostMoveArgs {
-    fn run(self, config_path: &Path) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
         let Some(old_frost) = config.resolve_frost(config_path) else {
-            return Err(CliError::FrostNotConfigured);
+            return Err(CommandError::FrostNotConfigured);
         };
         let config = config.with_frost(self.frost);
         config.validate_for_file(config_path)?;
@@ -1221,13 +1221,13 @@ impl FrostMoveArgs {
 impl TideCommand {
     fn run(
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
-    ) -> Result<ExitCode, CliError> {
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | TideCommand::Status { all, format } => {
                 let context = TideContext::load(config_path, lake_path)?;
                 let lock = context.load_lock_or_current()?;
                 let tide = context.tide(&lock)?;
-                let format = format.unwrap_or(CliTideOutputFormat::Human);
+                let format = format.unwrap_or(TideOutputFormat::Human);
                 print_tide_status(&tide, all, format)?;
                 Ok(if tide.is_clear() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
             }
@@ -1276,33 +1276,33 @@ impl TideCommand {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum CliTideJsonWorkitems {
+enum TideJsonWorkitems {
     One(TideWorkitem),
     Many(Vec<TideWorkitem>),
 }
 
-fn tide_workitems_from_json(source: &str) -> Result<Vec<TideWorkitem>, CliError> {
-    Ok(match serde_json::from_str::<CliTideJsonWorkitems>(source)? {
-        | CliTideJsonWorkitems::One(workitem) => vec![workitem],
-        | CliTideJsonWorkitems::Many(workitems) => workitems,
+fn tide_workitems_from_json(source: &str) -> Result<Vec<TideWorkitem>, CommandError> {
+    Ok(match serde_json::from_str::<TideJsonWorkitems>(source)? {
+        | TideJsonWorkitems::One(workitem) => vec![workitem],
+        | TideJsonWorkitems::Many(workitems) => workitems,
     })
 }
 
-fn tide_item_matches(items: &[CliTideItem], status: &sirno::TideStatus) -> bool {
+fn tide_item_matches(items: &[TideItemSelector], status: &sirno::TideStatus) -> bool {
     items.iter().any(|item| match item {
-        | CliTideItem::Neighbor(id) => &status.workitem.neighbor == id,
-        | CliTideItem::Workitem(workitem) => &status.workitem == workitem,
+        | TideItemSelector::Neighbor(id) => &status.workitem.neighbor == id,
+        | TideItemSelector::Workitem(workitem) => &status.workitem == workitem,
     })
 }
 
-fn print_tide_status(tide: &Tide, all: bool, format: CliTideOutputFormat) -> Result<(), CliError> {
+fn print_tide_status(tide: &Tide, all: bool, format: TideOutputFormat) -> Result<(), CommandError> {
     let statuses =
         tide.statuses().iter().filter(|status| all || !status.resolved).collect::<Vec<_>>();
     match format {
-        | CliTideOutputFormat::Json => {
+        | TideOutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&statuses)?);
         }
-        | CliTideOutputFormat::Human => {
+        | TideOutputFormat::Human => {
             if statuses.is_empty() {
                 println!("tide: clear");
             } else {
@@ -1326,7 +1326,7 @@ fn print_tide_status(tide: &Tide, all: bool, format: CliTideOutputFormat) -> Res
 }
 
 impl ArtifactCommand {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
         let directory = EntryDirectory::new(&lake);
         match self {
@@ -1368,7 +1368,7 @@ impl ArtifactCommand {
 }
 
 impl UtilCommand {
-    fn run(self) -> Result<ExitCode, CliError> {
+    fn run(self) -> Result<ExitCode, CommandError> {
         match self {
             | UtilCommand::Completion { shell } => {
                 let shell = Shell::from(shell);
@@ -1383,34 +1383,37 @@ impl UtilCommand {
 
 fn move_configured_path_and_write_config(
     source: &Path, destination: &Path, config: &SirnoConfig, config_path: &Path,
-) -> Result<(), CliError> {
+) -> Result<(), CommandError> {
     let moved = move_configured_path(source, destination)?;
     if let Err(config_error) = config.write(config_path) {
         if moved && let Err(rollback) = fs::rename(destination, source) {
-            return Err(CliError::MoveConfigWriteRollback {
+            return Err(CommandError::MoveConfigWriteRollback {
                 source_path: source.to_path_buf(),
                 destination_path: destination.to_path_buf(),
                 source: Box::new(config_error),
                 rollback,
             });
         }
-        return Err(CliError::Config(config_error));
+        return Err(CommandError::Config(config_error));
     }
     Ok(())
 }
 
-fn move_configured_path(source: &Path, destination: &Path) -> Result<bool, CliError> {
+fn move_configured_path(source: &Path, destination: &Path) -> Result<bool, CommandError> {
     if source == destination {
         return Ok(false);
     }
     match fs::symlink_metadata(destination) {
-        | Ok(_) => return Err(CliError::MoveDestinationExists(destination.to_path_buf())),
+        | Ok(_) => return Err(CommandError::MoveDestinationExists(destination.to_path_buf())),
         | Err(source) if source.kind() == ErrorKind::NotFound => {}
         | Err(source) => {
-            return Err(CliError::ReadMoveDestination { path: destination.to_path_buf(), source });
+            return Err(CommandError::ReadMoveDestination {
+                path: destination.to_path_buf(),
+                source,
+            });
         }
     }
-    fs::rename(source, destination).map_err(|error| CliError::MovePath {
+    fs::rename(source, destination).map_err(|error| CommandError::MovePath {
         source_path: source.to_path_buf(),
         destination_path: destination.to_path_buf(),
         source: error,
@@ -1434,10 +1437,10 @@ struct TideContext {
 }
 
 impl FrostContext {
-    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CliError> {
+    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
         let Some(frost_path) = config.resolve_frost(config_path) else {
-            return Err(CliError::FrostNotConfigured);
+            return Err(CommandError::FrostNotConfigured);
         };
         Ok(Self {
             frost_path,
@@ -1452,22 +1455,22 @@ impl FrostContext {
         EntryDirectory::new(&self.lake_path)
     }
 
-    fn reject_immutable_checkout(&self) -> Result<(), CliError> {
+    fn reject_immutable_checkout(&self) -> Result<(), CommandError> {
         let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
             return Ok(());
         };
         if lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout() {
-            return Err(CliError::ImmutableFrostCheckout(lock.frost.version));
+            return Err(CommandError::ImmutableFrostCheckout(lock.frost.version));
         }
         Ok(())
     }
 }
 
 impl TideContext {
-    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CliError> {
+    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
         let Some(frost_path) = config.resolve_frost(config_path) else {
-            return Err(CliError::FrostNotConfigured);
+            return Err(CommandError::FrostNotConfigured);
         };
         Ok(Self {
             frost_path,
@@ -1477,7 +1480,7 @@ impl TideContext {
         })
     }
 
-    fn load_lock_or_current(&self) -> Result<SirnoLock, CliError> {
+    fn load_lock_or_current(&self) -> Result<SirnoLock, CommandError> {
         let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
             let frost = SirnoFrost::open(&self.frost_path)?;
             return Ok(SirnoLock::current(frost.current_snapshot()?));
@@ -1485,7 +1488,7 @@ impl TideContext {
         Ok(lock)
     }
 
-    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CliError> {
+    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CommandError> {
         let frost = SirnoFrost::open(&self.frost_path)?;
         let frostline = frost.read_all_entries_at_snapshot(frost.current_snapshot()?)?;
         let mut settings = self.settings.clone();
@@ -1505,24 +1508,24 @@ impl TideContext {
     }
 }
 
-fn frost_version(version: u64) -> Result<Eterator, CliError> {
+fn frost_version(version: u64) -> Result<Eterator, CommandError> {
     if version == Eterator::EMPTY.version() {
-        return Err(CliError::InvalidFrostVersion(version));
+        return Err(CommandError::InvalidFrostVersion(version));
     }
     Ok(Eterator(version))
 }
 
 fn run_witness_command(
     config_path: &Path, lake_path: Option<&Path>, raw_id: &str, full: bool,
-) -> Result<ExitCode, CliError> {
+) -> Result<ExitCode, CommandError> {
     let config = SirnoConfig::from_file(config_path)?;
     let id = EntryId::new(raw_id)?;
     let lake = resolve_lake_path(lake_path, config_path, &config);
     if !EntryDirectory::new(&lake).entry_exists(&id)? {
-        return Err(CliError::MissingWitnessEntry(id));
+        return Err(CommandError::MissingWitnessEntry(id));
     }
     let Some(settings) = witness_check_settings(config_path, &config) else {
-        return Err(CliError::RepoMembersNotConfigured);
+        return Err(CommandError::RepoMembersNotConfigured);
     };
     let index = settings.scan()?;
     let records = index.records_for(&id);
@@ -1540,9 +1543,9 @@ fn print_witness_records(records: &[WitnessRecord], full: bool) {
 
 fn run_rg_command(
     lake_path: Option<&Path>, config_path: &Path, with_generated_footer: bool, args: Vec<OsString>,
-) -> Result<ExitCode, CliError> {
+) -> Result<ExitCode, CommandError> {
     if !with_generated_footer && rg_args_include_preprocessor(&args) {
-        return Err(CliError::RgPreprocessorConflict);
+        return Err(CommandError::RgPreprocessorConflict);
     }
 
     let lake = resolve_lake_path_for_rg(lake_path, config_path)?;
@@ -1553,7 +1556,7 @@ fn run_rg_command(
     if let Some(preprocessor) = &preprocessor {
         command.arg("--pre").arg(preprocessor.path()).arg("--pre-glob").arg("*.md");
     }
-    let status = command.args(args).arg(lake).status().map_err(CliError::RunRg)?;
+    let status = command.args(args).arg(lake).status().map_err(CommandError::RunRg)?;
     Ok(exit_code_from_status(status))
 }
 
@@ -1565,7 +1568,7 @@ fn rg_args_include_preprocessor(args: &[OsString]) -> bool {
 
 fn resolve_lake_path_for_rg(
     lake_path: Option<&Path>, config_path: &Path,
-) -> Result<PathBuf, CliError> {
+) -> Result<PathBuf, CommandError> {
     if let Some(lake_path) = lake_path {
         return Ok(lake_path.to_path_buf());
     }
@@ -1589,23 +1592,24 @@ fn is_rg_preprocessor_invocation() -> bool {
         .is_some_and(|name| name.to_string_lossy().starts_with(RG_PREPROCESSOR_ARGV0_PREFIX))
 }
 
-fn run_rg_preprocessor_from_env() -> Result<ExitCode, CliError> {
+fn run_rg_preprocessor_from_env() -> Result<ExitCode, CommandError> {
     let mut args = env::args_os().skip(1);
     let Some(path) = args.next() else {
-        return Err(CliError::RgPreprocessorArgumentCount);
+        return Err(CommandError::RgPreprocessorArgumentCount);
     };
     if args.next().is_some() {
-        return Err(CliError::RgPreprocessorArgumentCount);
+        return Err(CommandError::RgPreprocessorArgumentCount);
     }
 
     run_rg_preprocessor(&PathBuf::from(path))
 }
 
-fn run_rg_preprocessor(path: &Path) -> Result<ExitCode, CliError> {
-    let body = fs::read_to_string(path)
-        .map_err(|source| CliError::ReadRgPreprocessorInput { path: path.to_path_buf(), source })?;
+fn run_rg_preprocessor(path: &Path) -> Result<ExitCode, CommandError> {
+    let body = fs::read_to_string(path).map_err(|source| {
+        CommandError::ReadRgPreprocessorInput { path: path.to_path_buf(), source }
+    })?;
     let masked = GeneratedLinkBody::new(&body).mask()?;
-    io::stdout().write_all(masked.as_bytes()).map_err(CliError::WriteRgPreprocessorOutput)?;
+    io::stdout().write_all(masked.as_bytes()).map_err(CommandError::WriteRgPreprocessorOutput)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -1615,8 +1619,8 @@ struct RgPreprocessorLink {
 }
 
 impl RgPreprocessorLink {
-    fn create() -> Result<Self, CliError> {
-        let current_exe = env::current_exe().map_err(CliError::LocateCurrentExe)?;
+    fn create() -> Result<Self, CommandError> {
+        let current_exe = env::current_exe().map_err(CommandError::LocateCurrentExe)?;
         let mut path = env::temp_dir();
         path.push(format!(
             "{RG_PREPROCESSOR_ARGV0_PREFIX}{}-{}",
@@ -1629,7 +1633,7 @@ impl RgPreprocessorLink {
         }
 
         create_rg_preprocessor_invoker(&current_exe, &path).map_err(|source| {
-            CliError::CreateRgPreprocessorInvoker { path: path.clone(), source }
+            CommandError::CreateRgPreprocessorInvoker { path: path.clone(), source }
         })?;
         Ok(Self { path })
     }
@@ -1730,20 +1734,20 @@ fn default_repo_name(config_path: &Path) -> OsString {
         .unwrap_or_else(|| OsString::from("sirno"))
 }
 
-fn artifact_path_from_cli(path: &Path) -> Result<EntryArtifactPath, CliError> {
+fn artifact_path_from_cli(path: &Path) -> Result<EntryArtifactPath, CommandError> {
     Ok(EntryArtifactPath::new(path)?)
 }
 
-fn default_artifact_path_from_source(source: &Path) -> Result<EntryArtifactPath, CliError> {
+fn default_artifact_path_from_source(source: &Path) -> Result<EntryArtifactPath, CommandError> {
     let Some(file_name) = source.file_name() else {
-        return Err(CliError::ArtifactSourceHasNoFileName(source.to_path_buf()));
+        return Err(CommandError::ArtifactSourceHasNoFileName(source.to_path_buf()));
     };
     Ok(EntryArtifactPath::new(Path::new(file_name))?)
 }
 
 fn explicit_lake_check_settings(
     config_path: &std::path::Path,
-) -> Result<EntryDirectoryCheckSettings, CliError> {
+) -> Result<EntryDirectoryCheckSettings, CommandError> {
     if config_path.exists() {
         let config = SirnoConfig::from_file(config_path)?;
         Ok(entry_directory_check_settings(config_path, &config))
@@ -1785,7 +1789,7 @@ fn resolve_lake_path(
 
 fn resolve_lake_directory(
     lake_path: Option<&Path>, config_path: &std::path::Path,
-) -> Result<(PathBuf, EntryDirectoryCheckSettings), CliError> {
+) -> Result<(PathBuf, EntryDirectoryCheckSettings), CommandError> {
     if let Some(lake_path) = lake_path {
         return Ok((lake_path.to_path_buf(), explicit_lake_check_settings(config_path)?));
     }
@@ -1795,8 +1799,8 @@ fn resolve_lake_directory(
 }
 
 fn exact_query_from_predicates(
-    mut query: EntryQuery, predicates: Vec<CliStructuralPredicate>, structural: &StructuralSettings,
-) -> Result<EntryQuery, CliError> {
+    mut query: EntryQuery, predicates: Vec<StructuralPredicate>, structural: &StructuralSettings,
+) -> Result<EntryQuery, CommandError> {
     for (field, targets) in structural_targets_by_field(predicates, structural)? {
         query = query.with_structural_targets(field, targets);
     }
@@ -1804,12 +1808,12 @@ fn exact_query_from_predicates(
 }
 
 fn structural_targets_by_field(
-    predicates: Vec<CliStructuralPredicate>, structural: &StructuralSettings,
-) -> Result<IndexMap<String, Vec<EntryId>>, CliError> {
+    predicates: Vec<StructuralPredicate>, structural: &StructuralSettings,
+) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
     let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
     for predicate in predicates {
         if !structural.contains_field(&predicate.field) {
-            return Err(CliError::UnconfiguredStructuralField(predicate.field));
+            return Err(CommandError::UnconfiguredStructuralField(predicate.field));
         }
         targets_by_field.entry(predicate.field).or_default().push(predicate.target);
     }
@@ -1917,15 +1921,15 @@ fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[Path
 }
 
 fn print_query_results(
-    report: &EntryDirectoryReport, entries: &[&Entry], fields: &CliQueryFields,
-    format: CliQueryOutputFormat,
-) -> Result<(), CliError> {
+    report: &EntryDirectoryReport, entries: &[&Entry], fields: &QueryFields,
+    format: QueryOutputFormat,
+) -> Result<(), CommandError> {
     let rows = query_result_rows(report, entries, fields)?;
     match format {
-        | CliQueryOutputFormat::Json => {
+        | QueryOutputFormat::Json => {
             println!("{}", format_query_json(fields, &rows)?);
         }
-        | CliQueryOutputFormat::Human => {
+        | QueryOutputFormat::Human => {
             print!("{}", format_query_table(fields, &rows));
         }
     }
@@ -1933,30 +1937,28 @@ fn print_query_results(
 }
 
 fn entry_path_records(
-    config_path: &Path, lake_path: Option<&Path>, args: &CliPathArgs,
-) -> Result<Vec<CliPathRecord>, CliError> {
+    config_path: &Path, lake_path: Option<&Path>, args: &EntryPathArgs,
+) -> Result<Vec<PathRecord>, CommandError> {
     let config = SirnoConfig::from_file(config_path)?;
     let lake = resolve_lake_path(lake_path, config_path, &config);
     let directory = EntryDirectory::new(&lake);
     let id = EntryId::new(&args.id)?;
     directory.read_entry(&id)?;
     let artifacts = directory.read_entry_artifacts(&id)?;
-    let selection = CliPathSelection::from_args(args);
+    let selection = PathSelection::from_args(args);
     let mut records = Vec::new();
 
     if selection.entry {
-        records.push(CliPathRecord::new(
-            "entry",
-            output_path(directory.entry_path(&id), args.absolute)?,
-        ));
+        records
+            .push(PathRecord::new("entry", output_path(directory.entry_path(&id), args.absolute)?));
     }
     if selection.artifact {
-        records.push(CliPathRecord::new(
+        records.push(PathRecord::new(
             "artifact-root",
             output_path(directory.entry_artifact_root_path(&id), args.absolute)?,
         ));
         for artifact in &artifacts {
-            records.push(CliPathRecord::new(
+            records.push(PathRecord::new(
                 "artifact",
                 output_path(directory.entry_artifact_path(&id, &artifact.path), args.absolute)?,
             ));
@@ -1965,12 +1967,12 @@ fn entry_path_records(
     if selection.frost
         && let Some(frost) = config.resolve_frost(config_path)
     {
-        records.push(CliPathRecord::new(
+        records.push(PathRecord::new(
             "frost-entry",
             output_path(SirnoFrost::entry_storage_path(&frost, &id)?, args.absolute)?,
         ));
         for artifact in &artifacts {
-            records.push(CliPathRecord::new(
+            records.push(PathRecord::new(
                 "frost-artifact",
                 output_path(
                     SirnoFrost::artifact_storage_path(&frost, &id, &artifact.path)?,
@@ -1984,14 +1986,14 @@ fn entry_path_records(
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct CliPathSelection {
+struct PathSelection {
     entry: bool,
     artifact: bool,
     frost: bool,
 }
 
-impl CliPathSelection {
-    fn from_args(args: &CliPathArgs) -> Self {
+impl PathSelection {
+    fn from_args(args: &EntryPathArgs) -> Self {
         let all = !args.show_entry && !args.show_artifact && !args.show_frost;
         Self {
             entry: all || args.show_entry,
@@ -2002,31 +2004,31 @@ impl CliPathSelection {
 }
 
 #[derive(Debug, serde::Serialize)]
-struct CliPathRecord {
+struct PathRecord {
     kind: &'static str,
     path: String,
 }
 
-impl CliPathRecord {
+impl PathRecord {
     fn new(kind: &'static str, path: PathBuf) -> Self {
         Self { kind, path: path.display().to_string() }
     }
 }
 
-fn output_path(path: PathBuf, absolute: bool) -> Result<PathBuf, CliError> {
+fn output_path(path: PathBuf, absolute: bool) -> Result<PathBuf, CommandError> {
     if !absolute || path.is_absolute() {
         return Ok(path);
     }
-    Ok(env::current_dir().map_err(CliError::CurrentDirectory)?.join(path))
+    Ok(env::current_dir().map_err(CommandError::CurrentDirectory)?.join(path))
 }
 
 fn print_path_records(
-    records: &[CliPathRecord], format: CliPathOutputFormat,
-) -> Result<(), CliError> {
+    records: &[PathRecord], format: PathOutputFormat,
+) -> Result<(), CommandError> {
     match format {
-        | CliPathOutputFormat::Json => println!("{}", serde_json::to_string_pretty(records)?),
-        | CliPathOutputFormat::Human => print!("{}", format_path_table(records)),
-        | CliPathOutputFormat::Paths => {
+        | PathOutputFormat::Json => println!("{}", serde_json::to_string_pretty(records)?),
+        | PathOutputFormat::Human => print!("{}", format_path_table(records)),
+        | PathOutputFormat::Paths => {
             for record in records {
                 println!("{}", record.path);
             }
@@ -2035,7 +2037,7 @@ fn print_path_records(
     Ok(())
 }
 
-fn format_path_table(records: &[CliPathRecord]) -> String {
+fn format_path_table(records: &[PathRecord]) -> String {
     let headers = ["kind", "path"];
     let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
     for record in records {
@@ -2053,8 +2055,8 @@ fn format_path_table(records: &[CliPathRecord]) -> String {
 }
 
 fn query_result_rows(
-    report: &EntryDirectoryReport, entries: &[&Entry], fields: &CliQueryFields,
-) -> Result<Vec<Vec<String>>, CliError> {
+    report: &EntryDirectoryReport, entries: &[&Entry], fields: &QueryFields,
+) -> Result<Vec<Vec<String>>, CommandError> {
     entries
         .iter()
         .map(|entry| {
@@ -2068,28 +2070,28 @@ fn query_result_rows(
 }
 
 fn format_query_field(
-    report: &EntryDirectoryReport, entry: &Entry, field: CliQueryField,
-) -> Result<String, CliError> {
+    report: &EntryDirectoryReport, entry: &Entry, field: QueryField,
+) -> Result<String, CommandError> {
     match field {
-        | CliQueryField::Id => Ok(entry.id.to_string()),
-        | CliQueryField::Name => Ok(entry.metadata.name.clone()),
-        | CliQueryField::Path => {
+        | QueryField::Id => Ok(entry.id.to_string()),
+        | QueryField::Name => Ok(entry.metadata.name.clone()),
+        | QueryField::Path => {
             let path = report
                 .entry_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
             Ok(path.display().to_string())
         }
-        | CliQueryField::Desc => Ok(entry.metadata.desc.clone()),
+        | QueryField::Desc => Ok(entry.metadata.desc.clone()),
     }
 }
 
-fn format_query_json(fields: &CliQueryFields, rows: &[Vec<String>]) -> Result<String, CliError> {
+fn format_query_json(fields: &QueryFields, rows: &[Vec<String>]) -> Result<String, CommandError> {
     let records = rows.iter().map(|row| QueryJsonRecord { fields, row }).collect::<Vec<_>>();
     Ok(serde_json::to_string_pretty(&records)?)
 }
 
 struct QueryJsonRecord<'a> {
-    fields: &'a CliQueryFields,
+    fields: &'a QueryFields,
     row: &'a [String],
 }
 
@@ -2106,7 +2108,7 @@ impl serde::Serialize for QueryJsonRecord<'_> {
     }
 }
 
-fn format_query_table(fields: &CliQueryFields, rows: &[Vec<String>]) -> String {
+fn format_query_table(fields: &QueryFields, rows: &[Vec<String>]) -> String {
     let headers = fields.fields.iter().map(|field| field.label()).collect::<Vec<_>>();
     let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
     for row in rows {
@@ -2233,7 +2235,7 @@ impl fmt::Display for OpenTideTutorial {
 
 /// Error raised while running the CLI.
 #[derive(Debug, Error)]
-enum CliError {
+enum CommandError {
     /// Sirno Frost has already been configured at another path.
     #[error("frost is already configured at {0}")]
     FrostAlreadyConfigured(PathBuf),
@@ -2404,10 +2406,10 @@ mod tests {
     };
 
     use crate::{
-        ArtifactCommand, Cli, CliCheckMode, CliError, CliPathArgs, CliPathOutputFormat,
-        CliQueryField, CliQueryFields, CliQueryOutputFormat, CliStructuralPredicate, CliTideItem,
-        Command, EntryCommand, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand,
-        LakeMoveArgs, MoveCommand, TideCommand, TopLevelEntryCommand, TopLevelFrostCommand,
+        ArtifactCommand, CheckModeArg, Cli, Command, CommandError, EntryCommand, EntryPathArgs,
+        EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs, MoveCommand,
+        PathOutputFormat, QueryField, QueryFields, QueryOutputFormat, StructuralPredicate,
+        TideCommand, TideItemSelector, TopLevelEntryCommand, TopLevelFrostCommand,
         TopLevelLakeCommand, entry_path_records, exact_query_from_predicates,
         format_gen_link_report, format_path_table, format_query_json, format_query_table,
         format_witness_record, format_witness_records, rg_args_include_preprocessor,
@@ -2612,7 +2614,7 @@ mod tests {
             .run()
             .unwrap_err();
 
-        assert!(matches!(error, CliError::FrostPathRequiresCheck));
+        assert!(matches!(error, CommandError::FrostPathRequiresCheck));
     }
 
     #[test]
@@ -2798,7 +2800,7 @@ Changed body.
         .unwrap_err();
         assert!(matches!(
             &error,
-            CliError::OpenTide { count, tutorial }
+            CommandError::OpenTide { count, tutorial }
                 if *count == 1 && !tutorial.frost_commit_tide
         ));
         assert_eq!(error.to_string(), "tide has 1 open workitems; run `sirno tide status`");
@@ -2886,7 +2888,7 @@ Body.
         .unwrap_err();
         let message = error.to_string();
 
-        assert!(matches!(&error, CliError::OpenTide { count, .. } if *count == 1));
+        assert!(matches!(&error, CommandError::OpenTide { count, .. } if *count == 1));
         assert!(message.contains("Tutorial:"));
         assert!(message.contains("empty version 0"));
         assert!(message.contains("sirno commit --unsafe-resolve-all"));
@@ -3051,7 +3053,7 @@ Body.
                     infer: false,
                     json: None
                 }
-            } if items == vec![CliTideItem::Neighbor(EntryId::new("beta").unwrap())]
+            } if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
         ));
         assert!(matches!(
             tuple.command,
@@ -3061,7 +3063,7 @@ Body.
                     infer: false,
                     json: None
                 }
-            } if matches!(&items[..], [CliTideItem::Workitem(workitem)]
+            } if matches!(&items[..], [TideItemSelector::Workitem(workitem)]
                 if workitem.to_string() == "alpha,belongs,to,beta")
         ));
     }
@@ -3161,11 +3163,11 @@ Body.
             cli.command,
             Command::TopLevelEntry(TopLevelEntryCommand::New { structural, .. })
                 if structural == vec![
-                    CliStructuralPredicate {
+                    StructuralPredicate {
                         field: "topic".to_owned(),
                         target: EntryId::new("concept").unwrap(),
                     },
-                    CliStructuralPredicate {
+                    StructuralPredicate {
                         field: "topic".to_owned(),
                         target: EntryId::new("methodology").unwrap(),
                     },
@@ -3210,18 +3212,18 @@ Body.
 
         assert!(matches!(
             top_level.command,
-            Command::TopLevelEntry(TopLevelEntryCommand::Path(CliPathArgs {
+            Command::TopLevelEntry(TopLevelEntryCommand::Path(EntryPathArgs {
                 id,
                 show_entry: false,
                 show_artifact: true,
                 show_frost: true,
                 absolute: false,
-                format: Some(CliPathOutputFormat::Paths),
+                format: Some(PathOutputFormat::Paths),
             })) if id == "alpha"
         ));
         assert!(matches!(
             entry.command,
-            Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(CliPathArgs {
+            Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(EntryPathArgs {
                 id,
                 show_entry: true,
                 show_artifact: false,
@@ -3435,7 +3437,7 @@ Body.
         .unwrap();
         fs::create_dir_all(docs.join(".artifacts").join("alpha")).unwrap();
         fs::write(docs.join(".artifacts").join("alpha").join("note.bin"), b"note").unwrap();
-        let args = CliPathArgs {
+        let args = EntryPathArgs {
             id: "alpha".to_owned(),
             show_entry: false,
             show_artifact: false,
@@ -3494,7 +3496,7 @@ Body.
         .run()
         .unwrap_err();
 
-        assert!(matches!(error, CliError::LakePathWithFrostPath));
+        assert!(matches!(error, CommandError::LakePathWithFrostPath));
     }
 
     #[test]
@@ -3512,7 +3514,7 @@ Body.
         assert!(matches!(
             cli.command,
             Command::TopLevelEntry(TopLevelEntryCommand::Query { exact, .. })
-                if exact == vec![CliStructuralPredicate {
+                if exact == vec![StructuralPredicate {
                     field: "topic".to_owned(),
                     target: EntryId::new("concept").unwrap(),
                 }]
@@ -3535,13 +3537,13 @@ Body.
 
         assert_eq!(
             exact,
-            vec![CliStructuralPredicate {
+            vec![StructuralPredicate {
                 field: "topic".to_owned(),
                 target: EntryId::new("concept").unwrap(),
             }]
         );
-        assert_eq!(fields.fields, vec![CliQueryField::Id, CliQueryField::Path]);
-        assert!(matches!(format, CliQueryOutputFormat::Human));
+        assert_eq!(fields.fields, vec![QueryField::Id, QueryField::Path]);
+        assert!(matches!(format, QueryOutputFormat::Human));
     }
 
     #[test]
@@ -3572,13 +3574,13 @@ Body.
 
         assert_eq!(
             exact,
-            vec![CliStructuralPredicate {
+            vec![StructuralPredicate {
                 field: "topic".to_owned(),
                 target: EntryId::new("concept").unwrap(),
             }]
         );
-        assert_eq!(fields.fields, vec![CliQueryField::Id, CliQueryField::Path]);
-        assert!(matches!(format, CliQueryOutputFormat::Human));
+        assert_eq!(fields.fields, vec![QueryField::Id, QueryField::Path]);
+        assert!(matches!(format, QueryOutputFormat::Human));
     }
 
     #[test]
@@ -3592,7 +3594,7 @@ Body.
 
         assert_eq!(
             fields.fields,
-            vec![CliQueryField::Id, CliQueryField::Name, CliQueryField::Path, CliQueryField::Desc,]
+            vec![QueryField::Id, QueryField::Name, QueryField::Path, QueryField::Desc,]
         );
     }
 
@@ -3603,7 +3605,7 @@ Body.
         assert!(matches!(
             cli.command,
             Command::TopLevelEntry(TopLevelEntryCommand::Query {
-                format: Some(CliQueryOutputFormat::Json),
+                format: Some(QueryOutputFormat::Json),
                 ..
             })
         ));
@@ -3616,7 +3618,7 @@ Body.
         assert!(matches!(
             cli.command,
             Command::TopLevelEntry(TopLevelEntryCommand::Query {
-                format: Some(CliQueryOutputFormat::Human),
+                format: Some(QueryOutputFormat::Human),
                 ..
             })
         ));
@@ -3652,7 +3654,7 @@ Body.
 
     #[test]
     fn query_json_uses_selected_field_names() {
-        let fields = "id,desc".parse::<CliQueryFields>().unwrap();
+        let fields = "id,desc".parse::<QueryFields>().unwrap();
         let json = format_query_json(&fields, &[vec!["query".to_owned(), "Selection".to_owned()]])
             .unwrap();
         let parsed = serde_json::from_str::<serde_json::Value>(&json).unwrap();
@@ -3672,7 +3674,7 @@ Body.
 
     #[test]
     fn query_table_uses_selected_field_headers_and_widths() {
-        let fields = "id,desc".parse::<CliQueryFields>().unwrap();
+        let fields = "id,desc".parse::<QueryFields>().unwrap();
         let table =
             format_query_table(&fields, &[vec!["query".to_owned(), "Selection".to_owned()]]);
 
@@ -3701,7 +3703,7 @@ Body.
         assert!(matches!(
             cli.command,
             Command::TopLevelLake(TopLevelLakeCommand::Check {
-                mode: Some(CliCheckMode::Review),
+                mode: Some(CheckModeArg::Review),
                 ..
             })
         ));
@@ -3750,12 +3752,14 @@ Body.
     fn exact_query_rejects_unconfigured_structural_field() {
         let error = exact_query_from_predicates(
             EntryQuery::new(),
-            vec!["topic=concept".parse::<CliStructuralPredicate>().unwrap()],
+            vec!["topic=concept".parse::<StructuralPredicate>().unwrap()],
             &StructuralSettings::default(),
         )
         .unwrap_err();
 
-        assert!(matches!(error, CliError::UnconfiguredStructuralField(field) if field == "topic"));
+        assert!(
+            matches!(error, CommandError::UnconfiguredStructuralField(field) if field == "topic")
+        );
     }
 
     #[test]
@@ -3768,8 +3772,8 @@ Body.
         let query = exact_query_from_predicates(
             EntryQuery::new(),
             vec![
-                "topic=concept".parse::<CliStructuralPredicate>().unwrap(),
-                "topic=meta".parse::<CliStructuralPredicate>().unwrap(),
+                "topic=concept".parse::<StructuralPredicate>().unwrap(),
+                "topic=meta".parse::<StructuralPredicate>().unwrap(),
             ],
             &settings,
         )
@@ -3858,7 +3862,7 @@ Body.
         .run()
         .unwrap_err();
 
-        assert!(matches!(error, CliError::MoveDestinationExists(_)));
+        assert!(matches!(error, CommandError::MoveDestinationExists(_)));
         let config = SirnoConfig::from_file(&config_path).unwrap();
         assert_eq!(config.lake.path, PathBuf::from("docs"));
         assert!(old_lake.exists());
@@ -4075,7 +4079,7 @@ Changed body.
         .unwrap_err();
 
         assert!(
-            matches!(error, CliError::Frost(FrostError::FrozenEntryChanged(id)) if id.as_str() == "alpha")
+            matches!(error, CommandError::Frost(FrostError::FrozenEntryChanged(id)) if id.as_str() == "alpha")
         );
     }
 
@@ -4380,7 +4384,7 @@ Body.
         .unwrap_err();
 
         assert!(
-            matches!(error, CliError::MissingWitnessEntry(id) if id.as_str() == "missing-entry")
+            matches!(error, CommandError::MissingWitnessEntry(id) if id.as_str() == "missing-entry")
         );
     }
 
