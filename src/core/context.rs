@@ -14,9 +14,10 @@ use crate::core::dto::{
     ArtifactRenameRequest, EntryNewRequest, EntryPathRequest, EntryPathResult, EntryRenameResult,
     FrostCheckoutRequest, FrostCheckoutResult, FrostCommitResult, FrostInitResult, LakeCheckResult,
     LakeInitRequest, LakeInitResult, MovePathResult, PathRecord, QueryRequest, QueryResponse,
-    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, StatusResult, StructuralFieldStatus,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
-    TideResolveRequest, TideSelectionRequest, TideStatusResult, WitnessRecordResult, WitnessResult,
+    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
+    SkillWrapperResult, StatusResult, StructuralFieldStatus, StructuralFilter,
+    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
+    TideSelectionRequest, TideStatusResult, WitnessRecordResult, WitnessResult,
 };
 use crate::core::error::{CommandError, OpenTideTutorial};
 use crate::core::output::{
@@ -31,6 +32,51 @@ use crate::{
     SirnoLock, StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery,
     WitnessCheckSettings, WitnessRecord,
 };
+
+// sirno:witness:agent-skills:begin
+const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
+    SkillWrapperSpec {
+        name: "sirno-editor",
+        entry_id: "lake-editing-discipline",
+        wrapper_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-editor/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/lake-editing-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-explorer",
+        entry_id: "lake-exploration-discipline",
+        wrapper_path: "sirno-docs/.artifacts/lake-exploration-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/lake-exploration-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-explorer/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/lake-exploration-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-narrative-session",
+        entry_id: "narrative-session-discipline",
+        wrapper_path: "sirno-docs/.artifacts/narrative-session-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/narrative-session-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-narrative-session/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/narrative-session-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-skill-synthesizer",
+        entry_id: "skill-synthesis-discipline",
+        wrapper_path: "sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-skill-synthesizer/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-witness",
+        entry_id: "witness-linking-discipline",
+        wrapper_path: "sirno-docs/.artifacts/witness-linking-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/witness-linking-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-witness/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/witness-linking-discipline/SKILL.md"),
+    },
+];
+// sirno:witness:agent-skills:end
 
 #[derive(Clone, Debug)]
 pub struct CoreContext {
@@ -387,6 +433,82 @@ impl CoreContext {
             message: format!("removed artifact {artifact_path} at {}", path.display()),
         })
     }
+
+    // sirno:witness:agent-skills:begin
+    /// List bundled Sirno skill wrapper constants and package targets.
+    pub fn skill_wrappers_list(&self) -> Result<SkillWrapperResult, CommandError> {
+        let records =
+            SKILL_WRAPPERS.iter().map(|source| source.record("source", false)).collect::<Vec<_>>();
+        Ok(SkillWrapperResult {
+            ok: true,
+            message: format!("found {} Sirno skill wrappers", records.len()),
+            records,
+        })
+    }
+
+    /// Check installed Sirno skill wrapper packages against bundled constants.
+    pub fn skill_wrappers_check(&self) -> Result<SkillWrapperResult, CommandError> {
+        let root = config_parent(&self.config_path);
+        let mut records = Vec::new();
+        for source in SKILL_WRAPPERS {
+            let target = root.join(source.target_path);
+            let status = match fs::read(&target) {
+                | Ok(current) if current == source.content.as_bytes() => "ok",
+                | Ok(_) => "drifted",
+                | Err(error) if error.kind() == ErrorKind::NotFound => "missing",
+                | Err(source) => {
+                    return Err(CommandError::ReadSkillWrapperTarget { path: target, source });
+                }
+            };
+            records.push(source.record(status, status != "ok"));
+        }
+
+        let changed = records.iter().filter(|record| record.changed).count();
+        Ok(SkillWrapperResult {
+            ok: changed == 0,
+            message: if changed == 0 {
+                format!("all {} Sirno skill wrappers match artifacts", records.len())
+            } else {
+                format!("{changed} Sirno skill wrappers differ from artifacts")
+            },
+            records,
+        })
+    }
+
+    /// Install bundled Sirno skill wrapper constants into their package targets.
+    pub fn skill_wrappers_init(&self) -> Result<SkillWrapperResult, CommandError> {
+        let root = config_parent(&self.config_path);
+        let mut records = Vec::new();
+        for source in SKILL_WRAPPERS {
+            let target = root.join(source.target_path);
+            let status = match fs::read(&target) {
+                | Ok(current) if current == source.content.as_bytes() => "unchanged",
+                | Ok(_) => {
+                    write_skill_wrapper_target(&target, source.content.as_bytes())?;
+                    "wrote"
+                }
+                | Err(error) if error.kind() == ErrorKind::NotFound => {
+                    write_skill_wrapper_target(&target, source.content.as_bytes())?;
+                    "wrote"
+                }
+                | Err(source) => {
+                    return Err(CommandError::ReadSkillWrapperTarget { path: target, source });
+                }
+            };
+            records.push(source.record(status, status == "wrote"));
+        }
+
+        let changed = records.iter().filter(|record| record.changed).count();
+        Ok(SkillWrapperResult {
+            ok: true,
+            message: format!(
+                "installed {} Sirno skill wrappers ({changed} changed)",
+                records.len()
+            ),
+            records,
+        })
+    }
+    // sirno:witness:agent-skills:end
 
     /// Move the configured public Markdown entry lake.
     pub fn lake_move(&self, lake: PathBuf) -> Result<MovePathResult, CommandError> {
@@ -830,6 +952,50 @@ impl TideContext {
             &lock.tide.resolved,
         )?)
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct SkillWrapperSpec {
+    name: &'static str,
+    entry_id: &'static str,
+    wrapper_path: &'static str,
+    full_path: &'static str,
+    target_path: &'static str,
+    content: &'static str,
+}
+
+impl SkillWrapperSpec {
+    fn record(&self, status: impl Into<String>, changed: bool) -> SkillWrapperRecord {
+        SkillWrapperRecord {
+            name: self.name.to_owned(),
+            entry_id: self.entry_id.to_owned(),
+            wrapper_path: self.wrapper_path.to_owned(),
+            full_path: self.full_path.to_owned(),
+            target_path: self.target_path.to_owned(),
+            status: status.into(),
+            changed,
+        }
+    }
+}
+
+fn config_parent(config_path: &Path) -> PathBuf {
+    config_path
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf()
+}
+
+fn write_skill_wrapper_target(target: &Path, content: &[u8]) -> Result<(), CommandError> {
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|source| {
+            CommandError::CreateSkillWrapperTargetDirectory { path: parent.to_path_buf(), source }
+        })?;
+    }
+    fs::write(target, content).map_err(|source| CommandError::WriteSkillWrapperTarget {
+        path: target.to_path_buf(),
+        source,
+    })
 }
 
 fn frost_version(version: u64) -> Result<Eterator, CommandError> {

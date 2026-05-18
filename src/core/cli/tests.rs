@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use clap::{CommandFactory, Parser};
 
+use crate::core::dto::SkillWrapperRecord;
+
 use super::OpenTideTutorial;
 
 use crate::{
@@ -17,13 +19,13 @@ use super::{
     ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, CoreContext,
     EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs,
     LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn,
-    QueryColumns, QueryOutputFormat, ResolveArgs, StructuralFieldState, StructuralFilter,
-    StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector, TideOutputFormat,
-    TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand,
-    UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
+    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
+    StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
+    TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
+    TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
     format_gen_link_report, format_human_table_with_width, format_json, format_path_table,
-    format_query_json, format_query_table, format_witness_record, format_witness_records,
-    rg_args_include_preprocessor,
+    format_query_json, format_query_table, format_skill_wrapper_table, format_witness_record,
+    format_witness_records, rg_args_include_preprocessor,
 };
 
 fn assert_before(source: &str, before: &str, after: &str) {
@@ -288,6 +290,81 @@ fn util_mcp_accepts_config_launch_form() {
     let cli = Cli::parse_from(["sirno", "--config", "Sirno.toml", "util", "mcp"]);
 
     assert!(matches!(cli.command, Command::Util { command: UtilCommand::Mcp }));
+}
+
+#[test]
+fn util_skills_init_accepts_nested_command() {
+    let cli = Cli::parse_from(["sirno", "util", "skills", "init"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util { command: UtilCommand::Skills { command: SkillCommand::Init } }
+    ));
+}
+
+#[test]
+fn util_skills_init_installs_bundled_wrappers() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let context = CoreContext::new(&config_path);
+
+    let init = context.skill_wrappers_init().unwrap();
+    let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
+    let check = context.skill_wrappers_check().unwrap();
+
+    assert!(init.ok);
+    assert_eq!(init.records.len(), 5);
+    assert_eq!(init.records[0].status, "wrote");
+    assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
+    assert!(check.ok);
+    assert_eq!(check.records[0].status, "ok");
+}
+
+#[test]
+fn util_skills_check_reports_drift_without_writing() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let context = CoreContext::new(&config_path);
+    context.skill_wrappers_init().unwrap();
+    let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
+    fs::write(&target, "local edit\n").unwrap();
+
+    let check = context.skill_wrappers_check().unwrap();
+    let drifted = check.records.iter().find(|record| record.status == "drifted").unwrap();
+
+    assert!(!check.ok);
+    assert_eq!(drifted.target_path, ".agents/skills/sirno-editor/SKILL.md");
+    assert_eq!(fs::read_to_string(target).unwrap(), "local edit\n");
+}
+
+#[test]
+fn util_skills_rejects_global_lake_path() {
+    let error = Cli::parse_from(["sirno", "--lake-path", "docs", "util", "skills", "check"])
+        .run()
+        .unwrap_err();
+
+    assert!(matches!(error, CommandError::SkillsRejectsLakePath));
+}
+
+#[test]
+fn skill_wrapper_output_uses_table() {
+    let table = format_skill_wrapper_table(&[SkillWrapperRecord {
+        entry_id: "lake-editing-discipline".to_owned(),
+        name: "sirno-editor".to_owned(),
+        wrapper_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.md".to_owned(),
+        full_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.full.md".to_owned(),
+        target_path: ".agents/skills/sirno-editor/SKILL.md".to_owned(),
+        status: "ok".to_owned(),
+        changed: false,
+    }]);
+
+    assert!(table.contains("status"));
+    assert!(table.contains("name"));
+    assert!(table.contains("target"));
+    assert!(table.contains("sirno-editor"));
+    assert!(table.contains(".agents/skills/sirno-editor/SKILL.md"));
+    assert!(!table.contains("wrapper"));
+    assert!(!table.contains('\t'));
 }
 
 #[test]

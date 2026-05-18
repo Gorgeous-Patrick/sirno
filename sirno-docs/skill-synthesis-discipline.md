@@ -13,8 +13,6 @@ Its full MCP resource text lives in the `SKILL.full.md` entry artifact
 and is embedded by `src/mcp.rs` as `sirno://skills/sirno-skill-synthesizer`.
 Its packaged wrapper lives in the `SKILL.md` entry artifact
 and renders to `.agents/skills/sirno-skill-synthesizer/SKILL.md`.
-Its mechanical extraction script is the entry artifact
-`.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py`.
 Each rostered discipline entry owns the same pair:
 `SKILL.full.md` for the MCP resource payload
 and `SKILL.md` for the installed wrapper.
@@ -67,17 +65,18 @@ names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
 
-Use the extraction artifact for routine rendering.
+Use the Rust utility command for routine wrapper installation.
 Run it from the repository root:
 
 ```sh
-python3 sirno-docs/.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py --write
+cargo run -- util skills init
 ```
 
-Use `--check` at review boundaries to fail when an installed wrapper has drifted.
-Use `--list` when auditing which lake entries render resources and packages.
-The script requires both `SKILL.full.md` and `SKILL.md`,
-but copies only the wrapper into `.agents/skills/sirno-*`.
+Use `cargo run -- util skills check` at review boundaries
+to fail when an installed wrapper has drifted.
+Use `cargo run -- util skills list` when auditing bundled wrapper constants and targets.
+The command uses compile-time constants from the `SKILL.md` artifacts.
+It does not parse the lake at runtime.
 
 Inspect the current Sirno CLI before writing commands into a skill.
 A full skill resource that names a missing command is worse than one that only names

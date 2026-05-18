@@ -195,6 +195,14 @@ Render commands operate on the active *lake* path.
 Completion generation is a utility interface,
 not a *lake* operation.
 
+`sirno util skills init` installs bundled Sirno skill wrappers
+to their `.agents/skills/sirno-*` package targets.
+`sirno util skills check` reports whether installed wrappers match those bundled constants.
+`sirno util skills list` lists the bundled skill names and package targets.
+Skill utility commands print wrapper records as a table,
+followed by a summary line.
+Skill utility commands reject `--lake-path` and `--frost-path`.
+
 `sirno util mcp --config PATH` starts the MCP server over stdio.
 When `--config` is omitted, the server uses the default `Sirno.toml` path.
 One server process serves one configured Sirno project.

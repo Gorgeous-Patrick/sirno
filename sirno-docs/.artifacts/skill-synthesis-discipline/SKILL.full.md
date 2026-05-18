@@ -107,6 +107,17 @@ name the matching `sirno://skills/sirno-*` MCP resource,
 and require the agent to read that resource before doing the work.
 Do not duplicate the full procedure in the wrapper.
 
+Install wrappers with the Sirno utility command:
+
+```sh
+cargo run -- util skills init
+```
+
+Use `cargo run -- util skills check` at review boundaries.
+Use `cargo run -- util skills list` when auditing bundled wrapper constants and targets.
+The command uses compile-time constants from the `SKILL.md` artifacts.
+It does not parse the lake at runtime.
+
 Inspect the current Sirno CLI before writing commands into a skill.
 
 ```sh
@@ -134,6 +145,7 @@ Confirm each `SKILL.full.md` and `SKILL.md` has valid frontmatter.
 Confirm the disciplines, resources, wrappers, and packages still correspond one to one:
 no `belongs: agent-skills` discipline without artifacts and a package,
 and no `sirno-*` package without a discipline.
+Run `cargo run -- util skills check` to verify installed wrappers match artifacts.
 
 If a package exists without a discipline,
 either add the missing discipline to the lake or report the package as outside the reproducible set.

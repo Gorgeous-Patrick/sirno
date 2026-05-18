@@ -20,8 +20,10 @@ and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
 from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
-The extraction script lives as an artifact on `skill-synthesis-discipline`:
-`.artifacts/skill-synthesis-discipline/scripts/extract_sirno_skills.py`.
+`src/core/context.rs` bundles the packaged wrappers as compile-time constants
+from the lake-owned `SKILL.md` artifact files.
+`sirno util skills init` installs those bundled wrappers.
+`sirno util skills check` detects installed wrapper drift.
 Each rostered Sirno discipline owns two skill artifacts.
 `SKILL.full.md` is the full Markdown skill text embedded by `src/mcp.rs`
 and served as a `sirno://skills/sirno-*` MCP resource.
@@ -60,9 +62,9 @@ When a repository has its own design-document skill or documented manner,
 use that instead.
 The synthesis skill checks the Sirno skill roster
 and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
-It can run the extraction artifact in `--check` mode to detect drift,
-or `--write` mode to refresh the packaged wrappers.
-The script copies exact wrapper artifacts;
+It can run `sirno util skills check` to detect installed wrapper drift,
+or `sirno util skills init` to refresh the packaged wrappers.
+The command copies exact bundled wrapper constants;
 it does not ask a model to rewrite the skill text.
 
 A full skill resource is an operational rendering of lake method, not a separate authority.

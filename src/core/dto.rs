@@ -575,6 +575,36 @@ pub struct ArtifactChangeResult {
     pub message: String,
 }
 
+/// One discovered Sirno skill wrapper and package target.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillWrapperRecord {
+    /// Discipline entry that owns the wrapper artifact.
+    pub entry_id: String,
+    /// Installed skill package name.
+    pub name: String,
+    /// Lake-owned wrapper artifact path.
+    pub wrapper_path: String,
+    /// Lake-owned full resource artifact path.
+    pub full_path: String,
+    /// Repository-relative package target path.
+    pub target_path: String,
+    /// Stable command status label.
+    pub status: String,
+    /// Whether the package target differs or was rewritten.
+    pub changed: bool,
+}
+
+/// Result of listing, checking, or installing Sirno skill wrappers.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillWrapperResult {
+    /// Whether every wrapper package matched the requested state.
+    pub ok: bool,
+    /// Discovered wrapper records.
+    pub records: Vec<SkillWrapperRecord>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// Result of moving a configured repository path.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MovePathResult {

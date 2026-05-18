@@ -21,8 +21,9 @@ use crate::core::dto::{
 };
 use crate::core::error::CommandError;
 use crate::core::output::{
-    format_path_table, print_entry_directory_report, print_json, print_lake_check_result,
-    print_query_results, print_render_result, print_status_result, print_witness_records,
+    format_path_table, format_skill_wrapper_table, print_entry_directory_report, print_json,
+    print_lake_check_result, print_query_results, print_render_result, print_status_result,
+    print_witness_records,
 };
 use crate::core::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -627,10 +628,31 @@ enum UtilCommand {
         shell: CompletionShell,
     },
     // sirno:witness:interfaces:begin
+    /// Manage packaged Sirno skill wrappers.
+    Skills {
+        /// Skill wrapper command.
+        #[command(subcommand)]
+        command: SkillCommand,
+    },
+    // sirno:witness:interfaces:end
+    // sirno:witness:interfaces:begin
     /// Run the Sirno MCP server over stdio.
     Mcp,
     // sirno:witness:interfaces:end
 }
+
+/// Supported skill wrapper utility commands.
+// sirno:witness:interfaces:begin
+#[derive(Debug, Subcommand)]
+enum SkillCommand {
+    /// Install bundled wrappers into `.agents/skills/sirno-*`.
+    Init,
+    /// Check installed wrappers against bundled wrappers.
+    Check,
+    /// List bundled wrappers and package targets.
+    List,
+}
+// sirno:witness:interfaces:end
 
 /// Run Sirno from the current process environment.
 ///
@@ -1209,6 +1231,15 @@ impl UtilCommand {
                 generate(shell, &mut command, "sirno", &mut stdout);
                 Ok(ExitCode::SUCCESS)
             }
+            | UtilCommand::Skills { command } => {
+                if lake_path.is_some() {
+                    return Err(CommandError::SkillsRejectsLakePath);
+                }
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(config_path)
+            }
             | UtilCommand::Mcp => {
                 if lake_path.is_some() {
                     return Err(CommandError::McpRejectsLakePath);
@@ -1226,6 +1257,20 @@ impl UtilCommand {
                 Ok(ExitCode::SUCCESS)
             }
         }
+    }
+}
+
+impl SkillCommand {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
+        let context = CoreContext::new(config_path.to_path_buf());
+        let result = match self {
+            | SkillCommand::Init => context.skill_wrappers_init()?,
+            | SkillCommand::Check => context.skill_wrappers_check()?,
+            | SkillCommand::List => context.skill_wrappers_list()?,
+        };
+        print!("{}", format_skill_wrapper_table(&result.records));
+        println!("{}", result.message);
+        Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
     }
 }
 

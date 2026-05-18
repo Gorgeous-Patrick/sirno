@@ -10,7 +10,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::core::dto::{
     DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns, QueryOutputFormat,
-    QueryResults, RenderResult, StatusResult,
+    QueryResults, RenderResult, SkillWrapperRecord, StatusResult,
 };
 use crate::core::error::CommandError;
 use crate::{
@@ -227,6 +227,14 @@ pub(crate) fn output_path(path: PathBuf, absolute: bool) -> Result<PathBuf, Comm
 pub(crate) fn format_path_table(records: &[PathRecord]) -> String {
     let headers = ["kind", "path"];
     let rows = records.iter().map(|record| [record.kind, record.path.as_str()]);
+    format_human_table(headers, rows)
+}
+
+pub(crate) fn format_skill_wrapper_table(records: &[SkillWrapperRecord]) -> String {
+    let headers = ["status", "name", "target"];
+    let rows = records
+        .iter()
+        .map(|record| [record.status.as_str(), record.name.as_str(), record.target_path.as_str()]);
     format_human_table(headers, rows)
 }
 

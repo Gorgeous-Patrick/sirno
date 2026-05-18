@@ -154,6 +154,36 @@ pub enum CommandError {
     /// The MCP server failed.
     #[error("MCP server failed: {0}")]
     McpServer(String),
+    /// The skill wrapper utility uses bundled wrapper constants.
+    #[error("`--lake-path` cannot be used with `sirno util skills`; wrappers are bundled")]
+    SkillsRejectsLakePath,
+    /// A skill wrapper package target could not be read.
+    #[error("failed to read skill wrapper target {path}")]
+    ReadSkillWrapperTarget {
+        /// Target path that could not be read.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A skill wrapper package directory could not be created.
+    #[error("failed to create skill wrapper target directory {path}")]
+    CreateSkillWrapperTargetDirectory {
+        /// Target directory that could not be created.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A skill wrapper package target could not be written.
+    #[error("failed to write skill wrapper target {path}")]
+    WriteSkillWrapperTarget {
+        /// Target path that could not be written.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// Dry-run mode applies only to render writing.
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
