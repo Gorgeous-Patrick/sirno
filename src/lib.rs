@@ -15,6 +15,7 @@ pub mod frost;
 pub mod id;
 pub mod lake;
 pub mod lock;
+pub mod mcp;
 pub mod query;
 pub mod render;
 pub mod structural;

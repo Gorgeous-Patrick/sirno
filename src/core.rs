@@ -7,7 +7,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command as ProcessCommand, ExitCode, ExitStatus};
+use std::process::{Command as ProcessCommand, ExitCode};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, fmt};
@@ -431,6 +431,11 @@ impl QueryColumns {
     pub fn columns(&self) -> &[QueryColumn] {
         &self.columns
     }
+
+    /// Return stable output field labels in display order.
+    pub fn labels(&self) -> Vec<String> {
+        self.columns.iter().map(|column| column.label().to_owned()).collect()
+    }
 }
 
 impl Default for QueryColumns {
@@ -628,7 +633,8 @@ impl FromStr for StructuralStateFilter {
 }
 
 /// Structural field state matched by `sirno query --is`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum StructuralFieldState {
     /// The field is present with any target count.
     Present,
@@ -850,6 +856,10 @@ enum UtilCommand {
         #[arg(value_enum)]
         shell: CompletionShell,
     },
+    // sirno:witness:interfaces:begin
+    /// Run the Sirno MCP server over stdio.
+    Mcp,
+    // sirno:witness:interfaces:end
 }
 
 /// Core command context shared by the CLI and future tool interfaces.
@@ -956,6 +966,12 @@ impl CoreContext {
         Ok(tide_statuses_for_output(&tide, all))
     }
 
+    /// Return tide statuses as a JSON-first command result.
+    pub fn tide_status(&self, all: bool) -> Result<TideStatusResult, CommandError> {
+        let statuses = self.tide_statuses(all)?;
+        Ok(TideStatusResult { ok: statuses.iter().all(|status| status.resolved), statuses })
+    }
+
     /// Return repository witness records for one entry.
     pub fn witness_records(&self, id: &EntryId) -> Result<Vec<WitnessRecord>, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
@@ -968,6 +984,555 @@ impl CoreContext {
         };
         let index = settings.scan()?;
         Ok(index.records_for(id).to_vec())
+    }
+
+    /// Create a Sirno config and ordinary seed entries.
+    pub fn lake_init(&self, request: LakeInitRequest) -> Result<LakeInitResult, CommandError> {
+        let config = SirnoConfig::new(
+            request
+                .lake
+                .or_else(|| self.lake_path.clone())
+                .unwrap_or_else(|| default_lake_path(&self.config_path)),
+        );
+        let lake_path = config.resolve_lake(&self.config_path);
+        config.write_new(&self.config_path)?;
+        let paths = EntryDirectory::new(&lake_path).init()?;
+        Ok(LakeInitResult {
+            ok: true,
+            config_path: display_path(&self.config_path),
+            lake_path: display_path(&lake_path),
+            entry_count: paths.len(),
+            message: format!(
+                "initialized {} with {} entries in {}",
+                self.config_path.display(),
+                paths.len(),
+                lake_path.display()
+            ),
+        })
+    }
+
+    /// Create one Markdown entry.
+    pub fn entry_new(&self, request: EntryNewRequest) -> Result<EntryPathResult, CommandError> {
+        let (lake, settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let mut metadata = EntryMetadata::new(
+            request.name.unwrap_or_else(|| title_name_from_id(&request.id)),
+            request.desc,
+        )?;
+        for (field, targets) in
+            structural_targets_by_target(request.structural, &settings.structural)?
+        {
+            metadata.set_structural_targets(field, targets);
+        }
+
+        let entry = Entry::new(request.id.clone(), metadata, request.body.unwrap_or_default());
+        let path = EntryDirectory::new(&lake).create_entry(&entry)?;
+        Ok(EntryPathResult {
+            ok: true,
+            id: request.id.to_string(),
+            path: display_path(&path),
+            message: format!("created {}", path.display()),
+        })
+    }
+
+    /// Rename one entry id and its Sirno references.
+    pub fn entry_rename(
+        &self, old_id: EntryId, new_id: EntryId,
+    ) -> Result<EntryRenameResult, CommandError> {
+        let (lake, settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let report = EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
+        let mut changed_paths = report.changed_paths().to_vec();
+        if let Some(witness) = &settings.witness {
+            changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
+        }
+        changed_paths.sort();
+        changed_paths.dedup();
+        let changed_paths = display_paths(&changed_paths);
+        Ok(EntryRenameResult {
+            ok: true,
+            old_id: old_id.to_string(),
+            new_id: new_id.to_string(),
+            updated_paths: changed_paths,
+            message: format!("renamed entry {old_id} to {new_id}"),
+        })
+    }
+
+    /// Freeze one current Frost entry and make its public file read-only.
+    pub fn entry_freeze(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
+        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
+        context.reject_immutable_checkout()?;
+        let directory = context.lake();
+        let entry = directory.read_entry(&id)?;
+        let artifacts = directory.read_entry_artifacts(&id)?;
+        let frost = SirnoFrost::open(&context.frost_path)?;
+        frost.ensure_entry_bundle_current(&entry, &artifacts)?;
+        let path = directory.freeze_entry(&id)?;
+        Ok(EntryPathResult {
+            ok: true,
+            id: id.to_string(),
+            path: display_path(&path),
+            message: format!("froze entry {id} at {}", path.display()),
+        })
+    }
+
+    /// Melt one public Markdown entry and make its file writable.
+    pub fn entry_melt(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let path = EntryDirectory::new(&lake).melt_entry(&id)?;
+        Ok(EntryPathResult {
+            ok: true,
+            id: id.to_string(),
+            path: display_path(&path),
+            message: format!("melted entry {id} at {}", path.display()),
+        })
+    }
+
+    /// Query entries and return an MCP-friendly JSON result.
+    pub fn entry_query(&self, request: QueryRequest) -> Result<QueryResponse, CommandError> {
+        let columns = request.columns.clone();
+        match self.query_entries(request)? {
+            | QueryRun::InvalidLake(report) => Ok(QueryResponse {
+                ok: false,
+                columns: columns.labels(),
+                records: Vec::new(),
+                diagnostics: diagnostics_from_entry_report(&report),
+            }),
+            | QueryRun::Results(results) => Ok(QueryResponse {
+                ok: true,
+                columns: results.columns.labels(),
+                records: results.records(),
+                diagnostics: Vec::new(),
+            }),
+        }
+    }
+
+    /// Run ripgrep in the configured public Markdown lake and capture its output.
+    pub fn entry_rg(&self, request: RgRequest) -> Result<RgResult, CommandError> {
+        if !request.with_generated_footer
+            && request.args.iter().any(|arg| arg == "--pre" || arg.starts_with("--pre="))
+        {
+            return Err(CommandError::RgPreprocessorConflict);
+        }
+
+        let lake = resolve_lake_path_for_rg(self.lake_path.as_deref(), &self.config_path)?;
+        let preprocessor =
+            if request.with_generated_footer { None } else { Some(RgPreprocessorLink::create()?) };
+
+        let mut command = ProcessCommand::new("rg");
+        if let Some(preprocessor) = &preprocessor {
+            command.arg("--pre").arg(preprocessor.path()).arg("--pre-glob").arg("*.md");
+        }
+        let output = command.args(&request.args).arg(lake).output().map_err(CommandError::RunRg)?;
+        let exit_code = output.status.code().and_then(|code| u8::try_from(code).ok()).unwrap_or(1);
+        Ok(RgResult {
+            ok: output.status.success(),
+            exit_code,
+            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        })
+    }
+
+    /// Return repository witness blocks for one entry.
+    pub fn entry_witness(&self, id: EntryId, full: bool) -> Result<WitnessResult, CommandError> {
+        let records = self.witness_records(&id)?;
+        Ok(WitnessResult {
+            ok: !records.is_empty(),
+            id: id.to_string(),
+            records: records
+                .iter()
+                .map(|record| WitnessRecordResult::from_record(record, full))
+                .collect(),
+            message: if records.is_empty() {
+                format!("no witness found for {id}")
+            } else {
+                format!("found {} witness records for {id}", records.len())
+            },
+        })
+    }
+
+    /// List artifacts owned by one entry.
+    pub fn entry_artifact_list(&self, id: EntryId) -> Result<ArtifactListResult, CommandError> {
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        directory.read_entry(&id)?;
+        let artifacts = directory
+            .read_entry_artifacts(&id)?
+            .into_iter()
+            .map(|artifact| artifact.path.to_string())
+            .collect::<Vec<_>>();
+        Ok(ArtifactListResult { ok: true, id: id.to_string(), artifacts })
+    }
+
+    /// Copy a file into one entry's artifact tree.
+    pub fn entry_artifact_add(
+        &self, request: ArtifactAddRequest,
+    ) -> Result<ArtifactChangeResult, CommandError> {
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        let artifact_path = match request.artifact_path {
+            | Some(path) => artifact_path_from_cli(&path)?,
+            | None => default_artifact_path_from_source(&request.source)?,
+        };
+        let path = directory.add_entry_artifact(&request.id, &request.source, &artifact_path)?;
+        Ok(ArtifactChangeResult {
+            ok: true,
+            id: request.id.to_string(),
+            artifact_path: artifact_path.to_string(),
+            path: display_path(&path),
+            message: format!("added artifact {artifact_path} at {}", path.display()),
+        })
+    }
+
+    /// Rename one artifact path owned by an entry.
+    pub fn entry_artifact_rename(
+        &self, request: ArtifactRenameRequest,
+    ) -> Result<ArtifactChangeResult, CommandError> {
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        let old_path = artifact_path_from_cli(&request.old_path)?;
+        let new_path = artifact_path_from_cli(&request.new_path)?;
+        let path = directory.rename_entry_artifact(&request.id, &old_path, &new_path)?;
+        Ok(ArtifactChangeResult {
+            ok: true,
+            id: request.id.to_string(),
+            artifact_path: new_path.to_string(),
+            path: display_path(&path),
+            message: format!("renamed artifact {old_path} to {new_path} at {}", path.display()),
+        })
+    }
+
+    /// Remove one artifact owned by an entry.
+    pub fn entry_artifact_remove(
+        &self, request: ArtifactRemoveRequest,
+    ) -> Result<ArtifactChangeResult, CommandError> {
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        let artifact_path = artifact_path_from_cli(&request.artifact_path)?;
+        let path = directory.remove_entry_artifact(&request.id, &artifact_path)?;
+        Ok(ArtifactChangeResult {
+            ok: true,
+            id: request.id.to_string(),
+            artifact_path: artifact_path.to_string(),
+            path: display_path(&path),
+            message: format!("removed artifact {artifact_path} at {}", path.display()),
+        })
+    }
+
+    /// Move the configured public Markdown entry lake.
+    pub fn lake_move(&self, lake: PathBuf) -> Result<MovePathResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let old_lake = config.resolve_lake(&self.config_path);
+        let config = config.with_lake(lake);
+        config.validate_for_file(&self.config_path)?;
+        let new_lake = config.resolve_lake(&self.config_path);
+        let moved = move_configured_path_and_write_config(
+            &old_lake,
+            &new_lake,
+            &config,
+            &self.config_path,
+        )?;
+        Ok(MovePathResult {
+            ok: true,
+            moved,
+            old_path: display_path(&old_lake),
+            new_path: display_path(&new_lake),
+            message: format!("moved lake {} to {}", old_lake.display(), new_lake.display()),
+        })
+    }
+
+    /// Check current entry structure.
+    pub fn lake_check(&self, mode: CheckMode) -> Result<LakeCheckResult, CommandError> {
+        let (lake, settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let report = EntryDirectory::new(lake).check_with_settings(mode, &settings)?;
+        Ok(LakeCheckResult::from_report(&report))
+    }
+
+    /// Render Markdown links in entry footers.
+    pub fn lake_render(&self, dry: bool) -> Result<RenderResult, CommandError> {
+        let (lake, mut settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.render = false;
+        settings.witness = None;
+
+        let directory = EntryDirectory::new(&lake);
+        let check = directory.check_with_settings(CheckMode::Review, &settings)?;
+        if check.has_errors() {
+            return Ok(RenderResult::blocked(&check));
+        }
+
+        let report = if dry {
+            directory.check_generated_links_with_ignored_paths(
+                &settings.structural,
+                settings.ignore.clone(),
+            )?
+        } else {
+            directory
+                .generate_links_with_ignored_paths(&settings.structural, settings.ignore.clone())?
+        };
+        Ok(RenderResult::from_report(&report, dry))
+    }
+
+    /// Delete generated Markdown link footers.
+    pub fn lake_render_delete(&self) -> Result<RenderResult, CommandError> {
+        let (lake, mut settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.witness = None;
+        let report = EntryDirectory::new(&lake)
+            .delete_generated_links_with_ignored_paths(settings.ignore)?;
+        Ok(RenderResult::from_report(&report, false))
+    }
+
+    /// Show the current Sirno project status.
+    pub fn lake_status(&self) -> Result<StatusResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let mono = config.resolve_mono(&self.config_path);
+        let frost = config.resolve_frost(&self.config_path);
+        let lock_path = SirnoLock::path_for_config(&self.config_path);
+        let lock = if frost.is_some() { SirnoLock::from_file_if_exists(&lock_path)? } else { None };
+        let (lake, settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let report =
+            EntryDirectory::new(&lake).check_with_settings(CheckMode::Review, &settings)?;
+        Ok(StatusResult {
+            ok: !report.has_errors(),
+            config_path: display_path(&self.config_path),
+            mono_path: mono.as_ref().map(|path| display_path(path)),
+            lake_path: display_path(report.root()),
+            frost_path: frost.as_ref().map(|path| display_path(path)),
+            frost_state: frost_state_label(lock.as_ref()),
+            entry_count: report.entries().len(),
+            check_render: config.check.render,
+            structural_fields: config
+                .structural
+                .fields()
+                .map(|(field, settings)| StructuralFieldStatus {
+                    field: field.to_owned(),
+                    to: settings.to.to_string(),
+                    from: settings.from.to_string(),
+                    clique: settings.clique.to_string(),
+                })
+                .collect(),
+            check: LakeCheckResult::from_report(&report),
+        })
+    }
+
+    /// Configure Sirno Frost.
+    pub fn frost_init(&self, frost: Option<PathBuf>) -> Result<FrostInitResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let existing_frost = config.frost.as_ref().map(|settings| settings.path.clone());
+        let frost = frost
+            .or_else(|| existing_frost.clone())
+            .unwrap_or_else(|| default_frost_path(&self.config_path));
+        if let Some(existing_frost) = existing_frost
+            && existing_frost != frost
+        {
+            return Err(CommandError::FrostAlreadyConfigured(existing_frost));
+        }
+
+        let needs_config_write = config.frost.is_none();
+        let config = if needs_config_write { config.with_frost(frost) } else { config };
+        config.validate_for_file(&self.config_path)?;
+
+        let frost_path = config.resolve_frost(&self.config_path).expect("frost path configured");
+        let frost = SirnoFrost::open(&frost_path)?;
+        let version = frost.current_snapshot()?;
+        if needs_config_write {
+            config.write(&self.config_path)?;
+        }
+        SirnoLock::current(version).write(SirnoLock::path_for_config(&self.config_path))?;
+        Ok(FrostInitResult {
+            ok: true,
+            frost_path: display_path(&frost_path),
+            version: version.version(),
+            message: format!(
+                "initialized frost {} at version {}",
+                frost_path.display(),
+                version.version()
+            ),
+        })
+    }
+
+    /// Move the configured Sirno Frost path.
+    pub fn frost_move(&self, frost: PathBuf) -> Result<MovePathResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let Some(old_frost) = config.resolve_frost(&self.config_path) else {
+            return Err(CommandError::FrostNotConfigured);
+        };
+        let config = config.with_frost(frost);
+        config.validate_for_file(&self.config_path)?;
+        let new_frost = config.resolve_frost(&self.config_path).expect("frost path configured");
+        let moved = move_configured_path_and_write_config(
+            &old_frost,
+            &new_frost,
+            &config,
+            &self.config_path,
+        )?;
+        Ok(MovePathResult {
+            ok: true,
+            moved,
+            old_path: display_path(&old_frost),
+            new_path: display_path(&new_frost),
+            message: format!("moved frost {} to {}", old_frost.display(), new_frost.display()),
+        })
+    }
+
+    /// Freeze the current public Markdown lake.
+    pub fn frost_commit(
+        &self, unsafe_resolve_all: bool,
+    ) -> Result<FrostCommitResult, CommandError> {
+        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
+        context.reject_immutable_checkout()?;
+        if !unsafe_resolve_all {
+            let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+            let lock = tide_context.load_lock_or_current()?;
+            let tide = tide_context.tide(&lock)?;
+            if !tide.is_clear() {
+                return Err(CommandError::OpenTide {
+                    count: tide.open_statuses().count(),
+                    tutorial: OpenTideTutorial::new(
+                        context.tutorial,
+                        lock.frost.version == Eterator::EMPTY.version(),
+                    ),
+                });
+            }
+        }
+        let mut frost = SirnoFrost::open(&context.frost_path)?;
+        let version = frost.commit_entry_directory(&context.lake_path, &context.settings)?;
+        context.lake().set_writable(&context.settings)?;
+        let mut lock = SirnoLock::current(version);
+        lock.tide.clear();
+        lock.write(&context.lock_path)?;
+        Ok(FrostCommitResult {
+            ok: true,
+            version: version.version(),
+            lake_path: display_path(&context.lake_path),
+            message: format!(
+                "froze version {} from {}",
+                version.version(),
+                context.lake_path.display()
+            ),
+        })
+    }
+
+    /// Check out Frost entries into the public Markdown lake.
+    pub fn frost_checkout(
+        &self, request: FrostCheckoutRequest,
+    ) -> Result<FrostCheckoutResult, CommandError> {
+        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let frost = SirnoFrost::open(&context.frost_path)?;
+        let snapshot = if request.latest {
+            frost.current_snapshot()?
+        } else {
+            let Some(version) = request.version else {
+                return Err(CommandError::MissingFrostCheckoutTarget);
+            };
+            frost.snapshot_for_version(frost_version(version)?)?
+        };
+        if snapshot.version() == Eterator::EMPTY.version() {
+            return Err(CommandError::InvalidFrostVersion(snapshot.version()));
+        }
+        let paths = frost.checkout_entry_directory(
+            snapshot,
+            &context.lake_path,
+            EntryDirectoryWritePolicy::ReplaceDirectory { ignore: context.settings.ignore.clone() },
+        )?;
+        if request.latest || request.unsafe_mutable {
+            context.lake().set_writable(&context.settings)?;
+        } else {
+            context.lake().add_readonly_checkout_warnings(&paths)?;
+            context.lake().set_readonly(&context.settings)?;
+        }
+        if request.latest {
+            SirnoLock::current(snapshot).write(&context.lock_path)?;
+        } else {
+            SirnoLock::checked_out(snapshot, request.unsafe_mutable).write(&context.lock_path)?;
+        }
+        let state = if request.latest {
+            "mutable"
+        } else if request.unsafe_mutable {
+            "unsafe mutable"
+        } else {
+            "immutable"
+        };
+        Ok(FrostCheckoutResult {
+            ok: true,
+            version: snapshot.version(),
+            lake_path: display_path(&context.lake_path),
+            entry_count: paths.len(),
+            state: state.to_owned(),
+            message: format!(
+                "checked out {}frost version {} into {} ({} entries, {})",
+                if request.latest { "latest " } else { "" },
+                snapshot.version(),
+                context.lake_path.display(),
+                paths.len(),
+                state
+            ),
+        })
+    }
+
+    /// Check out the latest Frost version as the mutable current lake.
+    pub fn frost_defrost(&self) -> Result<FrostCheckoutResult, CommandError> {
+        self.frost_checkout(FrostCheckoutRequest {
+            version: None,
+            latest: true,
+            unsafe_mutable: false,
+        })
+    }
+
+    /// Resolve tide workitems.
+    pub fn tide_resolve(
+        &self, request: TideResolveRequest,
+    ) -> Result<TideChangeResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let mut lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        let (resolutions, count) = if request.infer {
+            tide.resolve_where(|status| tide.ripple_ids().contains(&status.workitem.neighbor))
+        } else {
+            tide.resolve_where(|status| tide_selection_matches(&request, status))
+        };
+        lock.tide.set_resolved(resolutions);
+        lock.write(&context.lock_path)?;
+        Ok(TideChangeResult {
+            ok: true,
+            count,
+            message: format!("resolved {count} tide workitems"),
+        })
+    }
+
+    /// Remove resolved marks from tide workitems.
+    pub fn tide_unresolve(
+        &self, request: TideSelectionRequest,
+    ) -> Result<TideChangeResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let mut lock = context.load_lock_or_current()?;
+        let tide = context.tide(&lock)?;
+        let (resolutions, count) =
+            tide.reopen_where(|status| tide_selection_request_matches(&request, status));
+        lock.tide.set_resolved(resolutions);
+        lock.write(&context.lock_path)?;
+        Ok(TideChangeResult {
+            ok: true,
+            count,
+            message: format!("unresolved {count} tide workitems"),
+        })
+    }
+
+    /// Clear all tide resolutions from the lock.
+    pub fn tide_reset(&self) -> Result<TideChangeResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let mut lock = context.load_lock_or_current()?;
+        let count = lock.tide.resolved.len();
+        lock.tide.clear();
+        lock.write(&context.lock_path)?;
+        Ok(TideChangeResult {
+            ok: true,
+            count,
+            message: format!("cleared {count} tide resolutions"),
+        })
     }
 }
 
@@ -1041,6 +1606,11 @@ pub struct EntryPathRequest {
 }
 
 impl EntryPathRequest {
+    /// Build a path lookup request from explicit typed fields.
+    pub fn new(id: EntryId, selection: PathSelection, absolute: bool) -> Self {
+        Self { id, selection, absolute }
+    }
+
     fn from_args(args: &EntryPathArgs) -> Result<Self, CommandError> {
         Ok(Self {
             id: EntryId::new(&args.id)?,
@@ -1048,6 +1618,484 @@ impl EntryPathRequest {
             absolute: args.absolute,
         })
     }
+}
+
+/// Lake initialization request shared by non-CLI front ends.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LakeInitRequest {
+    /// Public Markdown entry lake path written to `Sirno.toml`.
+    pub lake: Option<PathBuf>,
+}
+
+/// Result of creating a public lake.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LakeInitResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Config file that was written.
+    pub config_path: String,
+    /// Public lake directory that was initialized.
+    pub lake_path: String,
+    /// Number of seed entries written.
+    pub entry_count: usize,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Structural metadata target for typed command callers.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StructuralTarget {
+    /// Structural field name.
+    pub field: String,
+    /// Target entry id.
+    pub target: EntryId,
+}
+
+/// Entry creation request shared by the CLI and tool callers.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryNewRequest {
+    /// Entry id and filename stem.
+    pub id: EntryId,
+    /// Human-readable entry name.
+    pub name: Option<String>,
+    /// Short entry description.
+    pub desc: String,
+    /// Structural metadata targets.
+    #[serde(default)]
+    pub structural: Vec<StructuralTarget>,
+    /// Initial Markdown body.
+    pub body: Option<String>,
+}
+
+/// Result that points at one entry file.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryPathResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry id affected by the command.
+    pub id: String,
+    /// Public entry path affected by the command.
+    pub path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Result of renaming one entry id.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryRenameResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry id before the rename.
+    pub old_id: String,
+    /// Entry id after the rename.
+    pub new_id: String,
+    /// Paths updated by the rename.
+    pub updated_paths: Vec<String>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Query result designed for JSON-first callers.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryResponse {
+    /// Whether the query ran against a clean-enough lake.
+    pub ok: bool,
+    /// Selected output columns.
+    pub columns: Vec<String>,
+    /// Query records keyed by column label.
+    pub records: Vec<IndexMap<String, String>>,
+    /// Diagnostics when the lake prevents query execution.
+    pub diagnostics: Vec<DiagnosticRecord>,
+}
+
+/// Ripgrep request shared by typed callers.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RgRequest {
+    /// Include Sirno-owned generated-footer regions in the search.
+    #[serde(default)]
+    pub with_generated_footer: bool,
+    /// Arguments forwarded to ripgrep before the lake path.
+    pub args: Vec<String>,
+}
+
+/// Captured ripgrep result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RgResult {
+    /// Whether ripgrep exited successfully.
+    pub ok: bool,
+    /// Process exit code, or 1 when no ordinary code is available.
+    pub exit_code: u8,
+    /// Captured standard output.
+    pub stdout: String,
+    /// Captured standard error.
+    pub stderr: String,
+}
+
+/// One JSON-ready source span.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WitnessSpanResult {
+    /// One-based starting line.
+    pub start_line: usize,
+    /// One-based starting column.
+    pub start_column: usize,
+    /// One-based ending line.
+    pub end_line: usize,
+    /// One-based column after the span.
+    pub end_column: usize,
+}
+
+/// One JSON-ready witness record.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WitnessRecordResult {
+    /// Entry id captured by the witness block.
+    pub entry: String,
+    /// Repository file path containing the witness.
+    pub path: String,
+    /// Full matched block region.
+    pub region: WitnessSpanResult,
+    /// Opening delimiter span.
+    pub opening: WitnessSpanResult,
+    /// Closing delimiter span.
+    pub closing: WitnessSpanResult,
+    /// Matched opening delimiter text.
+    pub marker: String,
+    /// Full witness body when requested.
+    pub body: Option<String>,
+}
+
+impl WitnessRecordResult {
+    fn from_record(record: &WitnessRecord, full: bool) -> Self {
+        Self {
+            entry: record.entry.to_string(),
+            path: display_path(&record.path),
+            region: WitnessSpanResult::from(record.region),
+            opening: WitnessSpanResult::from(record.opening),
+            closing: WitnessSpanResult::from(record.closing),
+            marker: record.marker.clone(),
+            body: full.then(|| record.body.clone()),
+        }
+    }
+}
+
+impl From<crate::witness::WitnessSpan> for WitnessSpanResult {
+    fn from(value: crate::witness::WitnessSpan) -> Self {
+        Self {
+            start_line: value.start_line,
+            start_column: value.start_column,
+            end_line: value.end_line,
+            end_column: value.end_column,
+        }
+    }
+}
+
+/// Repository witness lookup result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WitnessResult {
+    /// Whether any witness block was found.
+    pub ok: bool,
+    /// Entry id used for lookup.
+    pub id: String,
+    /// Matching witness records.
+    pub records: Vec<WitnessRecordResult>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Artifact listing result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactListResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry id whose artifacts were listed.
+    pub id: String,
+    /// Owner-relative artifact paths.
+    pub artifacts: Vec<String>,
+}
+
+/// Artifact add request.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactAddRequest {
+    /// Entry id that will own the artifact.
+    pub id: EntryId,
+    /// Source file to copy.
+    pub source: PathBuf,
+    /// Owner-relative artifact path.
+    pub artifact_path: Option<PathBuf>,
+}
+
+/// Artifact rename request.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactRenameRequest {
+    /// Entry id that owns the artifact.
+    pub id: EntryId,
+    /// Existing owner-relative artifact path.
+    pub old_path: PathBuf,
+    /// New owner-relative artifact path.
+    pub new_path: PathBuf,
+}
+
+/// Artifact removal request.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactRemoveRequest {
+    /// Entry id that owns the artifact.
+    pub id: EntryId,
+    /// Owner-relative artifact path to remove.
+    pub artifact_path: PathBuf,
+}
+
+/// Result of changing one artifact file.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArtifactChangeResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry id that owns the artifact.
+    pub id: String,
+    /// Owner-relative artifact path.
+    pub artifact_path: String,
+    /// Filesystem path affected by the command.
+    pub path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Result of moving a configured repository path.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MovePathResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Whether the filesystem path actually moved.
+    pub moved: bool,
+    /// Previous configured path.
+    pub old_path: String,
+    /// New configured path.
+    pub new_path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// One JSON-ready diagnostic.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DiagnosticRecord {
+    /// Diagnostic severity.
+    pub severity: String,
+    /// Optional path responsible for the diagnostic.
+    pub path: Option<String>,
+    /// Human-readable diagnostic message.
+    pub message: String,
+}
+
+/// JSON-ready lake check result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LakeCheckResult {
+    /// Whether the selected check mode produced no errors.
+    pub ok: bool,
+    /// Lake root that was checked.
+    pub root: String,
+    /// Whether at least one error was reported.
+    pub has_errors: bool,
+    /// Diagnostics reported by the check.
+    pub diagnostics: Vec<DiagnosticRecord>,
+}
+
+impl LakeCheckResult {
+    fn from_report(report: &EntryDirectoryReport) -> Self {
+        let has_errors = report.has_errors();
+        Self {
+            ok: !has_errors,
+            root: display_path(report.root()),
+            has_errors,
+            diagnostics: diagnostics_from_entry_report(report),
+        }
+    }
+}
+
+/// JSON-ready rendered-footer result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RenderResult {
+    /// Whether rendering or dry-checking completed without blocking diagnostics.
+    pub ok: bool,
+    /// Whether the render operation only checked for changes.
+    pub dry: bool,
+    /// Lake root that was processed.
+    pub root: String,
+    /// Number of entries processed.
+    pub entry_count: usize,
+    /// Entry files whose generated-link region changed.
+    pub changed_paths: Vec<String>,
+    /// Diagnostics that blocked rendering.
+    pub diagnostics: Vec<DiagnosticRecord>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+impl RenderResult {
+    fn from_report(report: &GenLinkDirectoryReport, dry: bool) -> Self {
+        let changed_paths = display_paths(report.changed_paths());
+        Self {
+            ok: true,
+            dry,
+            root: display_path(report.root()),
+            entry_count: report.entry_count(),
+            changed_paths,
+            diagnostics: Vec::new(),
+            message: format_gen_link_report(
+                report.root(),
+                report.entry_count(),
+                report.changed_paths(),
+            ),
+        }
+    }
+
+    fn blocked(report: &EntryDirectoryReport) -> Self {
+        Self {
+            ok: false,
+            dry: false,
+            root: display_path(report.root()),
+            entry_count: report.entries().len(),
+            changed_paths: Vec::new(),
+            diagnostics: diagnostics_from_entry_report(report),
+            message: format!("render blocked by check errors in {}", report.root().display()),
+        }
+    }
+}
+
+/// Structural field status in one Sirno config.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StructuralFieldStatus {
+    /// Structural field name.
+    pub field: String,
+    /// Outgoing edge settings.
+    pub to: String,
+    /// Incoming edge settings.
+    pub from: String,
+    /// Shared-target edge settings.
+    pub clique: String,
+}
+
+/// JSON-ready project status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusResult {
+    /// Whether the configured public lake passes review checks.
+    pub ok: bool,
+    /// Config file used for the status command.
+    pub config_path: String,
+    /// Optional monograph path.
+    pub mono_path: Option<String>,
+    /// Public lake path.
+    pub lake_path: String,
+    /// Optional Frost path.
+    pub frost_path: Option<String>,
+    /// Current lock state summary.
+    pub frost_state: String,
+    /// Number of parsed entries.
+    pub entry_count: usize,
+    /// Whether generated-footer checks are enabled.
+    pub check_render: bool,
+    /// Configured structural field summaries.
+    pub structural_fields: Vec<StructuralFieldStatus>,
+    /// Review-mode check result.
+    pub check: LakeCheckResult,
+}
+
+/// Result of initializing Frost.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrostInitResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Configured Frost path.
+    pub frost_path: String,
+    /// Current Frost version after initialization.
+    pub version: u64,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Result of committing a Frost snapshot.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrostCommitResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// New Frost version.
+    pub version: u64,
+    /// Lake path committed to Frost.
+    pub lake_path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Frost checkout request.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrostCheckoutRequest {
+    /// Explicit Frost version to check out.
+    pub version: Option<u64>,
+    /// Check out the latest version as mutable current lake.
+    #[serde(default)]
+    pub latest: bool,
+    /// Leave an explicit version checkout writable.
+    #[serde(default)]
+    pub unsafe_mutable: bool,
+}
+
+/// Result of checking out a Frost snapshot.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrostCheckoutResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Checked-out Frost version.
+    pub version: u64,
+    /// Public lake path written by checkout.
+    pub lake_path: String,
+    /// Number of entries written.
+    pub entry_count: usize,
+    /// Mutable or immutable lake state after checkout.
+    pub state: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Tide workitem selection by exact workitems or neighbor ids.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TideSelectionRequest {
+    /// Select all workitems whose neighbor matches one of these ids.
+    #[serde(default)]
+    pub neighbors: Vec<EntryId>,
+    /// Select exact workitem objects.
+    #[serde(default)]
+    pub workitems: Vec<TideWorkitem>,
+}
+
+/// Tide resolution request.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TideResolveRequest {
+    /// Resolve workitems whose neighbor appears in the current ripple set.
+    #[serde(default)]
+    pub infer: bool,
+    /// Select all workitems whose neighbor matches one of these ids.
+    #[serde(default)]
+    pub neighbors: Vec<EntryId>,
+    /// Select exact workitem objects.
+    #[serde(default)]
+    pub workitems: Vec<TideWorkitem>,
+}
+
+/// Result of changing tide resolutions.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TideChangeResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Number of workitems changed.
+    pub count: usize,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// JSON-ready tide status result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct TideStatusResult {
+    /// Whether no open workitem remains in the listed statuses.
+    pub ok: bool,
+    /// Tide workitem statuses.
+    pub statuses: Vec<TideStatus>,
 }
 
 /// Render any serializable value as pretty JSON.
@@ -1142,10 +2190,7 @@ impl Cli {
                 command.run(&config_path, lake_path.as_deref())
             }
             | Command::Util { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run()
+                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
             }
         }
     }
@@ -1189,6 +2234,13 @@ fn run_top_level_init(
 fn run_lake_init(
     mono: Option<PathBuf>, lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
+    if mono.is_none() {
+        let result = CoreContext::from_cli_paths(config_path, lake_path)
+            .lake_init(LakeInitRequest { lake })?;
+        println!("{}", result.message);
+        return Ok(ExitCode::SUCCESS);
+    }
+
     let mut config = SirnoConfig::new(
         lake.or_else(|| lake_path.map(Path::to_path_buf))
             .unwrap_or_else(|| default_lake_path(config_path)),
@@ -1219,18 +2271,12 @@ impl EntryCommand {
 
 impl EntryRenameArgs {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
         let old_id = EntryId::new(&self.old_id)?;
         let new_id = EntryId::new(&self.new_id)?;
-        let report = EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
-        let mut changed_paths = report.changed_paths().to_vec();
-        if let Some(witness) = &settings.witness {
-            changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
-        }
-        changed_paths.sort();
-        changed_paths.dedup();
-        println!("renamed entry {old_id} to {new_id}");
-        println!("updated {} paths", changed_paths.len());
+        let result =
+            CoreContext::from_cli_paths(config_path, lake_path).entry_rename(old_id, new_id)?;
+        println!("{}", result.message);
+        println!("updated {} paths", result.updated_paths.len());
         Ok(ExitCode::SUCCESS)
     }
 }
@@ -1239,39 +2285,27 @@ impl TopLevelEntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
-                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
                 let id = EntryId::new(&id)?;
-                let mut metadata =
-                    EntryMetadata::new(name.unwrap_or_else(|| title_name_from_id(&id)), desc)?;
-                for (field, targets) in
-                    structural_targets_by_predicate(structural, &settings.structural)?
-                {
-                    metadata.set_structural_targets(field, targets);
-                }
-
-                let entry = Entry::new(id, metadata, body.unwrap_or_default());
-                let path = EntryDirectory::new(&lake).create_entry(&entry)?;
-                println!("created {}", path.display());
+                let structural = structural
+                    .into_iter()
+                    .map(|target| StructuralTarget { field: target.field, target: target.target })
+                    .collect();
+                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                    .entry_new(EntryNewRequest { id, name, desc, structural, body })?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Freeze { id } => {
-                let context = FrostContext::load(config_path, lake_path)?;
-                context.reject_immutable_checkout()?;
                 let id = EntryId::new(&id)?;
-                let directory = context.lake();
-                let entry = directory.read_entry(&id)?;
-                let artifacts = directory.read_entry_artifacts(&id)?;
-                let frost = SirnoFrost::open(&context.frost_path)?;
-                frost.ensure_entry_bundle_current(&entry, &artifacts)?;
-                let path = directory.freeze_entry(&id)?;
-                println!("froze entry {id} at {}", path.display());
+                let result =
+                    CoreContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Melt { id } => {
-                let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
                 let id = EntryId::new(&id)?;
-                let path = EntryDirectory::new(&lake).melt_entry(&id)?;
-                println!("melted entry {id} at {}", path.display());
+                let result = CoreContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Path(args) => {
@@ -1301,7 +2335,12 @@ impl TopLevelEntryCommand {
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
-                run_rg_command(lake_path, config_path, with_generated_footer, args)
+                let args = rg_args_to_strings(args)?;
+                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                    .entry_rg(RgRequest { with_generated_footer, args })?;
+                print!("{}", result.stdout);
+                eprint!("{}", result.stderr);
+                Ok(ExitCode::from(result.exit_code))
             }
             | TopLevelEntryCommand::Artifact { command } => command.run(config_path, lake_path),
             | TopLevelEntryCommand::Witness { id, full } => {
@@ -1328,13 +2367,8 @@ impl LakeCommand {
 
 impl LakeMoveArgs {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let config = SirnoConfig::from_file(config_path)?;
-        let old_lake = config.resolve_lake(config_path);
-        let config = config.with_lake(self.lake);
-        config.validate_for_file(config_path)?;
-        let new_lake = config.resolve_lake(config_path);
-        move_configured_path_and_write_config(&old_lake, &new_lake, &config, config_path)?;
-        println!("moved lake {} to {}", old_lake.display(), new_lake.display());
+        let result = CoreContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
+        println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
 }
@@ -1350,11 +2384,10 @@ impl TopLevelLakeCommand {
                 }
                 let mode = mode.unwrap_or(CheckModeArg::Review);
                 if lake_path.is_some() {
-                    let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
-                    let report =
-                        EntryDirectory::new(lake).check_with_settings(mode.into(), &settings)?;
-                    print_entry_directory_report(&report);
-                    return if report.has_errors() {
+                    let result = CoreContext::from_cli_paths(config_path, lake_path)
+                        .lake_check(mode.into())?;
+                    print_lake_check_result(&result);
+                    return if result.has_errors {
                         Ok(ExitCode::FAILURE)
                     } else {
                         Ok(ExitCode::SUCCESS)
@@ -1362,14 +2395,10 @@ impl TopLevelLakeCommand {
                 }
 
                 let Some(frost_path) = frost_path else {
-                    let config = SirnoConfig::from_file(config_path)?;
-                    let report = EntryDirectory::new(config.resolve_lake(config_path))
-                        .check_with_settings(
-                            mode.into(),
-                            &entry_directory_check_settings(config_path, &config),
-                        )?;
-                    print_entry_directory_report(&report);
-                    return if report.has_errors() {
+                    let result =
+                        CoreContext::new(config_path.to_path_buf()).lake_check(mode.into())?;
+                    print_lake_check_result(&result);
+                    return if result.has_errors {
                         Ok(ExitCode::FAILURE)
                     } else {
                         Ok(ExitCode::SUCCESS)
@@ -1396,68 +2425,25 @@ impl TopLevelLakeCommand {
             }
             | TopLevelLakeCommand::Render { command, dry } => match command {
                 | None => {
-                    let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
-                    settings.render = false;
-                    settings.witness = None;
-
-                    let directory = EntryDirectory::new(&lake);
-                    let check = directory.check_with_settings(CheckMode::Review, &settings)?;
-                    if check.has_errors() {
-                        print_entry_directory_report(&check);
-                        return Ok(ExitCode::FAILURE);
-                    }
-
-                    if dry {
-                        let report = directory.check_generated_links_with_ignored_paths(
-                            &settings.structural,
-                            settings.ignore.clone(),
-                        )?;
-                        print_gen_link_report(&report);
-                        return Ok(ExitCode::SUCCESS);
-                    }
-
-                    let report = directory.generate_links_with_ignored_paths(
-                        &settings.structural,
-                        settings.ignore.clone(),
-                    )?;
-                    print_gen_link_report(&report);
-                    Ok(ExitCode::SUCCESS)
+                    let result =
+                        CoreContext::from_cli_paths(config_path, lake_path).lake_render(dry)?;
+                    print_render_result(&result);
+                    if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
                 }
                 | Some(RenderCommand::Delete) => {
                     if dry {
                         return Err(CommandError::DryWithRenderSubcommand);
                     }
-                    let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
-                    settings.witness = None;
-
-                    let report = EntryDirectory::new(&lake)
-                        .delete_generated_links_with_ignored_paths(settings.ignore)?;
-                    print_gen_link_report(&report);
+                    let result =
+                        CoreContext::from_cli_paths(config_path, lake_path).lake_render_delete()?;
+                    print_render_result(&result);
                     Ok(ExitCode::SUCCESS)
                 }
             },
             | TopLevelLakeCommand::Status => {
-                let config = SirnoConfig::from_file(config_path)?;
-                let mono = config.resolve_mono(config_path);
-                let frost = config.resolve_frost(config_path);
-                let lock_path = SirnoLock::path_for_config(config_path);
-                let lock = if frost.is_some() {
-                    SirnoLock::from_file_if_exists(&lock_path)?
-                } else {
-                    None
-                };
-                let (lake, settings) = resolve_lake_directory(lake_path, config_path)?;
-                let report =
-                    EntryDirectory::new(&lake).check_with_settings(CheckMode::Review, &settings)?;
-                print_status(
-                    config_path,
-                    mono.as_deref(),
-                    frost.as_deref(),
-                    lock.as_ref(),
-                    &config,
-                    &report,
-                );
-                if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
+                let result = CoreContext::from_cli_paths(config_path, lake_path).lake_status()?;
+                print_status_result(&result);
+                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
             }
         }
     }
@@ -1469,36 +2455,9 @@ impl TopLevelFrostCommand {
     ) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelFrostCommand::Commit { unsafe_resolve_all } => {
-                let context = FrostContext::load(config_path, lake_path)?;
-                context.reject_immutable_checkout()?;
-                // sirno:witness:tide:begin
-                if !unsafe_resolve_all {
-                    let tide_context = TideContext::load(config_path, lake_path)?;
-                    let lock = tide_context.load_lock_or_current()?;
-                    let tide = tide_context.tide(&lock)?;
-                    if !tide.is_clear() {
-                        return Err(CommandError::OpenTide {
-                            count: tide.open_statuses().count(),
-                            tutorial: OpenTideTutorial::new(
-                                context.tutorial,
-                                lock.frost.version == Eterator::EMPTY.version(),
-                            ),
-                        });
-                    }
-                }
-                // sirno:witness:tide:end
-                let mut frost = SirnoFrost::open(&context.frost_path)?;
-                let version =
-                    frost.commit_entry_directory(&context.lake_path, &context.settings)?;
-                context.lake().set_writable(&context.settings)?;
-                let mut lock = SirnoLock::current(version);
-                lock.tide.clear();
-                lock.write(&context.lock_path)?;
-                println!(
-                    "froze version {} from {}",
-                    version.version(),
-                    context.lake_path.display()
-                );
+                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                    .frost_commit(unsafe_resolve_all)?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelFrostCommand::Defrost => CheckoutArgs::latest().run(config_path, lake_path),
@@ -1513,48 +2472,14 @@ impl CheckoutArgs {
     }
 
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let context = FrostContext::load(config_path, lake_path)?;
-        let frost = SirnoFrost::open(&context.frost_path)?;
-        let snapshot = if self.latest {
-            frost.current_snapshot()?
-        } else {
-            frost.snapshot_for_version(frost_version(
-                self.version.expect("clap requires VERSION unless --latest is present"),
-            )?)?
-        };
-        if snapshot.version() == Eterator::EMPTY.version() {
-            return Err(CommandError::InvalidFrostVersion(snapshot.version()));
-        }
-        let paths = frost.checkout_entry_directory(
-            snapshot,
-            &context.lake_path,
-            EntryDirectoryWritePolicy::ReplaceDirectory { ignore: context.settings.ignore.clone() },
+        let result = CoreContext::from_cli_paths(config_path, lake_path).frost_checkout(
+            FrostCheckoutRequest {
+                version: self.version,
+                latest: self.latest,
+                unsafe_mutable: self.unsafe_mutable,
+            },
         )?;
-        if self.latest || self.unsafe_mutable {
-            context.lake().set_writable(&context.settings)?;
-        } else {
-            context.lake().add_readonly_checkout_warnings(&paths)?;
-            context.lake().set_readonly(&context.settings)?;
-        }
-        if self.latest {
-            SirnoLock::current(snapshot).write(&context.lock_path)?;
-        } else {
-            SirnoLock::checked_out(snapshot, self.unsafe_mutable).write(&context.lock_path)?;
-        }
-        println!(
-            "checked out {}frost version {} into {} ({} entries, {})",
-            if self.latest { "latest " } else { "" },
-            snapshot.version(),
-            context.lake_path.display(),
-            paths.len(),
-            if self.latest {
-                "mutable"
-            } else if self.unsafe_mutable {
-                "unsafe mutable"
-            } else {
-                "immutable"
-            }
-        );
+        println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
 }
@@ -1565,34 +2490,9 @@ impl FrostCommand {
     ) -> Result<ExitCode, CommandError> {
         match self {
             | FrostCommand::Init { frost } => {
-                let config = SirnoConfig::from_file(config_path)?;
-                let existing_frost = config.frost.as_ref().map(|settings| settings.path.clone());
-                let frost = frost
-                    .or_else(|| existing_frost.clone())
-                    .unwrap_or_else(|| default_frost_path(config_path));
-                if let Some(existing_frost) = existing_frost
-                    && existing_frost != frost
-                {
-                    return Err(CommandError::FrostAlreadyConfigured(existing_frost));
-                }
-
-                let needs_config_write = config.frost.is_none();
-                let config = if needs_config_write { config.with_frost(frost) } else { config };
-                config.validate_for_file(config_path)?;
-
-                let frost_path =
-                    config.resolve_frost(config_path).expect("frost path configured by init");
-                let frost = SirnoFrost::open(&frost_path)?;
-                let version = frost.current_snapshot()?;
-                if needs_config_write {
-                    config.write(config_path)?;
-                }
-                SirnoLock::current(version).write(SirnoLock::path_for_config(config_path))?;
-                println!(
-                    "initialized frost {} at version {}",
-                    frost_path.display(),
-                    version.version(),
-                );
+                let result =
+                    CoreContext::from_cli_paths(config_path, lake_path).frost_init(frost)?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | FrostCommand::Move(args) => args.run(config_path),
@@ -1603,15 +2503,8 @@ impl FrostCommand {
 
 impl FrostMoveArgs {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let config = SirnoConfig::from_file(config_path)?;
-        let Some(old_frost) = config.resolve_frost(config_path) else {
-            return Err(CommandError::FrostNotConfigured);
-        };
-        let config = config.with_frost(self.frost);
-        config.validate_for_file(config_path)?;
-        let new_frost = config.resolve_frost(config_path).expect("frost path configured by move");
-        move_configured_path_and_write_config(&old_frost, &new_frost, &config, config_path)?;
-        println!("moved frost {} to {}", old_frost.display(), new_frost.display());
+        let result = CoreContext::new(config_path.to_path_buf()).frost_move(self.frost)?;
+        println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
 }
@@ -1634,12 +2527,8 @@ impl TideCommand {
             }
             | TideCommand::Review(command) => command.run(config_path, lake_path),
             | TideCommand::Reset => {
-                let context = TideContext::load(config_path, lake_path)?;
-                let mut lock = context.load_lock_or_current()?;
-                let count = lock.tide.resolved.len();
-                lock.tide.clear();
-                lock.write(&context.lock_path)?;
-                println!("cleared {count} tide resolutions");
+                let result = CoreContext::from_cli_paths(config_path, lake_path).tide_reset()?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
         }
@@ -1657,34 +2546,32 @@ impl TideReviewCommand {
 
 impl ResolveArgs {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let context = TideContext::load(config_path, lake_path)?;
-        let mut lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
-        let (resolutions, count) = if self.infer {
-            tide.resolve_where(|status| tide.ripple_ids().contains(&status.workitem.neighbor))
+        let request = if self.infer {
+            TideResolveRequest { infer: true, ..TideResolveRequest::default() }
         } else if let Some(json) = self.json {
-            let workitems = tide_workitems_from_json(&json)?;
-            tide.resolve_where(|status| workitems.contains(&status.workitem))
+            TideResolveRequest {
+                workitems: tide_workitems_from_json(&json)?,
+                ..TideResolveRequest::default()
+            }
         } else {
-            tide.resolve_where(|status| tide_item_matches(&self.items, status))
+            let selection = tide_selection_from_items(self.items);
+            TideResolveRequest {
+                neighbors: selection.neighbors,
+                workitems: selection.workitems,
+                ..TideResolveRequest::default()
+            }
         };
-        lock.tide.set_resolved(resolutions);
-        lock.write(&context.lock_path)?;
-        println!("resolved {count} tide workitems");
+        let result = CoreContext::from_cli_paths(config_path, lake_path).tide_resolve(request)?;
+        println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
 }
 
 impl UnresolveArgs {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let context = TideContext::load(config_path, lake_path)?;
-        let mut lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
-        let (resolutions, count) =
-            tide.reopen_where(|status| tide_item_matches(&self.items, status));
-        lock.tide.set_resolved(resolutions);
-        lock.write(&context.lock_path)?;
-        println!("unresolved {count} tide workitems");
+        let request = tide_selection_from_items(self.items);
+        let result = CoreContext::from_cli_paths(config_path, lake_path).tide_unresolve(request)?;
+        println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
 }
@@ -1703,11 +2590,15 @@ fn tide_workitems_from_json(source: &str) -> Result<Vec<TideWorkitem>, CommandEr
     })
 }
 
-fn tide_item_matches(items: &[TideItemSelector], status: &TideStatus) -> bool {
-    items.iter().any(|item| match item {
-        | TideItemSelector::Neighbor(id) => &status.workitem.neighbor == id,
-        | TideItemSelector::Workitem(workitem) => &status.workitem == workitem,
-    })
+fn tide_selection_from_items(items: Vec<TideItemSelector>) -> TideSelectionRequest {
+    let mut request = TideSelectionRequest::default();
+    for item in items {
+        match item {
+            | TideItemSelector::Neighbor(id) => request.neighbors.push(id),
+            | TideItemSelector::Workitem(workitem) => request.workitems.push(workitem),
+        }
+    }
+    request
 }
 
 fn tide_statuses_for_output(tide: &Tide, all: bool) -> Vec<TideStatus> {
@@ -1746,40 +2637,37 @@ fn print_tide_statuses(
 
 impl ArtifactCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
-        let directory = EntryDirectory::new(&lake);
+        let context = CoreContext::from_cli_paths(config_path, lake_path);
         match self {
             | ArtifactCommand::List { id } => {
                 let id = EntryId::new(&id)?;
-                directory.read_entry(&id)?;
-                for artifact in directory.read_entry_artifacts(&id)? {
-                    println!("{}", artifact.path);
+                for artifact in context.entry_artifact_list(id)?.artifacts {
+                    println!("{artifact}");
                 }
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Add { id, source, artifact_path } => {
                 let id = EntryId::new(&id)?;
-                let artifact_path = match artifact_path {
-                    | Some(path) => artifact_path_from_cli(&path)?,
-                    | None => default_artifact_path_from_source(&source)?,
-                };
-                let path = directory.add_entry_artifact(&id, &source, &artifact_path)?;
-                println!("added artifact {artifact_path} at {}", path.display());
+                let result =
+                    context.entry_artifact_add(ArtifactAddRequest { id, source, artifact_path })?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Rename { id, old_path, new_path } => {
                 let id = EntryId::new(&id)?;
-                let old_path = artifact_path_from_cli(&old_path)?;
-                let new_path = artifact_path_from_cli(&new_path)?;
-                let path = directory.rename_entry_artifact(&id, &old_path, &new_path)?;
-                println!("renamed artifact {old_path} to {new_path} at {}", path.display());
+                let result = context.entry_artifact_rename(ArtifactRenameRequest {
+                    id,
+                    old_path,
+                    new_path,
+                })?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Remove { id, artifact_path } => {
                 let id = EntryId::new(&id)?;
-                let artifact_path = artifact_path_from_cli(&artifact_path)?;
-                let path = directory.remove_entry_artifact(&id, &artifact_path)?;
-                println!("removed artifact {artifact_path} at {}", path.display());
+                let result =
+                    context.entry_artifact_remove(ArtifactRemoveRequest { id, artifact_path })?;
+                println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
         }
@@ -1787,13 +2675,34 @@ impl ArtifactCommand {
 }
 
 impl UtilCommand {
-    fn run(self) -> Result<ExitCode, CommandError> {
+    fn run(
+        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
+    ) -> Result<ExitCode, CommandError> {
         match self {
             | UtilCommand::Completion { shell } => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
                 let shell = Shell::from(shell);
                 let mut command = Cli::command();
                 let mut stdout = std::io::stdout();
                 generate(shell, &mut command, "sirno", &mut stdout);
+                Ok(ExitCode::SUCCESS)
+            }
+            | UtilCommand::Mcp => {
+                if lake_path.is_some() {
+                    return Err(CommandError::McpRejectsLakePath);
+                }
+                if frost_path.is_some() {
+                    return Err(CommandError::McpRejectsFrostPath);
+                }
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .map_err(CommandError::CreateMcpRuntime)?;
+                runtime
+                    .block_on(crate::mcp::run_stdio(CoreContext::new(config_path.to_path_buf())))
+                    .map_err(|error| CommandError::McpServer(error.to_string()))?;
                 Ok(ExitCode::SUCCESS)
             }
         }
@@ -1802,7 +2711,7 @@ impl UtilCommand {
 
 fn move_configured_path_and_write_config(
     source: &Path, destination: &Path, config: &SirnoConfig, config_path: &Path,
-) -> Result<(), CommandError> {
+) -> Result<bool, CommandError> {
     let moved = move_configured_path(source, destination)?;
     if let Err(config_error) = config.write(config_path) {
         if moved && let Err(rollback) = fs::rename(destination, source) {
@@ -1815,7 +2724,7 @@ fn move_configured_path_and_write_config(
         }
         return Err(CommandError::Config(config_error));
     }
-    Ok(())
+    Ok(moved)
 }
 
 fn move_configured_path(source: &Path, destination: &Path) -> Result<bool, CommandError> {
@@ -1951,25 +2860,11 @@ fn print_witness_records(records: &[WitnessRecord], full: bool) {
     print!("{}", format_witness_records(records, full));
 }
 
-fn run_rg_command(
-    lake_path: Option<&Path>, config_path: &Path, with_generated_footer: bool, args: Vec<OsString>,
-) -> Result<ExitCode, CommandError> {
-    if !with_generated_footer && rg_args_include_preprocessor(&args) {
-        return Err(CommandError::RgPreprocessorConflict);
-    }
-
-    let lake = resolve_lake_path_for_rg(lake_path, config_path)?;
-    let preprocessor =
-        if with_generated_footer { None } else { Some(RgPreprocessorLink::create()?) };
-
-    let mut command = ProcessCommand::new("rg");
-    if let Some(preprocessor) = &preprocessor {
-        command.arg("--pre").arg(preprocessor.path()).arg("--pre-glob").arg("*.md");
-    }
-    let status = command.args(args).arg(lake).status().map_err(CommandError::RunRg)?;
-    Ok(exit_code_from_status(status))
+fn rg_args_to_strings(args: Vec<OsString>) -> Result<Vec<String>, CommandError> {
+    args.into_iter().map(|arg| arg.into_string().map_err(CommandError::RgArgumentNotUtf8)).collect()
 }
 
+#[cfg(test)]
 fn rg_args_include_preprocessor(args: &[OsString]) -> bool {
     args.iter()
         .filter_map(|arg| arg.to_str())
@@ -1985,14 +2880,6 @@ fn resolve_lake_path_for_rg(
 
     let config = SirnoConfig::from_file(config_path)?;
     Ok(config.resolve_lake(config_path))
-}
-
-fn exit_code_from_status(status: ExitStatus) -> ExitCode {
-    if let Some(code) = status.code().and_then(|code| u8::try_from(code).ok()) {
-        return ExitCode::from(code);
-    }
-
-    ExitCode::FAILURE
 }
 
 fn is_rg_preprocessor_invocation() -> bool {
@@ -2243,17 +3130,54 @@ fn structural_matchers_by_field(
     Ok(matchers_by_field)
 }
 
-fn structural_targets_by_predicate(
-    predicates: Vec<StructuralPredicate>, structural: &StructuralSettings,
+fn structural_targets_by_target(
+    targets: Vec<StructuralTarget>, structural: &StructuralSettings,
 ) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
     let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
-    for predicate in predicates {
-        if !structural.contains_field(&predicate.field) {
-            return Err(CommandError::UnconfiguredStructuralField(predicate.field));
+    for target in targets {
+        if !structural.contains_field(&target.field) {
+            return Err(CommandError::UnconfiguredStructuralField(target.field));
         }
-        targets_by_field.entry(predicate.field).or_default().push(predicate.target);
+        targets_by_field.entry(target.field).or_default().push(target.target);
     }
     Ok(targets_by_field)
+}
+
+fn display_path(path: &Path) -> String {
+    path.display().to_string()
+}
+
+fn display_paths(paths: &[PathBuf]) -> Vec<String> {
+    paths.iter().map(|path| display_path(path)).collect()
+}
+
+fn diagnostics_from_entry_report(report: &EntryDirectoryReport) -> Vec<DiagnosticRecord> {
+    let mut diagnostics = Vec::new();
+    for diagnostic in report.file_diagnostics() {
+        diagnostics.push(DiagnosticRecord {
+            severity: diagnostic.severity.label().to_owned(),
+            path: Some(display_path(&diagnostic.path)),
+            message: diagnostic.message.clone(),
+        });
+    }
+    for diagnostic in report.structural_report().diagnostics() {
+        diagnostics.push(DiagnosticRecord {
+            severity: diagnostic.severity.label().to_owned(),
+            path: report.entry_path(&diagnostic.entry).map(display_path),
+            message: diagnostic.message(),
+        });
+    }
+    diagnostics
+}
+
+fn tide_selection_matches(request: &TideResolveRequest, status: &TideStatus) -> bool {
+    request.neighbors.iter().any(|id| &status.workitem.neighbor == id)
+        || request.workitems.iter().any(|workitem| &status.workitem == workitem)
+}
+
+fn tide_selection_request_matches(request: &TideSelectionRequest, status: &TideStatus) -> bool {
+    request.neighbors.iter().any(|id| &status.workitem.neighbor == id)
+        || request.workitems.iter().any(|workitem| &status.workitem == workitem)
 }
 
 fn title_name_from_id(id: &EntryId) -> String {
@@ -2272,37 +3196,60 @@ fn title_name_from_id(id: &EntryId) -> String {
         .join(" ")
 }
 
-fn print_status(
-    config_path: &std::path::Path, mono: Option<&std::path::Path>, frost: Option<&std::path::Path>,
-    lock: Option<&SirnoLock>, config: &SirnoConfig, report: &EntryDirectoryReport,
-) {
-    println!("config: {}", config_path.display());
-    if let Some(mono) = mono {
-        println!("mono: {}", mono.display());
+fn print_status_result(result: &StatusResult) {
+    println!("config: {}", result.config_path);
+    if let Some(mono) = &result.mono_path {
+        println!("mono: {mono}");
     } else {
         println!("mono: (not configured)");
     }
-    println!("lake: {}", report.root().display());
-    if let Some(frost) = frost {
-        println!("frost: {}", frost.display());
-        println!("frost-state: {}", frost_state_label(lock));
+    println!("lake: {}", result.lake_path);
+    if let Some(frost) = &result.frost_path {
+        println!("frost: {frost}");
+        println!("frost-state: {}", result.frost_state);
     } else {
         println!("frost: (not configured)");
     }
-    println!("entries: {}", report.entries().len());
+    println!("entries: {}", result.entry_count);
     println!("checks:");
-    println!("  render: {}", config.check.render);
+    println!("  render: {}", result.check_render);
     println!("structural:");
-    for (field, settings) in config.structural.fields() {
-        println!("  {field}.to: {}", settings.to);
-        println!("  {field}.from: {}", settings.from);
-        println!("  {field}.clique: {}", settings.clique);
+    for field in &result.structural_fields {
+        println!("  {}.to: {}", field.field, field.to);
+        println!("  {}.from: {}", field.field, field.from);
+        println!("  {}.clique: {}", field.field, field.clique);
     }
-    if report.has_errors() {
-        println!("check: failed");
-        print_entry_directory_report(report);
-    } else {
+    if result.ok {
         println!("check: ok");
+    } else {
+        println!("check: failed");
+        print_diagnostics(&result.check.diagnostics);
+    }
+}
+
+fn print_lake_check_result(result: &LakeCheckResult) {
+    if result.diagnostics.is_empty() {
+        println!("ok: {}", result.root);
+    } else {
+        print_diagnostics(&result.diagnostics);
+    }
+}
+
+fn print_render_result(result: &RenderResult) {
+    if result.diagnostics.is_empty() {
+        println!("{}", result.message);
+    } else {
+        print_diagnostics(&result.diagnostics);
+    }
+}
+
+fn print_diagnostics(diagnostics: &[DiagnosticRecord]) {
+    for diagnostic in diagnostics {
+        if let Some(path) = &diagnostic.path {
+            println!("{}: {}: {}", diagnostic.severity, path, diagnostic.message);
+        } else {
+            println!("{}: {}", diagnostic.severity, diagnostic.message);
+        }
     }
 }
 
@@ -2330,13 +3277,6 @@ fn frost_state_label(lock: Option<&SirnoLock>) -> String {
             )
         }
     }
-}
-
-fn print_gen_link_report(report: &GenLinkDirectoryReport) {
-    println!(
-        "{}",
-        format_gen_link_report(report.root(), report.entry_count(), report.changed_paths())
-    );
 }
 
 fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[PathBuf]) -> String {
@@ -2674,6 +3614,9 @@ pub enum CommandError {
     /// Empty Frost cannot be checked out as a version.
     #[error("frost version {0} is not a check-outable snapshot")]
     InvalidFrostVersion(u64),
+    /// Frost checkout needs one target selector.
+    #[error("frost checkout requires `latest` or `version`")]
+    MissingFrostCheckoutTarget,
     /// An artifact source path did not have a file name for the default artifact path.
     #[error("artifact source has no file name: {0}")]
     ArtifactSourceHasNoFileName(PathBuf),
@@ -2727,6 +3670,18 @@ pub enum CommandError {
     /// Frost path override applies only to direct Frost checks.
     #[error("`--frost-path` only applies to `sirno check`")]
     FrostPathRequiresCheck,
+    /// The MCP server selects its project only through the config path.
+    #[error("`--lake-path` cannot be used with `sirno util mcp`; configure the lake in Sirno.toml")]
+    McpRejectsLakePath,
+    /// The MCP server selects its project only through the config path.
+    #[error("`--frost-path` cannot be used with `sirno util mcp`; use `--config` only")]
+    McpRejectsFrostPath,
+    /// The async MCP runtime could not be created.
+    #[error("failed to create MCP runtime")]
+    CreateMcpRuntime(#[source] std::io::Error),
+    /// The MCP server failed.
+    #[error("MCP server failed: {0}")]
+    McpServer(String),
     /// Dry-run mode applies only to render writing.
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
@@ -2801,6 +3756,9 @@ pub enum CommandError {
     /// Ripgrep could not be started.
     #[error("failed to run rg")]
     RunRg(#[source] std::io::Error),
+    /// JSON-oriented ripgrep execution needs UTF-8 arguments.
+    #[error("rg argument is not valid UTF-8: {0:?}")]
+    RgArgumentNotUtf8(OsString),
     /// Query JSON rendering failed.
     #[error(transparent)]
     Json(#[from] serde_json::Error),
@@ -2824,15 +3782,16 @@ mod tests {
     };
 
     use super::{
-        ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
-        EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
-        MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
-        StructuralFieldState, StructuralFilter, StructuralPredicate, StructuralStateFilter,
-        TideCommand, TideItemSelector, TideOutputFormat, TideReviewCommand, TopLevelEntryCommand,
-        TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, entry_path_records,
+        ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, CoreContext,
+        EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs,
+        LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn,
+        QueryColumns, QueryOutputFormat, ResolveArgs, StructuralFieldState, StructuralFilter,
+        StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
+        TideOutputFormat, TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand,
+        TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
         entry_query_from_filters, format_gen_link_report, format_human_table_with_width,
-        format_path_table, format_query_json, format_query_table, format_witness_record,
-        format_witness_records, rg_args_include_preprocessor,
+        format_json, format_path_table, format_query_json, format_query_table,
+        format_witness_record, format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -2977,6 +3936,32 @@ Body.
     }
 
     #[test]
+    fn core_context_lake_init_and_entry_new_return_json_dtos() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let context = CoreContext::new(&config_path);
+
+        let init =
+            context.lake_init(LakeInitRequest { lake: Some(PathBuf::from("docs")) }).unwrap();
+        let entry = context
+            .entry_new(EntryNewRequest {
+                id: EntryId::new("alpha").unwrap(),
+                name: None,
+                desc: "Alpha entry.".to_owned(),
+                structural: Vec::new(),
+                body: Some("Body.".to_owned()),
+            })
+            .unwrap();
+        let json = format_json(&entry).unwrap();
+
+        assert!(init.ok);
+        assert!(init.entry_count > 0);
+        assert!(entry.ok);
+        assert!(entry.path.ends_with("docs/alpha.md"));
+        assert!(json.contains("\"ok\": true"));
+    }
+
+    #[test]
     fn lake_init_rejects_mono_option() {
         let error =
             Cli::try_parse_from(["sirno", "lake", "init", "--mono", "DESIGN.md"]).unwrap_err();
@@ -3071,6 +4056,37 @@ Body.
             .unwrap_err();
 
         assert!(matches!(error, CommandError::FrostPathRequiresCheck));
+    }
+
+    #[test]
+    fn util_mcp_accepts_config_launch_form() {
+        let cli = Cli::parse_from(["sirno", "--config", "Sirno.toml", "util", "mcp"]);
+
+        assert!(matches!(cli.command, Command::Util { command: UtilCommand::Mcp }));
+    }
+
+    #[test]
+    fn top_level_mcp_is_not_a_command() {
+        let error = Cli::try_parse_from(["sirno", "mcp"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
+    }
+
+    #[test]
+    fn util_mcp_rejects_global_lake_path() {
+        let error =
+            Cli::parse_from(["sirno", "--lake-path", "docs", "util", "mcp"]).run().unwrap_err();
+
+        assert!(matches!(error, CommandError::McpRejectsLakePath));
+    }
+
+    #[test]
+    fn util_mcp_rejects_global_frost_path() {
+        let error = Cli::parse_from(["sirno", "--frost-path", "sirno-frost", "util", "mcp"])
+            .run()
+            .unwrap_err();
+
+        assert!(matches!(error, CommandError::McpRejectsFrostPath));
     }
 
     #[test]

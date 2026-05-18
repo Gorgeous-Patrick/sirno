@@ -195,8 +195,46 @@ Render commands operate on the active *lake* path.
 Completion generation is a utility interface,
 not a *lake* operation.
 
+`sirno util mcp --config PATH` starts the MCP server over stdio.
+When `--config` is omitted, the server uses the default `Sirno.toml` path.
+One server process serves one configured Sirno project.
+`sirno util mcp` rejects `--lake-path` and `--frost-path`;
+the configured project selects its *lake* and optional *frost* path.
+
+The MCP interface is tools-only.
+It exposes grouped commands, not top-level CLI aliases or shortcut commands.
+There are no MCP resources or prompts in the initial server surface.
+Tool names are stable snake-case names:
+`entry_new`, `entry_rename`, `entry_freeze`, `entry_melt`, `entry_path`,
+`entry_query`, `entry_rg`, and `entry_witness`;
+`entry_artifact_list`, `entry_artifact_add`, `entry_artifact_rename`,
+and `entry_artifact_remove`;
+`lake_init`, `lake_move`, `lake_check`, `lake_render`, `lake_render_delete`,
+and `lake_status`;
+`frost_init`, `frost_move`, `frost_commit`, `frost_checkout`,
+and `frost_defrost`;
+`tide_status`, `tide_resolve`, `tide_unresolve`, and `tide_reset`.
+
+MCP tools accept typed JSON arguments.
+Structural filters use `{ field, targets }`.
+Structural states use `{ field, state }`.
+Tide selectors use neighbor id arrays and existing JSON-shaped workitem objects.
+`entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
+Successful tool calls return structured JSON content.
+They also include the same JSON as pretty text content for clients that read only text.
+Domain failures such as failed checks, dirty query preconditions,
+and nonzero `rg` exits return structured results with `ok: false`.
+Command failures return MCP tool errors with concise text.
+
+The MCP adapter calls `sirno::core` methods for command behavior.
+Public request and result DTOs live in `sirno::core`.
+The adapter only converts JSON parameters into core requests
+and core DTOs into MCP tool results.
+This keeps CLI JSON and MCP JSON aligned without duplicating command logic.
+
 The MCP interface serves interactive tooling.
-It can expose the same *lake* model to agents and editors without asking them to shell out for every action.
+It can expose the same *lake* model to agents and editors
+without asking them to shell out for every action.
 Future GUI or Obsidian work should keep the same ownership rules:
 metadata is structural,
 *generated footer* regions are Sirno-owned,
