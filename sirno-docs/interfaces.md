@@ -17,6 +17,7 @@ manage optional Frost snapshots, and manage the active *tide*.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
+The global `-F, --frost-path PATH` option selects a Frost path for direct Frost checks.
 Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
 and `defrost` for `checkout`.
@@ -49,14 +50,14 @@ and an empty Frost version `0`.
 By default, it names those paths from the directory that contains `Sirno.toml`:
 `<repo>-lake` for the public *lake* and `<repo>-frost` for the private *frost* path.
 `sirno init --lake PATH` chooses a non-default public *lake* path.
-`sirno init --frost-path PATH` chooses a non-default private *frost* path.
-`sirno lake init` creates a Sirno config and ordinary seed entries without configuring Frost.
+`sirno init --frost PATH` chooses a non-default private *frost* path.
+`sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring Frost.
 `sirno lake move PATH` changes the configured public *lake* path
 and renames the current *lake* directory on the filesystem.
 `sirno lake mv PATH` is its short form.
 
-`sirno frost init` configures the private *frost* path and records empty version `0`.
-`sirno frost init --frost-path PATH` chooses a non-default *frost* path.
+`sirno frost init [PATH]` configures the private *frost* path
+and records empty version `0`.
 `sirno frost move PATH` changes the configured *frost* path
 and renames the current *frost* path on the filesystem.
 `sirno frost mv PATH` is its short form.

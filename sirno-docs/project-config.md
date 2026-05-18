@@ -26,17 +26,18 @@ Generated config files include concise comments that describe how each written f
 `[tutorial]` optionally enables extra CLI tutorial text for recoverable command failures.
 Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
+The CLI `-F, --frost-path PATH` option selects a Frost path for one direct Frost check.
 
 A project can use Sirno without a configured *monograph*, repo members, or Sirno Frost.
 `sirno init` creates the config, public *entry lake*, and private Sirno Frost path.
 Its default paths are derived from the directory that contains `Sirno.toml`:
 `<repo>-lake` for `[lake].path` and `<repo>-frost` for `[frost].path`.
 `sirno init --lake PATH` chooses a non-default public *lake* path.
-`sirno init --frost-path PATH` chooses a non-default private *frost* path.
-`sirno lake init` creates the config and public *entry lake* without configuring Frost.
+`sirno init --frost PATH` chooses a non-default private *frost* path.
+`sirno lake init [PATH]` creates the config and public *entry lake* without configuring Frost.
 `sirno lake move PATH` changes `[lake].path` and renames the public *lake* directory.
 `sirno lake mv PATH` is its short form.
-`sirno frost init` adds the Sirno Frost config and records empty version `0`.
+`sirno frost init [PATH]` adds the Sirno Frost config and records empty version `0`.
 `sirno frost move PATH` changes `[frost].path` and renames the private *frost* path.
 `sirno frost mv PATH` is its short form.
 Top-level `sirno move` is a reserved command.

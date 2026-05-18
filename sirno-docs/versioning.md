@@ -45,8 +45,7 @@ and it must not be placed where *lake* discovery can treat it as *entries*.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.
 
-`sirno frost init` configures the *frost* path and records empty version `0`.
-`sirno frost init --frost-path PATH` chooses a non-default *frost* path.
+`sirno frost init [PATH]` configures the *frost* path and records empty version `0`.
 The first *frost* commit creates the first frozen snapshot.
 If active *tide* policy is configured,
 that first commit may surface the whole public *lake* as a bootstrap review worklist

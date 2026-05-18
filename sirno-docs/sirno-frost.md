@@ -30,10 +30,9 @@ Each artifact is stored as a private backend object keyed by its owner *entry* i
 and owner-relative artifact path.
 Artifact bytes are stored separately from the *entry* row.
 
-`sirno frost init` configures Sirno Frost when needed
+`sirno frost init [PATH]` configures Sirno Frost when needed
 and records the empty snapshot as version `0`.
 It does not immediately import or commit the public *lake*.
-`--frost-path PATH` chooses a non-default path.
 `sirno frost move PATH` renames the configured *frost* path
 and writes the new path back to `[frost].path`.
 `sirno frost mv PATH` is its short form.

@@ -37,6 +37,9 @@ struct Cli {
     /// Public Markdown lake path override.
     #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
+    /// Sirno Frost path override for commands that inspect Frost directly.
+    #[arg(short = 'F', long = "frost-path", global = true)]
+    frost_path: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -63,8 +66,8 @@ enum Command {
         #[arg(long)]
         lake: Option<PathBuf>,
         /// Sirno Frost path written to Sirno.toml.
-        #[arg(long = "frost-path")]
-        frost_path: Option<PathBuf>,
+        #[arg(long)]
+        frost: Option<PathBuf>,
     },
     /// Reserved top-level move command.
     #[command(visible_alias = "mv")]
@@ -112,11 +115,7 @@ enum LakeCommand {
     /// Create a Sirno config and ordinary seed entries.
     // sirno:witness:interfaces:begin
     Init {
-        /// Monograph path written to Sirno.toml.
-        #[arg(long)]
-        mono: Option<PathBuf>,
         /// Public Markdown entry lake path written to Sirno.toml.
-        #[arg(long)]
         lake: Option<PathBuf>,
     },
     /// Move the configured public Markdown entry lake.
@@ -136,9 +135,6 @@ enum LakeCommand {
 enum TopLevelLakeCommand {
     /// Check current entry structure.
     Check {
-        /// Sirno Frost path.
-        #[arg(long = "frost-path", conflicts_with = "lake_path")]
-        frost_path: Option<PathBuf>,
         /// Check boundary.
         #[arg(short = 'm', long, value_enum)]
         mode: Option<CliCheckMode>,
@@ -635,8 +631,7 @@ enum FrostCommand {
     /// Configure Sirno Frost.
     Init {
         /// Sirno Frost path written to Sirno.toml.
-        #[arg(long = "frost-path")]
-        frost_path: Option<PathBuf>,
+        frost: Option<PathBuf>,
     },
     /// Move the configured Sirno Frost path.
     #[command(visible_alias = "mv")]
@@ -770,31 +765,94 @@ impl Cli {
     fn run(self) -> Result<ExitCode, CliError> {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
+        let frost_path = self.frost_path;
         match self.command {
             | Command::TopLevelEntry(command) => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
                 EntryCommand::from(command).run(&config_path, lake_path.as_deref())
             }
-            | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
-            | Command::TopLevelFrost(command) => command.run(&config_path, lake_path.as_deref()),
-            | Command::Init { mono, lake, frost_path } => {
-                run_top_level_init(mono, lake, frost_path, &config_path, lake_path.as_deref())
+            | Command::TopLevelLake(command) => {
+                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
             }
-            | Command::Move { .. } => Err(CliError::ReservedTopLevelCommand("move")),
-            | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
-            | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
-            | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
-            | Command::Tide { command } => command.run(&config_path, lake_path.as_deref()),
-            | Command::Util { command } => command.run(),
+            | Command::TopLevelFrost(command) => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Init { mono, lake, frost } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                run_top_level_init(mono, lake, frost, &config_path, lake_path.as_deref())
+            }
+            | Command::Move { .. } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                Err(CliError::ReservedTopLevelCommand("move"))
+            }
+            | Command::Entry { command } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Lake { command } => {
+                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
+            }
+            | Command::Frost { command } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Tide { command } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Util { command } => {
+                if frost_path.is_some() {
+                    return Err(CliError::FrostPathRequiresCheck);
+                }
+                command.run()
+            }
         }
     }
 }
 
 fn run_top_level_init(
-    mono: Option<PathBuf>, lake: Option<PathBuf>, frost_path: Option<PathBuf>, config_path: &Path,
+    mono: Option<PathBuf>, lake: Option<PathBuf>, frost: Option<PathBuf>, config_path: &Path,
     lake_path: Option<&Path>,
 ) -> Result<ExitCode, CliError> {
-    LakeCommand::Init { mono, lake }.run(config_path, lake_path)?;
-    FrostCommand::Init { frost_path }.run(config_path, lake_path)
+    run_lake_init(mono, lake, config_path, lake_path)?;
+    FrostCommand::Init { frost }.run(config_path, lake_path)
+}
+
+fn run_lake_init(
+    mono: Option<PathBuf>, lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
+) -> Result<ExitCode, CliError> {
+    let mut config = SirnoConfig::new(
+        lake.or_else(|| lake_path.map(Path::to_path_buf))
+            .unwrap_or_else(|| default_lake_path(config_path)),
+    );
+    if let Some(mono) = mono {
+        config = config.with_mono(mono);
+    }
+    let lake_path = config.resolve_lake(config_path);
+    config.write_new(config_path)?;
+    let paths = EntryDirectory::new(&lake_path).init()?;
+    println!(
+        "initialized {} with {} entries in {}",
+        config_path.display(),
+        paths.len(),
+        lake_path.display()
+    );
+    Ok(ExitCode::SUCCESS)
 }
 
 impl EntryCommand {
@@ -893,27 +951,14 @@ impl EntryCommand {
 }
 
 impl LakeCommand {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(
+        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
+    ) -> Result<ExitCode, CliError> {
         match self {
-            | LakeCommand::Init { mono, lake } => {
-                let mut config = SirnoConfig::new(
-                    lake.or_else(|| lake_path.map(Path::to_path_buf))
-                        .unwrap_or_else(|| default_lake_path(config_path)),
-                );
-                if let Some(mono) = mono {
-                    config = config.with_mono(mono);
-                }
-                let lake_path = config.resolve_lake(config_path);
-                config.write_new(config_path)?;
-                let paths = EntryDirectory::new(&lake_path).init()?;
-                println!(
-                    "initialized {} with {} entries in {}",
-                    config_path.display(),
-                    paths.len(),
-                    lake_path.display()
-                );
-                Ok(ExitCode::SUCCESS)
+            | LakeCommand::Init { .. } | LakeCommand::Move { .. } if frost_path.is_some() => {
+                Err(CliError::FrostPathRequiresCheck)
             }
+            | LakeCommand::Init { lake } => run_lake_init(None, lake, config_path, lake_path),
             | LakeCommand::Move { lake } => {
                 let config = SirnoConfig::from_file(config_path)?;
                 let old_lake = config.resolve_lake(config_path);
@@ -924,15 +969,17 @@ impl LakeCommand {
                 println!("moved lake {} to {}", old_lake.display(), new_lake.display());
                 Ok(ExitCode::SUCCESS)
             }
-            | LakeCommand::TopLevel(command) => command.run(config_path, lake_path),
+            | LakeCommand::TopLevel(command) => command.run(config_path, lake_path, frost_path),
         }
     }
 }
 
 impl TopLevelLakeCommand {
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+    fn run(
+        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
+    ) -> Result<ExitCode, CliError> {
         match self {
-            | TopLevelLakeCommand::Check { frost_path, mode } => {
+            | TopLevelLakeCommand::Check { mode } => {
                 if lake_path.is_some() && frost_path.is_some() {
                     return Err(CliError::LakePathWithFrostPath);
                 }
@@ -976,6 +1023,11 @@ impl TopLevelLakeCommand {
                 }
 
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
+            }
+            | TopLevelLakeCommand::Render { .. } | TopLevelLakeCommand::Status
+                if frost_path.is_some() =>
+            {
+                Err(CliError::FrostPathRequiresCheck)
             }
             | TopLevelLakeCommand::Render { command, dry } => match command {
                 | None => {
@@ -1140,21 +1192,20 @@ impl FrostCommand {
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
     ) -> Result<ExitCode, CliError> {
         match self {
-            | FrostCommand::Init { frost_path } => {
+            | FrostCommand::Init { frost } => {
                 let config = SirnoConfig::from_file(config_path)?;
                 let existing_frost = config.frost.as_ref().map(|settings| settings.path.clone());
-                let frost_path = frost_path
+                let frost = frost
                     .or_else(|| existing_frost.clone())
                     .unwrap_or_else(|| default_frost_path(config_path));
                 if let Some(existing_frost) = existing_frost
-                    && existing_frost != frost_path
+                    && existing_frost != frost
                 {
                     return Err(CliError::FrostAlreadyConfigured(existing_frost));
                 }
 
                 let needs_config_write = config.frost.is_none();
-                let config =
-                    if needs_config_write { config.with_frost(frost_path) } else { config };
+                let config = if needs_config_write { config.with_frost(frost) } else { config };
                 config.validate_for_file(config_path)?;
 
                 let frost_path =
@@ -2284,6 +2335,9 @@ enum CliError {
     /// Lake path override does not apply to checking a Frost path directly.
     #[error("`--lake-path` cannot be used with `check --frost-path`")]
     LakePathWithFrostPath,
+    /// Frost path override applies only to direct Frost checks.
+    #[error("`--frost-path` only applies to `sirno check`")]
+    FrostPathRequiresCheck,
     /// Dry-run mode applies only to render writing.
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
@@ -2431,7 +2485,7 @@ mod tests {
             "DESIGN.md",
             "--lake",
             "custom-lake",
-            "--frost-path",
+            "--frost",
             "custom-frost",
         ])
         .run()
@@ -2469,6 +2523,35 @@ mod tests {
     }
 
     #[test]
+    fn lake_init_accepts_lake_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "lake",
+            "init",
+            "custom-lake",
+        ])
+        .run()
+        .unwrap();
+
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert_eq!(config.lake.path, PathBuf::from("custom-lake"));
+        assert!(temp.path().join("custom-lake").join("concept.md").exists());
+    }
+
+    #[test]
+    fn lake_init_rejects_mono_option() {
+        let error =
+            Cli::try_parse_from(["sirno", "lake", "init", "--mono", "DESIGN.md"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
     fn short_config_matches_global_config() {
         let cli = Cli::parse_from(["sirno", "-C", "Sirno.alt.toml", "status"]);
 
@@ -2485,13 +2568,29 @@ mod tests {
     }
 
     #[test]
+    fn short_frost_path_matches_global_frost_path() {
+        let cli = Cli::parse_from(["sirno", "-F", "sirno-frost", "check"]);
+
+        assert_eq!(cli.frost_path.as_deref(), Some(Path::new("sirno-frost")));
+        assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Check { .. })));
+    }
+
+    #[test]
     fn frost_init_accepts_frost_path() {
-        let cli = Cli::parse_from(["sirno", "frost", "init", "--frost-path", "sirno-frost"]);
+        let cli = Cli::parse_from(["sirno", "frost", "init", "sirno-frost"]);
 
         assert!(matches!(
             cli.command,
-            Command::Frost { command: FrostCommand::Init { frost_path: Some(_) } }
+            Command::Frost { command: FrostCommand::Init { frost: Some(_) } }
         ));
+    }
+
+    #[test]
+    fn frost_init_rejects_frost_option() {
+        let error =
+            Cli::try_parse_from(["sirno", "frost", "init", "--frost", "sirno-frost"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
     }
 
     #[test]
@@ -2538,11 +2637,12 @@ mod tests {
     }
 
     #[test]
-    fn frost_init_rejects_old_frost_flag() {
-        let error =
-            Cli::try_parse_from(["sirno", "frost", "init", "--frost", "sirno-frost"]).unwrap_err();
+    fn frost_init_rejects_global_frost_path() {
+        let error = Cli::parse_from(["sirno", "frost", "init", "--frost-path", "sirno-frost"])
+            .run()
+            .unwrap_err();
 
-        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+        assert!(matches!(error, CliError::FrostPathRequiresCheck));
     }
 
     #[test]
