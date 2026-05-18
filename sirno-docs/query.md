@@ -33,12 +33,12 @@ Two `--exact category=...` values mean either category.
 A `category` exact predicate plus a `refines` exact predicate requires both fields to match.
 
 Query output is presentation.
-`sirno query --fields` accepts a comma-separated list of fields.
-The printable fields are `id`, `name`, `path`, and `desc`.
-When no fields are supplied,
+`sirno query --columns` accepts a comma-separated list of columns.
+The printable columns are `id`, `name`, `path`, and `desc`.
+When no columns are supplied,
 query selects `id,path,name`.
-`--format json` prints a JSON array of objects with the selected fields.
-`--format human` prints the same selected fields as an aligned table for interactive use.
+`--format json` prints a JSON array of objects with the selected columns.
+`--format human` prints the same selected columns as an aligned table for interactive use.
 When no format is supplied,
 query uses `json`.
 

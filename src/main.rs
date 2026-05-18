@@ -176,9 +176,9 @@ enum TopLevelEntryCommand {
         /// Exact structural predicate as FIELD=ENTRY_ID.
         #[arg(short = 'x', long, value_name = "FIELD=ENTRY_ID")]
         exact: Vec<StructuralPredicate>,
-        /// Comma-separated output fields: id, name, path, desc.
-        #[arg(short = 'f', long, value_name = "FIELDS")]
-        fields: Option<QueryFields>,
+        /// Comma-separated output columns: id, name, path, desc.
+        #[arg(long = "columns", value_name = "COLUMNS")]
+        columns: Option<QueryColumns>,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
         format: Option<QueryOutputFormat>,
@@ -396,42 +396,42 @@ enum QueryOutputFormat {
     Human,
 }
 
-/// CLI query output field list.
+/// CLI query output column list.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct QueryFields {
-    fields: Vec<QueryField>,
+struct QueryColumns {
+    columns: Vec<QueryColumn>,
 }
 
-impl Default for QueryFields {
+impl Default for QueryColumns {
     fn default() -> Self {
-        Self { fields: vec![QueryField::Id, QueryField::Path, QueryField::Name] }
+        Self { columns: vec![QueryColumn::Id, QueryColumn::Path, QueryColumn::Name] }
     }
 }
 
-impl FromStr for QueryFields {
-    type Err = QueryFieldsParseError;
+impl FromStr for QueryColumns {
+    type Err = QueryColumnsParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         if raw.trim().is_empty() {
-            return Err(QueryFieldsParseError::Empty);
+            return Err(QueryColumnsParseError::Empty);
         }
 
-        let mut fields = Vec::new();
-        for raw_field in raw.split(',') {
-            let field = raw_field.trim();
-            if field.is_empty() {
-                return Err(QueryFieldsParseError::EmptyField);
+        let mut columns = Vec::new();
+        for raw_column in raw.split(',') {
+            let column = raw_column.trim();
+            if column.is_empty() {
+                return Err(QueryColumnsParseError::EmptyColumn);
             }
-            fields.push(field.parse()?);
+            columns.push(column.parse()?);
         }
 
-        Ok(Self { fields })
+        Ok(Self { columns })
     }
 }
 
-/// One field printable by `sirno query`.
+/// One column printable by `sirno query`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum QueryField {
+enum QueryColumn {
     /// Entry id.
     Id,
     /// Human-readable entry name.
@@ -442,8 +442,8 @@ enum QueryField {
     Desc,
 }
 
-impl FromStr for QueryField {
-    type Err = QueryFieldsParseError;
+impl FromStr for QueryColumn {
+    type Err = QueryColumnsParseError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         match raw {
@@ -451,12 +451,12 @@ impl FromStr for QueryField {
             | "name" => Ok(Self::Name),
             | "path" => Ok(Self::Path),
             | "desc" => Ok(Self::Desc),
-            | field => Err(QueryFieldsParseError::UnknownField(field.to_owned())),
+            | column => Err(QueryColumnsParseError::UnknownColumn(column.to_owned())),
         }
     }
 }
 
-impl QueryField {
+impl QueryColumn {
     fn label(self) -> &'static str {
         match self {
             | Self::Id => "id",
@@ -467,18 +467,18 @@ impl QueryField {
     }
 }
 
-/// Error raised while parsing one `--fields` field list.
+/// Error raised while parsing one `--columns` list.
 #[derive(Debug, Error)]
-enum QueryFieldsParseError {
-    /// The list contains no fields.
-    #[error("query fields must include at least one field")]
+enum QueryColumnsParseError {
+    /// The list contains no columns.
+    #[error("query columns must include at least one column")]
     Empty,
-    /// The list contains a separator without a field.
-    #[error("query fields contain an empty field")]
-    EmptyField,
-    /// The list contains an unknown output field.
-    #[error("unknown query field `{0}`; expected id, name, path, or desc")]
-    UnknownField(String),
+    /// The list contains a separator without a column.
+    #[error("query columns contain an empty column")]
+    EmptyColumn,
+    /// The list contains an unknown output column.
+    #[error("unknown query column `{0}`; expected id, name, path, or desc")]
+    UnknownColumn(String),
 }
 
 /// Structural metadata predicate parsed from `FIELD=ENTRY_ID`.
@@ -916,7 +916,7 @@ impl TopLevelEntryCommand {
                 print_path_records(&records, args.format.unwrap_or(PathOutputFormat::Human))?;
                 Ok(ExitCode::SUCCESS)
             }
-            | TopLevelEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
+            | TopLevelEntryCommand::Query { terms, exact_terms, exact, columns, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
                 settings.witness = None;
@@ -935,9 +935,9 @@ impl TopLevelEntryCommand {
                 )?;
                 let vague_matches = vague_query.select_entries(report.entries());
                 let matches = exact_query.select_entries(vague_matches);
-                let fields = fields.unwrap_or_default();
+                let columns = columns.unwrap_or_default();
                 let format = format.unwrap_or(QueryOutputFormat::Json);
-                print_query_results(&report, &matches, &fields, format)?;
+                print_query_results(&report, &matches, &columns, format)?;
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
@@ -1973,16 +1973,16 @@ fn format_gen_link_report(root: &Path, entry_count: usize, changed_paths: &[Path
 }
 
 fn print_query_results(
-    report: &EntryDirectoryReport, entries: &[&Entry], fields: &QueryFields,
+    report: &EntryDirectoryReport, entries: &[&Entry], columns: &QueryColumns,
     format: QueryOutputFormat,
 ) -> Result<(), CommandError> {
-    let rows = query_result_rows(report, entries, fields)?;
+    let rows = query_result_rows(report, entries, columns)?;
     match format {
         | QueryOutputFormat::Json => {
-            println!("{}", format_query_json(fields, &rows)?);
+            println!("{}", format_query_json(columns, &rows)?);
         }
         | QueryOutputFormat::Human => {
-            print!("{}", format_query_table(fields, &rows));
+            print!("{}", format_query_table(columns, &rows));
         }
     }
     Ok(())
@@ -2098,43 +2098,43 @@ fn format_path_table(records: &[PathRecord]) -> String {
 }
 
 fn query_result_rows(
-    report: &EntryDirectoryReport, entries: &[&Entry], fields: &QueryFields,
+    report: &EntryDirectoryReport, entries: &[&Entry], columns: &QueryColumns,
 ) -> Result<Vec<Vec<String>>, CommandError> {
     entries
         .iter()
         .map(|entry| {
-            fields
-                .fields
+            columns
+                .columns
                 .iter()
-                .map(|field| format_query_field(report, entry, *field))
+                .map(|column| format_query_column(report, entry, *column))
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect()
 }
 
-fn format_query_field(
-    report: &EntryDirectoryReport, entry: &Entry, field: QueryField,
+fn format_query_column(
+    report: &EntryDirectoryReport, entry: &Entry, column: QueryColumn,
 ) -> Result<String, CommandError> {
-    match field {
-        | QueryField::Id => Ok(entry.id.to_string()),
-        | QueryField::Name => Ok(entry.metadata.name.clone()),
-        | QueryField::Path => {
+    match column {
+        | QueryColumn::Id => Ok(entry.id.to_string()),
+        | QueryColumn::Name => Ok(entry.metadata.name.clone()),
+        | QueryColumn::Path => {
             let path = report
                 .entry_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
             Ok(path.display().to_string())
         }
-        | QueryField::Desc => Ok(entry.metadata.desc.clone()),
+        | QueryColumn::Desc => Ok(entry.metadata.desc.clone()),
     }
 }
 
-fn format_query_json(fields: &QueryFields, rows: &[Vec<String>]) -> Result<String, CommandError> {
-    let records = rows.iter().map(|row| QueryJsonRecord { fields, row }).collect::<Vec<_>>();
+fn format_query_json(columns: &QueryColumns, rows: &[Vec<String>]) -> Result<String, CommandError> {
+    let records = rows.iter().map(|row| QueryJsonRecord { columns, row }).collect::<Vec<_>>();
     Ok(serde_json::to_string_pretty(&records)?)
 }
 
 struct QueryJsonRecord<'a> {
-    fields: &'a QueryFields,
+    columns: &'a QueryColumns,
     row: &'a [String],
 }
 
@@ -2143,16 +2143,16 @@ impl serde::Serialize for QueryJsonRecord<'_> {
     where
         S: serde::Serializer,
     {
-        let mut map = serializer.serialize_map(Some(self.fields.fields.len()))?;
-        for (field, value) in self.fields.fields.iter().zip(self.row) {
-            map.serialize_entry(field.label(), value)?;
+        let mut map = serializer.serialize_map(Some(self.columns.columns.len()))?;
+        for (column, value) in self.columns.columns.iter().zip(self.row) {
+            map.serialize_entry(column.label(), value)?;
         }
         map.end()
     }
 }
 
-fn format_query_table(fields: &QueryFields, rows: &[Vec<String>]) -> String {
-    let headers = fields.fields.iter().map(|field| field.label()).collect::<Vec<_>>();
+fn format_query_table(columns: &QueryColumns, rows: &[Vec<String>]) -> String {
+    let headers = columns.columns.iter().map(|column| column.label()).collect::<Vec<_>>();
     let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
     for row in rows {
         for (index, cell) in row.iter().enumerate() {
@@ -2451,7 +2451,7 @@ mod tests {
     use crate::{
         ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
         EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
-        MoveCommand, PathOutputFormat, QueryField, QueryFields, QueryOutputFormat, ResolveArgs,
+        MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
         StructuralPredicate, TideCommand, TideItemSelector, TideReviewCommand,
         TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs,
         entry_path_records, exact_query_from_predicates, format_gen_link_report, format_path_table,
@@ -3675,11 +3675,19 @@ Body.
 
     #[test]
     fn query_accepts_short_alias_and_options() {
-        let cli =
-            Cli::parse_from(["sirno", "q", "-x", "topic=concept", "-f", "id,path", "-o", "human"]);
+        let cli = Cli::parse_from([
+            "sirno",
+            "q",
+            "-x",
+            "topic=concept",
+            "--columns",
+            "id,path",
+            "-o",
+            "human",
+        ]);
         let Command::TopLevelEntry(TopLevelEntryCommand::Query {
             exact,
-            fields: Some(fields),
+            columns: Some(columns),
             format: Some(format),
             ..
         }) = cli.command
@@ -3694,7 +3702,7 @@ Body.
                 target: EntryId::new("concept").unwrap(),
             }]
         );
-        assert_eq!(fields.fields, vec![QueryField::Id, QueryField::Path]);
+        assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
         assert!(matches!(format, QueryOutputFormat::Human));
     }
 
@@ -3706,7 +3714,7 @@ Body.
             "q",
             "-x",
             "topic=concept",
-            "-f",
+            "--columns",
             "id,path",
             "-o",
             "human",
@@ -3715,7 +3723,7 @@ Body.
             command:
                 EntryCommand::TopLevel(TopLevelEntryCommand::Query {
                     exact,
-                    fields: Some(fields),
+                    columns: Some(columns),
                     format: Some(format),
                     ..
                 }),
@@ -3731,22 +3739,22 @@ Body.
                 target: EntryId::new("concept").unwrap(),
             }]
         );
-        assert_eq!(fields.fields, vec![QueryField::Id, QueryField::Path]);
+        assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
         assert!(matches!(format, QueryOutputFormat::Human));
     }
 
     #[test]
-    fn query_accepts_comma_separated_fields() {
-        let cli = Cli::parse_from(["sirno", "query", "--fields", "id,name,path,desc"]);
-        let Command::TopLevelEntry(TopLevelEntryCommand::Query { fields: Some(fields), .. }) =
+    fn query_accepts_comma_separated_columns() {
+        let cli = Cli::parse_from(["sirno", "query", "--columns", "id,name,path,desc"]);
+        let Command::TopLevelEntry(TopLevelEntryCommand::Query { columns: Some(columns), .. }) =
             cli.command
         else {
-            panic!("expected query command with fields");
+            panic!("expected query command with columns");
         };
 
         assert_eq!(
-            fields.fields,
-            vec![QueryField::Id, QueryField::Name, QueryField::Path, QueryField::Desc,]
+            columns.columns,
+            vec![QueryColumn::Id, QueryColumn::Name, QueryColumn::Path, QueryColumn::Desc,]
         );
     }
 
@@ -3791,23 +3799,44 @@ Body.
     }
 
     #[test]
-    fn query_rejects_unknown_field() {
-        let error = Cli::try_parse_from(["sirno", "query", "--fields", "id,summary"]).unwrap_err();
+    fn query_rejects_old_fields_flag() {
+        let error = Cli::try_parse_from(["sirno", "query", "--fields", "id,desc"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn query_rejects_old_fields_short_flag() {
+        let error = Cli::try_parse_from(["sirno", "query", "-f", "id,desc"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn query_rejects_old_output_flag() {
+        let error = Cli::try_parse_from(["sirno", "query", "--output", "id,desc"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn query_rejects_unknown_column() {
+        let error = Cli::try_parse_from(["sirno", "query", "--columns", "id,summary"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
     }
 
     #[test]
-    fn query_rejects_empty_field() {
-        let error = Cli::try_parse_from(["sirno", "query", "--fields", "id,,desc"]).unwrap_err();
+    fn query_rejects_empty_column() {
+        let error = Cli::try_parse_from(["sirno", "query", "--columns", "id,,desc"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
     }
 
     #[test]
-    fn query_json_uses_selected_field_names() {
-        let fields = "id,desc".parse::<QueryFields>().unwrap();
-        let json = format_query_json(&fields, &[vec!["query".to_owned(), "Selection".to_owned()]])
+    fn query_json_uses_selected_column_names() {
+        let columns = "id,desc".parse::<QueryColumns>().unwrap();
+        let json = format_query_json(&columns, &[vec!["query".to_owned(), "Selection".to_owned()]])
             .unwrap();
         let parsed = serde_json::from_str::<serde_json::Value>(&json).unwrap();
 
@@ -3825,10 +3854,10 @@ Body.
     }
 
     #[test]
-    fn query_table_uses_selected_field_headers_and_widths() {
-        let fields = "id,desc".parse::<QueryFields>().unwrap();
+    fn query_table_uses_selected_column_headers_and_widths() {
+        let columns = "id,desc".parse::<QueryColumns>().unwrap();
         let table =
-            format_query_table(&fields, &[vec!["query".to_owned(), "Selection".to_owned()]]);
+            format_query_table(&columns, &[vec!["query".to_owned(), "Selection".to_owned()]]);
 
         assert_eq!(
             table,

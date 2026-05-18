@@ -201,8 +201,8 @@ Use `sirno rg --with-generated-footer` only when generated links are the search 
 Useful document-search commands:
 
 ```text
-sirno query TERMS --fields id,desc
-sirno query --exact FIELD=ENTRY_ID --fields id,path,desc
+sirno query TERMS --columns id,desc
+sirno query --exact FIELD=ENTRY_ID --columns id,path,desc
 sirno rg TEXT
 sirno rg -n TEXT
 sirno rg -C 2 TEXT
@@ -218,7 +218,7 @@ Do not rewrite from isolated match lines alone.
 Prefer these checks when the CLI provides them:
 
 ```text
-sirno query --fields id
+sirno query --columns id
 sirno rg TEXT
 sirno check --mode edit
 sirno render

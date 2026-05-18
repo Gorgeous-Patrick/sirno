@@ -130,7 +130,7 @@ The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry
 `sirno entry query` is its grouped form.
 Its default mode is vague text query.
 Exact structural predicates use `-x, --exact FIELD=ENTRY_ID`.
-The `-f, --fields` option selects output fields.
+The `--columns` option selects output columns.
 The `-o, --format` option selects the output format.
 
 `sirno check` checks the active *lake*.
