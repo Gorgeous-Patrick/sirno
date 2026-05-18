@@ -214,22 +214,26 @@ impl EntryMetadata {
         self.structural.get(field).map(Vec::as_slice).unwrap_or_default()
     }
 
+    /// Return targets for one structural field while preserving field presence.
+    ///
+    /// `None` means the field is absent.
+    /// `Some([])` means the field is present and has no targets.
+    pub fn structural_field(&self, field: &str) -> Option<&[EntryId]> {
+        self.structural.get(field).map(Vec::as_slice)
+    }
+
     /// Return a mutable target list for one structural field.
     pub fn structural_targets_for_mut(&mut self, field: impl Into<String>) -> &mut Vec<EntryId> {
         self.structural.entry(field.into()).or_default()
     }
 
     /// Set the targets for one structural field.
+    ///
+    /// An empty target list records a present empty field.
     pub fn set_structural_targets(
         &mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryId>,
     ) {
-        let field = field.into();
-        let targets = targets.into_iter().collect::<Vec<_>>();
-        if targets.is_empty() {
-            self.structural.shift_remove(&field);
-        } else {
-            self.structural.insert(field, targets);
-        }
+        self.structural.insert(field.into(), targets.into_iter().collect::<Vec<_>>());
     }
 
     /// Add one target to one structural field.
@@ -457,6 +461,8 @@ fn render_id_list(
     out: &mut String, field: &str, values: &[EntryId],
 ) -> Result<(), EntryRenderError> {
     if values.is_empty() {
+        out.push_str(field);
+        out.push_str(": []\n");
         return Ok(());
     }
     out.push_str(field);
@@ -653,6 +659,31 @@ Body.
 
         assert_eq!(fields, ["zeta", "alpha"]);
         assert!(rendered.find("zeta:\n").unwrap() < rendered.find("alpha:\n").unwrap());
+    }
+
+    #[test]
+    fn preserves_present_empty_structural_field_when_rendering() {
+        let source = "\
+---
+name: Empty Field
+desc: Metadata with a present empty structural field.
+topic: []
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let rendered = entry.to_markdown().unwrap();
+        let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
+
+        assert!(
+            matches!(entry.metadata.structural_field("topic"), Some(targets) if targets.is_empty())
+        );
+        assert!(
+            matches!(reparsed.metadata.structural_field("topic"), Some(targets) if targets.is_empty())
+        );
+        assert!(rendered.contains("topic: []\n"));
     }
 
     #[test]

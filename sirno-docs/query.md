@@ -27,12 +27,17 @@ Vague query is for recall.
 A user can search for nearby language without choosing the exact *structural field* first.
 Each text term must match somewhere in the expanded *entry* text.
 
-Structural filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Target filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
+`empty` means the field is present with no targets.
+`missing` means the field is absent.
 Query combines text terms and distinct *structural fields* with all-of logic.
 Inside one structural field,
-comma-separated values and repeated `--has` flags use any-of logic.
+comma-separated values, repeated `--has` flags, and `--is` states use any-of logic.
 `--has category=concept,meta` means either category.
 `--has category=concept --has refines=interfaces` requires both fields to match.
+`--has refines=query --is refines=empty` matches either a `query` refinement
+or a present empty `refines` field.
 
 Query output is presentation.
 `sirno query --columns` accepts a comma-separated list of columns.

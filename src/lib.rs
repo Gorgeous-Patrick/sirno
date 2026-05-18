@@ -45,7 +45,7 @@ pub use crate::lake::{
     EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
 };
 pub use crate::lock::{FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock, TideLock};
-pub use crate::query::{EntryQuery, EntryTextTerm, VagueEntryQuery};
+pub use crate::query::{EntryQuery, EntryStructuralMatcher, EntryTextTerm, VagueEntryQuery};
 pub use crate::render::{
     BEGIN_LINKS_GUARD, END_LINKS_GUARD, GeneratedLinkBody, GeneratedLinkError,
 };

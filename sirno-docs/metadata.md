@@ -17,6 +17,7 @@ Configured structural fields are optional.
 This repository configures `category`, `belongs`, and `refines`.
 They are always lists when present,
 and their values are *entry* ids.
+An empty list is a present empty field.
 Their field order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 

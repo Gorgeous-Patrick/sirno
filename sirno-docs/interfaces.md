@@ -130,8 +130,9 @@ The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry
 `sirno entry query` is its grouped form.
 Its default mode is vague text query.
 Structural filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 Distinct fields narrow results.
-Comma-separated values and repeated same-field filters are alternatives.
+Same-field target filters and state filters are alternatives.
 The `--columns` option selects output columns.
 The `-o, --format` option selects the output format.
 

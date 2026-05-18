@@ -19,6 +19,7 @@ generated footer rendering, and tide review worklists.
 
 Structural fields refer to *entries* by id.
 They are list-valued and may name several targets.
+An empty list is still a present field.
 Their configured order is user-managed.
 Sirno uses that order when rendering configured structural surfaces.
 Agents should discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.

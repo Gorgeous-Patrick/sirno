@@ -18,10 +18,10 @@ use sirno::{
     CONFIG_FILE_NAME, CheckMode, ConfigError, Entry, EntryArtifactPath, EntryArtifactPathError,
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
     EntryDirectoryWritePolicy, EntryId, EntryIdError, EntryMetadata, EntryParseError, EntryQuery,
-    Eterator, FrostError, FrostLockStatus, GenLinkDirectoryReport, GeneratedLinkBody,
-    GeneratedLinkError, LockError, SirnoConfig, SirnoFrost, SirnoLock, StructuralSettings, Tide,
-    TideError, TideWorkitem, TutorialSettings, VagueEntryQuery, WitnessCheckSettings, WitnessError,
-    WitnessRecord,
+    EntryStructuralMatcher, Eterator, FrostError, FrostLockStatus, GenLinkDirectoryReport,
+    GeneratedLinkBody, GeneratedLinkError, LockError, SirnoConfig, SirnoFrost, SirnoLock,
+    StructuralSettings, Tide, TideError, TideWorkitem, TutorialSettings, VagueEntryQuery,
+    WitnessCheckSettings, WitnessError, WitnessRecord,
 };
 use thiserror::Error;
 use unicode_width::UnicodeWidthStr;
@@ -175,12 +175,18 @@ enum TopLevelEntryCommand {
         /// Exact text term matched against id, name, desc, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
-        /// Structural filter as FIELD=ENTRY_ID[,ENTRY_ID].
+        /// Structural target filter as FIELD=ENTRY_ID[,ENTRY_ID].
         ///
         /// Different fields narrow results.
         /// Comma-separated values and repeated same-field filters are alternatives.
         #[arg(long = "has", value_name = "FIELD=ENTRY_ID[,ENTRY_ID]")]
         has: Vec<StructuralFilter>,
+        /// Structural field state filter as FIELD=present, FIELD=empty, or FIELD=missing.
+        ///
+        /// Empty means the field is present with no targets.
+        /// Same-field target filters and state filters are alternatives.
+        #[arg(long = "is", value_name = "FIELD=STATE")]
+        is: Vec<StructuralStateFilter>,
         /// Comma-separated output columns: id, name, path, desc.
         #[arg(long = "columns", value_name = "COLUMNS")]
         columns: Option<QueryColumns>,
@@ -574,6 +580,76 @@ enum StructuralFilterParseError {
     /// A target entry id is invalid.
     #[error(transparent)]
     EntryId(#[from] EntryIdError),
+}
+
+/// Structural query state filter parsed from `FIELD=STATE`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct StructuralStateFilter {
+    field: String,
+    state: StructuralFieldState,
+}
+
+impl FromStr for StructuralStateFilter {
+    type Err = StructuralStateFilterParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        let Some((field, state)) = raw.split_once('=') else {
+            return Err(StructuralStateFilterParseError::MissingEquals);
+        };
+        let field = field.trim();
+        if field.is_empty() {
+            return Err(StructuralStateFilterParseError::EmptyField);
+        }
+        Ok(Self { field: field.to_owned(), state: state.trim().parse()? })
+    }
+}
+
+/// Structural field state matched by `sirno query --is`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StructuralFieldState {
+    /// The field is present with any target count.
+    Present,
+    /// The field is present with no targets.
+    Empty,
+    /// The field is absent.
+    Missing,
+}
+
+impl FromStr for StructuralFieldState {
+    type Err = StructuralStateFilterParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        match raw {
+            | "present" => Ok(Self::Present),
+            | "empty" => Ok(Self::Empty),
+            | "missing" => Ok(Self::Missing),
+            | state => Err(StructuralStateFilterParseError::UnknownState(state.to_owned())),
+        }
+    }
+}
+
+impl From<StructuralFieldState> for EntryStructuralMatcher {
+    fn from(value: StructuralFieldState) -> Self {
+        match value {
+            | StructuralFieldState::Present => Self::Present,
+            | StructuralFieldState::Empty => Self::Empty,
+            | StructuralFieldState::Missing => Self::Missing,
+        }
+    }
+}
+
+/// Error raised while parsing one structural query state filter.
+#[derive(Debug, Error)]
+enum StructuralStateFilterParseError {
+    /// The argument does not contain the field-state separator.
+    #[error("expected FIELD=present, FIELD=empty, or FIELD=missing")]
+    MissingEquals,
+    /// The structural field name is empty.
+    #[error("structural field name must not be empty")]
+    EmptyField,
+    /// The structural field state is not recognized.
+    #[error("unknown structural field state `{0}`; expected present, empty, or missing")]
+    UnknownState(String),
 }
 
 /// Supported Sirno Frost commands.
@@ -976,7 +1052,7 @@ impl TopLevelEntryCommand {
                 print_path_records(&records, args.format.unwrap_or_default())?;
                 Ok(ExitCode::SUCCESS)
             }
-            | TopLevelEntryCommand::Query { terms, exact_terms, has, columns, format } => {
+            | TopLevelEntryCommand::Query { terms, exact_terms, has, is, columns, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
                 settings.witness = None;
@@ -991,6 +1067,7 @@ impl TopLevelEntryCommand {
                 let filtered_query = entry_query_from_filters(
                     EntryQuery::new().with_text_terms(exact_terms),
                     has,
+                    is,
                     &settings.structural,
                 )?;
                 let vague_matches = vague_query.select_entries(report.entries());
@@ -1911,25 +1988,38 @@ fn resolve_lake_directory(
 }
 
 fn entry_query_from_filters(
-    mut query: EntryQuery, filters: Vec<StructuralFilter>, structural: &StructuralSettings,
+    mut query: EntryQuery, filters: Vec<StructuralFilter>, states: Vec<StructuralStateFilter>,
+    structural: &StructuralSettings,
 ) -> Result<EntryQuery, CommandError> {
-    for (field, targets) in structural_filter_targets_by_field(filters, structural)? {
-        query = query.with_structural_targets(field, targets);
+    for (field, matchers) in structural_matchers_by_field(filters, states, structural)? {
+        for matcher in matchers {
+            query = query.with_structural_matcher(field.clone(), matcher);
+        }
     }
     Ok(query)
 }
 
-fn structural_filter_targets_by_field(
-    filters: Vec<StructuralFilter>, structural: &StructuralSettings,
-) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
-    let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
+fn structural_matchers_by_field(
+    filters: Vec<StructuralFilter>, states: Vec<StructuralStateFilter>,
+    structural: &StructuralSettings,
+) -> Result<IndexMap<String, Vec<EntryStructuralMatcher>>, CommandError> {
+    let mut matchers_by_field = IndexMap::<String, Vec<EntryStructuralMatcher>>::new();
     for filter in filters {
         if !structural.contains_field(&filter.field) {
             return Err(CommandError::UnconfiguredStructuralField(filter.field));
         }
-        targets_by_field.entry(filter.field).or_default().extend(filter.targets);
+        matchers_by_field
+            .entry(filter.field)
+            .or_default()
+            .push(EntryStructuralMatcher::Targets(filter.targets));
     }
-    Ok(targets_by_field)
+    for state in states {
+        if !structural.contains_field(&state.field) {
+            return Err(CommandError::UnconfiguredStructuralField(state.field));
+        }
+        matchers_by_field.entry(state.field).or_default().push(state.state.into());
+    }
+    Ok(matchers_by_field)
 }
 
 fn structural_targets_by_predicate(
@@ -2541,11 +2631,12 @@ mod tests {
         ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
         EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand, LakeMoveArgs,
         MoveCommand, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
-        StructuralFilter, StructuralPredicate, TideCommand, TideItemSelector, TideOutputFormat,
-        TideReviewCommand, TopLevelEntryCommand, TopLevelFrostCommand, TopLevelLakeCommand,
-        UnresolveArgs, entry_path_records, entry_query_from_filters, format_gen_link_report,
-        format_human_table_with_width, format_path_table, format_query_json, format_query_table,
-        format_witness_record, format_witness_records, rg_args_include_preprocessor,
+        StructuralFieldState, StructuralFilter, StructuralPredicate, StructuralStateFilter,
+        TideCommand, TideItemSelector, TideOutputFormat, TideReviewCommand, TopLevelEntryCommand,
+        TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, entry_path_records,
+        entry_query_from_filters, format_gen_link_report, format_human_table_with_width,
+        format_path_table, format_query_json, format_query_table, format_witness_record,
+        format_witness_records, rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -3766,6 +3857,20 @@ Body.
     }
 
     #[test]
+    fn query_accepts_structural_state_filter() {
+        let cli = Cli::parse_from(["sirno", "query", "--is", "topic=empty"]);
+
+        assert!(matches!(
+            cli.command,
+            Command::TopLevelEntry(TopLevelEntryCommand::Query { is, .. })
+                if is == vec![StructuralStateFilter {
+                    field: "topic".to_owned(),
+                    state: StructuralFieldState::Empty,
+                }]
+        ));
+    }
+
+    #[test]
     fn query_accepts_short_alias_and_options() {
         let cli = Cli::parse_from([
             "sirno",
@@ -4062,6 +4167,13 @@ Body.
     }
 
     #[test]
+    fn query_rejects_unknown_structural_state_filter() {
+        let error = Cli::try_parse_from(["sirno", "query", "--is", "topic=blank"]).unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
+    }
+
+    #[test]
     fn check_accepts_short_mode() {
         let cli = Cli::parse_from(["sirno", "check", "-m", "review"]);
 
@@ -4118,6 +4230,7 @@ Body.
         let error = entry_query_from_filters(
             EntryQuery::new(),
             vec!["topic=concept".parse::<StructuralFilter>().unwrap()],
+            Vec::new(),
             &StructuralSettings::default(),
         )
         .unwrap_err();
@@ -4137,6 +4250,7 @@ Body.
         let query = entry_query_from_filters(
             EntryQuery::new(),
             vec!["topic=concept,meta".parse::<StructuralFilter>().unwrap()],
+            Vec::new(),
             &settings,
         )
         .unwrap();
@@ -4157,11 +4271,52 @@ Body.
                 "topic=concept".parse::<StructuralFilter>().unwrap(),
                 "topic=meta".parse::<StructuralFilter>().unwrap(),
             ],
+            Vec::new(),
             &settings,
         )
         .unwrap();
 
         assert!(query.matches(&entry));
+    }
+
+    #[test]
+    fn query_filter_matches_present_empty_structural_field() {
+        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        metadata.set_structural_targets("topic", Vec::<EntryId>::new());
+        let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
+        let settings =
+            StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
+        let query = entry_query_from_filters(
+            EntryQuery::new(),
+            Vec::new(),
+            vec!["topic=empty".parse::<StructuralStateFilter>().unwrap()],
+            &settings,
+        )
+        .unwrap();
+
+        assert!(query.matches(&entry));
+    }
+
+    #[test]
+    fn query_filter_keeps_target_and_state_matchers_disjunctive() {
+        let mut empty_metadata = EntryMetadata::new("Empty", "A present empty field.").unwrap();
+        empty_metadata.set_structural_targets("topic", Vec::<EntryId>::new());
+        let empty = Entry::new(EntryId::new("empty").unwrap(), empty_metadata, "");
+        let mut targeted_metadata = EntryMetadata::new("Targeted", "A targeted field.").unwrap();
+        targeted_metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
+        let targeted = Entry::new(EntryId::new("targeted").unwrap(), targeted_metadata, "");
+        let settings =
+            StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
+        let query = entry_query_from_filters(
+            EntryQuery::new(),
+            vec!["topic=meta".parse::<StructuralFilter>().unwrap()],
+            vec!["topic=empty".parse::<StructuralStateFilter>().unwrap()],
+            &settings,
+        )
+        .unwrap();
+
+        assert!(query.matches(&empty));
+        assert!(query.matches(&targeted));
     }
 
     #[test]

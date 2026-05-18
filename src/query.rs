@@ -40,16 +40,42 @@ impl EntryTextTerm {
     }
 }
 
+/// Structural field matcher for an entry query.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EntryStructuralMatcher {
+    /// The field has any listed target.
+    Targets(Vec<EntryId>),
+    /// The field is present with any target count.
+    Present,
+    /// The field is present with no targets.
+    Empty,
+    /// The field is absent.
+    Missing,
+}
+
+impl EntryStructuralMatcher {
+    fn matches(&self, entry_targets: Option<&[EntryId]>) -> bool {
+        match self {
+            | Self::Targets(query_targets) => entry_targets.is_some_and(|entry_targets| {
+                query_targets.iter().any(|target| entry_targets.contains(target))
+            }),
+            | Self::Present => entry_targets.is_some(),
+            | Self::Empty => entry_targets.is_some_and(|entry_targets| entry_targets.is_empty()),
+            | Self::Missing => entry_targets.is_none(),
+        }
+    }
+}
+
 /// Exact predicate over Sirno entries.
 ///
 /// Text terms are conjunctive.
 /// Distinct metadata fields are conjunctive.
-/// Repeated values inside one metadata field are disjunctive.
+/// Structural matchers inside one metadata field are disjunctive.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:query:begin
 pub struct EntryQuery {
     text_terms: Vec<EntryTextTerm>,
-    structural: BTreeMap<String, Vec<EntryId>>,
+    structural: BTreeMap<String, Vec<EntryStructuralMatcher>>,
 }
 // sirno:witness:query:end
 
@@ -66,14 +92,25 @@ impl EntryQuery {
         self
     }
 
-    /// Set targets for one structural field.
+    /// Add a target matcher for one structural field.
     pub fn with_structural_targets(
         mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryId>,
     ) -> Self {
         let targets = targets.into_iter().collect::<Vec<_>>();
         if !targets.is_empty() {
-            self.structural.insert(field.into(), targets);
+            self.structural
+                .entry(field.into())
+                .or_default()
+                .push(EntryStructuralMatcher::Targets(targets));
         }
+        self
+    }
+
+    /// Add one matcher for one structural field.
+    pub fn with_structural_matcher(
+        mut self, field: impl Into<String>, matcher: EntryStructuralMatcher,
+    ) -> Self {
+        self.structural.entry(field.into()).or_default().push(matcher);
         self
     }
 
@@ -81,8 +118,9 @@ impl EntryQuery {
     // sirno:witness:query:begin
     pub fn matches(&self, entry: &Entry) -> bool {
         self.matches_text(entry)
-            && self.structural.iter().all(|(field, targets)| {
-                Self::matches_targets(entry.metadata.structural_targets_for(field), targets)
+            && self.structural.iter().all(|(field, matchers)| {
+                let entry_targets = entry.metadata.structural_field(field);
+                matchers.iter().any(|matcher| matcher.matches(entry_targets))
             })
     }
     // sirno:witness:query:end
@@ -107,11 +145,6 @@ impl EntryQuery {
 
         let haystack = entry.query_text();
         self.text_terms.iter().all(|term| term.matches(&haystack))
-    }
-
-    fn matches_targets(entry_targets: &[EntryId], query_targets: &[EntryId]) -> bool {
-        query_targets.is_empty()
-            || query_targets.iter().any(|target| entry_targets.contains(target))
     }
 }
 
@@ -236,6 +269,47 @@ mod tests {
             EntryQuery::new().with_structural_targets(FIELD_KIND, [id("narrative"), id("meta")]);
 
         assert!(query.matches(&concept));
+    }
+
+    #[test]
+    fn structural_state_matchers_preserve_field_presence() {
+        let missing = entry("missing", "Missing", "No field.", "");
+        let mut empty = entry("empty", "Empty", "Present empty field.", "");
+        empty.metadata.set_structural_targets(FIELD_KIND, []);
+        let mut targeted = entry("targeted", "Targeted", "Present field.", "");
+        targeted.metadata.push_structural_target(FIELD_KIND, id("meta"));
+
+        let present =
+            EntryQuery::new().with_structural_matcher(FIELD_KIND, EntryStructuralMatcher::Present);
+        let empty_query =
+            EntryQuery::new().with_structural_matcher(FIELD_KIND, EntryStructuralMatcher::Empty);
+        let missing_query =
+            EntryQuery::new().with_structural_matcher(FIELD_KIND, EntryStructuralMatcher::Missing);
+
+        assert!(!present.matches(&missing));
+        assert!(present.matches(&empty));
+        assert!(present.matches(&targeted));
+        assert!(!empty_query.matches(&missing));
+        assert!(empty_query.matches(&empty));
+        assert!(!empty_query.matches(&targeted));
+        assert!(missing_query.matches(&missing));
+        assert!(!missing_query.matches(&empty));
+        assert!(!missing_query.matches(&targeted));
+    }
+
+    #[test]
+    fn structural_state_and_target_matchers_are_disjunctive_inside_one_field() {
+        let mut empty = entry("empty", "Empty", "Present empty field.", "");
+        empty.metadata.set_structural_targets(FIELD_KIND, []);
+        let mut targeted = entry("targeted", "Targeted", "Present field.", "");
+        targeted.metadata.push_structural_target(FIELD_KIND, id("meta"));
+
+        let query = EntryQuery::new()
+            .with_structural_targets(FIELD_KIND, [id("meta")])
+            .with_structural_matcher(FIELD_KIND, EntryStructuralMatcher::Empty);
+
+        assert!(query.matches(&empty));
+        assert!(query.matches(&targeted));
     }
 
     #[test]
