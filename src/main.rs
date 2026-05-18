@@ -9,17 +9,18 @@ use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, fmt};
 
-use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
+use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
 use indexmap::IndexMap;
 use serde::{Deserialize, ser::SerializeMap};
 use sirno::{
-    CONFIG_FILE_NAME, CheckMode, ConfigError, Entry, EntryDirectory, EntryDirectoryCheckSettings,
-    EntryDirectoryError, EntryDirectoryReport, EntryDirectoryWritePolicy, EntryId, EntryIdError,
-    EntryMetadata, EntryParseError, EntryQuery, Eterator, FrostError, FrostLockStatus,
-    GenLinkDirectoryReport, GeneratedLinkBody, GeneratedLinkError, LockError, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideError, TideWorkitem, TutorialSettings,
-    VagueEntryQuery, WitnessCheckSettings, WitnessError, WitnessRecord,
+    CONFIG_FILE_NAME, CheckMode, ConfigError, Entry, EntryArtifactPath, EntryArtifactPathError,
+    EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
+    EntryDirectoryWritePolicy, EntryId, EntryIdError, EntryMetadata, EntryParseError, EntryQuery,
+    Eterator, FrostError, FrostLockStatus, GenLinkDirectoryReport, GeneratedLinkBody,
+    GeneratedLinkError, LockError, SirnoConfig, SirnoFrost, SirnoLock, StructuralSettings, Tide,
+    TideError, TideWorkitem, TutorialSettings, VagueEntryQuery, WitnessCheckSettings, WitnessError,
+    WitnessRecord,
 };
 use thiserror::Error;
 
@@ -61,6 +62,12 @@ enum Command {
         /// Entry command.
         #[command(subcommand)]
         command: GroupedEntryCommand,
+    },
+    /// Manage entry-owned artifact files.
+    Artifact {
+        /// Artifact command.
+        #[command(subcommand)]
+        command: ArtifactCommand,
     },
     // sirno:witness:interfaces:end
     /// Manage optional Sirno Frost snapshots.
@@ -184,6 +191,10 @@ enum EntryCommand {
         id: String,
     },
     // sirno:witness:interfaces:end
+    /// Show filesystem paths related to one entry.
+    // sirno:witness:interfaces:begin
+    Path(CliPathArgs),
+    // sirno:witness:interfaces:end
     /// Query public Markdown entries.
     // sirno:witness:interfaces:begin
     #[command(visible_alias = "q")]
@@ -267,6 +278,14 @@ enum GroupedEntryCommand {
         /// Entry id to melt.
         id: String,
     },
+    /// Show filesystem paths related to one entry.
+    Path(CliPathArgs),
+    /// Manage entry-owned artifact files.
+    Artifact {
+        /// Artifact command.
+        #[command(subcommand)]
+        command: ArtifactCommand,
+    },
     /// Query public Markdown entries.
     #[command(visible_alias = "q")]
     Query {
@@ -304,6 +323,82 @@ enum GroupedEntryCommand {
         full: bool,
     },
 }
+
+/// Arguments for entry path lookup.
+// sirno:witness:interfaces:begin
+#[derive(Clone, Debug, Args)]
+struct CliPathArgs {
+    /// Entry id whose paths should be shown.
+    id: String,
+    /// Show the public Markdown entry file path.
+    #[arg(long = "entry")]
+    show_entry: bool,
+    /// Show public entry artifact paths.
+    #[arg(long = "artifact")]
+    show_artifact: bool,
+    /// Show private Frost backend paths when Frost is configured.
+    #[arg(long = "frost")]
+    show_frost: bool,
+    /// Print absolute paths.
+    #[arg(long)]
+    absolute: bool,
+    /// Output format.
+    #[arg(short = 'o', long, value_enum)]
+    format: Option<CliPathOutputFormat>,
+}
+// sirno:witness:interfaces:end
+
+/// CLI path lookup output renderer.
+// sirno:witness:interfaces:begin
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CliPathOutputFormat {
+    /// Print a JSON array of path records.
+    Json,
+    /// Print an aligned table.
+    Human,
+    /// Print only paths, one per line.
+    Paths,
+}
+// sirno:witness:interfaces:end
+
+/// Supported entry artifact commands.
+// sirno:witness:interfaces:begin
+#[derive(Debug, Subcommand)]
+enum ArtifactCommand {
+    /// List artifacts owned by one entry.
+    List {
+        /// Entry id whose artifacts should be listed.
+        id: String,
+    },
+    /// Copy a file into one entry's artifact tree.
+    Add {
+        /// Entry id that will own the artifact.
+        id: String,
+        /// Source file to copy.
+        source: PathBuf,
+        /// Owner-relative artifact path.
+        artifact_path: Option<PathBuf>,
+    },
+    /// Rename one artifact path owned by an entry.
+    #[command(visible_aliases = ["mv", "move"])]
+    Rename {
+        /// Entry id that owns the artifact.
+        id: String,
+        /// Existing owner-relative artifact path.
+        old_path: PathBuf,
+        /// New owner-relative artifact path.
+        new_path: PathBuf,
+    },
+    /// Remove one artifact owned by an entry.
+    #[command(visible_aliases = ["rm", "delete"])]
+    Remove {
+        /// Entry id that owns the artifact.
+        id: String,
+        /// Owner-relative artifact path to remove.
+        artifact_path: PathBuf,
+    },
+}
+// sirno:witness:interfaces:end
 
 /// CLI representation of check boundaries.
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -641,8 +736,9 @@ impl Cli {
             }
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::Entry { command } => {
-                EntryCommand::from(command).run(&config_path, lake_path.as_deref())
+                run_grouped_entry_command(command, &config_path, lake_path.as_deref())
             }
+            | Command::Artifact { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Frost { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Tide { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(),
@@ -650,22 +746,31 @@ impl Cli {
     }
 }
 
-impl From<GroupedEntryCommand> for EntryCommand {
-    fn from(command: GroupedEntryCommand) -> Self {
-        match command {
-            | GroupedEntryCommand::New { id, name, desc, structural, body } => {
-                Self::New { id, name, desc, structural, body }
-            }
-            | GroupedEntryCommand::Rename { old_id, new_id } => Self::Rename { old_id, new_id },
-            | GroupedEntryCommand::Freeze { id } => Self::Freeze { id },
-            | GroupedEntryCommand::Melt { id } => Self::Melt { id },
-            | GroupedEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
-                Self::Query { terms, exact_terms, exact, fields, format }
-            }
-            | GroupedEntryCommand::Rg { with_generated_footer, args } => {
-                Self::Rg { with_generated_footer, args }
-            }
-            | GroupedEntryCommand::Witness { id, full } => Self::Witness { id, full },
+fn run_grouped_entry_command(
+    command: GroupedEntryCommand, config_path: &Path, lake_path: Option<&Path>,
+) -> Result<ExitCode, CliError> {
+    match command {
+        | GroupedEntryCommand::New { id, name, desc, structural, body } => {
+            EntryCommand::New { id, name, desc, structural, body }.run(config_path, lake_path)
+        }
+        | GroupedEntryCommand::Rename { old_id, new_id } => {
+            EntryCommand::Rename { old_id, new_id }.run(config_path, lake_path)
+        }
+        | GroupedEntryCommand::Freeze { id } => {
+            EntryCommand::Freeze { id }.run(config_path, lake_path)
+        }
+        | GroupedEntryCommand::Melt { id } => EntryCommand::Melt { id }.run(config_path, lake_path),
+        | GroupedEntryCommand::Path(args) => EntryCommand::Path(args).run(config_path, lake_path),
+        | GroupedEntryCommand::Artifact { command } => command.run(config_path, lake_path),
+        | GroupedEntryCommand::Query { terms, exact_terms, exact, fields, format } => {
+            EntryCommand::Query { terms, exact_terms, exact, fields, format }
+                .run(config_path, lake_path)
+        }
+        | GroupedEntryCommand::Rg { with_generated_footer, args } => {
+            EntryCommand::Rg { with_generated_footer, args }.run(config_path, lake_path)
+        }
+        | GroupedEntryCommand::Witness { id, full } => {
+            EntryCommand::Witness { id, full }.run(config_path, lake_path)
         }
     }
 }
@@ -871,6 +976,11 @@ impl EntryCommand {
                 println!("melted entry {id} at {}", path.display());
                 Ok(ExitCode::SUCCESS)
             }
+            | EntryCommand::Path(args) => {
+                let records = entry_path_records(config_path, lake_path, &args)?;
+                print_path_records(&records, args.format.unwrap_or(CliPathOutputFormat::Human))?;
+                Ok(ExitCode::SUCCESS)
+            }
             | EntryCommand::Query { terms, exact_terms, exact, fields, format } => {
                 let (lake, mut settings) = resolve_lake_directory(lake_path, config_path)?;
                 settings.render = false;
@@ -900,6 +1010,48 @@ impl EntryCommand {
             }
             | EntryCommand::Witness { id, full } => {
                 run_witness_command(config_path, lake_path, &id, full)
+            }
+        }
+    }
+}
+
+impl ArtifactCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CliError> {
+        let (lake, _) = resolve_lake_directory(lake_path, config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        match self {
+            | ArtifactCommand::List { id } => {
+                let id = EntryId::new(&id)?;
+                directory.read_entry(&id)?;
+                for artifact in directory.read_entry_artifacts(&id)? {
+                    println!("{}", artifact.path);
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+            | ArtifactCommand::Add { id, source, artifact_path } => {
+                let id = EntryId::new(&id)?;
+                let artifact_path = match artifact_path {
+                    | Some(path) => artifact_path_from_cli(&path)?,
+                    | None => default_artifact_path_from_source(&source)?,
+                };
+                let path = directory.add_entry_artifact(&id, &source, &artifact_path)?;
+                println!("added artifact {artifact_path} at {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | ArtifactCommand::Rename { id, old_path, new_path } => {
+                let id = EntryId::new(&id)?;
+                let old_path = artifact_path_from_cli(&old_path)?;
+                let new_path = artifact_path_from_cli(&new_path)?;
+                let path = directory.rename_entry_artifact(&id, &old_path, &new_path)?;
+                println!("renamed artifact {old_path} to {new_path} at {}", path.display());
+                Ok(ExitCode::SUCCESS)
+            }
+            | ArtifactCommand::Remove { id, artifact_path } => {
+                let id = EntryId::new(&id)?;
+                let artifact_path = artifact_path_from_cli(&artifact_path)?;
+                let path = directory.remove_entry_artifact(&id, &artifact_path)?;
+                println!("removed artifact {artifact_path} at {}", path.display());
+                Ok(ExitCode::SUCCESS)
             }
         }
     }
@@ -1496,6 +1648,17 @@ fn default_frost_path() -> PathBuf {
     PathBuf::from("sirno-frost")
 }
 
+fn artifact_path_from_cli(path: &Path) -> Result<EntryArtifactPath, CliError> {
+    Ok(EntryArtifactPath::new(path)?)
+}
+
+fn default_artifact_path_from_source(source: &Path) -> Result<EntryArtifactPath, CliError> {
+    let Some(file_name) = source.file_name() else {
+        return Err(CliError::ArtifactSourceHasNoFileName(source.to_path_buf()));
+    };
+    Ok(EntryArtifactPath::new(Path::new(file_name))?)
+}
+
 fn explicit_lake_check_settings(
     config_path: &std::path::Path,
 ) -> Result<EntryDirectoryCheckSettings, CliError> {
@@ -1685,6 +1848,126 @@ fn print_query_results(
         }
     }
     Ok(())
+}
+
+fn entry_path_records(
+    config_path: &Path, lake_path: Option<&Path>, args: &CliPathArgs,
+) -> Result<Vec<CliPathRecord>, CliError> {
+    let config = SirnoConfig::from_file(config_path)?;
+    let lake = resolve_lake_path(lake_path, config_path, &config);
+    let directory = EntryDirectory::new(&lake);
+    let id = EntryId::new(&args.id)?;
+    directory.read_entry(&id)?;
+    let artifacts = directory.read_entry_artifacts(&id)?;
+    let selection = CliPathSelection::from_args(args);
+    let mut records = Vec::new();
+
+    if selection.entry {
+        records.push(CliPathRecord::new(
+            "entry",
+            output_path(directory.entry_path(&id), args.absolute)?,
+        ));
+    }
+    if selection.artifact {
+        records.push(CliPathRecord::new(
+            "artifact-root",
+            output_path(directory.entry_artifact_root_path(&id), args.absolute)?,
+        ));
+        for artifact in &artifacts {
+            records.push(CliPathRecord::new(
+                "artifact",
+                output_path(directory.entry_artifact_path(&id, &artifact.path), args.absolute)?,
+            ));
+        }
+    }
+    if selection.frost
+        && let Some(frost) = config.resolve_frost(config_path)
+    {
+        records.push(CliPathRecord::new(
+            "frost-entry",
+            output_path(SirnoFrost::entry_storage_path(&frost, &id)?, args.absolute)?,
+        ));
+        for artifact in &artifacts {
+            records.push(CliPathRecord::new(
+                "frost-artifact",
+                output_path(
+                    SirnoFrost::artifact_storage_path(&frost, &id, &artifact.path)?,
+                    args.absolute,
+                )?,
+            ));
+        }
+    }
+
+    Ok(records)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CliPathSelection {
+    entry: bool,
+    artifact: bool,
+    frost: bool,
+}
+
+impl CliPathSelection {
+    fn from_args(args: &CliPathArgs) -> Self {
+        let all = !args.show_entry && !args.show_artifact && !args.show_frost;
+        Self {
+            entry: all || args.show_entry,
+            artifact: all || args.show_artifact,
+            frost: all || args.show_frost,
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+struct CliPathRecord {
+    kind: &'static str,
+    path: String,
+}
+
+impl CliPathRecord {
+    fn new(kind: &'static str, path: PathBuf) -> Self {
+        Self { kind, path: path.display().to_string() }
+    }
+}
+
+fn output_path(path: PathBuf, absolute: bool) -> Result<PathBuf, CliError> {
+    if !absolute || path.is_absolute() {
+        return Ok(path);
+    }
+    Ok(env::current_dir().map_err(CliError::CurrentDirectory)?.join(path))
+}
+
+fn print_path_records(
+    records: &[CliPathRecord], format: CliPathOutputFormat,
+) -> Result<(), CliError> {
+    match format {
+        | CliPathOutputFormat::Json => println!("{}", serde_json::to_string_pretty(records)?),
+        | CliPathOutputFormat::Human => print!("{}", format_path_table(records)),
+        | CliPathOutputFormat::Paths => {
+            for record in records {
+                println!("{}", record.path);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn format_path_table(records: &[CliPathRecord]) -> String {
+    let headers = ["kind", "path"];
+    let mut widths = headers.iter().map(|header| cell_width(header)).collect::<Vec<_>>();
+    for record in records {
+        widths[0] = widths[0].max(cell_width(record.kind));
+        widths[1] = widths[1].max(cell_width(&record.path));
+    }
+
+    let mut table = String::new();
+    push_query_table_row(&mut table, headers, &widths);
+    push_query_table_separator(&mut table, &widths);
+    for record in records {
+        push_query_table_row(&mut table, [record.kind, record.path.as_str()], &widths);
+    }
+    table
 }
 
 fn query_result_rows(
@@ -1889,6 +2172,9 @@ enum CliError {
     /// Empty Frost cannot be checked out as a version.
     #[error("frost version {0} is not a check-outable snapshot")]
     InvalidFrostVersion(u64),
+    /// An artifact source path did not have a file name for the default artifact path.
+    #[error("artifact source has no file name: {0}")]
+    ArtifactSourceHasNoFileName(PathBuf),
     /// A configured lake move cannot replace an existing destination.
     #[error("move destination already exists: {0}")]
     MoveDestinationExists(PathBuf),
@@ -1953,6 +2239,9 @@ enum CliError {
     /// The current executable path could not be resolved.
     #[error("failed to locate current executable for rg preprocessor")]
     LocateCurrentExe(#[source] std::io::Error),
+    /// The current working directory could not be resolved.
+    #[error("failed to locate current working directory")]
+    CurrentDirectory(#[source] std::io::Error),
     /// A temporary ripgrep preprocessor invoker could not be created.
     #[error("failed to create rg preprocessor invoker at {path}")]
     CreateRgPreprocessorInvoker {
@@ -1992,6 +2281,9 @@ enum CliError {
     /// Entry id parsing failed.
     #[error(transparent)]
     EntryId(#[from] EntryIdError),
+    /// Entry artifact path parsing failed.
+    #[error(transparent)]
+    ArtifactPath(#[from] EntryArtifactPathError),
     /// Entry metadata construction failed.
     #[error(transparent)]
     EntryParse(#[from] EntryParseError),
@@ -2027,11 +2319,12 @@ mod tests {
     };
 
     use crate::{
-        Cli, CliCheckMode, CliError, CliQueryField, CliQueryFields, CliQueryOutputFormat,
-        CliStructuralPredicate, CliTideItem, Command, EntryCommand, FrostCommand,
-        GroupedEntryCommand, LakeCommand, TideCommand, exact_query_from_predicates,
-        format_gen_link_report, format_query_json, format_query_table, format_witness_record,
-        format_witness_records, rg_args_include_preprocessor,
+        ArtifactCommand, Cli, CliCheckMode, CliError, CliPathArgs, CliPathOutputFormat,
+        CliQueryField, CliQueryFields, CliQueryOutputFormat, CliStructuralPredicate, CliTideItem,
+        Command, EntryCommand, FrostCommand, GroupedEntryCommand, LakeCommand, TideCommand,
+        entry_path_records, exact_query_from_predicates, format_gen_link_report, format_path_table,
+        format_query_json, format_query_table, format_witness_record, format_witness_records,
+        rg_args_include_preprocessor,
     };
 
     fn assert_before(source: &str, before: &str, after: &str) {
@@ -2667,6 +2960,88 @@ Body.
     }
 
     #[test]
+    fn path_accepts_filters_and_grouped_form() {
+        let top_level =
+            Cli::parse_from(["sirno", "path", "alpha", "--artifact", "--frost", "-o", "paths"]);
+        let grouped = Cli::parse_from(["sirno", "entry", "path", "alpha", "--entry"]);
+
+        assert!(matches!(
+            top_level.command,
+            Command::TopLevelEntry(EntryCommand::Path(CliPathArgs {
+                id,
+                show_entry: false,
+                show_artifact: true,
+                show_frost: true,
+                absolute: false,
+                format: Some(CliPathOutputFormat::Paths),
+            })) if id == "alpha"
+        ));
+        assert!(matches!(
+            grouped.command,
+            Command::Entry { command: GroupedEntryCommand::Path(CliPathArgs {
+                id,
+                show_entry: true,
+                show_artifact: false,
+                show_frost: false,
+                absolute: false,
+                format: None,
+            }) } if id == "alpha"
+        ));
+    }
+
+    #[test]
+    fn artifact_commands_accept_top_level_and_entry_alias() {
+        let list = Cli::parse_from(["sirno", "artifact", "list", "alpha"]);
+        let add = Cli::parse_from([
+            "sirno",
+            "entry",
+            "artifact",
+            "add",
+            "alpha",
+            "logo.png",
+            "images/logo.png",
+        ]);
+        let rename = Cli::parse_from([
+            "sirno",
+            "artifact",
+            "mv",
+            "alpha",
+            "images/logo.png",
+            "images/wordmark.png",
+        ]);
+        let remove = Cli::parse_from(["sirno", "entry", "artifact", "rm", "alpha", "logo.png"]);
+
+        assert!(matches!(
+            list.command,
+            Command::Artifact { command: ArtifactCommand::List { id } } if id == "alpha"
+        ));
+        assert!(matches!(
+            add.command,
+            Command::Entry {
+                command: GroupedEntryCommand::Artifact {
+                    command: ArtifactCommand::Add { id, source, artifact_path: Some(path) },
+                },
+            } if id == "alpha" && source == Path::new("logo.png") && path == Path::new("images/logo.png")
+        ));
+        assert!(matches!(
+            rename.command,
+            Command::Artifact {
+                command: ArtifactCommand::Rename { id, old_path, new_path },
+            } if id == "alpha"
+                && old_path == Path::new("images/logo.png")
+                && new_path == Path::new("images/wordmark.png")
+        ));
+        assert!(matches!(
+            remove.command,
+            Command::Entry {
+                command: GroupedEntryCommand::Artifact {
+                    command: ArtifactCommand::Remove { id, artifact_path },
+                },
+            } if id == "alpha" && artifact_path == Path::new("logo.png")
+        ));
+    }
+
+    #[test]
     fn entry_new_creates_entry() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
@@ -2688,6 +3063,108 @@ Body.
         .unwrap();
 
         assert!(docs.join("alpha.md").exists());
+    }
+
+    #[test]
+    fn artifact_commands_manage_entry_artifact_paths() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        let source = temp.path().join("logo.bin");
+        SirnoConfig::new("docs").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(&source, b"logo").unwrap();
+
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "artifact",
+            "add",
+            "alpha",
+            source.to_str().unwrap(),
+            "images/logo.bin",
+        ])
+        .run()
+        .unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "entry",
+            "artifact",
+            "mv",
+            "alpha",
+            "images/logo.bin",
+            "images/wordmark.bin",
+        ])
+        .run()
+        .unwrap();
+        Cli::parse_from([
+            "sirno",
+            "--config",
+            config_path.to_str().unwrap(),
+            "artifact",
+            "rm",
+            "alpha",
+            "images/wordmark.bin",
+        ])
+        .run()
+        .unwrap();
+
+        assert!(!docs.join(".artifacts").join("alpha").join("images").exists());
+    }
+
+    #[test]
+    fn path_records_include_frost_and_exclude_witness_by_default() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let docs = temp.path().join("docs");
+        SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+        fs::create_dir(&docs).unwrap();
+        fs::write(
+            docs.join("alpha.md"),
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::create_dir_all(docs.join(".artifacts").join("alpha")).unwrap();
+        fs::write(docs.join(".artifacts").join("alpha").join("note.bin"), b"note").unwrap();
+        let args = CliPathArgs {
+            id: "alpha".to_owned(),
+            show_entry: false,
+            show_artifact: false,
+            show_frost: false,
+            absolute: false,
+            format: None,
+        };
+
+        let records = entry_path_records(&config_path, None, &args).unwrap();
+        let kinds = records.iter().map(|record| record.kind).collect::<Vec<_>>();
+        let table = format_path_table(&records);
+
+        assert_eq!(kinds, ["entry", "artifact-root", "artifact", "frost-entry", "frost-artifact"]);
+        assert!(!table.contains("witness"));
+        assert!(table.contains(".artifacts"));
+        assert!(table.contains("sirno-frost"));
     }
 
     #[test]

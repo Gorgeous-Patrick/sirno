@@ -21,11 +21,14 @@ Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, and `w` or `wit` for `witness`.
 Storage-wide lake operations also live under `sirno lake`.
 Entry-centric operations also live under `sirno entry`.
+Entry artifact operations also live under `sirno artifact`.
 The grouped spellings use the same subcommands and aliases as the top-level spellings.
 For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
+For artifact mutation,
+`sirno artifact ...` and `sirno entry artifact ...` select the same operation.
 Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
@@ -66,11 +69,33 @@ and configured *witness* sentinels that reference `OLD_ID`.
 `sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
 Authored prose outside *generated footer* regions remains user-owned.
 
+`sirno path ENTRY_ID` prints filesystem paths related to one *entry*.
+Its default output includes the public Markdown *entry* path,
+the public `.artifacts/<entry-id>/` tree,
+and private Frost backend paths when Frost is configured.
+It excludes *repository witness* paths.
+The grouped form is `sirno entry path ENTRY_ID`.
+The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
+The `--absolute` flag prints absolute paths.
+The `-o, --format` option selects `human`, `json`, or `paths`.
+
+`sirno artifact list ENTRY_ID` lists owner-relative artifact paths for one *entry*.
+`sirno artifact add ENTRY_ID SOURCE [ARTIFACT_PATH]`
+copies a file into `.artifacts/<entry-id>/...`.
+When `ARTIFACT_PATH` is omitted,
+the source file name becomes the owner-relative artifact path.
+`sirno artifact rename ENTRY_ID OLD_PATH NEW_PATH` renames one artifact path.
+`sirno artifact mv` and `sirno artifact move` are aliases for `rename`.
+`sirno artifact remove ENTRY_ID ARTIFACT_PATH` removes one artifact.
+`sirno artifact rm` and `sirno artifact delete` are aliases for `remove`.
+The grouped forms live under `sirno entry artifact`.
+Artifact mutation commands refuse to change artifacts owned by a frozen *entry*.
+
 `sirno freeze ENTRY_ID` verifies that one public *entry* matches current Frost,
 adds `frozen:`,
-and removes write permission from that file.
+and removes write permission from that file and its artifact tree.
 `sirno melt ENTRY_ID` removes `frozen:` from one public *entry*
-and restores write permission.
+and restores write permission to its file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
 

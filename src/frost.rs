@@ -89,6 +89,18 @@ impl SirnoFrost {
         &self.root
     }
 
+    /// Return the private backend directory path for one stored entry.
+    pub fn entry_storage_path(root: impl AsRef<Path>, id: &EntryId) -> Result<PathBuf, FrostError> {
+        Ok(root.as_ref().join(id.to_filesystem_id()?.as_str()))
+    }
+
+    /// Return the private backend directory path for one stored artifact.
+    pub fn artifact_storage_path(
+        root: impl AsRef<Path>, owner: &EntryId, path: &EntryArtifactPath,
+    ) -> Result<PathBuf, FrostError> {
+        Ok(root.as_ref().join(artifact_filesystem_id(owner, path)?.as_str()))
+    }
+
     /// Return the current backend snapshot reference.
     // sirno:witness:sirno-frost:begin
     pub fn current_snapshot(&self) -> Result<SnapshotRef, FrostError> {

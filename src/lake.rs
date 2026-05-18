@@ -231,6 +231,21 @@ impl EntryDirectory {
         &self.root
     }
 
+    /// Public Markdown file path for one entry id.
+    pub fn entry_path(&self, id: &EntryId) -> PathBuf {
+        self.entry_file_path(id)
+    }
+
+    /// Public artifact directory path for one entry id.
+    pub fn entry_artifact_root_path(&self, id: &EntryId) -> PathBuf {
+        self.entry_artifact_directory(id)
+    }
+
+    /// Public artifact file path for one entry-owned artifact.
+    pub fn entry_artifact_path(&self, id: &EntryId, path: &EntryArtifactPath) -> PathBuf {
+        self.entry_artifact_directory(id).join(path.to_path_buf())
+    }
+
     /// Returns true when this directory contains the file for `id`.
     pub fn entry_exists(&self, id: &EntryId) -> Result<bool, EntryDirectoryError> {
         if !self.root.exists() {
@@ -314,6 +329,111 @@ impl EntryDirectory {
         Ok(artifacts)
     }
     // sirno:witness:entry-artifact:end
+
+    /// Copy one filesystem file into an entry's artifact tree.
+    pub fn add_entry_artifact(
+        &self, id: &EntryId, source: &Path, artifact_path: &EntryArtifactPath,
+    ) -> Result<PathBuf, EntryDirectoryError> {
+        self.ensure_entry_artifacts_mutable(id)?;
+        match fs::symlink_metadata(source) {
+            | Ok(metadata) if metadata.file_type().is_file() => {}
+            | Ok(_) => {
+                return Err(EntryDirectoryError::ArtifactSourceNotFile(source.to_path_buf()));
+            }
+            | Err(source) => return Err(source.into()),
+        }
+
+        let path = self.entry_artifact_path(id, artifact_path);
+        if path.exists() {
+            return Err(EntryDirectoryError::ArtifactAlreadyExists {
+                owner: id.clone(),
+                path: artifact_path.clone(),
+            });
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(source, &path)?;
+        Ok(path)
+    }
+
+    /// Rename one entry-owned artifact path.
+    pub fn rename_entry_artifact(
+        &self, id: &EntryId, old_path: &EntryArtifactPath, new_path: &EntryArtifactPath,
+    ) -> Result<PathBuf, EntryDirectoryError> {
+        self.ensure_entry_artifacts_mutable(id)?;
+        if old_path == new_path {
+            return Err(EntryDirectoryError::ArtifactRenameSamePath {
+                owner: id.clone(),
+                path: old_path.clone(),
+            });
+        }
+
+        let source = self.entry_artifact_path(id, old_path);
+        match fs::symlink_metadata(&source) {
+            | Ok(metadata) if metadata.file_type().is_file() => {}
+            | Ok(_) => {
+                return Err(EntryDirectoryError::ArtifactNotFound {
+                    owner: id.clone(),
+                    path: old_path.clone(),
+                });
+            }
+            | Err(source) if source.kind() == std::io::ErrorKind::NotFound => {
+                return Err(EntryDirectoryError::ArtifactNotFound {
+                    owner: id.clone(),
+                    path: old_path.clone(),
+                });
+            }
+            | Err(source) => return Err(source.into()),
+        }
+        let destination = self.entry_artifact_path(id, new_path);
+        if destination.exists() {
+            return Err(EntryDirectoryError::ArtifactAlreadyExists {
+                owner: id.clone(),
+                path: new_path.clone(),
+            });
+        }
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::rename(&source, &destination).map_err(|source_error| {
+            EntryDirectoryError::RenameFile {
+                source_path: source.clone(),
+                destination_path: destination.clone(),
+                source: source_error,
+            }
+        })?;
+        self.remove_empty_artifact_parents(id, old_path)?;
+        Ok(destination)
+    }
+
+    /// Remove one entry-owned artifact file.
+    pub fn remove_entry_artifact(
+        &self, id: &EntryId, artifact_path: &EntryArtifactPath,
+    ) -> Result<PathBuf, EntryDirectoryError> {
+        self.ensure_entry_artifacts_mutable(id)?;
+        let path = self.entry_artifact_path(id, artifact_path);
+        match fs::symlink_metadata(&path) {
+            | Ok(metadata) if metadata.file_type().is_file() => {}
+            | Ok(_) => {
+                return Err(EntryDirectoryError::ArtifactNotFound {
+                    owner: id.clone(),
+                    path: artifact_path.clone(),
+                });
+            }
+            | Err(source) if source.kind() == std::io::ErrorKind::NotFound => {
+                return Err(EntryDirectoryError::ArtifactNotFound {
+                    owner: id.clone(),
+                    path: artifact_path.clone(),
+                });
+            }
+            | Err(source) => return Err(source.into()),
+        }
+        set_path_writable(&path)?;
+        fs::remove_file(&path)?;
+        self.remove_empty_artifact_parents(id, artifact_path)?;
+        Ok(path)
+    }
 
     /// Check this public Markdown entry directory.
     pub fn check(&self, mode: CheckMode) -> Result<EntryDirectoryReport, EntryDirectoryError> {
@@ -1056,6 +1176,40 @@ impl EntryDirectory {
         }
         freeze_path_best_effort(&owner_root)
     }
+
+    fn ensure_entry_artifacts_mutable(&self, id: &EntryId) -> Result<(), EntryDirectoryError> {
+        let entry = self.read_entry(id)?;
+        if entry.metadata.frozen.is_some() {
+            return Err(EntryDirectoryError::FrozenEntryProtected(id.clone()));
+        }
+        Ok(())
+    }
+
+    fn remove_empty_artifact_parents(
+        &self, id: &EntryId, artifact_path: &EntryArtifactPath,
+    ) -> Result<(), EntryDirectoryError> {
+        let owner_root = self.entry_artifact_directory(id);
+        let Some(mut directory) =
+            self.entry_artifact_path(id, artifact_path).parent().map(Path::to_path_buf)
+        else {
+            return Ok(());
+        };
+
+        while directory.starts_with(&owner_root) {
+            if fs::read_dir(&directory)?.next().is_some() {
+                break;
+            }
+            fs::remove_dir(&directory)?;
+            if directory == owner_root {
+                break;
+            }
+            let Some(parent) = directory.parent().map(Path::to_path_buf) else {
+                break;
+            };
+            directory = parent;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1585,6 +1739,33 @@ pub enum EntryDirectoryError {
         /// Entry that owns the duplicate artifact.
         owner: EntryId,
         /// Duplicate owner-relative artifact path.
+        path: EntryArtifactPath,
+    },
+    /// Artifact source must be a regular file.
+    #[error("artifact source is not a file: {0}")]
+    ArtifactSourceNotFile(PathBuf),
+    /// One artifact path was expected but is absent.
+    #[error("entry `{owner}` has no artifact `{path}`")]
+    ArtifactNotFound {
+        /// Entry that owns the missing artifact.
+        owner: EntryId,
+        /// Owner-relative artifact path.
+        path: EntryArtifactPath,
+    },
+    /// One artifact path already exists.
+    #[error("entry `{owner}` already has artifact `{path}`")]
+    ArtifactAlreadyExists {
+        /// Entry that owns the existing artifact.
+        owner: EntryId,
+        /// Owner-relative artifact path.
+        path: EntryArtifactPath,
+    },
+    /// Artifact rename source and destination paths must differ.
+    #[error("entry `{owner}` artifact rename source and destination are both `{path}`")]
+    ArtifactRenameSamePath {
+        /// Entry that owns the artifact.
+        owner: EntryId,
+        /// Repeated owner-relative artifact path.
         path: EntryArtifactPath,
     },
 }

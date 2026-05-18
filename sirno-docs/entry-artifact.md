@@ -22,6 +22,13 @@ They are different from *repository witnesses*.
 A *witness* stays in a configured *repository* artifact and points back to an *entry* claim.
 An *entry artifact* belongs to the *entry* itself and moves with that *entry* when the id is renamed.
 
+`sirno path ENTRY_ID` shows the public and Frost paths related to an *entry*.
+It includes artifact paths by default and excludes *repository witness* paths.
+`sirno artifact` manages owner-relative artifact paths.
+Its grouped alias is `sirno entry artifact`.
+Artifact mutation commands preserve the same protection rule as direct file edits:
+a frozen *entry* blocks changes to its artifact tree.
+
 When Sirno Frost is configured,
 artifacts are committed into the private *frost* path with the *entries* they belong to.
 Frost stores each artifact as a separately versioned backend object,
