@@ -218,7 +218,8 @@ Skill utility commands reject `--lake-path` and `--frost-path`.
 
 `sirno util mcp --config PATH` starts the MCP server over stdio.
 When `--config` is omitted, the server uses the default `Sirno.toml` path.
-One server process serves one configured Sirno project.
+Project tools resolve that config path on each tool call.
+If the config path is relative, the server process current working directory controls the project.
 `sirno util mcp` rejects `--lake-path` and `--frost-path`;
 the configured project selects its *lake* and optional *frost* path.
 
@@ -234,6 +235,7 @@ The resource URIs are `sirno://skills/design-doc-writer`,
 `sirno://skills/sirno-skill-synthesizer`,
 and `sirno://skills/sirno-witness`.
 Tool names are stable snake-case names:
+`cwd`;
 `entry_new`, `entry_rename`, `entry_freeze`, `entry_melt`, `entry_path`,
 `entry_query`, `entry_rg`, and `entry_witness`;
 `entry_artifact_list`, `entry_artifact_add`, `entry_artifact_rename`,
@@ -245,6 +247,12 @@ and `frost_defrost`;
 `tide_status`, `tide_resolve`, `tide_unresolve`, and `tide_reset`.
 
 MCP tools accept typed JSON arguments.
+`cwd` accepts optional `{ path }`.
+When `path` is present, the server changes its process current working directory
+before returning the resulting directory.
+When `path` is omitted, the server returns the current working directory without changing it.
+Relative config paths are resolved against the process current working directory
+on every project tool call.
 Structural filters use `{ field, targets }`.
 Structural states use `{ field, state }`.
 Tide selectors use neighbor id arrays and existing JSON-shaped workitem objects.

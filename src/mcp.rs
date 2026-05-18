@@ -122,7 +122,10 @@ impl SkillResourceSpec {
     }
 }
 
-/// Sirno MCP server bound to one configured project.
+/// Sirno MCP server for one config path.
+///
+/// Relative config paths are resolved when tools read them,
+/// so changing the process current working directory can change the active project.
 #[derive(Clone, Debug)]
 pub struct SirnoMcpServer {
     context: CoreContext,
@@ -147,7 +150,7 @@ pub async fn run_stdio(context: CoreContext) -> Result<(), Box<dyn Error + Send 
 impl ServerHandler for SirnoMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_resources().enable_tools().build())
-            .with_instructions("Sirno tools for one configured project.")
+            .with_instructions("Sirno tools for the project resolved by the active config path.")
     }
 
     // sirno:witness:interfaces:begin
@@ -177,6 +180,12 @@ impl ServerHandler for SirnoMcpServer {
 
 #[tool_router(router = tool_router)]
 impl SirnoMcpServer {
+    /// Read or change the server process current working directory.
+    #[tool(name = "cwd")]
+    fn cwd(&self, Parameters(params): Parameters<CwdParams>) -> McpToolResult {
+        result(self.context.cwd(params.path))
+    }
+
     /// Create one Markdown entry.
     #[tool(name = "entry_new")]
     fn entry_new(&self, Parameters(params): Parameters<EntryNewParams>) -> McpToolResult {
@@ -424,6 +433,11 @@ fn query_columns(columns: Option<Vec<String>>) -> Result<QueryColumns, String> {
         .map(|column| QueryColumn::from_str(&column).map_err(|error| error.to_string()))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(QueryColumns::new(columns))
+}
+
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+struct CwdParams {
+    path: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
@@ -738,6 +752,7 @@ mod tests {
 
     // sirno:witness:interfaces:begin
     const EXPECTED_TOOLS: &[&str] = &[
+        "cwd",
         "entry_artifact_add",
         "entry_artifact_list",
         "entry_artifact_remove",
@@ -811,6 +826,7 @@ Body.
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let server = SirnoMcpServer::new(CoreContext::new(&config_path));
 
+        let cwd = server.cwd(Parameters(CwdParams::default())).unwrap();
         let init = server
             .lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) }))
             .unwrap();
@@ -830,6 +846,9 @@ Body.
             .map(|text| text.text.as_str())
             .unwrap();
 
+        assert_eq!(structured(&cwd)["ok"], true);
+        assert_eq!(structured(&cwd)["changed"], false);
+        assert!(structured(&cwd)["path"].as_str().is_some_and(|path| !path.is_empty()));
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
         assert!(text.contains("\n  \"ok\": true,"));
@@ -926,6 +945,17 @@ Body.
 
         assert_eq!(result.structured_content.as_ref().unwrap()["ok"], true);
         assert_eq!(result.structured_content.as_ref().unwrap()["entry_count"], 1);
+
+        let cwd = client
+            .peer()
+            .call_tool(
+                CallToolRequestParams::new("cwd")
+                    .with_arguments(json!({}).as_object().unwrap().clone()),
+            )
+            .await
+            .unwrap();
+        assert_eq!(cwd.structured_content.as_ref().unwrap()["ok"], true);
+        assert_eq!(cwd.structured_content.as_ref().unwrap()["changed"], false);
 
         client.cancel().await.unwrap();
         server_handle.await.unwrap();

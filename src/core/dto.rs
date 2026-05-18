@@ -31,6 +31,19 @@ pub enum StructuredOutputFormat {
 pub(crate) type QueryOutputFormat = StructuredOutputFormat;
 pub(crate) type TideOutputFormat = StructuredOutputFormat;
 
+/// Result of reading or changing the process current working directory.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CwdResult {
+    /// Whether the current working directory was read successfully.
+    pub ok: bool,
+    /// Whether the command changed the current working directory before reading it.
+    pub changed: bool,
+    /// Current working directory after the command completed.
+    pub path: String,
+    /// Human-readable summary.
+    pub message: String,
+}
+
 /// Result of checking canonical comments in `Sirno.toml`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConfigCommentResult {

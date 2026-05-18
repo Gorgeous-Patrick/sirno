@@ -11,13 +11,14 @@ use indexmap::IndexMap;
 
 use crate::core::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
-    ArtifactRenameRequest, ConfigCommentResult, EntryNewRequest, EntryPathRequest, EntryPathResult,
-    EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult, FrostCommitResult,
-    FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult, MovePathResult, PathRecord,
-    QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult,
-    SkillWrapperRecord, SkillWrapperResult, StatusResult, StructuralFieldStatus, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
-    TideSelectionRequest, TideStatusResult, WitnessRecordResult, WitnessResult,
+    ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
+    EntryPathResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
+    FrostCommitResult, FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
+    MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult,
+    RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusResult,
+    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusResult,
+    WitnessRecordResult, WitnessResult,
 };
 use crate::core::error::{CommandError, OpenTideTutorial};
 use crate::core::output::{
@@ -110,6 +111,27 @@ impl CoreContext {
             context = context.with_lake_path(lake_path.to_path_buf());
         }
         context
+    }
+
+    /// Read or change the process current working directory.
+    pub fn cwd(&self, path: Option<PathBuf>) -> Result<CwdResult, CommandError> {
+        let changed = path.is_some();
+        if let Some(path) = path {
+            env::set_current_dir(&path).map_err(|source| CommandError::ChangeCurrentDirectory {
+                path: path.to_path_buf(),
+                source,
+            })?;
+        }
+
+        let cwd = env::current_dir().map_err(CommandError::CurrentDirectory)?;
+        let path = display_path(&cwd);
+        let message = if changed {
+            format!("changed current working directory to {path}")
+        } else {
+            format!("current working directory is {path}")
+        };
+
+        Ok(CwdResult { ok: true, changed, path, message })
     }
 
     /// Query entries and return structured rows before presentation rendering.

@@ -242,6 +242,15 @@ pub enum CommandError {
     /// The current executable path could not be resolved.
     #[error("failed to locate current executable for rg preprocessor")]
     LocateCurrentExe(#[source] std::io::Error),
+    /// The process current working directory could not be changed.
+    #[error("failed to change current working directory to {path}")]
+    ChangeCurrentDirectory {
+        /// Target working directory.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// The current working directory could not be resolved.
     #[error("failed to locate current working directory")]
     CurrentDirectory(#[source] std::io::Error),
