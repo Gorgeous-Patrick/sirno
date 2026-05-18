@@ -375,6 +375,15 @@ enum CheckModeArg {
     Review,
 }
 
+impl From<CheckModeArg> for CheckMode {
+    fn from(value: CheckModeArg) -> Self {
+        match value {
+            | CheckModeArg::Edit => CheckMode::Edit,
+            | CheckModeArg::Review => CheckMode::Review,
+        }
+    }
+}
+
 /// CLI query output renderer.
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum QueryOutputFormat {
@@ -505,64 +514,6 @@ enum StructuralPredicateParseError {
     EntryId(#[from] EntryIdError),
 }
 
-/// Tide item selector parsed from one CLI argument.
-#[derive(Clone, Debug, PartialEq, Eq)]
-enum TideItemSelector {
-    /// Select every open workitem whose neighbor matches this entry.
-    Neighbor(EntryId),
-    /// Select one full workitem tuple.
-    Workitem(TideWorkitem),
-}
-
-impl FromStr for TideItemSelector {
-    type Err = TideItemSelectorParseError;
-
-    fn from_str(raw: &str) -> Result<Self, Self::Err> {
-        if raw.contains(',') {
-            return Ok(Self::Workitem(raw.parse()?));
-        }
-        Ok(Self::Neighbor(EntryId::new(raw)?))
-    }
-}
-
-/// Error raised while parsing one tide item selector.
-#[derive(Debug, Error)]
-enum TideItemSelectorParseError {
-    /// Entry id parsing failed.
-    #[error(transparent)]
-    EntryId(#[from] EntryIdError),
-    /// Full workitem parsing failed.
-    #[error(transparent)]
-    Workitem(#[from] sirno::TideWorkitemParseError),
-}
-
-/// CLI shell target for completion generation.
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum CompletionShell {
-    /// Bash completion script.
-    Bash,
-    /// Elvish completion script.
-    Elvish,
-    /// Fish completion script.
-    Fish,
-    /// PowerShell completion script.
-    #[value(name = "powershell", alias = "power-shell")]
-    PowerShell,
-    /// Zsh completion script.
-    Zsh,
-}
-
-/// Supported utility commands.
-#[derive(Debug, Subcommand)]
-enum UtilCommand {
-    /// Generate a shell completion script.
-    Completion {
-        /// Shell whose completion script should be generated.
-        #[arg(value_enum)]
-        shell: CompletionShell,
-    },
-}
-
 /// Supported Sirno Frost commands.
 #[derive(Debug, Subcommand)]
 enum FrostCommand {
@@ -606,6 +557,37 @@ struct CheckoutArgs {
     /// Leave an explicit version checkout writable.
     #[arg(long)]
     unsafe_mutable: bool,
+}
+
+/// Tide item selector parsed from one CLI argument.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TideItemSelector {
+    /// Select every open workitem whose neighbor matches this entry.
+    Neighbor(EntryId),
+    /// Select one full workitem tuple.
+    Workitem(TideWorkitem),
+}
+
+impl FromStr for TideItemSelector {
+    type Err = TideItemSelectorParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        if raw.contains(',') {
+            return Ok(Self::Workitem(raw.parse()?));
+        }
+        Ok(Self::Neighbor(EntryId::new(raw)?))
+    }
+}
+
+/// Error raised while parsing one tide item selector.
+#[derive(Debug, Error)]
+enum TideItemSelectorParseError {
+    /// Entry id parsing failed.
+    #[error(transparent)]
+    EntryId(#[from] EntryIdError),
+    /// Full workitem parsing failed.
+    #[error(transparent)]
+    Workitem(#[from] sirno::TideWorkitemParseError),
 }
 
 /// Supported tide commands.
@@ -660,13 +642,20 @@ enum RenderCommand {
     Delete,
 }
 
-impl From<CheckModeArg> for CheckMode {
-    fn from(value: CheckModeArg) -> Self {
-        match value {
-            | CheckModeArg::Edit => CheckMode::Edit,
-            | CheckModeArg::Review => CheckMode::Review,
-        }
-    }
+/// CLI shell target for completion generation.
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum CompletionShell {
+    /// Bash completion script.
+    Bash,
+    /// Elvish completion script.
+    Elvish,
+    /// Fish completion script.
+    Fish,
+    /// PowerShell completion script.
+    #[value(name = "powershell", alias = "power-shell")]
+    PowerShell,
+    /// Zsh completion script.
+    Zsh,
 }
 
 impl From<CompletionShell> for Shell {
@@ -679,6 +668,17 @@ impl From<CompletionShell> for Shell {
             | CompletionShell::Zsh => Shell::Zsh,
         }
     }
+}
+
+/// Supported utility commands.
+#[derive(Debug, Subcommand)]
+enum UtilCommand {
+    /// Generate a shell completion script.
+    Completion {
+        /// Shell whose completion script should be generated.
+        #[arg(value_enum)]
+        shell: CompletionShell,
+    },
 }
 
 fn main() -> ExitCode {
