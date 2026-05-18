@@ -88,6 +88,9 @@ fn top_level_init_initializes_lake_and_frost() {
     assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("alpha-project-frost") }));
     assert!(repo.join("alpha-project-lake").join("concept.md").exists());
     assert!(repo.join("alpha-project-frost").join("Eter.lock.toml").exists());
+    assert!(
+        repo.join(".agents").join("skills").join("sirno-config-writer").join("SKILL.md").exists()
+    );
     assert!(repo.join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists());
     assert_eq!(lock.frost.status, FrostLockStatus::Current);
     assert_eq!(lock.frost.version, Eterator::EMPTY.version());
@@ -504,7 +507,7 @@ fn util_skills_init_installs_bundled_wrappers() {
     let check = context.skill_wrappers_check().unwrap();
 
     assert!(init.ok);
-    assert_eq!(init.records.len(), 5);
+    assert_eq!(init.records.len(), 6);
     assert_eq!(init.records[0].status, "wrote");
     assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
     assert!(check.ok);

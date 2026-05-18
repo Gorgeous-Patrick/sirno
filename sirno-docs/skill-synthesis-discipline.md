@@ -64,6 +64,9 @@ The wrapper `SKILL.md` artifact keeps the same frontmatter,
 names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
+Config-writing procedure lives in the config-writer skill.
+Other full resources should hand off `Sirno.toml` edits to that skill
+instead of copying the schema checklist.
 
 Routine project initialization installs wrappers by default.
 Use the Rust utility command to refresh wrappers after initialization.

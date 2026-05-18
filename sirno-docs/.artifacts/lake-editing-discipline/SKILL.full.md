@@ -189,6 +189,9 @@ but more durable than a plan item.
 
 Use the configured lake path.
 Do not hard-code `docs/` when `Sirno.toml` names a different lake.
+Use `sirno-config-writer` when the design change requires `Sirno.toml` edits.
+Lake editing may change entries that describe config,
+but config-writing rules live in `sirno://skills/sirno-config-writer`.
 
 ## Document Search
 

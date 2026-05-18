@@ -36,6 +36,10 @@ If the intended file sits outside configured repository members,
 update the config only when that file is truly part of the witness surface.
 Otherwise choose evidence that is already inside the configured surface or report the mismatch.
 
+Use the config-writer skill when witness work changes `Sirno.toml`.
+Witness linking decides whether a file belongs in the repository witness surface;
+config writing applies the schema, comments, and validation rules.
+
 Do not duplicate `mosaika`.
 Sirno calls `mosaika` for delimiter matching, region extraction, and spans;
 Sirno-side work consumes that structured output and formats it for review.

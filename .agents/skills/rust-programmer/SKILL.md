@@ -1,8 +1,8 @@
 ---
 name: rust-programmer
 description: >-
-  Program in Rust for this repository. Use when Codex edits Rust code, public Rust APIs, Rust module
-  or item docs, domain types, errors, builders, parsers, state machines, tracing instrumentation,
+  Program in Rust for this repository. Use when editing Rust code, public Rust APIs, Rust module or
+  item docs, domain types, errors, builders, parsers, state machines, tracing instrumentation,
   Cargo formatting, or Rust lint cleanup.
 ---
 

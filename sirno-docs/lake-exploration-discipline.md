@@ -38,6 +38,8 @@ Keep the route narrow.
 Avoid reading the whole lake or repository unless the question asks for a survey.
 Do not add or edit witness blocks while exploring;
 switch to the witness or editor procedure when the task changes from reading to changing.
+Switch to the config-writer skill when the task changes from reading `Sirno.toml`
+to writing it.
 
 Report grounded findings.
 A good result names the entries consulted,

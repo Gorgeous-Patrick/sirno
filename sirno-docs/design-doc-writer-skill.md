@@ -11,7 +11,7 @@ belongs:
 for maintaining design documents.
 Here, meta-management means keeping design documents about a project and its method coherent.
 The skill is documented in this lake because Sirno skill work can depend on its ideas,
-but it is not one of the five packaged Sirno skills.
+but it is not one of the six packaged Sirno skills.
 Its full MCP resource text lives in `.artifacts/design-doc-writer-skill/SKILL.full.md`.
 That artifact follows the exact `.agents/skills/design-doc-writer/SKILL.md` document.
 `src/mcp.rs` embeds it as `sirno://skills/design-doc-writer`.

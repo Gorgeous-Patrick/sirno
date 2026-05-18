@@ -19,6 +19,7 @@ then the lake's narrative, introduction, and methodology entries,
 and any entries the user named or the task implies.
 If a source entry is missing,
 state the gap and continue only with the route that can be grounded in existing entries.
+Switch to the config-writer skill if a session discovers a necessary `Sirno.toml` change.
 
 Maintain a small private session state.
 It holds the reader and task,

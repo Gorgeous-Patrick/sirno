@@ -36,6 +36,14 @@ use crate::{
 // sirno:witness:agent-skills:begin
 const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
     SkillWrapperSpec {
+        name: "sirno-config-writer",
+        entry_id: "config-writing-discipline",
+        wrapper_path: "sirno-docs/.artifacts/config-writing-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/config-writing-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-config-writer/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/config-writing-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
         name: "sirno-editor",
         entry_id: "lake-editing-discipline",
         wrapper_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.md",

@@ -2,9 +2,9 @@
 name: readme-design-methodology-doc-writer
 description: >-
   Write or reorganize repository documentation split across README.md, DESIGN.md, and
-  METHODOLOGY.md. Use when Codex needs to revise a first-impression README, a full design document,
-  a concentrated methodology guide, or prose that defines a project model, metadata, structural
-  fields, or writing style.
+  METHODOLOGY.md. Use when revising a first-impression README, a full design document,
+  a concentrated methodology guide, or prose that defines a project model, metadata,
+  structural fields, or writing style.
 ---
 
 # README, Design, Methodology Doc Writer

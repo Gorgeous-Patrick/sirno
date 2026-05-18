@@ -54,6 +54,7 @@ Read `references/narrative-artifact.md` when preparing the session notes or seri
 Use `scripts/serialize_narrative_entry.py` when a deterministic entry draft is useful.
 If a source entry is missing,
 state the gap and continue only with the route that can be grounded in existing entries.
+Use `sirno-config-writer` if the session discovers a necessary `Sirno.toml` change.
 
 ## Session Workflow
 

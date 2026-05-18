@@ -154,6 +154,7 @@ Prefer this order:
 Do not add or edit witness blocks while exploring.
 Use `sirno-witness` when the task changes from exploration to creating or refining evidence.
 Use `sirno-editor` when the task changes from exploration to editing lake entries.
+Use `sirno-config-writer` when the task changes from reading `Sirno.toml` to writing it.
 
 ## Reporting
 

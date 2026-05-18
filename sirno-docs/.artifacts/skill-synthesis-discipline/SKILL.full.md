@@ -127,6 +127,8 @@ cargo run -- --help
 
 A full skill resource that names a missing command is worse than one that only names the procedure.
 Use `cargo run -- ...` or `target/debug/sirno ...` according to the repository state.
+Keep config-writing procedure in `sirno://skills/sirno-config-writer`.
+Other resources should hand off `Sirno.toml` edits instead of copying the schema checklist.
 
 ## Validation
 

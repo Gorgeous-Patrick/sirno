@@ -19,6 +19,10 @@ and the existing lake.
 Decide design authority before changing anything; see `design-source-authority`.
 Inspect the current Sirno CLI before assuming which commands exist.
 
+Use the config-writer skill when the design change requires `Sirno.toml` edits.
+Lake editing may change entries that describe config,
+but config-writing rules live in `config-writing-discipline`.
+
 Map before editing.
 For each candidate entry, know its id, name, desc, structural fields, and witness status.
 Use `sirno query` to find concepts and neighborhoods,

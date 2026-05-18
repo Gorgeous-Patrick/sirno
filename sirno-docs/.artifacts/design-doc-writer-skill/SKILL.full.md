@@ -1,8 +1,8 @@
 ---
 name: design-doc-writer
 description: >-
-  Write and revise a repository's DESIGN.md or equivalent design document. Use when Codex edits a
-  design document, evaluates its structure, reorganizes design prose, removes overlap, or applies a
+  Write and revise a repository's DESIGN.md or equivalent design document. Use when editing a
+  design document, evaluating its structure, reorganizing design prose, removing overlap, or applying a
   declarative, dry, precise design-document style.
 ---
 

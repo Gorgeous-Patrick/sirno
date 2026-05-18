@@ -92,6 +92,7 @@ a more precise handle.
 If the intended file sits outside configured repository members,
 update the config only when that file is truly part of the witness surface.
 Otherwise choose evidence already inside the configured surface or report the mismatch.
+Use `sirno-config-writer` for the `Sirno.toml` edit itself.
 
 ## Validation
 
