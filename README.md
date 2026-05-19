@@ -34,6 +34,7 @@ Sirno keeps project design in a queryable *lake* of small, named Markdown *entri
 Each entry has a stable id, structural field edges, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
 
+<!-- sirno:witness:readme:begin -->
 If you'd like to see for yourself how Sirno's idea works directly on Sirno,
 clone the repo and start with an interactive onboarding session,
 which not only installs Sirno (revertably of course lol) and sets up the MCP server for you,
@@ -46,11 +47,14 @@ After that, start an introduction session with $sirno-narrative-session based on
 
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
+<!-- sirno:witness:readme:end -->
 
 ## Setup Sirno and Quick Start
 
 <details>
 <summary>Install Sirno and drive it from your agent through the bundled MCP server. Or use the CLI directly.</summary>
+
+<!-- sirno:witness:readme:begin -->
 
 ```sh
 cargo install sirno
@@ -152,6 +156,8 @@ sirno query --has category=meta              # filter by structural field target
 sirno witness readme --full                  # show how this README witnesses its own intention
 ```
 
+<!-- sirno:witness:readme:end -->
+
 </details>
 
 <!-- sirno:witness:readme:begin -->
@@ -223,19 +229,17 @@ I am new to Sirno. Ask about my background and goals. Guide me through the entri
 ```
 <!-- sirno:witness:readme:end -->
 
+<!-- sirno:witness:readme:begin -->
 ## Status
 
-Sirno currently provides a Rust library and CLI for Markdown entry storage,
+Sirno currently provides a Rust library, both CLI and MCP for Markdown entry storage,
 project configuration, structural checks, generated footers,
-querying, lake-local ripgrep search, witness lookup, entry freezing,
+querying, lake-local ripgrep search, witness lookup over `mosaika`, entry freezing,
 and optional Sirno frost snapshots over `eter`.
 
-`sirno init` initializes a new public *lake*, private frost store,
-and packaged Sirno skill wrappers together.
-Use `sirno commit` and `sirno checkout` for the usual frost snapshot cycle.
-`Sirno.lock.toml` records whether the public *lake* is current
-or checked out to a frozen version.
-Future interfaces may add MCP, lightweight GUI, or Obsidian integration.
+Future interfaces may add lightweight GUI, or Obsidian integration.
+
+<!-- sirno:witness:readme:end -->
 
 ## License
 
