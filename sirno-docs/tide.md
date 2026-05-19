@@ -18,6 +18,19 @@ For each *ripple*, Sirno reads the configured structural edge policies
 and produces one *wave* of *tide workitems*.
 The *tide* is the union of those open obligations.
 
+```mermaid
+flowchart LR
+    frostline([frostline])
+    waterline([waterline])
+    ripple([ripple])
+    wave([wave])
+    tide([tide])
+    frostline --> ripple
+    waterline --> ripple
+    ripple -->|structural edge policies| wave
+    wave --> tide
+```
+
 Sirno derives open *workitems* on demand.
 It stores no worklist;
 `Sirno.lock.toml` keeps only *tide resolutions*,

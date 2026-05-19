@@ -25,6 +25,8 @@ and `structural-edge-policy` chooses how structural edges feed rendering and the
 A change to the snapshot path, the lock file, artifacts, *entry* protection, or the review worklist
 usually constrains the others, so these parts are reviewed together here.
 
+## Path And Storage
+
 The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
 Each *entry* is stored under its stable id.
@@ -54,6 +56,8 @@ The move creates missing destination parents and refuses to replace an existing 
 When `PATH` is inside the current *frost* path,
 Sirno stages the directory through a temporary sibling
 and recreates the parent path before placing the moved *frost* path at `PATH`.
+
+## Commit
 
 A *frost* commit imports the selected public *entry* set and its lake-owned artifacts.
 The public directory must pass review-mode checks before any snapshot is written.
@@ -85,6 +89,8 @@ the commit records an `eter` lifecycle deletion marker.
 `sirno commit --unsafe-resolve-all` bypasses the *tide* gate for that commit
 without writing fake resolutions.
 
+## Read And Checkout
+
 The *frost* read path reconstructs *entries* and artifacts from a selected snapshot.
 It can read one *entry*,
 all live *entries* at the current snapshot,
@@ -105,6 +111,18 @@ and applies local file protection to the *lake* root,
 managed *entry* files,
 and checked-out artifact trees.
 `--unsafe-mutable` leaves an explicit version checkout writable.
+
+```mermaid
+flowchart LR
+    waterline([waterline])
+    frostline([frostline])
+    historical([historical])
+    waterline -->|frost commit| frostline
+    frostline -->|checkout latest / defrost| waterline
+    frostline -->|checkout VERSION| historical
+```
+
+## Lock State
 
 `Sirno.lock.toml` records the public *lake* state relative to *frost*.
 `status = "current"` means the public *lake* is the editable current version.

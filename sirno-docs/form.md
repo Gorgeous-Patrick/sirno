@@ -41,8 +41,16 @@ without making any of them a competing source of truth.
 The two forms define one polarity.
 `actualize` moves from `lake` to `repo`.
 `internalize` moves from `repo` to `lake`.
-All other repository artifacts are materials that can be played with,
+All other repository artifacts are materials that can be explored,
 discarded, regenerated, or revised from a well-maintained *lake*.
+
+```mermaid
+flowchart LR
+    lake([lake])
+    repo([repo])
+    lake -- actualize --> repo
+    repo -- internalize --> lake
+```
 
 ---
 
