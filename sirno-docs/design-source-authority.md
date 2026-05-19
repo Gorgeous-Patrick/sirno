@@ -5,20 +5,21 @@ category:
   - concept
   - meta
 belongs:
-  - sirno-lake
+  - lake
 ---
 
 Before editing a *lake*, decide which form currently carries design authority.
 
 An established and maintained *lake* is the authoritative structured design source.
 When the *lake* is absent or skeletal,
-the configured *monograph* is the source of intended design.
-Code is authoritative only when the user says so.
-This ladder keeps an edit from inventing design that no form actually commits to.
+repository material can be used as material to internalize.
+When repository materials disagree,
+ask the user which material should seed the *lake*.
+This keeps an edit from inventing design that no form actually commits to.
 
 When the *lake* is authoritative, preserve its stable facts even while rewriting prose.
 Stable facts include the central definition and scope,
-the configured `lake` path and optional `mono` path,
+the configured `lake` path and repository material surface,
 *entry* id rules and the metadata schema,
 the configured structural-field and witness-lookup meanings,
 generated-footer ownership,
@@ -40,7 +41,7 @@ but it must not promise behavior the tool does not have.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

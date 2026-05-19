@@ -38,15 +38,15 @@ const READONLY_CHECKOUT_WARNING: &str = "\
 ///
 /// Invariant: `root` is the directory containing one flat `*.md` file per entry id.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:lake:begin
 pub struct EntryDirectory {
     root: PathBuf,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:lake:end
 
 /// Check report for a public Markdown entry directory.
 #[derive(Debug)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:lake:begin
 pub struct EntryDirectoryReport {
     root: PathBuf,
     entries: Vec<Entry>,
@@ -55,11 +55,11 @@ pub struct EntryDirectoryReport {
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:lake:end
 
 /// Settings for checking a public Markdown entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:lake:begin
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
@@ -70,7 +70,7 @@ pub struct EntryDirectoryCheckSettings {
     /// Repository witness scan settings.
     pub witness: Option<WitnessCheckSettings>,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:lake:end
 
 impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
@@ -85,14 +85,14 @@ impl Default for EntryDirectoryCheckSettings {
 
 impl EntryDirectoryCheckSettings {
     /// Return true when a root-relative path is ignored.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:lake:begin
     pub fn ignores(&self, relative_path: &Path) -> bool {
         self.ignore.iter().any(|ignored| {
             !ignored.as_os_str().is_empty()
                 && (relative_path == ignored || relative_path.starts_with(ignored))
         })
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:lake:end
 }
 
 impl EntryDirectoryReport {
@@ -441,7 +441,7 @@ impl EntryDirectory {
     }
 
     /// Check this public Markdown entry directory with explicit settings.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:lake:begin
     pub fn check_with_settings(
         &self, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
@@ -463,12 +463,12 @@ impl EntryDirectory {
             structural_report,
         })
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:lake:end
 
     /// Initialize this directory with ordinary seed entries.
     ///
     /// Existing entry files are never overwritten.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:lake:begin
     pub fn init(&self) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         trace!("init_entry_directory begin: root={}", self.root.display());
         fs::create_dir_all(&self.root)?;
@@ -480,13 +480,13 @@ impl EntryDirectory {
         trace!("init_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:lake:end
 
     /// Create one public Markdown entry file in this directory.
     ///
     /// The entry directory is created if needed.
     /// Existing entry files are never overwritten.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:lake:begin
     pub fn create_entry(&self, entry: &Entry) -> Result<PathBuf, EntryDirectoryError> {
         trace!("create_entry_file begin: root={} id={}", self.root.display(), entry.id);
         fs::create_dir_all(&self.root)?;
@@ -494,7 +494,7 @@ impl EntryDirectory {
         trace!("create_entry_file end: path={}", path.display());
         Ok(path)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:lake:end
 
     /// Mark one public Markdown entry as frozen and read-only.
     ///
@@ -663,7 +663,7 @@ impl EntryDirectory {
     /// Write a complete public Markdown entry directory.
     ///
     /// The write policy controls how existing target contents are handled.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:lake:begin
     pub fn write(
         &self, entries: &[Entry], policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
@@ -690,7 +690,7 @@ impl EntryDirectory {
         trace!("write_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:lake:end
 
     /// Mark this directory as read-only.
     ///

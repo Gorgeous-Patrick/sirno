@@ -24,9 +24,9 @@ The specification gives the concept a local behavioral edge.
 
 Spec-driven work should stay small enough to test or inspect.
 If a specification becomes a broad essay,
-lower it into smaller *entries* or refine it under the concept it makes concrete.
+split it into smaller *entries* or refine it under the concept it makes concrete.
 If implementation reveals a better boundary,
-reflect that boundary back into the *lake* so the specification remains a living design object.
+internalize that boundary into the *lake* so the specification remains a living design object.
 
 ---
 

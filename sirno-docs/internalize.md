@@ -1,0 +1,48 @@
+---
+name: Internalize
+desc: The movement from repository material into the Sirno Lake.
+category:
+  - concept
+belongs:
+  - transform
+---
+
+`internalize` moves from `repo` to `lake`.
+
+Internalization records durable design facts learned from repository material.
+Internalize when repo work changes a representation, narrows an invariant,
+introduces a boundary, invalidates an explanation,
+or reveals a clearer local design than the current *entries* record.
+
+Internalization should happen while the repository material is fresh.
+The revised *entry* records the design fact future work needs,
+not a full narrative of the edit.
+
+Good internalization asks what the *repository* now knows that the *lake* should know too.
+A function rename may not matter.
+A new storage boundary, parser invariant, CLI contract, test rationale,
+or non-lake document claim usually does.
+The internalized prose should name the stable design fact,
+then connect it to existing *entries* through metadata when structure is useful.
+
+Internalization should avoid turning the *lake* into a changelog.
+The commit history can explain the sequence of edits.
+The *lake* should explain the design that survived the edit.
+If a change was exploratory and later discarded,
+it may not deserve internalization.
+If a change changes how future work should reason,
+it should be internalized while the reason is still clear.
+
+Internalization keeps the *lake* canonical without making it brittle.
+It gives repository material a way to improve the design model,
+not merely comply with it.
+
+---
+
+> **Sirno generated links begin. Do not edit this section.**
+
+- belongs (to):
+  - [transform](transform.md)
+- belongs (from): (none)
+
+> **Sirno generated links end.**

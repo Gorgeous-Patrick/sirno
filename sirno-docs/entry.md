@@ -4,7 +4,7 @@ desc: A named Markdown document in the Sirno Lake.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 ---
 
 An *entry* is a Markdown file in the Sirno Lake.
@@ -50,7 +50,7 @@ This split lets Sirno stay simple.
 It can validate ids and *structural fields* without pretending to understand the full meaning of the prose.
 
 Good *entries* are compact but not cryptic.
-They avoid repeating the entire *monograph*,
+They avoid repeating every repository artifact,
 but they also give enough context that a reader can follow a query result without opening ten files.
 If a concept depends on several other concepts,
 the *structural fields* should carry the navigational structure,
@@ -64,7 +64,7 @@ its prose may briefly say what the *witness* is expected to demonstrate.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from):
   - [entry-artifact](entry-artifact.md)
   - [entry-freeze](entry-freeze.md)

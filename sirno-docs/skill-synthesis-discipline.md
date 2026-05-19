@@ -59,7 +59,7 @@ Frontmatter `name` is the skill directory id.
 The full body turns durable procedure into concrete steps and current commands.
 The full artifact must include the discipline's failure paths:
 missing sources, unavailable commands, blocked validation,
-absent evidence, and design changes that must reflect back into the lake.
+absent evidence, and design changes that must be internalized into the lake.
 The wrapper `SKILL.md` artifact keeps the same frontmatter,
 names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.

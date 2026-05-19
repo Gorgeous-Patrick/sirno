@@ -4,7 +4,7 @@ desc: Selection of Sirno entries through vague text and structural filters.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 refines:
   - interfaces
 ---
@@ -57,7 +57,7 @@ query uses `human`.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

@@ -12,7 +12,7 @@ refines:
 `refines` records a *refinement* edge from a more specific *entry*
 to the broader *entries* it makes concrete.
 
-Refinement turns high-level design into lower-level design,
+Refinement turns broad design into more specific design,
 implementation detail, and testable behavior.
 The current *entry* keeps the broader claim attached while making its consequences local.
 

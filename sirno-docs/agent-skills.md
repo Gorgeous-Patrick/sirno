@@ -12,7 +12,7 @@ Sirno ships an agent skill set that renders this lake's method into operational 
 There are six Sirno skills.
 The config-writer skill writes, repairs, and validates `Sirno.toml`.
 The editor skill creates, revises, and reorganizes entries,
-and moves design knowledge from a monograph into the lake.
+and internalizes durable design knowledge into the lake.
 The explorer skill reads a Sirno-managed repository from the lake outward to locate design
 and its evidence.
 The witness skill links lake entries to repository evidence and keeps that evidence precise.

@@ -776,8 +776,6 @@ pub struct StatusResult {
     pub ok: bool,
     /// Config file used for the status command.
     pub config_path: String,
-    /// Optional monograph path.
-    pub mono_path: Option<String>,
     /// Public lake path.
     pub lake_path: String,
     /// Optional Frost path.

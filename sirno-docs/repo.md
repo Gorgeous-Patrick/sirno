@@ -1,6 +1,6 @@
 ---
 name: Repo
-desc: The repository artifacts that realize and witness design entries.
+desc: The repository materials that actualize and witness design entries.
 category:
   - concept
 belongs:
@@ -10,7 +10,8 @@ belongs:
 The `repo` form is the *repository*.
 
 It includes source files, tests, configuration, generated files, assets,
-and other artifacts that realize design decisions.
+README files, design documents outside the *lake*,
+and other artifacts that actualize design decisions.
 
 Repository artifacts can witness *entries* through `mosaika`.
 Sirno uses the *entry* id as the *witness* query key,

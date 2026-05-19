@@ -105,7 +105,7 @@ Then write the body as direct procedure:
 purpose, core principles, an ordered workflow, and validation.
 Turn durable procedure into concrete steps and current commands.
 Include failure paths for missing sources, unavailable commands, blocked validation,
-absent evidence, and design changes that must reflect back into the lake.
+absent evidence, and design changes that must be internalized into the lake.
 
 Render each wrapper artifact.
 Write `sirno-docs/.artifacts/<discipline>/SKILL.md` with the same frontmatter as the full artifact.

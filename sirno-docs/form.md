@@ -1,52 +1,48 @@
 ---
 name: Form
-desc: A shape project knowledge takes inside Sirno.
+desc: One of the two shapes project knowledge takes inside Sirno.
 category:
   - concept
 belongs:
   - sirno
 ---
 
-Sirno works through three *forms*.
+Sirno works through two *forms*: `lake` and `repo`.
 
-`mono` is one optional configured Markdown document.
-It carries the whole project design as a readable *monograph*.
-
-`sirno` is one configured *entry lake*.
-It contains compact Markdown *entries* with exact metadata.
-It may also contain lake-owned *entry artifacts* attached to those *entries*.
-When Sirno Frost is configured, it is versioned through a separate `eter` *frost* path,
+`lake` is the configured Sirno Lake.
+It is the canonical design source for a Sirno-managed project.
+It contains compact Markdown *entries* with exact metadata,
+and may contain lake-owned *entry artifacts* attached to those *entries*.
+When Sirno Frost is configured,
+the *lake* is versioned through a separate `eter` *frost* path,
 so one *lake* version names one immutable entry and artifact set.
 
 `repo` is the *repository*.
-It contains source, tests, configuration, generated files, assets,
-and any artifact that can realize or witness design.
+It contains source, tests, configuration, generated files, assets, README files,
+design documents outside the *lake*,
+and any other material that can actualize or witness design.
 Sirno scans *repository witnesses* only when `[repo].members` is configured.
 
 The *forms* are not just storage locations.
 They are roles in a design workflow.
-The *monograph* is optimized for continuity,
-so a reader can build a mental model in a deliberate order.
-The *lake* is optimized for addressability,
-so a person or tool can find the named object that matters to a local change.
-The *repository* is optimized for execution and evidence,
-so design commitments have concrete artifacts to inspect.
+The *lake* is optimized for canonical addressability,
+so a person or tool can find the named design object that matters to a local change.
+The *repository* is optimized for use,
+so design commitments can become code, tests, generated output, narrative documents,
+or other inspectable material.
 
-Before the *lake* exists,
-the user chooses whether the *repository* or *monograph* carries more authority.
-Once the *lake* is established,
-Sirno treats it as the structured intermediate form.
+Once the *lake* exists,
+it carries design authority.
+Repository material can challenge, inform, or witness the *lake*,
+but durable design knowledge belongs back in the *lake*.
+This keeps README files, design documents, source comments, tests, and generated outputs useful
+without making any of them a competing source of truth.
 
-That authority can still be revised by deliberate work.
-Lowering lets a *monograph* seed the *lake*.
-Reflecting lets implementation discoveries update the *lake*.
-Raising lets the *lake* rebuild a whole-project narrative.
-Realizing lets *entries* guide implementation.
-
-Keeping the three forms distinct prevents one document from trying to serve every reader at once.
-The *monograph* can stay fluent.
-The *entries* can stay compact and named.
-Repository artifacts can stay focused on behavior while still having a place to point for intent.
+The two forms define one polarity.
+`actualize` moves from `lake` to `repo`.
+`internalize` moves from `repo` to `lake`.
+All other repository artifacts are materials that can be played with,
+discarded, regenerated, or revised from a well-maintained *lake*.
 
 ---
 
@@ -55,9 +51,8 @@ Repository artifacts can stay focused on behavior while still having a place to 
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [mono](mono.md)
+  - [lake](lake.md)
   - [repo](repo.md)
-  - [sirno-lake](sirno-lake.md)
   - [transform](transform.md)
 
 > **Sirno generated links end.**

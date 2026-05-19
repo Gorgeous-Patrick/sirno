@@ -9,38 +9,38 @@ belongs:
 
 A *transform* names a kind of work between Sirno *forms*.
 
-Sirno uses four *transform* names:
-`lower`, `raise`, `realize`, and `reflect`.
-They form the review neighborhood for work that moves design among forms.
+Sirno uses two *transform* names:
+`actualize` and `internalize`.
+They form the review neighborhood for work across the `lake` and `repo` polarity.
 
 Their direct names are also useful:
-`mono-to-sirno`, `sirno-to-mono`, `sirno-to-repo`, and `repo-to-sirno`.
+`lake-to-repo` and `repo-to-lake`.
 
 The *transforms* are vocabulary for humans, LLMs, skills, CLI interfaces, and MCP tools.
 They describe coherent work without requiring every *transform* to be a one-shot command.
 
 The *transform* names make design work easier to request and review.
-Instead of saying "split this document into smaller pieces" every time,
-a user can ask to lower a *monograph* into the *lake*.
-Instead of saying "update the design notes based on this repo change",
-a user can ask to reflect the *repository* into *entries*.
+Instead of saying "update the code, README, or generated documents from the lake",
+a user can ask to actualize the *lake* into the *repository*.
+Instead of saying "move this repository fact into the canonical design source",
+a user can ask to internalize the *repository* into the *lake*.
 
-The four *transforms* form a loop:
-`mono` lowers into `sirno`,
-`sirno` realizes into `repo`,
-`repo` reflects back into `sirno`,
-and `sirno` raises into `mono`.
-The loop is conceptual, not automatic authority.
-Each *transform* should still be performed with judgment about the current source of truth.
+The polarity is simple.
+The *lake* is canonical.
+The *repository* is material:
+source code, tests, configuration, generated files, README files,
+design documents outside the *lake*, and other inspectable artifacts.
+Actualization gives those materials shape from the *lake*.
+Internalization lets those materials teach the *lake* what durable design knowledge they expose.
 
-A reviewer who touches one movement should visit the other movements through this entry.
-The round trip matters because a change to one movement usually changes what the others must preserve.
+A reviewer who touches one direction should visit the other direction through this entry.
+The round trip matters because repo material may reveal that the *lake* needs sharper names,
+and a sharper *lake* should make later repo material easier to regenerate.
 
 This vocabulary also helps skills stay focused.
-A lowering skill should preserve narrative intent while creating *entries*.
-A realization skill should inspect *entries* before editing code.
-A reflection skill should record durable design facts learned from implementation.
-A raising skill should compose a readable *monograph*.
+An actualization skill should inspect *entries* before editing repository material.
+An internalization skill should turn repository material into durable *entries*,
+metadata, artifacts, or witness expectations.
 
 ---
 
@@ -49,9 +49,7 @@ A raising skill should compose a readable *monograph*.
 - belongs (to):
   - [form](form.md)
 - belongs (from):
-  - [lower](lower.md)
-  - [raise](raise.md)
-  - [realize](realize.md)
-  - [reflect](reflect.md)
+  - [actualize](actualize.md)
+  - [internalize](internalize.md)
 
 > **Sirno generated links end.**

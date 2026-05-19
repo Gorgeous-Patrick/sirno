@@ -7,10 +7,9 @@ category:
 
 *Semantic Intermediate Representation of Nominal Objects*
 
-Sirno compiles between design forms for design-aware programming work,
-moving among an optional *monograph*,
-a *lake* of compact named Markdown *entries*,
-and the *repository*.
+Sirno compiles between design forms for design-aware programming work.
+It keeps a canonical *lake* of compact named Markdown *entries*
+and treats the *repository* as the material surface those entries shape.
 
 This repository is a Sirno-managed project whose design subject is Sirno itself.
 General claims describe Sirno as the tool and project model.
@@ -52,10 +51,10 @@ storage boundaries, generated regions, or *witness* lookup behavior.
 The point is to preserve the design object that a later edit or review should be able to cite.
 
 Sirno also names movements between forms.
-`lower` moves narrative design into *lake entries*.
-`realize` uses *entries* to guide *repository* work.
-`reflect` records durable design facts learned from the *repository* back into the *lake*.
-`raise` composes *lake entries* into a readable *monograph* when a project wants one.
+`actualize` uses the *lake* to shape *repository* material:
+source, tests, configuration, generated output, README files,
+and design documents outside the *lake*.
+`internalize` records durable design facts learned from the *repository* back into the *lake*.
 These *transforms* are vocabulary for work.
 They do not make Sirno a judge of design quality.
 They make the relevant design objects easier to name and inspect.

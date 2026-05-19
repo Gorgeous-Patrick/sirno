@@ -4,7 +4,7 @@ desc: The Sirno.toml file that marks and configures a Sirno-managed repository.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 refines:
   - storage
 ---
@@ -13,15 +13,13 @@ refines:
 
 The file configures the public *entry lake*
 and the operational policies that Sirno applies to the *lake*.
-It may also configure a *monograph*,
-*repository witness* members,
+It may also configure *repository witness* members
 and Sirno Frost.
 Generated config files include concise comments that describe how each written field is used.
 `sirno util config` checks whether those comments are present.
 `sirno util config --fix` rewrites the file through Sirno's canonical config renderer
 when comments are missing.
 
-`[mono].path` optionally names the *monograph*.
 `[lake].path` names the Markdown *entry lake*.
 `[frost].path` optionally names the private Sirno Frost path.
 `[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
@@ -31,7 +29,7 @@ Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 The CLI `-F, --frost-path PATH` option selects a Frost path for one direct Frost check.
 
-A project can use Sirno without a configured *monograph*, repo members, or Sirno Frost.
+A project can use Sirno without configured repo members or Sirno Frost.
 `sirno init` creates the config, public *entry lake*, private Sirno Frost path,
 and packaged skill wrappers.
 Its default paths are derived from the directory that contains `Sirno.toml`:
@@ -124,7 +122,7 @@ They are cleared after a successful Frost commit.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

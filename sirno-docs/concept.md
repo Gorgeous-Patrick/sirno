@@ -14,7 +14,7 @@ A concept is a named idea that compresses project knowledge.
 It may name a design intention, an algorithmic detail, local vocabulary,
 a behavior, a test rationale, or the shared reason behind several decisions.
 
-Concepts keep intent portable across the *monograph*, *entries*, and repo.
+Concepts keep intent portable across the *lake* and repo material.
 They let people and agents refer to a bundle of meaning without restating it.
 
 The value of a concept is not that it is abstract.

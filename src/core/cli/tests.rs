@@ -112,8 +112,6 @@ fn top_level_init_accepts_explicit_paths() {
         "--config",
         config_path.to_str().unwrap(),
         "init",
-        "--mono",
-        "DESIGN.md",
         "--lake",
         "custom-lake",
         "--frost",
@@ -123,7 +121,6 @@ fn top_level_init_accepts_explicit_paths() {
     .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
-    assert_eq!(config.mono.unwrap().path, PathBuf::from("DESIGN.md"));
     assert_eq!(config.lake.path, PathBuf::from("custom-lake"));
     assert_eq!(config.frost.unwrap().path, PathBuf::from("custom-frost"));
     assert!(temp.path().join("custom-lake").join("concept.md").exists());
@@ -226,7 +223,6 @@ fn top_level_init_can_skip_lake_and_frost() {
     .unwrap();
 
     assert!(!config_path.exists());
-    assert!(!temp.path().join("sirno-lake").exists());
     assert!(!temp.path().join("sirno-frost").exists());
     assert!(
         temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
@@ -236,13 +232,10 @@ fn top_level_init_can_skip_lake_and_frost() {
 #[test]
 fn top_level_init_rejects_path_flags_for_disabled_parts() {
     let no_lake_with_lake = Cli::try_parse_from(["sirno", "init", "--no-lake", "--lake", "docs"]);
-    let no_lake_with_mono =
-        Cli::try_parse_from(["sirno", "init", "--no-lake", "--mono", "DESIGN.md"]);
     let no_frost_with_frost =
         Cli::try_parse_from(["sirno", "init", "--no-frost", "--frost", "sirno-frost"]);
 
     assert!(no_lake_with_lake.is_err());
-    assert!(no_lake_with_mono.is_err());
     assert!(no_frost_with_frost.is_err());
 }
 
@@ -313,13 +306,6 @@ fn core_context_lake_init_and_entry_new_return_json_dtos() {
     assert!(entry.ok);
     assert!(entry.path.ends_with("docs/alpha.md"));
     assert!(json.contains("\"ok\": true"));
-}
-
-#[test]
-fn lake_init_rejects_mono_option() {
-    let error = Cli::try_parse_from(["sirno", "lake", "init", "--mono", "DESIGN.md"]).unwrap_err();
-
-    assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
 }
 
 #[test]

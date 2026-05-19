@@ -26,7 +26,7 @@ Test-driven work is strongest when tests carry design intent,
 not only regression coverage.
 A good test should help a reviewer see the property being preserved.
 When a test exposes a clearer concept or a narrower invariant,
-reflect that discovery into the *lake* instead of leaving it trapped in test code.
+internalize that discovery into the *lake* instead of leaving it trapped in test code.
 
 ---
 

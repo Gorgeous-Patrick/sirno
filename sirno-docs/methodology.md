@@ -50,32 +50,27 @@ Use `meta` for the project's principles, vocabulary, and Sirno-facing documentat
 A `meta` *entry* should answer how the project should be understood and developed:
 guiding principles, terms, splitting rules, narrative habits, review expectations, or agent-facing guidance.
 
-Lower when intent is too broad for the next local change.
-Lowering turns narrative design into compact *lake entries*.
-It should preserve the route that made the narrative readable
-while giving future work stable handles.
-
-Realize from named objects.
-Before editing code,
+Actualize from named objects.
+Before editing repository material,
 read the *entries* that govern the work.
 Inspect their `belongs`, `refines`, and *witnesses*.
-Implementation should be able to answer which *entry* explains an important commitment.
+Code, tests, README files, generated output, and design documents outside the *lake*
+should be able to answer which *entry* explains an important commitment.
 
-Reflect while the *repository* change is fresh.
-Reflect when implementation changes a representation,
+Internalize while the *repository* change is fresh.
+Internalize when repository material changes a representation,
 narrows an invariant,
 introduces a boundary,
 invalidates an explanation,
 or reveals a clearer local design.
-The reflected prose should record the durable design fact,
+The internalized prose should record the durable design fact,
 not narrate the whole edit.
 
-Raise only when a project needs a long-form narrative outside the *lake*.
-Raising composes *entries* into a readable *monograph*.
-It is not concatenation.
-It chooses a route,
-introduces terms once,
-and leaves dense local detail in *entries*.
+Write narrative routes inside the *lake* when a reader needs continuity.
+Treat long-form documents outside the *lake* as repo material.
+They may be useful artifacts,
+but their durable design claims should be internalized into *entries*,
+and their published form should be actualized from the maintained *lake*.
 
 Witness important claims.
 The *witness* may be source code, tests, configuration, generated files, or assets.

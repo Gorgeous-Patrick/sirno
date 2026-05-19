@@ -55,7 +55,7 @@ Those commands should remain plain enough to use from a terminal
 and stable enough for agents and skills to call.
 
 `sirno status` summarizes the configured *repository*.
-It reports the config path, *monograph* state, *lake* path, optional *frost* path,
+It reports the config path, *lake* path, optional *frost* path,
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
 `sirno init` creates a Sirno config, ordinary seed entries,

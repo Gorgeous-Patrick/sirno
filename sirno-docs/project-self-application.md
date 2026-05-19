@@ -36,7 +36,7 @@ and be linked through categories, `belongs`, `refines`, and *witnesses*.
 
 This self-application exercises the design under its own constraints.
 When implementation work changes the model,
-that change can be reflected into the *lake* before any narrative route is revised.
+that change can be internalized into the *lake* before any narrative route is revised.
 
 The `meta` category is the bootstrap surface.
 It contains *entries* that answer how a Sirno-managed project wants its documentation to develop.
@@ -50,7 +50,7 @@ Those names become the handles used by code work, documentation work, and review
 Sirno terms become proper names when they appear with Sirno:
 Sirno Lake and Sirno Frost.
 Otherwise, lowercase italics mark local model terms:
-*lake*, *entry*, *witness*, *ripple*, *transform*, *monograph*, and *repository*.
+*lake*, *entry*, *witness*, *ripple*, *transform*, and *repository*.
 Ordinary words stay plain when they describe normal project work.
 That vocabulary boundary lets Sirno explain any project,
 including this repository,
@@ -60,7 +60,7 @@ Sirno does not just document the project;
 it lets the project document its own documentation method.
 
 Repository *witnesses* make self-application stronger.
-When code realizes *entry* parsing, *generated footer* handling, or *structural checks*,
+When code actualizes *entry* parsing, *generated footer* handling, or *structural checks*,
 that code can be placed inside a *witness* block for the relevant *entry* id.
 Then Sirno can answer both sides of a design question:
 what does this *entry* mean,

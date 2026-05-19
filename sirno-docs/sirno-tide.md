@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - sirno-frost
-  - sirno-lake
+  - lake
 refines:
   - versioning
 ---
@@ -40,8 +40,8 @@ Read them together when changing how edits become review obligations.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [lake](lake.md)
   - [sirno-frost](sirno-frost.md)
-  - [sirno-lake](sirno-lake.md)
 - belongs (from):
   - [ripple](ripple.md)
   - [tide](tide.md)

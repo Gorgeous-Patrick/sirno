@@ -4,7 +4,7 @@ desc: The exact YAML schema that carries Sirno entry structure.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 ---
 
 Metadata is the exact schema that carries Sirno structure.
@@ -62,7 +62,7 @@ Unconfigured list-valued metadata fields remain visible as check warnings.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

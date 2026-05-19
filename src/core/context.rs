@@ -669,7 +669,6 @@ impl CoreContext {
     /// Show the current Sirno project status.
     pub fn lake_status(&self) -> Result<StatusResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
-        let mono = config.resolve_mono(&self.config_path);
         let frost = config.resolve_frost(&self.config_path);
         let lock_path = SirnoLock::path_for_config(&self.config_path);
         let lock = if frost.is_some() { SirnoLock::from_file_if_exists(&lock_path)? } else { None };
@@ -680,7 +679,6 @@ impl CoreContext {
         Ok(StatusResult {
             ok: !report.has_errors(),
             config_path: display_path(&self.config_path),
-            mono_path: mono.as_ref().map(|path| display_path(path)),
             lake_path: display_path(report.root()),
             frost_path: frost.as_ref().map(|path| display_path(path)),
             frost_state: frost_state_label(lock.as_ref()),

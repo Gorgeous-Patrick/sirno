@@ -31,7 +31,7 @@ The second answer was vocabulary.
 Sirno terms become proper names when they appear with Sirno:
 Sirno Lake and Sirno Frost.
 Otherwise they stay lowercase and italic when they carry Sirno meaning:
-*lake*, *entry*, *witness*, *frost*, *ripple*, *transform*, *monograph*, and *repository*.
+*lake*, *entry*, *witness*, *frost*, *ripple*, *transform*, and *repository*.
 Ordinary project words remain plain.
 This keeps normal documentation readable
 while still marking when the reader has entered Sirno's model.

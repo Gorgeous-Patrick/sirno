@@ -27,16 +27,18 @@ The pull may be practical, aesthetic, playful, urgent, or clarifying.
 A narrative that only orders concepts is a table of contents;
 a narrative that also creates pull is a reason to keep reading.
 
-The *monograph* is the primary narrative form.
-It introduces terms once and trusts them afterward.
-
-Materialized narratives may also live in the *lake* as guides.
+The *lake* is the canonical narrative form.
+Materialized narratives live in the *lake* as guides.
 They state useful prerequisites,
 choose a base language,
 and move a reader through *entries* in an intentional order.
 This *lake*'s `introduction` is the first route through the model.
 The `methodology` is the working route for acting inside the *lake*.
 The `bootstrap-resolution` route walks the self-application problem to its answer.
+
+Long-form documents outside the *lake* are repo material.
+They may introduce terms once and trust them afterward,
+but their durable claims belong in *entries*.
 
 Interactive narratives may be generated ephemerally by skills.
 They adapt the route to one reader or task,

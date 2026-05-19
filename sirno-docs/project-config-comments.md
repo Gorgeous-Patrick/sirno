@@ -20,7 +20,6 @@ It reports missing comments without changing the file.
 
 The generated comments are:
 
-- `Markdown monograph path, resolved relative to this config file.`
 - `Markdown entry lake path, resolved relative to this config file.`
 - `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
 - `Sirno Frost path, kept outside the public lake.`

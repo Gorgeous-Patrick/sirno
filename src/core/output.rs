@@ -103,11 +103,6 @@ pub(crate) fn diagnostics_from_entry_report(
 
 pub(crate) fn print_status_result(result: &StatusResult) {
     println!("config: {}", result.config_path);
-    if let Some(mono) = &result.mono_path {
-        println!("mono: {mono}");
-    } else {
-        println!("mono: (not configured)");
-    }
     println!("lake: {}", result.lake_path);
     if let Some(frost) = &result.frost_path {
         println!("frost: {frost}");

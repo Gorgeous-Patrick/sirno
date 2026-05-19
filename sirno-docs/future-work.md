@@ -17,8 +17,8 @@ Future work decides which snapshots Sirno keeps by default,
 which snapshots can be named,
 and how review interfaces expose them.
 
-The *transform* names may still be refined.
-The current names are `lower`, `raise`, `realize`, and `reflect`.
+The *transform* names are now `actualize` and `internalize`.
+Future work may add command support for those names where the CLI still exposes older surfaces.
 
 Planning skills are future work.
 They may use *entries* to leave durable work artifacts without changing Sirno's core fields.
@@ -44,7 +44,7 @@ The *transform* names may also evolve.
 The current names are compact and memorable,
 but they should remain subordinate to the model they describe.
 If the project learns a clearer vocabulary,
-*entries* and manuals can reflect that deliberately.
+*entries* and manuals can internalize that vocabulary deliberately.
 
 ---
 

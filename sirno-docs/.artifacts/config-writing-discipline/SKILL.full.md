@@ -89,9 +89,6 @@ and hidden Markdown HTML-comment delimiter syntax.
 
 ## Optional Tables
 
-`[mono].path` names the optional Markdown monograph.
-Configured `mono` paths resolve relative to the config file unless absolute.
-
 `[frost].path` names the optional private Frost path.
 Configured `frost` paths resolve relative to the config file unless absolute.
 The Frost path must not equal, contain, or sit inside the public lake path.

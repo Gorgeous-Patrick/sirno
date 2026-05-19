@@ -5,7 +5,7 @@ category:
   - concept
   - meta
 belongs:
-  - sirno-lake
+  - lake
 ---
 
 Refinement is the discipline of making a concrete version of a broader claim
@@ -35,7 +35,7 @@ something larger.
 A refinement introduces detail under obligation:
 the new detail should still satisfy the higher-level claim.
 When the detail changes the claim,
-reflect the broader *entry* instead of hiding the change below it.
+internalize the changed claim in the broader *entry* instead of hiding it below.
 
 Use refinement when work crosses abstraction levels.
 A concept can be refined into an invariant, storage rule, command contract,
@@ -57,7 +57,7 @@ It should not bury an important design change at the bottom of the chain.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

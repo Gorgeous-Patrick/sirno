@@ -30,8 +30,8 @@ use crate::core::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
-    CheckMode, EntryDirectory, EntryId, EntryIdError, SirnoConfig, SirnoFrost, TideSource,
-    TideStatus, TideWorkitem, TideWorkitemParseError,
+    CheckMode, EntryId, EntryIdError, SirnoConfig, SirnoFrost, TideSource, TideStatus,
+    TideWorkitem, TideWorkitemParseError,
 };
 
 #[cfg(test)]
@@ -75,9 +75,6 @@ pub struct Cli {
 enum Command {
     /// Create a Sirno config, public lake, Frost store, and skill wrappers.
     Init {
-        /// Monograph path written to Sirno.toml.
-        #[arg(long)]
-        mono: Option<PathBuf>,
         /// Public Markdown entry lake path written to Sirno.toml.
         #[arg(long)]
         lake: Option<PathBuf>,
@@ -85,7 +82,7 @@ enum Command {
         #[arg(long)]
         frost: Option<PathBuf>,
         /// Skip public lake initialization.
-        #[arg(long = "no-lake", conflicts_with_all = ["mono", "lake"])]
+        #[arg(long = "no-lake", conflicts_with = "lake")]
         no_lake: bool,
         /// Skip Sirno Frost initialization.
         #[arg(long = "no-frost", conflicts_with = "frost")]
@@ -725,12 +722,11 @@ impl Cli {
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
-            | Command::Init { mono, lake, frost, no_lake, no_frost, no_skills } => {
+            | Command::Init { lake, frost, no_lake, no_frost, no_skills } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
                 let request = TopLevelInitRequest {
-                    mono,
                     lake,
                     frost,
                     init_lake: !no_lake,
@@ -820,7 +816,6 @@ impl MoveCommand {
 
 #[derive(Debug)]
 struct TopLevelInitRequest {
-    mono: Option<PathBuf>,
     lake: Option<PathBuf>,
     frost: Option<PathBuf>,
     init_lake: bool,
@@ -833,7 +828,7 @@ fn run_top_level_init(
 ) -> Result<ExitCode, CommandError> {
     let mut initialized = false;
     if request.init_lake {
-        run_lake_init(request.mono, request.lake, config_path, lake_path)?;
+        run_lake_init(request.lake, config_path, lake_path)?;
         initialized = true;
     }
     if request.init_frost {
@@ -867,31 +862,11 @@ fn ensure_config_for_top_level_frost(
 }
 
 fn run_lake_init(
-    mono: Option<PathBuf>, lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
+    lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
-    if mono.is_none() {
-        let result = CoreContext::from_cli_paths(config_path, lake_path)
-            .lake_init(LakeInitRequest { lake })?;
-        println!("{}", result.message);
-        return Ok(ExitCode::SUCCESS);
-    }
-
-    let mut config = SirnoConfig::new(
-        lake.or_else(|| lake_path.map(Path::to_path_buf))
-            .unwrap_or_else(|| default_lake_path(config_path)),
-    );
-    if let Some(mono) = mono {
-        config = config.with_mono(mono);
-    }
-    let lake_path = config.resolve_lake(config_path);
-    config.write_new(config_path)?;
-    let paths = EntryDirectory::new(&lake_path).init()?;
-    println!(
-        "initialized {} with {} entries in {}",
-        config_path.display(),
-        paths.len(),
-        lake_path.display()
-    );
+    let result =
+        CoreContext::from_cli_paths(config_path, lake_path).lake_init(LakeInitRequest { lake })?;
+    println!("{}", result.message);
     Ok(ExitCode::SUCCESS)
 }
 
@@ -993,7 +968,7 @@ impl LakeCommand {
             | LakeCommand::Init { .. } | LakeCommand::Move(_) if frost_path.is_some() => {
                 Err(CommandError::FrostPathRequiresCheck)
             }
-            | LakeCommand::Init { lake } => run_lake_init(None, lake, config_path, lake_path),
+            | LakeCommand::Init { lake } => run_lake_init(lake, config_path, lake_path),
             | LakeCommand::Move(args) => args.run(config_path),
             | LakeCommand::TopLevel(command) => command.run(config_path, lake_path, frost_path),
         }

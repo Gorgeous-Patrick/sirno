@@ -42,7 +42,6 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):en
 ```
 
 Optional tables describe configured surfaces and policy.
-`[mono].path` names the optional monograph.
 `[frost].path` names the optional private Frost path.
 `[repo].members` names files, directories, or globs scanned for witness blocks.
 `[lake].ignore` names lake-root-relative paths Sirno skips.
@@ -51,7 +50,7 @@ The presence of `[tutorial]` enables tutorial text,
 with `frost_commit_tide` and `frost_bootstrap_tide` defaulting to true.
 
 Paths have different roots.
-Configured `mono`, `lake`, and `frost` paths resolve relative to the config file unless absolute.
+Configured `lake` and `frost` paths resolve relative to the config file unless absolute.
 `[lake].ignore` paths are relative to the lake root and cannot be absolute or escape upward.
 `[repo].members` paths and globs are relative to the config file and cannot be absolute
 or escape upward.

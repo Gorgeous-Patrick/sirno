@@ -2,20 +2,20 @@
 name: sirno-editor
 description: >-
   Edit a Sirno Lake. Use for creating, revising, or reorganizing compact Markdown entries,
-  moving design knowledge from DESIGN.md or another mono form into the lake, choosing entry ids
-  and structural metadata, expanding entries, or validating generated Sirno links.
+  internalizing durable repository knowledge into the lake, choosing entry ids and structural
+  metadata, expanding entries, or validating generated Sirno links.
 ---
 
 # Sirno Editor
 
 ## Purpose
 
-Use this skill when editing `sirno` entries
-or moving design knowledge from `mono` to `sirno`.
+Use this skill when editing Sirno Lake entries
+or internalizing durable repository knowledge into the lake.
 Editing keeps the lake precise, structured, and useful for future work.
-Lowering gives a long-form narrative compact nominal form.
-It preserves the design route while creating or revising entries
-future work can cite, query, realize, and reflect.
+Internalization gives repository material compact nominal form.
+It preserves durable design knowledge while creating or revising entries
+future work can cite, query, actualize, internalize, and witness.
 This full skill text is served as the MCP resource `sirno://skills/sirno-editor`.
 It follows the `lake-editing-discipline` lake entry.
 
@@ -33,8 +33,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
 ## Core Judgment
 
 Sirno Lake editing is not a heading split or metadata shuffle.
-When lowering from a monograph,
-read the monograph as a whole,
+When internalizing from repository material,
+read the relevant material and its surrounding context,
 then name the durable objects that make future work easier to address.
 When revising existing entries,
 preserve stable ids and improve the structure that future work will cite.
@@ -56,14 +56,15 @@ Avoid entries that only restate a paragraph without creating a useful handle.
 
 Before editing, decide which form currently carries authority.
 If the lake is already established and maintained,
-treat it as the structured design source.
+treat it as the canonical design source.
 If the lake is absent or skeletal,
-use the configured monograph as the source of intended design unless the user says code is authoritative.
+use repository material as input to internalize,
+and ask the user when repository materials disagree.
 
 Preserve stable facts from the current project model:
 
 - central definition and scope
-- configured `lake` path and optional `mono` path
+- configured `lake` path and repository material surface
 - entry id rules and metadata schema
 - configured structural field and witness lookup meanings
 - generated footer ownership
@@ -165,14 +166,14 @@ Avoid turning the lake into:
 - a glossary with labels but no design pressure
 - a changelog that narrates edits instead of durable facts
 - a task list that loses the concept behind the work
-- a duplicate monograph split across files
+- a duplicate repository document split across files
 
-Entries should be more local than the monograph,
-but more durable than a plan item.
+Entries should be more canonical than repository material,
+but more local than a whole-project dump.
 
 ## Workflow
 
-1. Read repository instructions, `Sirno.toml`, the configured monograph when present, and the existing lake.
+1. Read repository instructions, `Sirno.toml`, relevant repository material, and the existing lake.
    Use the configured lake as the routine edit target.
    `sirno-docs-zh/` stores the split Chinese translation snapshot.
    Leave that directory unchanged during lake maintenance and design sync.

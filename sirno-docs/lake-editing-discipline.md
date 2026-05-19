@@ -14,8 +14,7 @@ Its packaged wrapper lives in `.artifacts/lake-editing-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
 Read first.
-Read repository instructions, `Sirno.toml`, the configured monograph when present,
-and the existing lake.
+Read repository instructions, `Sirno.toml`, relevant repository material, and the existing lake.
 Decide design authority before changing anything; see `design-source-authority`.
 Inspect the current Sirno CLI before assuming which commands exist.
 

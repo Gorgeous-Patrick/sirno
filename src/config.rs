@@ -2,7 +2,7 @@
 //!
 //! A repository is Sirno-managed when it contains `Sirno.toml`.
 //! The config names the public Markdown entry lake.
-//! It may also opt into a monograph, repository witness members, and Sirno Frost.
+//! It may also opt into repository witness members and Sirno Frost.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -53,25 +53,6 @@ pub const STANDARD_MARKDOWN_WITNESS_END_REGEX: &str = concat!(
     r":end[ \t]*-->"
 );
 // sirno:witness:project-config:end
-
-// sirno:witness:mono:begin
-/// Optional configured monograph settings.
-///
-/// Invariant: `path` points to the configured monograph.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct MonoSettings {
-    /// Configured monograph path.
-    pub path: PathBuf,
-}
-
-impl MonoSettings {
-    /// Construct monograph settings from a path.
-    pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self { path: path.into() }
-    }
-}
-// sirno:witness:mono:end
 
 /// Settings for structural checks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -322,7 +303,6 @@ impl WitnessSettings {
 /// Sirno project configuration.
 ///
 /// `lake.path` points to the configured public Markdown entry lake path.
-/// `mono.path`, when present, points to the configured monograph path.
 /// `frost.path`, when present, points to the configured Sirno Frost path.
 /// `lake.ignore` contains paths relative to the lake root that Sirno skips.
 /// `repo.members`, when present, contains relative member paths or globs for witness lookup.
@@ -335,9 +315,6 @@ impl WitnessSettings {
 #[serde(deny_unknown_fields)]
 // sirno:witness:project-config:begin
 pub struct SirnoConfig {
-    /// Configured monograph settings.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub mono: Option<MonoSettings>,
     /// Configured public Markdown entry lake settings.
     pub lake: LakeSettings,
     /// Configured Sirno Frost settings.
@@ -365,7 +342,6 @@ impl SirnoConfig {
     // sirno:witness:project-config:begin
     pub fn new(lake: impl Into<PathBuf>) -> Self {
         Self {
-            mono: None,
             lake: LakeSettings::new(lake),
             frost: None,
             repo: None,
@@ -376,12 +352,6 @@ impl SirnoConfig {
         }
     }
     // sirno:witness:project-config:end
-
-    /// Return this config with a configured monograph path.
-    pub fn with_mono(mut self, mono: impl Into<PathBuf>) -> Self {
-        self.mono = Some(MonoSettings::new(mono));
-        self
-    }
 
     /// Return this config with a configured public lake path.
     pub fn with_lake(mut self, lake: impl Into<PathBuf>) -> Self {
@@ -487,14 +457,7 @@ impl SirnoConfig {
     }
     // sirno:witness:project-config-comments:end
 
-    /// Resolve the monograph path relative to a config file path when configured.
     // sirno:witness:project-config:begin
-    pub fn resolve_mono(&self, config_path: impl AsRef<Path>) -> Option<PathBuf> {
-        self.mono
-            .as_ref()
-            .map(|mono| Self::resolve_config_relative(config_path.as_ref(), &mono.path))
-    }
-
     /// Resolve the entry lake path relative to a config file path.
     pub fn resolve_lake(&self, config_path: impl AsRef<Path>) -> PathBuf {
         Self::resolve_config_relative(config_path.as_ref(), &self.lake.path)
@@ -569,18 +532,6 @@ impl ConfigRenderer {
     }
 
     fn push_config(&mut self, config: &SirnoConfig) -> Result<(), toml::ser::Error> {
-        if let Some(mono) = &config.mono {
-            self.push_table("mono");
-            // sirno:witness:project-config-comments:begin
-            self.push_field(
-                "path",
-                &mono.path,
-                "Markdown monograph path, resolved relative to this config file.",
-            )?;
-            // sirno:witness:project-config-comments:end
-            self.out.push('\n');
-        }
-
         self.push_table("lake");
         // sirno:witness:project-config-comments:begin
         self.push_field(
@@ -917,7 +868,6 @@ path = "docs"
 "#,
         );
 
-        assert_eq!(config.mono, None);
         assert_eq!(config.lake.path, PathBuf::from("docs"));
         assert_eq!(config.frost, None);
         assert!(config.lake.ignore.is_empty());
@@ -929,27 +879,9 @@ path = "docs"
     }
 
     #[test]
-    fn parses_optional_mono_settings() {
-        let config = parse_config(
-            r#"
-[mono]
-path = "DESIGN.md"
-
-[lake]
-path = "docs"
-"#,
-        );
-
-        assert_eq!(config.mono, Some(MonoSettings { path: PathBuf::from("DESIGN.md") }));
-    }
-
-    #[test]
     fn parses_frost_settings() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -965,9 +897,6 @@ path = "sirno-frost"
     fn parses_check_settings() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -1011,9 +940,6 @@ frost_bootstrap_tide = true
     fn parses_repo_members() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -1074,9 +1000,6 @@ end = '(?m)^STOP ([A-Za-z0-9_-]+)$'
     fn parses_structural_settings() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -1116,9 +1039,6 @@ parent = { from = { render = true } }
     fn structural_edge_fields_default_to_false() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -1191,9 +1111,6 @@ middle = { clique = { render = true } }
     fn parses_lake_ignore_settings() {
         let config = parse_config(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 ignore = [".obsidian", "drafts"]
@@ -1208,9 +1125,6 @@ ignore = [".obsidian", "drafts"]
     fn rejects_unknown_fields() {
         let source = config_source(
             r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 extra = "no"
@@ -1236,10 +1150,9 @@ path = "docs"
 
     #[test]
     fn resolves_relative_paths_against_config_directory() {
-        let config = SirnoConfig::default_project().with_mono("DESIGN.md");
+        let config = SirnoConfig::default_project();
         let config_path = Path::new("/tmp/project/Sirno.toml");
 
-        assert_eq!(config.resolve_mono(config_path), Some(PathBuf::from("/tmp/project/DESIGN.md")));
         assert_eq!(config.resolve_lake(config_path), PathBuf::from("/tmp/project/docs"));
         assert_eq!(config.resolve_frost(config_path), None);
         assert_eq!(
@@ -1256,9 +1169,6 @@ path = "docs"
             &path,
             config_source(
                 r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 ignore = ["../outside"]
@@ -1280,9 +1190,6 @@ ignore = ["../outside"]
             &path,
             config_source(
                 r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 
@@ -1486,14 +1393,12 @@ delimiters = []
         assert!(!source.contains("[tutorial]"));
         assert!(source.contains("[structural]"));
         assert!(!source.contains("# Structural metadata field"));
-        assert!(!source.contains("[mono]"));
         assert!(!source.contains("[repo]"));
     }
 
     #[test]
     fn rendered_config_keeps_selected_comments_and_structural_link_order() {
         let config = SirnoConfig {
-            mono: Some(MonoSettings::new("DESIGN.md")),
             lake: LakeSettings {
                 path: PathBuf::from("docs"),
                 ignore: vec![PathBuf::from(".obsidian")],
@@ -1527,7 +1432,6 @@ delimiters = []
         let read: SirnoConfig = toml::from_str(&source).unwrap();
 
         assert_eq!(read, config);
-        assert!(source.contains("# Markdown monograph path"));
         assert!(source.contains("# Markdown entry lake path"));
         assert!(source.contains("# Paths in lake that Sirno skips"));
         assert!(source.contains("# Sirno Frost path"));
@@ -1619,9 +1523,6 @@ delimiters = []
             &path,
             config_source(
                 r#"
-[mono]
-path = "DESIGN.md"
-
 [lake]
 path = "docs"
 

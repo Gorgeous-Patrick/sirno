@@ -2,8 +2,8 @@
 name: sirno-editor
 description: >-
   Edit a Sirno Lake. Use for creating, revising, or reorganizing compact Markdown entries,
-  moving design knowledge from DESIGN.md or another mono form into the lake, choosing entry ids
-  and structural metadata, expanding entries, or validating generated Sirno links.
+  internalizing durable repository knowledge into the lake, choosing entry ids and structural
+  metadata, expanding entries, or validating generated Sirno links.
 ---
 
 # Sirno Editor

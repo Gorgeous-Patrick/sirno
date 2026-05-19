@@ -4,7 +4,7 @@ desc: Validation of entry shape, structural targets, footers, and witnesses.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 ---
 
 Sirno checks structure.
@@ -63,7 +63,7 @@ That distinction keeps Sirno useful without pretending to solve judgment.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake](lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

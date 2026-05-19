@@ -29,8 +29,7 @@ the self-hosted Sirno Lake that describes Sirno.
 Sirno-specific terms are capitalized when they appear as part of a Sirno proper name,
 such as Sirno Lake or Sirno Frost.
 Otherwise, lowercase and italicize them when they carry Sirno-specific meaning:
-*lake*, *entry*, *witness*, *frost*, *ripple*, *transform*, *monograph*,
-and *repository*.
+*lake*, *entry*, *witness*, *frost*, *ripple*, *transform*, and *repository*.
 Generic words stay plain when they are not carrying Sirno structure:
 project, documentation, reader, history, change, review, and work.
 
