@@ -12,8 +12,9 @@ use std::str::FromStr;
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
-    Annotated, CallToolResult, Content, ListResourcesResult, PaginatedRequestParams, RawResource,
-    ReadResourceRequestParams, ReadResourceResult, Resource, ResourceContents, ServerCapabilities,
+    Annotated, CallToolResult, Content, ListResourceTemplatesResult, ListResourcesResult,
+    PaginatedRequestParams, RawResource, RawResourceTemplate, ReadResourceRequestParams,
+    ReadResourceResult, Resource, ResourceContents, ResourceTemplate, ServerCapabilities,
     ServerInfo,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext};
@@ -33,6 +34,9 @@ use crate::core::{
 use crate::{CheckMode, EntryId, StructuralEdgeDirection, TideWorkitem};
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
+const ENTRY_RESOURCE_MIME_TYPE: &str = "text/markdown";
+const ENTRY_RESOURCE_URI_PREFIX: &str = "sirno://entries/";
+const ENTRY_RESOURCE_URI_TEMPLATE: &str = "sirno://entries/{id}";
 
 // sirno:witness:design-doc-writer-skill:begin
 const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
@@ -123,6 +127,16 @@ impl SkillResourceSpec {
     }
 }
 
+fn entry_resource_template() -> ResourceTemplate {
+    Annotated::new(
+        RawResourceTemplate::new(ENTRY_RESOURCE_URI_TEMPLATE, "entry")
+            .with_title("Sirno Entry")
+            .with_description("Full Markdown source for one public Sirno entry by id.")
+            .with_mime_type(ENTRY_RESOURCE_MIME_TYPE),
+        None,
+    )
+}
+
 /// Sirno MCP server for one config path.
 ///
 /// Relative config paths are resolved when tools read them,
@@ -163,17 +177,37 @@ impl ServerHandler for SirnoMcpServer {
         future::ready(Ok(ListResourcesResult::with_all_items(resources)))
     }
 
+    fn list_resource_templates(
+        &self, _request: Option<PaginatedRequestParams>, _context: RequestContext<RoleServer>,
+    ) -> impl Future<Output = Result<ListResourceTemplatesResult, McpError>> + MaybeSendFuture + '_
+    {
+        future::ready(Ok(ListResourceTemplatesResult::with_all_items(vec![
+            entry_resource_template(),
+        ])))
+    }
+
     fn read_resource(
         &self, request: ReadResourceRequestParams, _context: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ReadResourceResult, McpError>> + MaybeSendFuture + '_ {
-        let result = SkillResourceSpec::for_uri(&request.uri)
-            .map(|resource| ReadResourceResult::new(vec![resource.as_resource_contents()]))
-            .ok_or_else(|| {
-                McpError::resource_not_found(
-                    format!("skill resource not found: {}", request.uri),
-                    None,
-                )
-            });
+        let result = if let Some(resource) = SkillResourceSpec::for_uri(&request.uri) {
+            Ok(ReadResourceResult::new(vec![resource.as_resource_contents()]))
+        } else if let Some(raw_id) = request.uri.strip_prefix(ENTRY_RESOURCE_URI_PREFIX) {
+            entry_id(raw_id.to_owned())
+                .map_err(|error| McpError::invalid_params(error, None))
+                .and_then(|id| {
+                    self.context
+                        .entry_read(id)
+                        .map_err(|error| McpError::resource_not_found(error.to_string(), None))
+                })
+                .map(|entry| {
+                    ReadResourceResult::new(vec![
+                        ResourceContents::text(entry.source, request.uri)
+                            .with_mime_type(ENTRY_RESOURCE_MIME_TYPE),
+                    ])
+                })
+        } else {
+            Err(McpError::resource_not_found(format!("resource not found: {}", request.uri), None))
+        };
         future::ready(result)
     }
     // sirno:witness:interfaces:end
@@ -228,6 +262,12 @@ impl SirnoMcpServer {
             params.absolute.unwrap_or(false),
         );
         result(self.context.entry_paths(request))
+    }
+
+    /// Read one public Markdown entry.
+    #[tool(name = "sirno_entry_read")]
+    fn entry_read(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
+        result(self.context.entry_read(entry_id(params.id)?))
     }
 
     /// Query public Markdown entries.
@@ -491,24 +531,49 @@ struct EntryPathParams {
     absolute: Option<bool>,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct McpStructuralFilters(Vec<McpStructuralFilter>);
+// sirno:witness:interfaces:begin
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+#[serde(untagged)]
+enum McpStructuralFilters {
+    One(McpStructuralFilterInput),
+    Many(Vec<McpStructuralFilterInput>),
+}
+
+impl Default for McpStructuralFilters {
+    fn default() -> Self {
+        Self::Many(Vec::new())
+    }
+}
 
 impl McpStructuralFilters {
     fn into_filters(self) -> Result<Vec<StructuralFilter>, String> {
-        self.0
-            .into_iter()
-            .map(|filter| {
-                Ok(StructuralFilter {
-                    field: filter.field,
-                    targets: filter
-                        .targets
-                        .into_iter()
-                        .map(entry_id)
-                        .collect::<Result<Vec<_>, _>>()?,
-                })
-            })
-            .collect()
+        self.into_inputs().into_iter().map(McpStructuralFilterInput::into_filter).collect()
+    }
+
+    fn into_inputs(self) -> Vec<McpStructuralFilterInput> {
+        match self {
+            | Self::One(input) => vec![input],
+            | Self::Many(inputs) => inputs,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+#[serde(untagged)]
+enum McpStructuralFilterInput {
+    Object(McpStructuralFilter),
+    Cli(String),
+}
+
+impl McpStructuralFilterInput {
+    fn into_filter(self) -> Result<StructuralFilter, String> {
+        match self {
+            | Self::Object(filter) => Ok(StructuralFilter {
+                field: filter.field,
+                targets: filter.targets.into_iter().map(entry_id).collect::<Result<Vec<_>, _>>()?,
+            }),
+            | Self::Cli(raw) => StructuralFilter::from_str(&raw).map_err(|error| error.to_string()),
+        }
     }
 }
 
@@ -518,17 +583,49 @@ struct McpStructuralFilter {
     targets: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct McpStructuralStates(Vec<McpStructuralState>);
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+#[serde(untagged)]
+enum McpStructuralStates {
+    One(McpStructuralStateInput),
+    Many(Vec<McpStructuralStateInput>),
+}
+
+impl Default for McpStructuralStates {
+    fn default() -> Self {
+        Self::Many(Vec::new())
+    }
+}
 
 impl McpStructuralStates {
     fn into_states(self) -> Result<Vec<StructuralStateFilter>, String> {
-        self.0
-            .into_iter()
-            .map(|state| {
+        self.into_inputs().into_iter().map(McpStructuralStateInput::into_state).collect()
+    }
+
+    fn into_inputs(self) -> Vec<McpStructuralStateInput> {
+        match self {
+            | Self::One(input) => vec![input],
+            | Self::Many(inputs) => inputs,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+#[serde(untagged)]
+enum McpStructuralStateInput {
+    Object(McpStructuralState),
+    Cli(String),
+}
+
+impl McpStructuralStateInput {
+    fn into_state(self) -> Result<StructuralStateFilter, String> {
+        match self {
+            | Self::Object(state) => {
                 Ok(StructuralStateFilter { field: state.field, state: state.state.into() })
-            })
-            .collect()
+            }
+            | Self::Cli(raw) => {
+                StructuralStateFilter::from_str(&raw).map_err(|error| error.to_string())
+            }
+        }
     }
 }
 
@@ -537,6 +634,7 @@ struct McpStructuralState {
     field: String,
     state: McpStructuralFieldState,
 }
+// sirno:witness:interfaces:end
 
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -790,6 +888,7 @@ mod tests {
         "sirno_entry_new",
         "sirno_entry_path",
         "sirno_entry_query",
+        "sirno_entry_read",
         "sirno_entry_rename",
         "sirno_entry_rg",
         "sirno_entry_witness",
@@ -944,6 +1043,9 @@ Changed body.
             .collect::<Vec<_>>();
 
         assert_eq!(names, EXPECTED_TOOLS);
+        // sirno:witness:interfaces:begin
+        assert!(names.iter().all(|name| !name.starts_with("sirno_util_")));
+        // sirno:witness:interfaces:end
     }
 
     #[test]
@@ -965,6 +1067,7 @@ Changed body.
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
+        let read = server.entry_read(Parameters(EntryIdParams { id: "alpha".to_owned() })).unwrap();
         let text = entry
             .content
             .first()
@@ -977,7 +1080,25 @@ Changed body.
         assert!(structured(&cwd)["path"].as_str().is_some_and(|path| !path.is_empty()));
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
+        assert_eq!(structured(&read)["body"], "Body.");
+        assert!(structured(&read)["source"].as_str().unwrap().contains("desc: Alpha entry."));
         assert!(text.contains("\n  \"ok\": true,"));
+    }
+
+    #[test]
+    fn query_params_accept_cli_style_structural_filters() {
+        let params: EntryQueryParams = serde_json::from_value(json!({
+            "has": "belongs=agent-skills",
+            "is": "category=present",
+        }))
+        .unwrap();
+        let filters = params.has.into_filters().unwrap();
+        let states = params.is.into_states().unwrap();
+
+        assert_eq!(filters[0].field, "belongs");
+        assert_eq!(filters[0].targets[0].as_str(), "agent-skills");
+        assert_eq!(states[0].field, "category");
+        assert!(matches!(states[0].state, StructuralFieldState::Present));
     }
 
     #[test]
@@ -1080,6 +1201,13 @@ Changed body.
                 && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
         }));
 
+        let resource_templates = client.peer().list_resource_templates(None).await.unwrap();
+        assert_eq!(resource_templates.resource_templates.len(), 1);
+        assert_eq!(
+            resource_templates.resource_templates[0].raw.uri_template,
+            ENTRY_RESOURCE_URI_TEMPLATE
+        );
+
         let skill = client
             .peer()
             .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-editor"))
@@ -1119,6 +1247,20 @@ Changed body.
         };
         assert!(text.contains("# Design Doc Writer"));
         assert!(text.contains("## Reader Evaluation"));
+
+        let entry = client
+            .peer()
+            .read_resource(ReadResourceRequestParams::new("sirno://entries/alpha"))
+            .await
+            .unwrap();
+        let Some(ResourceContents::TextResourceContents { text, mime_type, .. }) =
+            entry.contents.first()
+        else {
+            panic!("expected text entry resource");
+        };
+        assert_eq!(mime_type.as_deref(), Some(ENTRY_RESOURCE_MIME_TYPE));
+        assert!(text.contains("name: Alpha"));
+        assert!(text.contains("Body."));
 
         let result = client
             .peer()

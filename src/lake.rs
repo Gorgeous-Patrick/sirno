@@ -263,8 +263,8 @@ impl EntryDirectory {
         }
     }
 
-    /// Read one public Markdown entry file by id.
-    pub fn read_entry(&self, id: &EntryId) -> Result<Entry, EntryDirectoryError> {
+    /// Read one public Markdown entry file source by id.
+    pub fn read_entry_source(&self, id: &EntryId) -> Result<String, EntryDirectoryError> {
         if !self.root.exists() {
             return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
         }
@@ -282,7 +282,12 @@ impl EntryDirectory {
             | Err(source) => return Err(source.into()),
         }
 
-        let source = fs::read_to_string(path)?;
+        Ok(fs::read_to_string(path)?)
+    }
+
+    /// Read one public Markdown entry file by id.
+    pub fn read_entry(&self, id: &EntryId) -> Result<Entry, EntryDirectoryError> {
+        let source = self.read_entry_source(id)?;
         Ok(Entry::from_markdown(id.clone(), &source)?)
     }
 

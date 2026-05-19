@@ -72,6 +72,10 @@ The synthesis skill checks the Sirno skill roster
 and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
 It can run `sirno util skills check` to detect installed wrapper drift,
 or `sirno util skills init` to refresh the packaged wrappers after project initialization.
+Repository skill maintenance is a local CLI utility surface.
+MCP serves skill resources for agents.
+It does not expose any `sirno util` commands,
+including wrapper listing, checking, or installation.
 The command copies exact bundled wrapper constants;
 it does not ask a model to rewrite the skill text.
 

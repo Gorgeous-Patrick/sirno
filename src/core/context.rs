@@ -12,7 +12,7 @@ use indexmap::IndexMap;
 use crate::core::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
-    EntryPathResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
+    EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
     FrostCommitResult, FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
     MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult,
     RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusResult,
@@ -202,6 +202,28 @@ impl CoreContext {
 
         Ok(records)
     }
+
+    // sirno:witness:interfaces:begin
+    /// Read one public Markdown entry and return its parsed body and stored source.
+    pub fn entry_read(&self, id: EntryId) -> Result<EntryReadResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let directory = EntryDirectory::new(&lake);
+        let path = directory.entry_path(&id);
+        let source = directory.read_entry_source(&id)?;
+        let entry = Entry::from_markdown(id.clone(), &source)?;
+        Ok(EntryReadResult {
+            ok: true,
+            id: id.to_string(),
+            path: display_path(&path),
+            name: entry.metadata.name,
+            desc: entry.metadata.desc,
+            body: entry.body,
+            source,
+            message: format!("read entry {id} from {}", path.display()),
+        })
+    }
+    // sirno:witness:interfaces:end
 
     /// Return tide statuses in structured form.
     pub fn tide_statuses(&self, mode: TideStatusMode) -> Result<Vec<TideStatus>, CommandError> {

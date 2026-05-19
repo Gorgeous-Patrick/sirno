@@ -448,6 +448,27 @@ pub struct EntryPathResult {
     pub message: String,
 }
 
+/// Result of reading one public Markdown entry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryReadResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry id that was read.
+    pub id: String,
+    /// Public entry file path.
+    pub path: String,
+    /// Human-readable entry name.
+    pub name: String,
+    /// Short entry description.
+    pub desc: String,
+    /// Markdown body outside the metadata block.
+    pub body: String,
+    /// Full Markdown source as stored on disk.
+    pub source: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// Result of renaming one entry id.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryRenameResult {
