@@ -4,7 +4,7 @@ description: >-
   Create, refine, or review Sirno repository witnesses. Use for inserting or splitting
   `sirno:witness:<entry-id>:begin` blocks, linking code/tests/config to Sirno Lake entries,
   deciding whether a witness needs a new or more specific Sirno Lake entry, interpreting
-  `sirno witness` output, or checking whether a Sirno entry has precise repository evidence.
+  `sirno_entry_witness` output, or checking whether a Sirno entry has precise repository evidence.
 ---
 
 # Sirno Witness
@@ -64,8 +64,8 @@ Keep the witness id tied to that exact entry claim.
 
 Inspect current witnesses before adding new ones:
 
-```sh
-cargo run -- witness ENTRY_ID --full
+```json
+{"id": "ENTRY_ID"}
 ```
 
 Choose the evidence region deliberately.
@@ -105,20 +105,20 @@ Use `sirno-config-writer` for the `Sirno.toml` edit itself.
 
 After adding or changing witnesses, run the direct witness query:
 
-```sh
-cargo run -- witness ENTRY_ID --full
+```json
+{"id": "ENTRY_ID"}
 ```
 
 Then run structural validation:
 
-```sh
-cargo run -- check --mode review
+```text
+sirno_lake_check mode=review
 ```
 
 If Sirno Lake metadata or links changed, run:
 
-```sh
-cargo run -- render
+```text
+sirno_lake_render
 ```
 
 Review the full witness output as a human would.

@@ -44,7 +44,8 @@ Use `belongs` for review locality.
 Use `refines` for semantic narrowing.
 Use *repository witness* blocks when the *repository* contains evidence for the *entry* claim.
 Leave a *structural field* out when it does not improve navigation, review, or accountability.
-Run `sirno witness ENTRY_ID --full` and read the *entry* prose for what the evidence should mean.
+Run `sirno witness ENTRY_ID --full`
+and read the *entry* prose for what the evidence should mean.
 
 Use `meta` for the project's principles, vocabulary, and Sirno-facing documentation method.
 A `meta` *entry* should answer how the project should be understood and developed:

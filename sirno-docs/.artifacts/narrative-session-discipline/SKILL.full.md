@@ -153,12 +153,11 @@ python3 .agents/skills/sirno-narrative-session/scripts/serialize_narrative_entry
 
 After changing lake metadata, run render maintenance.
 Then run structural checks.
-Prefer the repository's current Sirno CLI commands after inspecting what exists,
-such as:
+Prefer the current Sirno MCP tools:
 
-```sh
-cargo run -- render
-cargo run -- check --mode edit
+```text
+sirno_lake_render
+sirno_lake_check mode=edit
 ```
 
 If the serializer script is unavailable or its input contract does not fit the session,

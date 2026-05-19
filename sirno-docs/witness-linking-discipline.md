@@ -21,7 +21,7 @@ create or propose a compact entry first and keep the witness id tied to that exa
 Reusing a near-enough entry id makes review less precise.
 
 Choose the smallest region that supports the claim.
-Inspect current witnesses with `sirno witness ENTRY_ID --full` before adding new ones.
+Inspect current witnesses with `sirno_entry_witness` before adding new ones.
 Prefer a single item, test case, config stanza, or small cohesive block.
 If a region is too broad, split it into smaller blocks that share the same entry id.
 Place blocks inside configured repository members,
@@ -45,9 +45,9 @@ Sirno calls `mosaika` for delimiter matching, region extraction, and spans;
 Sirno-side work consumes that structured output and formats it for review.
 
 Validate after changing evidence.
-Run the direct witness query again,
-run the review-mode structural check,
-and run render maintenance if lake metadata or links changed.
+Run `sirno_entry_witness` again,
+run `sirno_lake_check` in review mode,
+and run `sirno_lake_render` if lake metadata or links changed.
 Then read the full witness output as a human would:
 it should show concise ranges, the literal matched region, and no broad unrelated code.
 

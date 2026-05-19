@@ -14,10 +14,14 @@ Its packaged wrapper lives in `.artifacts/config-writing-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-config-writer/SKILL.md`.
 
 Use this discipline whenever work writes or repairs `Sirno.toml`.
-Prefer Sirno commands for routine config changes:
-`sirno init`, `sirno lake init`, `sirno lake move`, `sirno frost init`,
-`sirno frost move`, and `sirno util config --fix`.
-Manual edits are for schema changes that the current CLI cannot express.
+Prefer Sirno MCP tools for routine project config changes:
+`sirno_lake_init`, `sirno_lake_move`, `sirno_frost_init`, and `sirno_frost_move`.
+Manual edits are for schema changes or comment maintenance
+that the current MCP project tools cannot express.
+The config-writer skill may call CLI `sirno util config --fix` directly.
+This is a narrow exception for deterministic `Sirno.toml` comment canonicalization.
+It does not expose utility commands through MCP
+or authorize other skills to call `sirno util` commands.
 
 The config schema is explicit.
 `[lake].path` is required.
@@ -65,10 +69,10 @@ Each edge may set `render = true` and `ripple = { lake = true, frost = true }`.
 Omitted structural edge values are false.
 Structural field order is user-managed and must be preserved.
 
-After writing `Sirno.toml`, run `sirno util config --fix`
-so canonical comments are present.
-Then run `sirno util config` and `sirno check --mode review`.
-When lake metadata changed, run render maintenance before the review check.
+After writing `Sirno.toml`, run `sirno util config --fix`,
+then run `sirno_lake_check` in review mode.
+When lake metadata changed,
+run `sirno_lake_render` before the review check.
 
 ---
 

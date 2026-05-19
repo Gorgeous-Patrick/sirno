@@ -10,7 +10,8 @@ belongs:
 Sirno exposes configured project storage through CLI and MCP interfaces.
 A lightweight GUI or Obsidian extension may later provide a direct editing experience.
 
-The CLI is the first operational interface.
+The CLI is the human-facing operational interface.
+Human interaction with Sirno should happen through the CLI.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
 move configured storage paths, maintain *generated footer* links,
 manage optional Frost snapshots, and manage the active *tide*.
@@ -22,6 +23,9 @@ before the CLI renders human text or JSON.
 Human CLI output prints records, tables, or diagnostics before command summary lines.
 Commands with no detail may print only their summary.
 MCP tools should call those typed helpers and prefer JSON rendering through the shared serializer.
+Human-facing usage and mechanism documents should spell Sirno operations as CLI commands.
+Agent-facing discipline entries, packaged skill resources, and MCP documentation
+should spell Sirno operations as MCP tools when the agent performs them.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured public *lake*
 for commands that read or write the active *lake*.
@@ -52,7 +56,7 @@ Each wrapper delegates to the corresponding grouped move command.
 For artifact mutation,
 `sirno artifact ...` and `sirno entry artifact ...` select the same entry operation.
 Those commands should remain plain enough to use from a terminal
-and stable enough for agents and skills to call.
+and stable enough to share behavior with MCP tools.
 
 `sirno status` summarizes the configured *repository*.
 It reports the config path, *lake* path, optional *frost* path,
@@ -248,12 +252,13 @@ Packaged `.agents/skills/sirno-*` wrappers tell agents to read these resources.
 
 The `sirno util` command family is the local operator and integration-maintenance surface.
 It prepares or repairs the environment around a Sirno project.
+Humans perform that operator work through the CLI.
 
 MCP is the agent-facing project interface:
 
 - it serves stable project operations
 - it serves lake-owned skill instructions as resources
-- it keeps host setup and package maintenance as explicit local CLI actions
+- it keeps host setup and package maintenance as explicit human CLI actions
 
 MCP resources are:
 
@@ -292,9 +297,9 @@ MCP tools accept typed JSON arguments.
   on every project tool call.
 - `sirno_entry_read` returns parsed metadata, body text, and the full stored Markdown source.
 - Structural filters may use `{ field, targets }` objects
-  or CLI-style `FIELD=ENTRY_ID[,ENTRY_ID]` strings.
+  or compact `FIELD=ENTRY_ID[,ENTRY_ID]` strings.
 - Structural states may use `{ field, state }` objects
-  or CLI-style `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
+  or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 - Tide selectors use neighbor id arrays and existing JSON-shaped workitem objects.
 - `sirno_tide_status` returns review entry ids by default.
   Its `show` argument selects `review`, `full`, or `all`.

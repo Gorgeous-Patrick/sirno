@@ -1,11 +1,11 @@
 ---
 name: sirno-explorer
 description: >-
-  Explore a Sirno-managed repository by using `sirno query`, exact structural predicates,
-  `sirno witness`, and targeted code inspection. Use for understanding a codebase through its
-  Sirno Lake, finding relevant entries before editing, tracing design concepts to repository
-  evidence, mapping an implementation area, answering questions about where behavior lives, or
-  preparing a change by following Sirno entries and witness blocks.
+  Explore a Sirno-managed repository by using `sirno_entry_query`, exact structural predicates,
+  `sirno_entry_witness`, and targeted code inspection. Use for understanding a codebase through
+  its Sirno Lake, finding relevant entries before editing, tracing design concepts to repository
+  evidence, mapping an implementation area, answering questions about where behavior lives,
+  or preparing a change by following Sirno entries and witness blocks.
 ---
 
 # Sirno Explorer
@@ -34,18 +34,18 @@ Call `sirno_cwd` again before switching projects in the same server process.
    Prefer `Sirno.toml` in the current repository.
    Read `[lake].path`, `[structural]`, and `[repo].members` before assuming paths.
 
-2. Start with Sirno query.
+2. Start with `sirno_entry_query`.
    Use vague query for discovery:
 
-```sh
-cargo run -- query TERMS --columns id,desc
+```json
+{"terms": ["TERMS"], "columns": ["id", "desc"]}
 ```
 
 Use structural filters when the route is known:
 
-```sh
-cargo run -- query --has FIELD=ENTRY_ID --columns id,desc
-cargo run -- query --has FIELD=ENTRY_ID --has OTHER_FIELD=OTHER_ENTRY_ID --columns id,desc
+```json
+{"has": "FIELD=ENTRY_ID", "columns": ["id", "desc"]}
+{"has": ["FIELD=ENTRY_ID", "OTHER_FIELD=OTHER_ENTRY_ID"], "columns": ["id", "desc"]}
 ```
 
 Read the `desc` field before narrowing the route.
@@ -58,10 +58,10 @@ It gives each candidate's intended meaning and prevents id-only matching.
    they project metadata and may be useful only as navigation hints.
 
 4. Ask Sirno for repository evidence.
-   For each likely entry id, run:
+   For each likely entry id, call `sirno_entry_witness`:
 
-```sh
-cargo run -- witness ENTRY_ID --full
+```json
+{"id": "ENTRY_ID"}
 ```
 
 If no witness exists, say that directly.
@@ -69,7 +69,7 @@ Then inspect the entry prose and related entries before using literal text searc
 
 5. Inspect witnessed repository regions first.
    Read the files and nearby context around witness spans.
-   Use `sirno rg` for focused follow-up searches inside the lake.
+   Use `sirno_entry_rg` for focused follow-up searches inside the lake.
    Use plain `rg` when searching repository code outside the lake.
    Keep the entry claim and the code evidence connected in your notes.
 
@@ -80,26 +80,26 @@ Then inspect the entry prose and related entries before using literal text searc
 
 ## Lake Discovery
 
-Use `sirno query` when the user's language is conceptual,
+Use `sirno_entry_query` when the user's language is conceptual,
 when structural metadata should guide the route,
 or when you need entry descriptions.
 
 Start vague for discovery:
 
-```sh
-cargo run -- query parser metadata --columns id,desc
+```json
+{"terms": ["parser", "metadata"], "columns": ["id", "desc"]}
 ```
 
 Start structural when the user names a structural field or known entry id:
 
-```sh
-cargo run -- query --has FIELD=ENTRY_ID --columns id,desc
+```json
+{"has": "FIELD=ENTRY_ID", "columns": ["id", "desc"]}
 ```
 
 Combine vague terms and structural filters when useful:
 
-```sh
-cargo run -- query generated footer --has FIELD=ENTRY_ID --columns id,desc
+```json
+{"terms": ["generated", "footer"], "has": "FIELD=ENTRY_ID", "columns": ["id", "desc"]}
 ```
 
 Use `--columns id,path,desc` when you need entry file paths from the result set.
@@ -107,20 +107,20 @@ Use the configured structural field names from `Sirno.toml`.
 This repository recommends `category`, `belongs`, and `refines`,
 but commands should use the structural fields configured in `Sirno.toml`.
 
-Use `sirno rg` when you need literal text inside Sirno documents:
+Use `sirno_entry_rg` when you need literal text inside Sirno documents:
 phrases, command names, examples, old wording, headings, or entry ids used in prose.
 
-```sh
-cargo run -- rg generated-footer
-cargo run -- rg -n "generated footer"
-cargo run -- rg -C 2 "with-generated-footer"
-cargo run -- rg --with-generated-footer generated-footer
-cargo run -- rg --files
+```json
+{"args": ["generated-footer"]}
+{"args": ["-n", "generated footer"]}
+{"args": ["-C", "2", "with-generated-footer"]}
+{"args": ["generated-footer"], "with_generated_footer": true}
+{"args": ["--files"]}
 ```
 
-`sirno rg` forwards arguments to the real `rg` command and appends the configured lake path.
+`sirno_entry_rg` forwards arguments to the real `rg` command and appends the configured lake path.
 It ignores generated footer regions by default.
-Use `--with-generated-footer` when generated links are the search target.
+Set `with_generated_footer: true` when generated links are the search target.
 Use plain `rg` only for repository code or files outside the configured lake.
 
 After a literal match,
@@ -152,11 +152,11 @@ Avoid reading the whole lake or whole repository unless the question truly asks 
 
 Prefer this order:
 
-1. `sirno query`
+1. `sirno_entry_query`
 2. entry metadata and prose
-3. `sirno witness ENTRY_ID --full`
+3. `sirno_entry_witness`
 4. witnessed files and nearby code
-5. targeted `sirno rg` or plain `rg`
+5. targeted `sirno_entry_rg` or plain `rg`
 
 Do not add or edit witness blocks while exploring.
 Use `sirno-witness` when the task changes from exploration to creating or refining evidence.

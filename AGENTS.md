@@ -34,8 +34,8 @@ Use `sirno-editor` when editing, moving, or reorganizing lake knowledge.
 Use `sirno-explorer` before design-sensitive repository exploration.
 Use `sirno-witness` when adding or refining repository witness blocks.
 Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
-If more details are needed, the Sirno skill roster is documented in `sirno-docs/agent-skills.md`.
-After lake metadata changes, run render maintenance and `sirno check`.
+After lake metadata changes, run `sirno_lake_render`,
+then `sirno_lake_check` in edit and review modes.
 Use `sirno-docs/introduction.md` as the first narrative route.
 Use `sirno-docs/methodology.md` as the working guide.
 

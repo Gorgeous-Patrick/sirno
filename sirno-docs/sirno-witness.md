@@ -15,7 +15,8 @@ shaped into records and spans, kept honest, and renamed.
 
 Sirno discovers *witness* status mechanically.
 It queries *witnesses* through `mosaika` by *entry* id.
-Agents should use `sirno witness ENTRY_ID --full` to inspect evidence instead of inferring it
+Humans should run `sirno witness ENTRY_ID --full` to inspect evidence.
+Agents should use the corresponding MCP witness tool instead of inferring evidence
 from prose or generated links.
 
 The *witness* may be source code, tests, configuration, generated files, assets,

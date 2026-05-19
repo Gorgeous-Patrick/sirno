@@ -562,7 +562,7 @@ impl McpStructuralFilters {
 #[serde(untagged)]
 enum McpStructuralFilterInput {
     Object(McpStructuralFilter),
-    Cli(String),
+    Compact(String),
 }
 
 impl McpStructuralFilterInput {
@@ -572,7 +572,9 @@ impl McpStructuralFilterInput {
                 field: filter.field,
                 targets: filter.targets.into_iter().map(entry_id).collect::<Result<Vec<_>, _>>()?,
             }),
-            | Self::Cli(raw) => StructuralFilter::from_str(&raw).map_err(|error| error.to_string()),
+            | Self::Compact(raw) => {
+                StructuralFilter::from_str(&raw).map_err(|error| error.to_string())
+            }
         }
     }
 }
@@ -613,7 +615,7 @@ impl McpStructuralStates {
 #[serde(untagged)]
 enum McpStructuralStateInput {
     Object(McpStructuralState),
-    Cli(String),
+    Compact(String),
 }
 
 impl McpStructuralStateInput {
@@ -622,7 +624,7 @@ impl McpStructuralStateInput {
             | Self::Object(state) => {
                 Ok(StructuralStateFilter { field: state.field, state: state.state.into() })
             }
-            | Self::Cli(raw) => {
+            | Self::Compact(raw) => {
                 StructuralStateFilter::from_str(&raw).map_err(|error| error.to_string())
             }
         }
@@ -1086,7 +1088,7 @@ Changed body.
     }
 
     #[test]
-    fn query_params_accept_cli_style_structural_filters() {
+    fn query_params_accept_compact_structural_filters() {
         let params: EntryQueryParams = serde_json::from_value(json!({
             "has": "belongs=agent-skills",
             "is": "category=present",

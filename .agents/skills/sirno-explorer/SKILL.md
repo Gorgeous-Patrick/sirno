@@ -1,11 +1,11 @@
 ---
 name: sirno-explorer
 description: >-
-  Explore a Sirno-managed repository by using `sirno query`, exact structural predicates,
-  `sirno witness`, and targeted code inspection. Use for understanding a codebase through its
-  Sirno Lake, finding relevant entries before editing, tracing design concepts to repository
-  evidence, mapping an implementation area, answering questions about where behavior lives, or
-  preparing a change by following Sirno entries and witness blocks.
+  Explore a Sirno-managed repository by using `sirno_entry_query`, exact structural predicates,
+  `sirno_entry_witness`, and targeted code inspection. Use for understanding a codebase through
+  its Sirno Lake, finding relevant entries before editing, tracing design concepts to repository
+  evidence, mapping an implementation area, answering questions about where behavior lives,
+  or preparing a change by following Sirno entries and witness blocks.
 ---
 
 # Sirno Explorer

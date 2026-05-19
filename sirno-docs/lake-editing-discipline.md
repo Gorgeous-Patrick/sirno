@@ -16,7 +16,7 @@ and renders to `.agents/skills/sirno-editor/SKILL.md`.
 Read first.
 Read repository instructions, `Sirno.toml`, relevant repository material, and the existing lake.
 Decide design authority before changing anything; see `design-source-authority`.
-Inspect the current Sirno CLI before assuming which commands exist.
+Inspect the current Sirno MCP tools before assuming which operations exist.
 
 Use the config-writer skill when the design change requires `Sirno.toml` edits.
 Lake editing may change entries that describe config,
@@ -24,13 +24,12 @@ but config-writing rules live in `config-writing-discipline`.
 
 Map before editing.
 For each candidate entry, know its id, name, desc, structural fields, and witness status.
-Use `sirno query` to find concepts and neighborhoods,
-and `sirno rg` for literal text inside entries.
+Use `sirno_entry_query` to find concepts and neighborhoods,
+and `sirno_entry_rg` for literal text inside entries.
 Read a matched entry before rewriting it; do not edit from isolated match lines.
 
 Create through the tool.
-Create missing entries with the current entry-creation command so id validation and scaffolding
-are correct.
+Create missing entries with `sirno_entry_new` so id validation and scaffolding are correct.
 Then expand or revise the body with direct, reader-friendly prose.
 When editing design documents or design entries,
 use the repository's own design-document skill or documented manner first.
@@ -65,8 +64,8 @@ If review-mode checks fail only because local editor or tool directories live in
 preserve those files unless the user asks to remove them,
 report the blocker,
 and still validate entry parsing and metadata references as far as possible.
-If a command named by an old skill is missing,
-inspect the current CLI and use the closest current command only when its behavior is clear.
+If a tool named by an old skill is missing,
+inspect the current MCP tool list and use the closest current tool only when its behavior is clear.
 If authored metadata, references, or generated-footer freshness fail,
 fix the lake before treating the edit as complete.
 

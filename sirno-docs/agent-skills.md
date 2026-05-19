@@ -23,9 +23,8 @@ from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
 `src/core/context.rs` bundles the packaged wrappers as compile-time constants
 from the lake-owned `SKILL.md` artifact files.
-`sirno init` installs those bundled wrappers by default.
-`sirno util skills init` refreshes those bundled wrappers.
-`sirno util skills check` detects installed wrapper drift.
+Project initialization installs those bundled wrappers by default.
+Human CLI operator maintenance can refresh wrappers and detect installed wrapper drift.
 Each rostered Sirno discipline owns two skill artifacts.
 `SKILL.full.md` is the full Markdown skill text embedded by `src/mcp.rs`
 and served as a `sirno://skills/sirno-*` MCP resource.
@@ -70,14 +69,18 @@ When a repository has its own design-document skill or documented manner,
 use that instead.
 The synthesis skill checks the Sirno skill roster
 and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
-It can run `sirno util skills check` to detect installed wrapper drift,
-or `sirno util skills init` to refresh the packaged wrappers after project initialization.
-Repository skill maintenance is a local CLI utility surface.
+Repository skill maintenance is a local human CLI utility surface.
 MCP serves skill resources for agents.
 It does not expose any `sirno util` commands,
 including wrapper listing, checking, or installation.
-The command copies exact bundled wrapper constants;
-it does not ask a model to rewrite the skill text.
+Agents maintain skill artifacts and installed wrappers as explicit repository files.
+Utility commands copy exact bundled wrapper constants;
+they do not ask a model to rewrite the skill text.
+When an agent discovers that utility maintenance is needed,
+it should report the needed human CLI action instead of treating it as an MCP operation.
+The config-writer skill is the only exception:
+it may call CLI `sirno util config --fix` to canonicalize `Sirno.toml` comments.
+That exception belongs to config ownership and does not add utility commands to MCP.
 
 A full skill resource is an operational rendering of lake method, not a separate authority.
 When a resource or wrapper and the lake disagree, the lake and `Sirno.toml` win,

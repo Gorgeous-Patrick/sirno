@@ -22,7 +22,8 @@ They are list-valued and may name several targets.
 An empty list is still a present field.
 Their configured order is user-managed.
 Sirno uses that order when rendering configured structural surfaces.
-Agents should discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.
+Humans discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.
+Agents use the corresponding MCP witness tool.
 
 This *entry* is the review front door for the structural field *entries*.
 It gives the field set one review front door while leaving each field *entry* free

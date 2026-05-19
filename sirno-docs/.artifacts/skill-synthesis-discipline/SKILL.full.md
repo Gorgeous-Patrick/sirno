@@ -75,9 +75,9 @@ never the lake.
 
 Read the roster and the method.
 
-```sh
-cargo run -- query --has category=meta --columns id,desc
-cargo run -- query --has belongs=agent-skills --columns id,path,desc
+```json
+{"has": "category=meta", "columns": ["id", "desc"]}
+{"has": "belongs=agent-skills", "columns": ["id", "path", "desc"]}
 ```
 
 Read `agent-skills` and each discipline entry in full before rendering.
@@ -103,8 +103,8 @@ description: >-
 
 Then write the body as direct procedure:
 purpose, core principles, an ordered workflow, and validation.
-Turn durable procedure into concrete steps and current commands.
-Include failure paths for missing sources, unavailable commands, blocked validation,
+Turn durable procedure into concrete steps and current MCP tools.
+Include failure paths for missing sources, unavailable tools, blocked validation,
 absent evidence, and design changes that must be internalized into the lake.
 
 Render each wrapper artifact.
@@ -115,25 +115,18 @@ and require the agent to read that resource before doing the work.
 Do not duplicate the full procedure in the wrapper.
 
 Routine project initialization installs wrappers by default.
-Use the Sirno utility command to refresh wrappers after initialization.
+Edit the lake-owned wrapper artifacts and installed wrapper packages directly during synthesis.
+Use ordinary file comparison at review boundaries
+to detect installed wrappers that have drifted from their artifacts.
+The utility command family remains human CLI operator maintenance;
+do not make it part of agent skill procedure or MCP workflow.
+When utility maintenance is needed,
+report the human CLI action rather than turning it into an agent step.
+The config-writer skill is the only exception:
+it may call CLI `sirno util config --fix` for deterministic `Sirno.toml` comment repair.
 
-```sh
-cargo run -- util skills init
-```
-
-Use `cargo run -- util skills check` at review boundaries.
-Use `cargo run -- util skills list` when auditing bundled wrapper constants and targets.
-The command uses compile-time constants from the `SKILL.md` artifacts.
-It does not parse the lake at runtime.
-
-Inspect the current Sirno CLI before writing commands into a skill.
-
-```sh
-cargo run -- --help
-```
-
-A full skill resource that names a missing command is worse than one that only names the procedure.
-Use `cargo run -- ...` or `target/debug/sirno ...` according to the repository state.
+Inspect the current Sirno MCP tools before writing tool names into a skill.
+A full skill resource that names a missing tool is worse than one that only names the procedure.
 Keep config-writing procedure in `sirno://skills/sirno-config-writer`.
 Other resources should hand off `Sirno.toml` edits instead of copying the schema checklist.
 
@@ -141,21 +134,21 @@ Other resources should hand off `Sirno.toml` edits instead of copying the schema
 
 If lake metadata or links changed, run render maintenance:
 
-```sh
-cargo run -- render
+```text
+sirno_lake_render
 ```
 
 Then run the review-mode structural check:
 
-```sh
-cargo run -- check --mode review
+```text
+sirno_lake_check mode=review
 ```
 
 Confirm each `SKILL.full.md` and `SKILL.md` has valid frontmatter.
 Confirm the disciplines, resources, wrappers, and packages still correspond one to one:
 no `belongs: agent-skills` discipline without artifacts and a package,
 and no `sirno-*` package without a discipline.
-Run `cargo run -- util skills check` to verify installed wrappers match artifacts.
+Compare installed wrappers against their artifacts to verify they match.
 
 If a package exists without a discipline,
 either add the missing discipline to the lake or report the package as outside the reproducible set.

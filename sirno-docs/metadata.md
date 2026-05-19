@@ -40,7 +40,9 @@ but the metadata must not require prose parsing.
 If a tool needs to know that one *entry* refines another,
 the configured structural metadata must say so.
 If an agent needs to inspect *repository* evidence for an *entry*,
-it should run `sirno witness ENTRY_ID --full`.
+it should use the agent-facing MCP tool.
+If a human needs the same evidence,
+run `sirno witness ENTRY_ID --full`.
 
 A canonical *entry* shape looks like this:
 

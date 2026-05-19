@@ -20,7 +20,7 @@ and `SKILL.md` for the installed wrapper.
 Read the sources first.
 Read `Sirno.toml` for the lake path,
 then `agent-skills` for the skill roster and the handoffs between skills,
-then every `meta`-categorized entry through `sirno query`.
+then every `meta`-categorized entry through `sirno_entry_query`.
 The lake is authoritative.
 The full resource and wrapper are reproducible surfaces.
 
@@ -56,9 +56,9 @@ The full `SKILL.full.md` artifact operationalizes its discipline plus the shared
 it depends on.
 Frontmatter `name` is the skill directory id.
 `description` states when to use the skill and the triggers that should invoke it.
-The full body turns durable procedure into concrete steps and current commands.
+The full body turns durable procedure into concrete steps and current MCP tools.
 The full artifact must include the discipline's failure paths:
-missing sources, unavailable commands, blocked validation,
+missing sources, unavailable tools, blocked validation,
 absent evidence, and design changes that must be internalized into the lake.
 The wrapper `SKILL.md` artifact keeps the same frontmatter,
 names the matching `sirno://skills/sirno-*` resource,
@@ -69,22 +69,18 @@ Other full resources should hand off `Sirno.toml` edits to that skill
 instead of copying the schema checklist.
 
 Routine project initialization installs wrappers by default.
-Use the Rust utility command to refresh wrappers after initialization.
-Run it from the repository root:
+Skill synthesis edits the lake-owned artifacts and installed wrappers directly.
+Use ordinary file comparison at review boundaries
+to fail when an installed wrapper has drifted from its artifact.
+The utility command family remains human CLI operator maintenance;
+do not make it part of agent skill procedure or MCP workflow.
+When utility maintenance is needed,
+report the human CLI action rather than turning it into an agent step.
+The config-writer skill is the only exception:
+it may call CLI `sirno util config --fix` for deterministic `Sirno.toml` comment repair.
 
-```sh
-cargo run -- util skills init
-```
-
-Use `cargo run -- util skills check` at review boundaries
-to fail when an installed wrapper has drifted.
-Use `cargo run -- util skills list` when auditing bundled wrapper constants and targets.
-The command uses compile-time constants from the `SKILL.md` artifacts.
-It does not parse the lake at runtime.
-
-Inspect the current Sirno CLI before writing commands into a skill.
-A full skill resource that names a missing command is worse than one that only names
-the procedure.
+Inspect the current Sirno MCP tools before writing tool names into a skill.
+A full skill resource that names a missing tool is worse than one that only names the procedure.
 
 Keep the lake the source of truth.
 When a skill resource, wrapper, and the lake disagree,

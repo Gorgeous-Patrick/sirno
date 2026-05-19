@@ -26,30 +26,37 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Workflow
 
-Prefer Sirno commands for routine config writes:
+Prefer Sirno MCP tools for routine project config writes:
 
-```sh
-cargo run -- init
-cargo run -- lake init [PATH]
-cargo run -- lake move PATH
-cargo run -- frost init [PATH]
-cargo run -- frost move PATH
-cargo run -- util config --fix
+```text
+sirno_lake_init
+sirno_lake_move
+sirno_frost_init
+sirno_frost_move
 ```
 
-Use manual TOML edits only when the current CLI cannot express the intended schema change.
+Use manual TOML edits only when the current MCP tools cannot express the intended schema change.
 Read the existing `Sirno.toml` before editing.
 Preserve user-authored structural field order.
+
+This skill may call CLI `sirno util config --fix` directly.
+This is a narrow exception for deterministic `Sirno.toml` comment canonicalization.
+It does not expose utility commands through MCP
+or authorize other skills to call `sirno util` commands.
 
 After writing `Sirno.toml`, run:
 
 ```sh
-cargo run -- util config --fix
-cargo run -- util config
-cargo run -- check --mode review
+sirno util config --fix
 ```
 
-If lake metadata changed, run `cargo run -- render` before the review check.
+Then run:
+
+```text
+sirno_lake_check mode=review
+```
+
+If lake metadata changed, run `sirno_lake_render` before the review check.
 
 ## Minimal Config
 
@@ -70,8 +77,8 @@ begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):
 end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):end[ \t]*-->'
 ```
 
-Run `cargo run -- util config --fix` after writing it to add canonical comments
-and default rendered sections.
+After writing a manual config,
+run `sirno util config --fix` to add canonical comments and default rendered sections.
 
 ## Required Tables
 
@@ -134,9 +141,8 @@ Structural field order is user-managed and must be preserved.
 ## Comments
 
 Generated config files include concise comments that describe each written field.
-Run `cargo run -- util config` to check whether canonical comments are present.
-Run `cargo run -- util config --fix` to rewrite the file through the canonical renderer
-when comments are missing.
+When canonical comments are missing,
+run `sirno util config --fix` to rewrite the file through the canonical renderer.
 
 The Rust config types and TOML parser are the schema boundary.
 Do not invent unknown fields.

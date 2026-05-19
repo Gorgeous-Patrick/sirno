@@ -72,7 +72,7 @@ Preserve stable facts from the current project model:
 - future-work items that are intentionally reserved
 
 Translate stale language into current terms rather than preserving it literally.
-Do not invent commands, guarantees, semantic understanding, or automatic validation that Sirno does not provide.
+Do not invent tools, guarantees, semantic understanding, or automatic validation that Sirno does not provide.
 
 ## Entry Design
 
@@ -140,7 +140,7 @@ Do not use `refines` to say that two entries are merely related or commonly edit
 Create a more specific entry when a paragraph, code region, test, or policy needs a stable handle.
 
 The entry id is the witness query key.
-Discover evidence with `sirno witness ENTRY_ID --full`.
+Discover evidence with `sirno_entry_witness`.
 The body should briefly explain what the repository evidence is expected to demonstrate
 when that meaning is not obvious from the entry claim.
 
@@ -177,10 +177,10 @@ but more local than a whole-project dump.
    Use the configured lake as the routine edit target.
    `sirno-docs-zh/` stores the split Chinese translation snapshot.
    Leave that directory unchanged during lake maintenance and design sync.
-2. Inspect the current Sirno CLI before assuming which commands exist.
+2. Inspect the current Sirno MCP tools before assuming which operations exist.
 3. Map candidate entries before editing:
    id, name, desc, structural fields, and witness status.
-4. Create missing entries through Sirno's current entry-creation command when available.
+4. Create missing entries through `sirno_entry_new` when available.
 5. Expand or revise bodies with direct, reader-friendly prose.
 6. When editing design documents or design entries,
    use the repository's own design-document skill or documented manner first.
@@ -190,10 +190,10 @@ but more local than a whole-project dump.
    write declarative, dry, precise prose, merge avoidable overlap,
    and keep one idea per paragraph.
 7. Leave generated footer regions untouched.
-8. Run `cargo run -- render` after metadata stabilizes.
-9. Run `cargo run -- check --mode edit`.
-10. Run `cargo run -- check --mode review` before treating the edit as complete.
-11. Run query commands to verify the lake parses and references resolve.
+8. Run `sirno_lake_render` after metadata stabilizes.
+9. Run `sirno_lake_check` with `mode: "edit"`.
+10. Run `sirno_lake_check` with `mode: "review"` before treating the edit as complete.
+11. Run query tools to verify the lake parses and references resolve.
 
 Use the configured lake path.
 Do not hard-code `docs/` when `Sirno.toml` names a different lake.
@@ -203,24 +203,24 @@ but config-writing rules live in `sirno://skills/sirno-config-writer`.
 
 ## Document Search
 
-Use `sirno query` to map concepts, structural neighborhoods, and candidate entry ids.
+Use `sirno_entry_query` to map concepts, structural neighborhoods, and candidate entry ids.
 Read the `desc` field before deciding which entries to edit.
 
-Use `sirno rg` to search literal text in Sirno documents:
+Use `sirno_entry_rg` to search literal text in Sirno documents:
 phrases, command names, examples, stale wording, headings, or entry ids used in prose.
-Plain `sirno rg` searches authored metadata and prose.
+Plain `sirno_entry_rg` searches authored metadata and prose.
 It ignores generated footer regions by default.
-Use `sirno rg --with-generated-footer` only when generated links are the search target.
+Set `with_generated_footer: true` only when generated links are the search target.
 
-Useful document-search commands:
+Useful document-search tool inputs:
 
-```text
-sirno query TERMS --columns id,desc
-sirno query --has FIELD=ENTRY_ID --columns id,path,desc
-sirno rg TEXT
-sirno rg -n TEXT
-sirno rg -C 2 TEXT
-sirno rg --files
+```json
+{"terms": ["TERMS"], "columns": ["id", "desc"]}
+{"has": "FIELD=ENTRY_ID", "columns": ["id", "path", "desc"]}
+{"args": ["TEXT"]}
+{"args": ["-n", "TEXT"]}
+{"args": ["-C", "2", "TEXT"]}
+{"args": ["--files"]}
 ```
 
 After finding literal matches,
@@ -229,18 +229,16 @@ Do not rewrite from isolated match lines alone.
 
 ## Validation
 
-Prefer these checks when the CLI provides them:
+Prefer these MCP checks:
 
 ```text
-sirno query --columns id
-sirno rg TEXT
-sirno check --mode edit
-sirno render
-sirno check --mode review
-sirno status
+sirno_entry_query
+sirno_entry_rg
+sirno_lake_check mode=edit
+sirno_lake_render
+sirno_lake_check mode=review
+sirno_lake_status
 ```
-
-Use `cargo run -- ...` or `target/debug/sirno ...` according to the repository state.
 
 If review-mode checks fail because local editor/tool directories are inside the lake,
 preserve those files unless the user asks to remove them.
@@ -248,8 +246,8 @@ Report the blocker and still validate entry parsing and metadata references as f
 
 If the entry is frozen or a checkout is immutable,
 use the configured Frost workflow before editing instead of forcing a write.
-If a command named by older guidance is missing,
-inspect the current CLI and use the closest current command only when its behavior is clear.
+If a tool named by older guidance is missing,
+inspect the current MCP tool list and use the closest current tool only when its behavior is clear.
 If authored metadata, references, or generated-footer freshness fail,
 fix the lake before treating the edit as complete.
 
