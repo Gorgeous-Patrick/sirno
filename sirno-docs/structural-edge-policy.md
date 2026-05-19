@@ -5,7 +5,6 @@ category:
   - concept
 belongs:
   - generated-navigation
-  - frost-versioning
 refines:
   - structural-field
 ---
@@ -72,7 +71,6 @@ without changing structural metadata.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
   - [generated-navigation](generated-navigation.md)
 - belongs (from): (none)
 

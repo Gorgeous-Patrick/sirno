@@ -4,7 +4,7 @@ desc: A read-only entry marker that protects current Frost-backed Markdown.
 category:
   - concept
 belongs:
-  - frost-versioning
+  - sirno-frost
 ---
 
 An *entry freeze* is an explicit protection state for one public Markdown *entry*
@@ -37,7 +37,7 @@ Frost comparison remains the authoritative protection against committing drift.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

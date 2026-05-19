@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - sirno-lake
-  - frost-versioning
+  - sirno-frost
 ---
 
 An *entry artifact* is a lake-owned file attached to one *entry*.
@@ -46,7 +46,7 @@ Checkout restores both the flat Markdown *entries* and the `.artifacts` tree for
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
   - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 

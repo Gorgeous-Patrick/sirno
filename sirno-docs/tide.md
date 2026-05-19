@@ -4,7 +4,7 @@ desc: The Frost-based worklist of review obligations for lake edits.
 category:
   - concept
 belongs:
-  - frost-versioning
+  - sirno-frost
 refines:
   - ripple
 ---
@@ -55,7 +55,7 @@ and the empty-version bootstrap case.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

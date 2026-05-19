@@ -4,7 +4,7 @@ desc: The TOML file that records the frost state of the public lake.
 category:
   - concept
 belongs:
-  - frost-versioning
+  - sirno-frost
 refines:
   - versioning
 ---
@@ -49,7 +49,7 @@ Successful commits clear tide resolutions.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

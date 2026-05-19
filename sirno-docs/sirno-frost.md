@@ -3,8 +3,6 @@ name: Sirno Frost
 desc: The private eter-backed path that freezes immutable snapshots of the public Sirno Lake.
 category:
   - concept
-belongs:
-  - frost-versioning
 refines:
   - versioning
 ---
@@ -15,6 +13,17 @@ The default convention is `sirno-frost`.
 and the path must stay separate from the public Markdown *lake*.
 The public *lake* remains the editable working form.
 The *frost* layer is the durable snapshot substrate behind that form.
+
+This *entry* is also the review front door for the freezing subsystem.
+`versioning` states the lake-wide snapshot model,
+`sirno-lock` records the public *lake*'s frost state,
+`entry-artifact` defines lake-owned bytes versioned with their owner,
+`entry-freeze` protects one current Frost-backed public *entry* from edits,
+`tide` is the Frost-based review worklist,
+`wave` is the workitem set produced by one *ripple*,
+and `structural-edge-policy` chooses how structural edges feed rendering and the tide.
+A change to the snapshot path, the lock file, artifacts, *entry* protection, or the review worklist
+usually constrains the others, so these parts are reviewed together here.
 
 The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
@@ -121,8 +130,13 @@ and deletion handling in `src/frost.rs`.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to):
-  - [frost-versioning](frost-versioning.md)
-- belongs (from): (none)
+- belongs (to): (none)
+- belongs (from):
+  - [entry-artifact](entry-artifact.md)
+  - [entry-freeze](entry-freeze.md)
+  - [sirno-lock](sirno-lock.md)
+  - [tide](tide.md)
+  - [versioning](versioning.md)
+  - [wave](wave.md)
 
 > **Sirno generated links end.**

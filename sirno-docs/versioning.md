@@ -4,7 +4,7 @@ desc: Lake-wide immutable snapshots of Sirno entries through eter.
 category:
   - concept
 belongs:
-  - frost-versioning
+  - sirno-frost
 refines:
   - storage
 ---
@@ -137,7 +137,7 @@ so Sirno must provide the live set when it performs collection.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

@@ -4,7 +4,7 @@ desc: The set of tide workitems produced by one ripple.
 category:
   - concept
 belongs:
-  - frost-versioning
+  - sirno-frost
 refines:
   - tide
 ---
@@ -36,7 +36,7 @@ Group boundaries use heavy double separators.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [frost-versioning](frost-versioning.md)
+  - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
