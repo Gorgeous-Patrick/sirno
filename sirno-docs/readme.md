@@ -56,11 +56,15 @@ because it restates the design rather than asserting a demonstrable capability.
 
 The `TL;DR` then carries the onboarding invitation,
 which is witnessed because it is a concrete, runnable capability claim.
-The invitation tells a reader to try the idea directly on Sirno:
-clone the repository, run `$sirno-bootstrap` to install Sirno revertably and set up the MCP server,
-then run `$sirno-narrative-session` grounded in `sirno-docs/introduction.md`.
+The invitation tells a reader to try the idea directly on Sirno, in two prompts split by an agent restart.
+The first prompt runs `$sirno-bootstrap` to install Sirno revertably and register the MCP server.
+The reader then restarts the agent so the freshly registered `sirno` MCP server loads.
+The second prompt, in the fresh conversation, runs `$sirno-narrative-session`
+grounded in `sirno-docs/introduction.md`.
+The restart is part of the claim:
+the MCP server only appears after the agent reloads its connections.
 Designing Sirno on Sirno is the strongest demonstration the README can offer,
-so the prompt block earns its own witness.
+so the two-prompt block earns its own witness.
 
 ## Setup and Quick Start
 

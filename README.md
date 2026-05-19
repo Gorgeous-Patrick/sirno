@@ -38,12 +38,20 @@ so the design stays readable, connected, and resistant to drift.
 If you'd like to see for yourself how Sirno's idea works directly on Sirno,
 clone the repo and start with an interactive onboarding session,
 which not only installs Sirno (revertably of course lol) and sets up the MCP server for you,
-but also guides you through the design of Sirno itself. Simply send this prompt to your agent:
+but also guides you through the design of Sirno itself.
+
+First, in an agent session inside the repo, send this prompt to install Sirno and register the MCP server:
 
 ```text
 Check that you're in the sirno repository right now.
 Use $sirno-bootstrap to install Sirno and setup MCP in this repository if not already done.
-After that, start an introduction session with $sirno-narrative-session based on sirno-docs/introduction.md:
+```
+
+Then restart your agent so the `sirno` MCP server loads,
+and start the introduction session in the fresh conversation:
+
+```text
+Start an introduction session with $sirno-narrative-session based on sirno-docs/introduction.md:
 
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
