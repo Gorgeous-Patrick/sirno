@@ -111,30 +111,104 @@ I am new to Sirno. Ask about my background and goals. Guide me through the entri
 ```
 <!-- sirno:witness:readme:end -->
 
-## Try It Here
+## Installation and Quick Start
 
-This repository keeps its current design source in `sirno-docs/`.
+Install Sirno and drive it from your agent through the bundled MCP server.
 
 ```sh
-cargo run -- check --mode review
-cargo run -- query --columns id,desc
-cargo run -- witness readme --full
+cargo install sirno
 ```
 
-The first command checks the *lake* as a coherent design graph.
-The second lists entry ids and `desc` values as a table.
-The third shows how this README witnesses its own Sirno-facing intention.
+### For Human: in CLI
+
+Start a *lake* of your own:
+
+```sh
+sirno init                                   # config, public lake, frost store, skill wrappers
+sirno new architecture --name "Architecture" \
+  --desc "How the system is structured"      # create one entry
+sirno check --mode edit                      # check while editing; dangling refs are warnings
+```
+
+Edit the generated Markdown under the lake path, then re-run `check`.
+Add a `sirno:witness:architecture:begin` and `sirno:witness:architecture:end` block in code
+to link evidence back to the entry.
+
+*Frost* is the history layer for the *lake*: the public *lake* stays mutable while you draft,
+while *frost* keeps the frozen snapshots you commit, stored separately over `eter`.
+`Sirno.lock.toml` records whether the public *lake* is current or pinned to a frozen version.
+
+```sh
+sirno commit                                 # freeze the current lake into a new frost version
+sirno checkout <version>                     # materialize a past frost version (read-only)
+sirno defrost                                # check the latest version back out as writable
+```
+
+*Tide* is the design review worklist between *frost* commits.
+Editing one entry ripples to its structural neighbors;
+*tide* tracks those as workitems you resolve before the next commit,
+so locally reasonable changes do not freeze into suboptimal design.
+
+```sh
+sirno tide status                            # entry ids that still need review
+sirno tide status --show full                # full open workitems
+sirno resolve <entry-id>                     # mark a workitem reviewed
+sirno reset                                  # clear all tide resolutions
+```
+
+Explore an existing lake; this repository keeps its current design source in `sirno-docs/`:
+
+```sh
+sirno status                                 # current project and frost state
+sirno check --mode review                    # review boundary; dangling refs are errors
+sirno query --columns id,desc                # list entry ids and desc as a table
+sirno query --has category=meta              # filter by structural field target
+sirno witness readme --full                  # show how this README witnesses its own intention
+```
+
+### For LLM: in MCP
+
+Register the stdio MCP server with your agent.
+
+For Codex, register the server from the project root:
+
+```sh
+codex mcp add sirno -- sirno util mcp
+```
+
+For Claude Code:
+
+```sh
+claude mcp add sirno -- sirno util mcp
+```
+
+For agents that read an MCP config file directly, add an equivalent stdio server:
+
+```json
+{
+  "mcpServers": {
+    "sirno": {
+      "command": "sirno",
+      "args": ["util", "mcp"]
+    }
+  }
+}
+```
+
+Edit the generated Markdown, then ask the agent to re-query and re-check.
+Add a `sirno:witness:architecture:begin` block in code to link evidence back to the entry,
+and inspect it with `sirno_entry_witness`.
 
 ## Status
 
 Sirno currently provides a Rust library and CLI for Markdown entry storage,
 project configuration, structural checks, generated footers,
 querying, lake-local ripgrep search, witness lookup, entry freezing,
-and optional Sirno Frost snapshots over `eter`.
+and optional Sirno frost snapshots over `eter`.
 
-`sirno init` initializes a new public *lake*, private Frost store,
+`sirno init` initializes a new public *lake*, private frost store,
 and packaged Sirno skill wrappers together.
-Use `sirno commit` and `sirno checkout` for the usual Frost snapshot cycle.
+Use `sirno commit` and `sirno checkout` for the usual frost snapshot cycle.
 `Sirno.lock.toml` records whether the public *lake* is current
 or checked out to a frozen version.
 Future interfaces may add MCP, lightweight GUI, or Obsidian integration.
