@@ -4,7 +4,7 @@ desc: The named delta between two Sirno Lake states.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - sirno-tide
 refines:
   - versioning
 ---
@@ -37,7 +37,10 @@ The *tide* is the active worklist created from all current ripples.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
-- belongs (from): (none)
+  - [sirno-tide](sirno-tide.md)
+- belongs (from):
+  - [frostline](frostline.md)
+  - [ripple-fingerprint](ripple-fingerprint.md)
+  - [waterline](waterline.md)
 
 > **Sirno generated links end.**

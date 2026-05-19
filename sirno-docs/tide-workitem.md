@@ -3,8 +3,8 @@ name: Tide Workitem
 desc: One dependency review obligation in a Sirno Tide.
 category:
   - concept
-refines:
-  - wave
+belongs:
+  - tide
 ---
 
 A *tide workitem* is one dependency review obligation.
@@ -34,7 +34,8 @@ Resolving a full tuple records only that exact obligation.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [tide](tide.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

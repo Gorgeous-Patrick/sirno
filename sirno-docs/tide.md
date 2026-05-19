@@ -4,58 +4,49 @@ desc: The Frost-based worklist of review obligations for lake edits.
 category:
   - concept
 belongs:
-  - sirno-frost
+  - sirno-tide
 refines:
   - ripple
 ---
 
 A *tide* is the dependency-based review worklist for the current public *lake*.
-It compares the waterline, the current public *lake*,
-against the frostline, the latest Sirno Frost snapshot.
+It compares the *waterline*, the current public *lake*,
+against the *frostline*, the latest Sirno Frost snapshot.
 
 Every changed *entry* is a *ripple*.
 For each *ripple*, Sirno reads the configured structural edge policies
-and produces one wave of review obligations.
+and produces one *wave* of *tide workitems*.
 The *tide* is the union of those open obligations.
 
-Sirno derives open workitems on demand.
-`Sirno.lock.toml` stores only explicit resolutions and their ripple fingerprints.
-If the *ripple* entry changes again before commit,
-the matching resolution no longer applies.
-Changes to the reviewed neighbor do not reopen that workitem.
+Sirno derives open *workitems* on demand.
+It stores no worklist;
+`Sirno.lock.toml` keeps only *tide resolutions*,
+each scoped to a *ripple fingerprint*.
+That binding is what reopens an obligation when its *ripple* changes again.
 
-`sirno tide status` prints one table grouped by the entry that needs review.
-The reason column lists the ripple entries whose changes created the review obligations.
-Each entry group lists the reasons for reviewing it.
-Group boundaries use heavy double separators.
-`sirno tide status --by wave` groups output by wave.
-A one-sentence summary follows the table.
-`sirno tide status --show full` prints full open workitem statuses
-in the same grouped table.
-`sirno tide status --show all` includes resolved workitem statuses.
-`sirno resolve` records explicit review.
-`sirno resolve --infer` resolves workitems whose neighbor is also in the current ripple set,
-including neighbors deleted from the waterline.
-`sirno unresolve` removes matching resolutions.
-`sirno reopen` is an alias for `sirno unresolve`.
-The grouped forms are `sirno tide resolve` and `sirno tide unresolve`.
-`sirno tide reopen` is an alias for `sirno tide unresolve`.
-`sirno tide reset` clears all tide resolutions from the lock.
+`sirno tide status` reports the open worklist.
+It prints one table grouped by the *entry* that needs review.
+The reason column lists the *ripple* entries whose changes created the obligations.
+Group boundaries use heavy double separators,
+and a one-sentence summary follows the table.
+`sirno tide status --by wave` groups output by *wave* instead.
+`sirno tide status --show full` prints full open *workitem* statuses
+in the same grouped table,
+and `--show all` includes resolved statuses.
 
-`sirno commit` requires a clear *tide*.
-`sirno commit --unsafe-resolve-all` bypasses that gate for the current commit,
-does not write fake resolutions,
-and clears tide state after a successful commit.
-When `[tutorial]` is present in `Sirno.toml`,
-an open-*tide* commit failure may explain the worklist
-and the empty-version bootstrap case.
+Resolving, reopening, and resetting the worklist,
+the *frost* commit gate,
+and the inference shortcut are *tide resolution* behavior.
 
 ---
 
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-frost](sirno-frost.md)
-- belongs (from): (none)
+  - [sirno-tide](sirno-tide.md)
+- belongs (from):
+  - [infer-resolution](infer-resolution.md)
+  - [tide-resolution](tide-resolution.md)
+  - [tide-workitem](tide-workitem.md)
 
 > **Sirno generated links end.**
