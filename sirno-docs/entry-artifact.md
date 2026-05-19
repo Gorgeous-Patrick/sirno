@@ -4,7 +4,7 @@ desc: A lake-owned file attached to one entry and versioned with Sirno Frost.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - entry
   - sirno-frost
 ---
 
@@ -46,8 +46,8 @@ Checkout restores both the flat Markdown *entries* and the `.artifacts` tree for
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [entry](entry.md)
   - [sirno-frost](sirno-frost.md)
-  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

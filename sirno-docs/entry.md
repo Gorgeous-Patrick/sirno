@@ -65,6 +65,9 @@ its prose may briefly say what the *witness* is expected to demonstrate.
 
 - belongs (to):
   - [sirno-lake](sirno-lake.md)
-- belongs (from): (none)
+- belongs (from):
+  - [entry-artifact](entry-artifact.md)
+  - [entry-freeze](entry-freeze.md)
+  - [entry-lifecycle](entry-lifecycle.md)
 
 > **Sirno generated links end.**

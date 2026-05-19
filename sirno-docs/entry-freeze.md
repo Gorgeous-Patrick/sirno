@@ -4,6 +4,7 @@ desc: A read-only entry marker that protects current Frost-backed Markdown.
 category:
   - concept
 belongs:
+  - entry
   - sirno-frost
 ---
 
@@ -37,6 +38,7 @@ Frost comparison remains the authoritative protection against committing drift.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [entry](entry.md)
   - [sirno-frost](sirno-frost.md)
 - belongs (from): (none)
 

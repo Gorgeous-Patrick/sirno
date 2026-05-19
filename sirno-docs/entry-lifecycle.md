@@ -4,8 +4,6 @@ desc: The state model for one public Sirno entry file.
 category:
   - concept
 belongs:
-  - sirno-lake
-refines:
   - entry
 ---
 
@@ -187,7 +185,7 @@ They do not change one entry file's lifecycle state by themselves.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [entry](entry.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
