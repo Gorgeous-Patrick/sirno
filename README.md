@@ -57,67 +57,63 @@ metadata exact enough to query,
 and ids stable enough to cite from code, review, or automation.
 <!-- sirno:witness:readme:end -->
 
-<!-- sirno:witness:readme:begin -->
-## Our Thoughts, Our Ambitions, The Principles We Would Follow.
+## Setup Sirno and Quick Start
 
-A tiny Melina-shaped blessing for the work:
-Sirno follows a few guiding principles that wishes to help the project reach its goal.
-<!-- sirno:witness:readme:end -->
-
-<!-- sirno:witness:readme:begin -->
-### Concept-Driven Documentation
-
-Sirno makes documentation compressed and comprehensive through concept-driven development.
-Important ideas become named *entries*.
-Each *entry* is small enough to read in place,
-but precise enough to connect with other entries through metadata.
-Comprehensive documentation becomes a graph of durable concepts,
-not one long page that every reader has to hold in memory.
-<!-- sirno:witness:readme:end -->
-
-<!-- sirno:witness:readme:begin -->
-### Repository Witness
-
-Documentation should not float away from the repository.
-Sirno lets repository artifacts witness *entry* claims by entry id.
-The design stays in prose,
-the evidence stays in code, tests, configuration, generated files, or assets,
-and the shared id lets a reviewer move between them mechanically.
-<!-- sirno:witness:readme:end -->
-
-<!-- sirno:witness:readme:begin -->
-### Meta Documentation
-
-A Sirno-managed project can document its own documentation method.
-Entries categorized by `meta` define vocabulary, reader routes, splitting habits,
-term style,
-and local rules for how the *lake* should grow.
-The documentation paradigm can live inside the project documentation itself.
-<!-- sirno:witness:readme:end -->
-
-<!-- sirno:witness:readme:begin -->
-### Interactive Narrative
-
-Understanding is a deeply personalized journey.
-An interactive narrative turns the *lake* into a route shaped around the reader's background and goals.
-It chooses which entries to visit first, which details to defer,
-and when to stop and assess learning retention.
-
-Try it with our repository-local narrative-session skill:
-
-```text
-Use $sirno-narrative-session for an introduction session based on sirno-docs/introduction.md.
-I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
-```
-<!-- sirno:witness:readme:end -->
-
-## Installation and Quick Start
-
-Install Sirno and drive it from your agent through the bundled MCP server.
+<details>
+<summary>Install Sirno and drive it from your agent through the bundled MCP server. Or use the CLI directly.</summary>
 
 ```sh
 cargo install sirno
 ```
+
+and then initialize it in your project,
+
+```sh
+sirno init
+```
+
+which creates all of the following:
+- a *lake* (documentation directory)
+- a *frost* (history store)
+- `Sirno.toml` (project level configuration)
+- `Sirno.lock.toml` (project state management; don't edit or delete this)
+- a few wrapper skills that teaches your agent how to talk to the MCP server
+
+You may also recreate them separately later with their own commands.
+
+### For LLM: in MCP
+
+Register the stdio MCP server with your agent.
+
+For Codex, register the server from the project root:
+
+```sh
+codex mcp add sirno -- sirno util mcp
+```
+
+For Claude Code:
+
+```sh
+claude mcp add sirno -- sirno util mcp
+```
+
+For agents that read an MCP config file directly, add an equivalent stdio server:
+
+```json
+{
+  "mcpServers": {
+    "sirno": {
+      "command": "sirno",
+      "args": ["util", "mcp"]
+    }
+  }
+}
+```
+
+Edit the generated Markdown, then ask the agent to re-query and re-check.
+Add a `sirno:witness:architecture:begin` block in code to link evidence back to the entry,
+and inspect it with `sirno_entry_witness`.
+
 
 ### For Human: in CLI
 
@@ -166,38 +162,60 @@ sirno query --has category=meta              # filter by structural field target
 sirno witness readme --full                  # show how this README witnesses its own intention
 ```
 
-### For LLM: in MCP
+</details>
 
-Register the stdio MCP server with your agent.
+<!-- sirno:witness:readme:begin -->
+## Our Thoughts, Our Ambitions, The Principles We Would Follow.
 
-For Codex, register the server from the project root:
+Sirno follows a few guiding principles that wishes to help the project reach its goal, quoting Melina from Elden Ring.
+<!-- sirno:witness:readme:end -->
 
-```sh
-codex mcp add sirno -- sirno util mcp
+<!-- sirno:witness:readme:begin -->
+### Concept-Driven Documentation
+
+Sirno makes documentation compressed and comprehensive through concept-driven development.
+Important ideas become named *entries*.
+Each *entry* is small enough to read in place,
+but precise enough to connect with other entries through metadata.
+Comprehensive documentation becomes a graph of durable concepts,
+not one long page that every reader has to hold in memory.
+<!-- sirno:witness:readme:end -->
+
+<!-- sirno:witness:readme:begin -->
+### Repository Witness
+
+Documentation should not float away from the repository.
+Sirno lets repository artifacts witness *entry* claims by entry id.
+The design stays in prose,
+the evidence stays in code, tests, configuration, generated files, or assets,
+and the shared id lets a reviewer move between them mechanically.
+<!-- sirno:witness:readme:end -->
+
+<!-- sirno:witness:readme:begin -->
+### Meta Documentation
+
+A Sirno-managed project can document its own documentation method.
+Entries categorized by `meta` define vocabulary, reader routes, splitting habits,
+term style,
+and local rules for how the *lake* should grow.
+The documentation paradigm can live inside the project documentation itself.
+<!-- sirno:witness:readme:end -->
+
+<!-- sirno:witness:readme:begin -->
+### Interactive Narrative
+
+Understanding is a deeply personalized journey.
+An interactive narrative turns the *lake* into a route shaped around the reader's background and goals.
+It chooses which entries to visit first, which details to defer,
+and when to stop and assess learning retention.
+
+Try it with our repository-local narrative-session skill:
+
+```text
+Use $sirno-narrative-session for an introduction session based on sirno-docs/introduction.md.
+I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
-
-For Claude Code:
-
-```sh
-claude mcp add sirno -- sirno util mcp
-```
-
-For agents that read an MCP config file directly, add an equivalent stdio server:
-
-```json
-{
-  "mcpServers": {
-    "sirno": {
-      "command": "sirno",
-      "args": ["util", "mcp"]
-    }
-  }
-}
-```
-
-Edit the generated Markdown, then ask the agent to re-query and re-check.
-Add a `sirno:witness:architecture:begin` block in code to link evidence back to the entry,
-and inspect it with `sirno_entry_witness`.
+<!-- sirno:witness:readme:end -->
 
 ## Status
 
