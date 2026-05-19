@@ -10,7 +10,8 @@ belongs:
 A *witness* is *repository* evidence for an *entry* claim.
 
 The *witness* entry is the front door for *repository* evidence.
-Its local *entries* cover lookup behavior and the *repository* surface where *witnesses* live.
+Its review neighborhood covers how blocks are marked, looked up,
+shaped into records and spans, kept honest, and renamed.
 
 Sirno discovers *witness* status mechanically.
 It queries *witnesses* through `mosaika` by *entry* id.
@@ -21,24 +22,15 @@ The *witness* may be source code, tests, configuration, generated files, assets,
 or any *repository* artifact that `mosaika` can delimit and query.
 A test may witness an *entry* when the test itself is the relevant code.
 
-Repository artifacts are selected by `[repo].members`.
-Directory members are scanned recursively.
-The *repository witness* block opens with `sirno:witness:<entry-id>:begin`
+A *repository witness* block opens with `sirno:witness:<entry-id>:begin`
 and closes with `sirno:witness:<entry-id>:end`.
 The opening and closing *entry* ids must match.
-Rust and other line-commented files can write the sentinels with `//`.
-Markdown files can write them as hidden HTML comments.
-This is the standard syntax written by generated configs.
-The standard delimiter regex uses one canonical capture for filename-like *entry* ids.
-It captures all legal ids that can fit between the sentinel colons.
-The parsed *entry* id then applies the remaining cross-platform filename checks.
-A project can override the delimiter regex pairs with `[[witness.delimiters]]`
-when another *repository* surface needs a different marker shape.
+The *witness delimiter* defines the configured marker shapes and capture rules,
+*witness lookup* defines the scan over `[repo].members`,
+and *witness rename* keeps the captured id correct across `sirno entry rename`.
 
 The *entry* body may explain how to find or interpret evidence as fallback guidance.
 The convention is the *entry* id plus the *repository witness* block.
-When `sirno entry rename` changes an *entry* id,
-it rewrites configured *witness* sentinels that captured the old id.
 
 Repository *witnesses* connect prose to artifacts without merging the two.
 The *entry* states the design claim in project language.
@@ -61,9 +53,10 @@ If the evidence exists but is hard to interpret,
 the *entry* body can explain what a reviewer should look for.
 The *entry* id remains the query key.
 
-The *repository witness* for this *entry* should show how Sirno represents *witness* records,
-spans,
-and accepted delimiter styles after `mosaika` finds the delimited *repository* regions.
+How Sirno represents resolved evidence is the *witness record* and *witness span*.
+How malformed evidence is reported is *witness integrity*.
+This *entry* stays the front door;
+its neighborhood carries the precise mechanics.
 
 ---
 
@@ -72,6 +65,12 @@ and accepted delimiter styles after `mosaika` finds the delimited *repository* r
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
+  - [witness-delimiter](witness-delimiter.md)
   - [witness-fixture-isolation](witness-fixture-isolation.md)
+  - [witness-integrity](witness-integrity.md)
+  - [witness-lookup](witness-lookup.md)
+  - [witness-record](witness-record.md)
+  - [witness-rename](witness-rename.md)
+  - [witness-span](witness-span.md)
 
 > **Sirno generated links end.**

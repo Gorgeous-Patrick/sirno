@@ -9,7 +9,7 @@ belongs:
 refines:
   - concept-driven-development
   - transform
-  - witness
+  - sirno-witness
 ---
 
 Sirno is a method for keeping design and implementation in conversation.

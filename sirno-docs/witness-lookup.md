@@ -3,8 +3,8 @@ name: Witness Lookup
 desc: The mosaika-backed scan that resolves witness blocks by entry id.
 category:
   - concept
-refines:
-  - witness
+belongs:
+  - sirno-witness
 ---
 
 The *witness* lookup resolves *repository* evidence by scanning configured repo members with `mosaika`.
@@ -43,7 +43,8 @@ Repository artifacts carry the precise source spans that witness those claims.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [sirno-witness](sirno-witness.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

@@ -8,7 +8,7 @@ belongs:
   - narrative
 refines:
   - concept-driven-development
-  - witness
+  - sirno-witness
   - meta
 ---
 

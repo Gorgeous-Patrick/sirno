@@ -1,0 +1,39 @@
+---
+name: Witness Span
+desc: The one-based line and column range mosaika reports for a witness block.
+category:
+  - concept
+belongs:
+  - sirno-witness
+---
+
+A *witness span* is a source range inside a repository file.
+It has a one-based start line and column
+and a one-based end line and end column that points after the matched text.
+`mosaika` reports the span; Sirno stores it on the *witness record*.
+
+A record holds three spans:
+the full block region,
+the opening delimiter,
+and the closing delimiter.
+The region span is what `--full` output walks to print every spanned line.
+
+Delimiter spans exclude leading indentation.
+A sentinel written under indented code still resolves,
+and the stored start column points at the comment marker, not the line start.
+This keeps delimiter spans stable when a witness moves between
+top-level and nested code.
+
+The span is positional, not semantic.
+It says where evidence sits, never whether the evidence is correct.
+That judgment stays with the reviewer reading the spanned lines.
+
+---
+
+> **Sirno generated links begin. Do not edit this section.**
+
+- belongs (to):
+  - [sirno-witness](sirno-witness.md)
+- belongs (from): (none)
+
+> **Sirno generated links end.**

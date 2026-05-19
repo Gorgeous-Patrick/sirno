@@ -4,7 +4,7 @@ desc: Test fixtures for witness lookup avoid depending on their own delimiter te
 category:
   - concept
 belongs:
-  - witness
+  - sirno-witness
 refines:
   - witness-lookup
 ---
@@ -30,7 +30,7 @@ or formatter.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [witness](witness.md)
+  - [sirno-witness](sirno-witness.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

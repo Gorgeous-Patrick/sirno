@@ -64,8 +64,8 @@ Sirno keeps the edges between those forms explicit.
   - [interfaces](interfaces.md)
   - [planning](planning.md)
   - [project-self-application](project-self-application.md)
+  - [sirno-witness](sirno-witness.md)
   - [storage](storage.md)
   - [structural-field](structural-field.md)
-  - [witness](witness.md)
 
 > **Sirno generated links end.**
