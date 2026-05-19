@@ -34,28 +34,18 @@ Sirno keeps project design in a queryable *lake* of small, named Markdown *entri
 Each entry has a stable id, structural field edges, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
 
-New here? Start with an interactive onboarding session:
+If you'd like to see for yourself how Sirno's idea works directly on Sirno,
+clone the repo and start with an interactive onboarding session,
+which not only installs Sirno (revertably of course lol) and sets up the MCP server for you,
+but also guides you through the design of Sirno itself. Simply send this prompt to your agent:
 
 ```text
-Use $sirno-narrative-session for an introduction session based on sirno-docs/introduction.md.
+Check that you're in the sirno repository right now.
+Use $sirno-bootstrap to install Sirno and setup MCP in this repository if not already done.
+After that, start an introduction session with $sirno-narrative-session based on sirno-docs/introduction.md:
+
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
-
-<!-- sirno:witness:readme:begin -->
-## Minute Motivation
-
-Design work has a familiar failure mode.
-It begins as a clear explanation,
-then scatters across code, tests, comments, review threads,
-and the memory of whoever last touched the project.
-The next person or agent has to reconstruct the design before making a responsible change.
-
-Sirno gives that missing middle a named form.
-It keeps design in a *lake* of compact Markdown *entries*:
-prose small enough to read locally,
-metadata exact enough to query,
-and ids stable enough to cite from code, review, or automation.
-<!-- sirno:witness:readme:end -->
 
 ## Setup Sirno and Quick Start
 
@@ -163,6 +153,22 @@ sirno witness readme --full                  # show how this README witnesses it
 ```
 
 </details>
+
+<!-- sirno:witness:readme:begin -->
+## Minute Motivation
+
+Design work has a familiar failure mode.
+It begins as a clear explanation,
+then scatters across code, tests, comments, review threads,
+and the memory of whoever last touched the project.
+The next person or agent has to reconstruct the design before making a responsible change.
+
+Sirno gives that missing middle a named form.
+It keeps design in a *lake* of compact Markdown *entries*:
+prose small enough to read locally,
+metadata exact enough to query,
+and ids stable enough to cite from code, review, or automation.
+<!-- sirno:witness:readme:end -->
 
 <!-- sirno:witness:readme:begin -->
 ## Our Thoughts, Our Ambitions, The Principles We Would Follow.
