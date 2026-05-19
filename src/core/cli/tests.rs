@@ -377,6 +377,14 @@ fn top_level_help_orders_grouped_commands_before_shortcuts() {
 }
 
 #[test]
+fn top_level_version_flag_reports_package_version() {
+    let error = Cli::try_parse_from(["sirno", "--version"]).unwrap_err();
+
+    assert_eq!(error.kind(), clap::error::ErrorKind::DisplayVersion);
+    assert_eq!(error.to_string(), format!("sirno {}\n", env!("CARGO_PKG_VERSION")));
+}
+
+#[test]
 fn frost_commit_accepts_top_level_form() {
     let cli = Cli::parse_from(["sirno", "commit", "--unsafe-resolve-all"]);
 

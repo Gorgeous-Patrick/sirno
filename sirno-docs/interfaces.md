@@ -16,6 +16,7 @@ move configured storage paths, maintain *generated footer* links,
 manage optional Frost snapshots, and manage the active *tide*.
 The `sirno::core` module is the shared command surface behind the CLI.
 The binary `main.rs` delegates process startup to that module.
+`sirno --version` prints the package version from `Cargo.toml` before command dispatch.
 Reusable helpers in `sirno::core` return typed query, path, tide, and witness data
 before the CLI renders human text or JSON.
 Human CLI output prints records, tables, or diagnostics before command summary lines.

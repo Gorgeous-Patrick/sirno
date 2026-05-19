@@ -51,8 +51,11 @@ use crate::core::rg::rg_args_include_preprocessor;
 
 /// Sirno command-line entry point.
 #[derive(Debug, Parser)]
+// sirno:witness:interfaces:begin
 #[command(name = "sirno")]
 #[command(about = "Manage Sirno design entries")]
+#[command(version)]
+// sirno:witness:interfaces:end
 pub struct Cli {
     /// Sirno project config file.
     #[arg(short = 'C', long, global = true)]
