@@ -721,6 +721,18 @@ Body.
 ",
     )
     .unwrap();
+    fs::write(
+        docs.join("belongs.md"),
+        "\
+---
+name: Belongs
+desc: A structural field.
+---
+
+Body.
+",
+    )
+    .unwrap();
     Cli::parse_from([
         "sirno",
         "--config",
@@ -2731,6 +2743,18 @@ name: Reader
 desc: Reader entry.
 area:
   - old-entry
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("area.md"),
+        "\
+---
+name: Area
+desc: A structural field.
 ---
 
 Body.

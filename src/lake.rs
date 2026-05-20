@@ -1801,6 +1801,25 @@ mod tests {
         fs::write(root.join(name), body).unwrap();
     }
 
+    fn write_structural_field_entries(root: &Path, fields: &[&str]) {
+        for field in fields {
+            write_entry(
+                root,
+                &format!("{field}.md"),
+                &format!(
+                    "\
+---
+name: {field}
+desc: A structural field.
+---
+
+Body.
+"
+                ),
+            );
+        }
+    }
+
     fn entry_directory(root: impl Into<PathBuf>) -> EntryDirectory {
         EntryDirectory::new(root)
     }
@@ -2048,6 +2067,7 @@ kind:
 ---
 ",
         );
+        write_structural_field_entries(temp.path(), &[FIELD_KIND]);
 
         let report = entry_directory(temp.path())
             .check_with_settings(
@@ -2265,6 +2285,7 @@ desc: A named idea.
 Body.
 ",
         );
+        write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA]);
         write_entry(
             &root,
             "old-entry.md",
@@ -2583,6 +2604,7 @@ desc: Beta entry.
 Body.
 ",
         );
+        write_structural_field_entries(temp.path(), &[FIELD_KIND]);
 
         let error = entry_directory(temp.path())
             .generate_links(&structural_settings([(
@@ -2723,13 +2745,14 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         entry_directory(&root).init().unwrap();
+        write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let settings = all_test_fields_linked();
 
         let report = entry_directory(&root).generate_links(&settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 4);
-        assert_eq!(report.changed_paths().len(), 4);
+        assert_eq!(report.entry_count(), 7);
+        assert_eq!(report.changed_paths().len(), 7);
         assert!(concept.contains(crate::render::BEGIN_LINKS_GUARD));
         assert!(concept.contains("\n---\n\n> **Sirno generated links begin."));
         assert!(concept.contains("- kind (to): (none)"));
@@ -2752,6 +2775,7 @@ desc: A review neighborhood.
 Body.
 ",
         );
+        write_structural_field_entries(temp.path(), &[FIELD_AREA]);
         write_entry(
             temp.path(),
             "left.md",
@@ -2859,6 +2883,7 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         entry_directory(&root).init().unwrap();
+        write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
 
@@ -2883,6 +2908,7 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         entry_directory(&root).init().unwrap();
+        write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
 
@@ -2906,6 +2932,7 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         entry_directory(&root).init().unwrap();
+        write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
 

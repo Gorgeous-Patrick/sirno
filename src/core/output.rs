@@ -94,7 +94,11 @@ pub(crate) fn diagnostics_from_entry_report(
     for diagnostic in report.structural_report().diagnostics() {
         diagnostics.push(DiagnosticRecord {
             severity: diagnostic.severity.label().to_owned(),
-            path: report.entry_path(&diagnostic.entry).map(display_path),
+            path: diagnostic
+                .entry
+                .as_ref()
+                .and_then(|entry| report.entry_path(entry))
+                .map(display_path),
             message: diagnostic.message(),
         });
     }
@@ -427,7 +431,7 @@ fn format_entry_directory_report(report: &EntryDirectoryReport) -> String {
     }
 
     for diagnostic in report.structural_report().diagnostics() {
-        if let Some(path) = report.entry_path(&diagnostic.entry) {
+        if let Some(path) = diagnostic.entry.as_ref().and_then(|entry| report.entry_path(entry)) {
             output.push_str(&format!(
                 "{}: {}: {}\n",
                 diagnostic.severity.label(),

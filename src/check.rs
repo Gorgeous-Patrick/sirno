@@ -31,7 +31,7 @@ impl CheckMode {
     /// Check structural metadata targets for a set of entries.
     ///
     /// Parsing already enforces required fields, accepted field shapes, and valid id syntax.
-    /// This pass checks entry ids named by structural fields.
+    /// This pass checks configured structural field entries and entry ids named by those fields.
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
     ) -> CheckReport {
@@ -41,13 +41,24 @@ impl CheckMode {
         let severity = self.severity();
 
         let mut report = CheckReport::new();
+        for (field, _) in structural.fields() {
+            if !entries_by_id.keys().any(|id| id.as_str() == field) {
+                report.push(CheckDiagnostic {
+                    severity,
+                    kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
+                    entry: None,
+                    field: field.to_owned(),
+                    target: None,
+                });
+            }
+        }
         for entry in entries {
             for (field, targets) in entry.metadata.structural_fields() {
                 if !structural.contains_field(field) {
                     report.push(CheckDiagnostic {
                         severity: CheckSeverity::Warning,
                         kind: CheckDiagnosticKind::UnconfiguredStructuralField,
-                        entry: entry.id.clone(),
+                        entry: Some(entry.id.clone()),
                         field: field.to_owned(),
                         target: None,
                     });
@@ -58,7 +69,7 @@ impl CheckMode {
                         report.push(CheckDiagnostic {
                             severity,
                             kind: CheckDiagnosticKind::MissingTarget,
-                            entry: entry.id.clone(),
+                            entry: Some(entry.id.clone()),
                             field: field.to_owned(),
                             target: Some(target.clone()),
                         });
@@ -93,6 +104,8 @@ impl CheckSeverity {
 /// Reason for one structural diagnostic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CheckDiagnosticKind {
+    /// A configured structural field does not name an existing entry.
+    MissingStructuralFieldEntry,
     /// An entry uses a structural metadata field not configured in `Sirno.toml`.
     UnconfiguredStructuralField,
     /// A structural target id does not name an entry.
@@ -107,7 +120,7 @@ pub struct CheckDiagnostic {
     /// Structural problem detected by the check.
     pub kind: CheckDiagnosticKind,
     /// Entry whose metadata produced the diagnostic.
-    pub entry: EntryId,
+    pub entry: Option<EntryId>,
     /// Metadata field that produced the diagnostic.
     pub field: String,
     /// Referenced id that produced the diagnostic.
@@ -118,13 +131,18 @@ impl CheckDiagnostic {
     /// Human-readable diagnostic message.
     pub fn message(&self) -> String {
         match self.kind {
+            | CheckDiagnosticKind::MissingStructuralFieldEntry => format!(
+                "`Sirno.toml` configures structural field `{}`, but entry `{}` does not exist",
+                self.field, self.field
+            ),
             | CheckDiagnosticKind::UnconfiguredStructuralField => format!(
                 "`{}` uses structural field `{}` that is not configured in `Sirno.toml`",
-                self.entry, self.field
+                self.entry.as_ref().expect("unconfigured field diagnostic has entry"),
+                self.field
             ),
             | CheckDiagnosticKind::MissingTarget => format!(
                 "`{}` references missing entry `{}` through `{}`",
-                self.entry,
+                self.entry.as_ref().expect("missing target diagnostic has entry"),
                 self.target.as_ref().expect("missing target diagnostic has target"),
                 self.field
             ),
@@ -187,8 +205,10 @@ mod tests {
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
         let mut meta = entry("meta");
         meta.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        let topic = entry(FIELD_TOPIC);
 
-        let report = CheckMode::Review.check_entries([&concept, &meta], &structural_settings());
+        let report =
+            CheckMode::Review.check_entries([&concept, &meta, &topic], &structural_settings());
         assert!(report.is_clean());
     }
 
@@ -196,8 +216,9 @@ mod tests {
     fn edit_mode_reports_dangling_reference_as_warning() {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        let topic = entry(FIELD_TOPIC);
 
-        let report = CheckMode::Edit.check_entries([&concept], &structural_settings());
+        let report = CheckMode::Edit.check_entries([&concept, &topic], &structural_settings());
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
         assert!(!report.has_errors());
@@ -207,11 +228,35 @@ mod tests {
     fn review_mode_reports_dangling_reference_as_error() {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        let topic = entry(FIELD_TOPIC);
 
-        let report = CheckMode::Review.check_entries([&concept], &structural_settings());
+        let report = CheckMode::Review.check_entries([&concept, &topic], &structural_settings());
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
         assert!(report.has_errors());
+    }
+
+    #[test]
+    fn edit_mode_reports_missing_structural_field_entry_as_warning() {
+        let concept = entry("concept");
+
+        let report = CheckMode::Edit.check_entries([&concept], &structural_settings());
+
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralFieldEntry);
+        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
+        assert!(!report.has_errors());
+    }
+
+    #[test]
+    fn review_mode_reports_missing_structural_field_entry_as_error() {
+        let concept = entry("concept");
+
+        let report = CheckMode::Review.check_entries([&concept], &structural_settings());
+
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralFieldEntry);
+        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
+        assert!(report.has_errors());
+        assert!(report.diagnostics()[0].message().contains("entry `topic` does not exist"));
     }
 
     #[test]

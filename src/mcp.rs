@@ -1012,6 +1012,18 @@ Body.
 ",
         )
         .unwrap();
+        fs::write(
+            docs.join("belongs.md"),
+            "\
+---
+name: Belongs
+desc: A structural field.
+---
+
+Body.
+",
+        )
+        .unwrap();
         CoreContext::new(&config_path).frost_commit(true).unwrap();
         fs::write(
             docs.join("alpha.md"),

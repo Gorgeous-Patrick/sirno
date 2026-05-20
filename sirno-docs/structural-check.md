@@ -13,6 +13,7 @@ Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
+Each configured structural field must also name an existing *entry*.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 They also report configured *witness* delimiters that are not part of a complete block.
@@ -25,6 +26,8 @@ which is enabled by default.
 During editing, dangling structural ids may warn.
 At an explicit review boundary, dangling references are errors.
 List-valued metadata fields that are absent from `[structural]` always warn.
+Configured structural fields that name missing *entries* follow the same edit warning
+and review error boundary as dangling structural ids.
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
@@ -43,11 +46,14 @@ Mixed LF and CRLF line endings warn,
 because a file should keep one line-ending style even when Sirno can still parse it.
 Generated footer sentinels must be well formed.
 Malformed structural values are errors because tools cannot safely infer target ids from them.
-Unconfigured structural fields are warnings because the *entry* names structure the project config does not enable.
+Unconfigured structural fields are warnings
+because the *entry* names structure the project config does not enable.
 
 Metadata target checks keep the graph navigable.
 If an *entry* names a target through configured structural metadata,
 that target should exist by the time the *lake* is reviewed.
+If `Sirno.toml` configures a structural field,
+the field name should also exist as the *entry* that documents that field.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
 
