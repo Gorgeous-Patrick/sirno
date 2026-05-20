@@ -502,6 +502,37 @@ path = "docs"
 }
 
 #[test]
+fn util_config_fix_comments_present_check_flags_only() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    fs::write(
+        &config_path,
+        r#"
+[lake]
+path = "docs"
+
+[witness]
+
+[check]
+structural-inhabitance = false
+"#,
+    )
+    .unwrap();
+
+    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
+    let check = CoreContext::new(&config_path).config_comments_check().unwrap();
+    let source = fs::read_to_string(&config_path).unwrap();
+
+    assert!(fix.ok);
+    assert!(fix.changed);
+    assert!(check.ok);
+    assert!(source.contains("# Require each configured structural field"));
+    assert!(source.contains("structural-inhabitance = false"));
+    assert!(!source.contains("# Require generated footers"));
+    assert!(!source.contains("render ="));
+}
+
+#[test]
 fn util_config_rejects_lake_and_frost_path_overrides() {
     let lake_error =
         Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config"]).run().unwrap_err();
@@ -2196,7 +2227,7 @@ fn check_config_can_skip_structural_inhabitance() {
     let docs = temp.path().join("docs");
     fs::create_dir(&docs).unwrap();
     let config = SirnoConfig {
-        check: CheckSettings { render: true, structural_inhabitance: false },
+        check: CheckSettings { render: None, structural_inhabitance: Some(false) },
         structural: StructuralSettings::from_fields([(
             "topic",
             StructuralFieldSettings::default(),

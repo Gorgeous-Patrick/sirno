@@ -53,9 +53,13 @@ Optional tables describe configured surfaces and policy.
 `[frost].path` names the optional private Frost path.
 `[repo].members` names files, directories, or globs scanned for witness blocks.
 `[lake].ignore` names lake-root-relative paths Sirno skips.
-`[check].render` controls generated-footer freshness checks and defaults to true.
+`[check]` is optional.
+Omitting `[check]` or an individual check flag leaves that check enabled.
+`[check].render` controls generated-footer freshness checks.
 `[check].structural-inhabitance` controls the configured-field entry check
-and defaults to true.
+and follows the same default-on rule.
+When a check flag is present,
+`sirno util config --fix` writes its canonical comment.
 The presence of `[tutorial]` enables tutorial text,
 with `frost_commit_tide` and `frost_bootstrap_tide` defaulting to true.
 

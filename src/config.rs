@@ -54,20 +54,33 @@ pub const STANDARD_MARKDOWN_WITNESS_END_REGEX: &str = concat!(
 );
 // sirno:witness:project-config:end
 
-/// Settings for structural checks.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Settings for optional check families.
+///
+/// Invariant: absent flags are enabled.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct CheckSettings {
     /// Check generated footer freshness.
-    pub render: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub render: Option<bool>,
     /// Check that each configured structural field has a matching entry.
-    #[serde(rename = "structural-inhabitance")]
-    pub structural_inhabitance: bool,
+    #[serde(rename = "structural-inhabitance", skip_serializing_if = "Option::is_none")]
+    pub structural_inhabitance: Option<bool>,
 }
 
-impl Default for CheckSettings {
-    fn default() -> Self {
-        Self { render: true, structural_inhabitance: true }
+impl CheckSettings {
+    /// Return whether generated footer freshness checking is enabled.
+    pub fn render_enabled(&self) -> bool {
+        self.render.unwrap_or(true)
+    }
+
+    /// Return whether configured structural fields must have matching entries.
+    pub fn structural_inhabitance_enabled(&self) -> bool {
+        self.structural_inhabitance.unwrap_or(true)
+    }
+
+    fn has_explicit_flags(&self) -> bool {
+        self.render.is_some() || self.structural_inhabitance.is_some()
     }
 }
 
@@ -581,20 +594,26 @@ impl ConfigRenderer {
         self.push_witness_delimiters(&config.witness.delimiters)?;
         // sirno:witness:project-config-comments:end
 
-        self.out.push('\n');
-        self.push_table("check");
-        // sirno:witness:project-config-comments:begin
-        self.push_field(
-            "render",
-            &config.check.render,
-            "Require generated footers to match current metadata during checks.",
-        )?;
-        self.push_field(
-            "structural-inhabitance",
-            &config.check.structural_inhabitance,
-            "Require each configured structural field to have a matching entry during checks.",
-        )?;
-        // sirno:witness:project-config-comments:end
+        if config.check.has_explicit_flags() {
+            self.out.push('\n');
+            self.push_table("check");
+            // sirno:witness:project-config-comments:begin
+            if let Some(render) = config.check.render {
+                self.push_field(
+                    "render",
+                    &render,
+                    "Require generated footers to match current metadata during checks.",
+                )?;
+            }
+            if let Some(structural_inhabitance) = config.check.structural_inhabitance {
+                self.push_field(
+                    "structural-inhabitance",
+                    &structural_inhabitance,
+                    "Require each configured structural field to have a matching entry during checks.",
+                )?;
+            }
+            // sirno:witness:project-config-comments:end
+        }
 
         if let Some(tutorial) = config.tutorial {
             self.out.push('\n');
@@ -877,6 +896,8 @@ path = "docs"
         assert_eq!(config.repo, None);
         assert_eq!(config.witness, test_witness_syntax());
         assert_eq!(config.check, CheckSettings::default());
+        assert!(config.check.render_enabled());
+        assert!(config.check.structural_inhabitance_enabled());
         assert_eq!(config.tutorial, None);
         assert_eq!(config.structural, StructuralSettings::default());
     }
@@ -909,7 +930,32 @@ structural-inhabitance = false
 "#,
         );
 
-        assert_eq!(config.check, CheckSettings { render: false, structural_inhabitance: false });
+        assert_eq!(
+            config.check,
+            CheckSettings { render: Some(false), structural_inhabitance: Some(false) }
+        );
+        assert!(!config.check.render_enabled());
+        assert!(!config.check.structural_inhabitance_enabled());
+    }
+
+    #[test]
+    fn omitted_check_flags_default_to_enabled() {
+        let config = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[check]
+structural-inhabitance = false
+"#,
+        );
+
+        assert_eq!(
+            config.check,
+            CheckSettings { render: None, structural_inhabitance: Some(false) }
+        );
+        assert!(config.check.render_enabled());
+        assert!(!config.check.structural_inhabitance_enabled());
     }
 
     #[test]
@@ -1419,8 +1465,9 @@ delimiters = []
         )));
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
-        assert!(source.contains("# Require generated footers"));
-        assert!(source.contains("structural-inhabitance = true"));
+        assert!(!source.contains("[check]"));
+        assert!(!source.contains("# Require generated footers"));
+        assert!(!source.contains("structural-inhabitance"));
         assert!(!source.contains("[tutorial]"));
         assert!(source.contains("[structural]"));
         assert!(!source.contains("# Structural metadata field"));
@@ -1437,7 +1484,7 @@ delimiters = []
             frost: Some(FrostSettings::new("sirno-frost")),
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
-            check: CheckSettings { render: false, structural_inhabitance: false },
+            check: CheckSettings { render: Some(false), structural_inhabitance: Some(false) },
             tutorial: Some(TutorialSettings {
                 frost_commit_tide: true,
                 frost_bootstrap_tide: false,
@@ -1474,6 +1521,7 @@ delimiters = []
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("render = false"));
         assert!(source.contains("# Require each configured structural field"));
         assert!(source.contains("structural-inhabitance = false"));
         assert!(source.contains("[tutorial]"));

@@ -13,6 +13,7 @@ Project config comments are the field-level comments Sirno writes when it render
 
 Each comment sits immediately above the field or repeated field group it describes.
 Optional table comments appear only when the optional table is written.
+Check flag comments appear only when the corresponding check flag is written.
 Parsing still ignores comments through ordinary TOML rules.
 
 `sirno util config` compares the active config file with the comment set

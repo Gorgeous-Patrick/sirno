@@ -726,7 +726,7 @@ impl CoreContext {
             frost_path: frost.as_ref().map(|path| display_path(path)),
             frost_state: frost_state_label(lock.as_ref()),
             entry_count: report.entries().len(),
-            check_render: config.check.render,
+            check_render: config.check.render_enabled(),
             structural_fields: config
                 .structural
                 .fields()
@@ -1371,8 +1371,8 @@ fn entry_directory_check_settings(
     config_path: &Path, config: &SirnoConfig,
 ) -> EntryDirectoryCheckSettings {
     EntryDirectoryCheckSettings {
-        render: config.check.render,
-        structural_inhabitance: config.check.structural_inhabitance,
+        render: config.check.render_enabled(),
+        structural_inhabitance: config.check.structural_inhabitance_enabled(),
         structural: config.structural.clone(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),

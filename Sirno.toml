@@ -23,12 +23,6 @@ end = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):end'
 begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):begin[ \t]*-->'
 end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):end[ \t]*-->'
 
-[check]
-# Require generated footers to match current metadata during checks.
-render = true
-# Require each configured structural field to have a matching entry during checks.
-structural-inhabitance = true
-
 [tutorial]
 # Presence of this table enables tutorial text for recoverable command failures.
 # Remove this table to keep CLI errors terse.

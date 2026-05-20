@@ -96,11 +96,14 @@ Add repo members only for artifacts that are truly part of the witness surface.
 querying, and rendering generated footers.
 Ignored paths must not be absolute and must not escape upward.
 
+`[check]` is optional.
+Omitting `[check]` or an individual check flag leaves that check enabled.
 `[check].render` controls generated-footer freshness checks.
-It defaults to true.
 `[check].structural-inhabitance` controls the check that every configured structural field
 has a matching entry.
-It defaults to true.
+It follows the same default-on rule.
+When a check flag is present,
+`sirno util config --fix` writes its canonical comment.
 
 `[tutorial]` enables tutorial text by table presence.
 `frost_commit_tide` controls the tutorial for Frost commits blocked by open tide workitems.

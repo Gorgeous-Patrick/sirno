@@ -19,7 +19,7 @@ and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
 Each configured structural field must also name an existing *entry*.
 That structural-inhabitance check is controlled by `[check].structural-inhabitance`
-and is enabled by default.
+and is enabled when the flag or the whole `[check]` table is absent.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 They also report configured *witness* delimiters that are not part of a complete block.

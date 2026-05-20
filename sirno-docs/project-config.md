@@ -78,13 +78,15 @@ The standard regexes use one canonical capture for filename-like *entry* ids.
 Configured regexes may be narrower,
 but they should include every *entry* id allowed by the active project policy.
 
+`[check]` is optional.
+Omitting the table or an individual check flag leaves that check enabled.
 `[check].render` controls generated-footer freshness checks.
-It is enabled by default.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 `[check].structural-inhabitance` controls whether checks require each configured structural field
 to name an existing *entry*.
-It is enabled by default.
+When a check flag is present,
+`sirno util config --fix` writes its canonical comment.
 
 `[tutorial]` controls optional instructional CLI output.
 The table is absent by default.
