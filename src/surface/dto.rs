@@ -984,7 +984,11 @@ pub struct FrostGcResult {
     pub after_generation: u64,
     /// Frost version after collection.
     pub after_version: u64,
-    /// Whether `eter` physically collected rows.
+    /// Artifact byte files removed from frost storage.
+    pub artifact_files_removed: usize,
+    /// Empty artifact directories removed from frost storage.
+    pub artifact_directories_removed: usize,
+    /// Whether storage was physically collected.
     pub collected: bool,
     /// Concise human-readable summary.
     pub message: String,

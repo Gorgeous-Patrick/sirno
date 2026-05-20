@@ -72,20 +72,32 @@ pub struct SirnoFrost {
 }
 // sirno:witness:sirno-frost:end
 
-/// Result of garbage-collecting the private `eter` backend.
+/// Result of garbage-collecting the private frost backend.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FrostGcReport {
     /// Snapshot reference before collection.
     pub before: SnapshotRef,
     /// Snapshot reference after collection.
     pub after: SnapshotRef,
+    /// Artifact byte files removed from sparse artifact version directories.
+    pub artifact_files_removed: usize,
+    /// Empty artifact directories removed after byte-file collection.
+    pub artifact_directories_removed: usize,
 }
 
 impl FrostGcReport {
-    /// Return true when collection advanced the backend GC generation or version.
+    /// Return true when collection removed stored rows, byte files, or artifact directories.
     pub fn collected(self) -> bool {
         self.before != self.after
+            || self.artifact_files_removed > 0
+            || self.artifact_directories_removed > 0
     }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct ArtifactGcReport {
+    files_removed: usize,
+    directories_removed: usize,
 }
 
 impl SirnoFrost {
@@ -142,7 +154,7 @@ impl SirnoFrost {
     }
     // sirno:witness:sirno-frost:end
 
-    /// Garbage-collect `eter` rows unreachable from the current frost snapshot.
+    /// Garbage-collect storage unreachable from the current frost snapshot.
     ///
     /// The filesystem backend does not persist retired snapshots.
     /// Sirno supplies the latest frost snapshot as the explicit live set.
@@ -150,18 +162,35 @@ impl SirnoFrost {
     pub fn gc_current_snapshot(&mut self) -> Result<FrostGcReport, FrostError> {
         trace!("sirno frost gc begin");
         let before = self.current_snapshot()?;
-        if before.eterator == Eterator::EMPTY {
+        let after = if before.eterator == Eterator::EMPTY {
+            before
+        } else {
+            self.backend.gc(GcOption::UseLiveSet(BTreeSet::from([before])))?;
+            self.current_snapshot()?
+        };
+        let artifact_gc = self.gc_artifact_snapshot_directories(after)?;
+        if after.eterator == Eterator::EMPTY {
             trace!("sirno frost gc end: empty");
-            return Ok(FrostGcReport { before, after: before });
+            return Ok(FrostGcReport {
+                before,
+                after,
+                artifact_files_removed: artifact_gc.files_removed,
+                artifact_directories_removed: artifact_gc.directories_removed,
+            });
         }
-        self.backend.gc(GcOption::UseLiveSet(BTreeSet::from([before])))?;
-        let after = self.current_snapshot()?;
         trace!(
-            "sirno frost gc end: before={} after={}",
+            "sirno frost gc end: before={} after={} artifact_files_removed={} artifact_dirs_removed={}",
             before.generation.number(),
-            after.generation.number()
+            after.generation.number(),
+            artifact_gc.files_removed,
+            artifact_gc.directories_removed
         );
-        Ok(FrostGcReport { before, after })
+        Ok(FrostGcReport {
+            before,
+            after,
+            artifact_files_removed: artifact_gc.files_removed,
+            artifact_directories_removed: artifact_gc.directories_removed,
+        })
     }
     // sirno:witness:sirno-frost:end
 
@@ -473,6 +502,12 @@ impl SirnoFrost {
     fn read_artifact_content_at_snapshot(
         &self, at: SnapshotRef, owner: &EntryId, path: &EntryArtifactPath,
     ) -> Result<Vec<u8>, FrostError> {
+        Ok(fs::read(self.artifact_content_path_at_snapshot(at, owner, path)?)?)
+    }
+
+    fn artifact_content_path_at_snapshot(
+        &self, at: SnapshotRef, owner: &EntryId, path: &EntryArtifactPath,
+    ) -> Result<PathBuf, FrostError> {
         for (_, directory) in
             self.artifact_snapshot_directories_at(owner, at.eterator)?.into_iter().rev()
         {
@@ -484,10 +519,47 @@ impl SirnoFrost {
                         path: path.clone(),
                     });
                 }
-                return Ok(fs::read(artifact_path)?);
+                return Ok(artifact_path);
             }
         }
         Err(FrostError::CorruptArtifact { owner: owner.clone(), path: path.clone() })
+    }
+
+    fn artifact_content_paths_at_snapshot(
+        &self, at: SnapshotRef,
+    ) -> Result<BTreeSet<PathBuf>, FrostError> {
+        let mut paths = BTreeSet::new();
+        if at.eterator == Eterator::EMPTY {
+            return Ok(paths);
+        }
+        for fs_id in self.backend.live_entries(at)? {
+            let owner = EntryId::try_from(fs_id.clone())?;
+            let Some(facet) = StoredEntryFacet::load_from(&self.backend, at, &fs_id)? else {
+                continue;
+            };
+            for path in facet.artifact_paths {
+                paths.insert(self.artifact_content_path_at_snapshot(at, &owner, &path)?);
+            }
+        }
+        Ok(paths)
+    }
+
+    fn gc_artifact_snapshot_directories(
+        &self, live: SnapshotRef,
+    ) -> Result<ArtifactGcReport, FrostError> {
+        let keep = self.artifact_content_paths_at_snapshot(live)?;
+        let mut report = ArtifactGcReport::default();
+        for directory in self.artifact_snapshot_directories()? {
+            for file in artifact_snapshot_files(&directory)? {
+                if keep.contains(&file) {
+                    continue;
+                }
+                fs::remove_file(file)?;
+                report.files_removed += 1;
+            }
+            report.directories_removed += remove_empty_artifact_directories(&directory)?;
+        }
+        Ok(report)
     }
 
     fn artifact_snapshot_directories_at(
@@ -511,6 +583,33 @@ impl SirnoFrost {
             }
         }
         directories.sort_by_key(|(version, _)| *version);
+        Ok(directories)
+    }
+
+    fn artifact_snapshot_directories(&self) -> Result<Vec<PathBuf>, FrostError> {
+        if !self.root.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut directories = Vec::new();
+        for entry in fs::read_dir(&self.root)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
+                continue;
+            }
+            let fs_id = FilesystemEntryId::new(entry.file_name().to_string_lossy().to_string())?;
+            let owner = EntryId::try_from(fs_id)?;
+            for child in fs::read_dir(entry.path())? {
+                let child = child?;
+                if !child.file_type()?.is_dir() {
+                    continue;
+                }
+                let name = child.file_name().to_string_lossy().to_string();
+                parse_artifact_snapshot_directory_name(&name, &owner)?;
+                directories.push(child.path());
+            }
+        }
+        directories.sort();
         Ok(directories)
     }
 
@@ -623,6 +722,51 @@ fn parse_artifact_snapshot_directory_name(
     let version = u64::from_str_radix(hex, 16)
         .map_err(|_| FrostError::CorruptArtifactSnapshotDirectory(name.to_owned()))?;
     Ok(Eterator(version))
+}
+
+fn artifact_snapshot_files(directory: &Path) -> Result<Vec<PathBuf>, FrostError> {
+    let mut files = Vec::new();
+    collect_artifact_snapshot_files(directory, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+fn collect_artifact_snapshot_files(
+    directory: &Path, files: &mut Vec<PathBuf>,
+) -> Result<(), FrostError> {
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            collect_artifact_snapshot_files(&entry.path(), files)?;
+        } else if file_type.is_file() {
+            files.push(entry.path());
+        } else {
+            return Err(FrostError::CorruptArtifactSnapshotDirectory(
+                entry.path().display().to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn remove_empty_artifact_directories(directory: &Path) -> Result<usize, FrostError> {
+    let mut removed = 0;
+    let mut child_directories = Vec::new();
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        if entry.file_type()?.is_dir() {
+            child_directories.push(entry.path());
+        }
+    }
+    for child in child_directories {
+        removed += remove_empty_artifact_directories(&child)?;
+    }
+    if fs::read_dir(directory)?.next().transpose()?.is_none() {
+        fs::remove_dir(directory)?;
+        removed += 1;
+    }
+    Ok(removed)
 }
 // sirno:witness:entry-artifact:end
 
@@ -988,6 +1132,8 @@ mod tests {
         assert_eq!(report.before, second);
         assert!(report.after.generation > second.generation);
         assert_eq!(report.after.version(), second.version());
+        assert_eq!(report.artifact_files_removed, 0);
+        assert_eq!(report.artifact_directories_removed, 0);
         assert_eq!(versions, [second.version()]);
         assert_eq!(frost.read_entry_at_snapshot(report.after, &entry.id).unwrap(), Some(entry));
         assert_eq!(artifacts.len(), 1);
@@ -1001,6 +1147,40 @@ mod tests {
             )
             .exists()
         );
+    }
+
+    #[test]
+    fn gc_current_snapshot_removes_superseded_artifact_bytes() {
+        let lake = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let entry = test_entry("alpha", "Alpha");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"old");
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let first = frost
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"new");
+        let second = frost
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        let first_artifact =
+            artifact_snapshot_path(frost_path.path(), &entry.id, first, "images/logo.bin");
+        let second_artifact =
+            artifact_snapshot_path(frost_path.path(), &entry.id, second, "images/logo.bin");
+
+        let report = frost.gc_current_snapshot().unwrap();
+        let artifacts = frost.read_all_artifacts_at_snapshot(report.after).unwrap();
+
+        assert!(report.collected());
+        assert_eq!(report.artifact_files_removed, 1);
+        assert_eq!(report.artifact_directories_removed, 2);
+        assert!(!first_artifact.exists());
+        assert!(!first_artifact.parent().unwrap().parent().unwrap().exists());
+        assert!(second_artifact.exists());
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0].content, b"new");
     }
 
     #[test]
@@ -1020,10 +1200,17 @@ mod tests {
         let second = frost
             .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
+        let artifact_path =
+            artifact_snapshot_path(frost_path.path(), &entry.id, first, "images/logo.bin");
 
         assert_ne!(first, second);
         assert_eq!(frost.read_all_artifacts_at_snapshot(first).unwrap().len(), 1);
         assert!(frost.read_all_artifacts_at_snapshot(second).unwrap().is_empty());
+
+        let report = frost.gc_current_snapshot().unwrap();
+        assert_eq!(report.artifact_files_removed, 1);
+        assert_eq!(report.artifact_directories_removed, 2);
+        assert!(!artifact_path.exists());
     }
     // sirno:witness:entry-artifact:end
 

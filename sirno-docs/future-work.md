@@ -39,7 +39,7 @@ Until then, leaving the field reserved is safer than accepting vague lock behavi
 
 Version retention is another example.
 `eter` provides history, snapshots, retirement, and garbage collection.
-`sirno frost gc` provides a latest-snapshot collection policy.
+`sirno frost gc` provides a latest-snapshot collection policy for frost rows and artifact bytes.
 Sirno still needs long-term policy for which historical snapshots stay live.
 That policy should preserve reviewable *lake* states without making *entry* metadata harder to read.
 

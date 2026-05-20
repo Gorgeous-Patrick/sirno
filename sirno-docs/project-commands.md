@@ -67,7 +67,8 @@ and `[tutorial].frost_bootstrap_tide`.
 The grouped checkout command is `sirno frost checkout`.
 The grouped latest shortcut is `sirno frost defrost`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
-`sirno frost gc` garbage-collects private `eter` rows unreachable from the latest frost snapshot.
+`sirno frost gc` garbage-collects private `eter` rows and artifact bytes
+unreachable from the latest frost snapshot.
 It updates the stored GC generation
 and requires the lake to be the current mutable frostline.
 

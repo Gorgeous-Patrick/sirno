@@ -41,6 +41,8 @@ This manifest records which artifacts exist at that *entry* version.
 Changed artifact bytes live beside the Markdown row in a matching version directory,
 with the syntax `<16-hex-version>-<entry-id>/`.
 Unchanged artifact bytes are inherited from older version directories.
+`sirno frost gc` removes artifact byte files unreachable from the kept latest snapshot.
+It preserves older byte files when the latest artifact manifest still inherits them.
 A frozen lake *entry* protects its artifact tree as part of the same lake bundle.
 Checkout restores both the flat Markdown *entries* and the `.artifacts` tree for the selected snapshot.
 

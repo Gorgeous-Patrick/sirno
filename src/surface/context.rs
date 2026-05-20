@@ -966,14 +966,16 @@ impl SurfaceContext {
         lock.write(&context.lock_path)?;
         let message = if report.collected() {
             format!(
-                "garbage collected frost {}; kept version {} at generation {}",
+                "garbage collected frost {}; kept version {} at generation {} (removed {} artifact files and {} artifact directories)",
                 context.frost_path.display(),
                 report.after.version(),
-                report.after.generation.number()
+                report.after.generation.number(),
+                report.artifact_files_removed,
+                report.artifact_directories_removed
             )
         } else {
             format!(
-                "frost {} had no collectable eter rows; kept version {} at generation {}",
+                "frost {} had no collectible rows or artifact files; kept version {} at generation {}",
                 context.frost_path.display(),
                 report.after.version(),
                 report.after.generation.number()
@@ -986,6 +988,8 @@ impl SurfaceContext {
             before_version: report.before.version(),
             after_generation: report.after.generation.number(),
             after_version: report.after.version(),
+            artifact_files_removed: report.artifact_files_removed,
+            artifact_directories_removed: report.artifact_directories_removed,
             collected: report.collected(),
             message,
         })

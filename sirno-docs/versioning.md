@@ -125,6 +125,7 @@ Sirno's own version line is linear.
 Retention is policy.
 `sirno frost gc` keeps the latest frost snapshot as the explicit live set
 and lets `eter` collect rows unreachable from that snapshot.
+It also removes artifact byte files that cannot serve that snapshot.
 It advances the GC generation when rows are physically removed.
 Long-term retention policy remains reserved for later design.
 Sirno may later keep named versions,
