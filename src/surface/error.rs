@@ -89,6 +89,9 @@ pub enum CommandError {
     /// Frost checkout needs one target selector.
     #[error("frost checkout requires `latest` or `version`")]
     MissingFrostCheckoutTarget,
+    /// Frost garbage collection must preserve the current editable frostline.
+    #[error("frost gc requires the current mutable lake; version {0} is checked out")]
+    FrostGcRequiresCurrentLake(u64),
     /// An artifact source path did not have a file name for the default artifact path.
     #[error("artifact source has no file name: {0}")]
     ArtifactSourceHasNoFileName(PathBuf),

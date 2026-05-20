@@ -513,6 +513,10 @@ enum TopLevelFrostCommand {
         #[arg(long = "unsafe-resolve-all")]
         unsafe_resolve_all: bool,
     },
+    // sirno:witness:project-commands:begin
+    /// Garbage-collect private frost storage.
+    Gc,
+    // sirno:witness:project-commands:end
     /// Check out the latest frost version as the mutable current lake.
     Defrost,
     /// Check out frost entries into the lake.
@@ -1379,6 +1383,13 @@ impl TopLevelFrostCommand {
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
+            // sirno:witness:project-commands:begin
+            | TopLevelFrostCommand::Gc => {
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path).frost_gc()?;
+                println!("{}", result.message);
+                Ok(ExitCode::SUCCESS)
+            }
+            // sirno:witness:project-commands:end
             | TopLevelFrostCommand::Defrost => CheckoutArgs::latest().run(config_path, lake_path),
             | TopLevelFrostCommand::Checkout(args) => args.run(config_path, lake_path),
         }

@@ -946,6 +946,56 @@ fn frost_defrost_writes_mutable_current_lake() {
 }
 
 #[test]
+fn frost_gc_collects_eter_rows_and_updates_lock_generation() {
+    let (temp, config_path, docs) = committed_alpha_frost_project();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Changed body.
+",
+    )
+    .unwrap();
+    run_configured(&config_path, &["frost", "commit"]);
+    let frost_path = temp.path().join("sirno-frost");
+    let before = SirnoFrost::open(&frost_path).unwrap().current_snapshot().unwrap();
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "gc"])
+        .run()
+        .unwrap();
+
+    let frost = SirnoFrost::open(&frost_path).unwrap();
+    let after = frost.current_snapshot().unwrap();
+    let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
+    let read =
+        frost.read_entry_at_snapshot(after, &EntryId::new("alpha").unwrap()).unwrap().unwrap();
+
+    assert!(after.generation > before.generation);
+    assert_eq!(after.version(), 2);
+    assert_eq!(lock.frost.status, FrostLockStatus::Current);
+    assert_eq!(lock.frost.generation, after.generation.number());
+    assert_eq!(lock.frost.version, after.version());
+    assert_eq!(read.body, "Changed body.\n");
+}
+
+#[test]
+fn frost_gc_rejects_checked_out_lake() {
+    let (_temp, config_path, _) = committed_alpha_frost_project();
+    run_configured(&config_path, &["frost", "checkout", "1"]);
+
+    let error =
+        Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "gc"])
+            .run()
+            .unwrap_err();
+
+    assert!(matches!(error, CommandError::FrostGcRequiresCurrentLake(1)));
+}
+
+#[test]
 fn frost_commit_requires_clear_tide() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);

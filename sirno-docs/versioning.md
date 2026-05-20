@@ -123,14 +123,14 @@ Undo-tree branching belongs to git or another outer *repository* mechanism.
 Sirno's own version line is linear.
 
 Retention is policy.
-Sirno may keep named versions,
+`sirno frost gc` keeps the latest frost snapshot as the explicit live set
+and lets `eter` collect rows unreachable from that snapshot.
+It advances the GC generation when rows are physically removed.
+Long-term retention policy remains reserved for later design.
+Sirno may later keep named versions,
 recent versions,
 versions tied to exported reviews,
 or all versions.
-Unkept versions can be retired and garbage-collected through `eter`
-only when no retained version needs their rows.
-The filesystem backend does not persist retired-snapshot state,
-so Sirno must provide the live set when it performs collection.
 
 ---
 

@@ -13,13 +13,14 @@ use crate::surface::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
     EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
-    FrostCommitResult, FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
-    MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult,
-    RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy, StatusCommit,
-    StatusCommitBlocker, StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
-    StatusTide, StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
-    TideSelectionRequest, TideStatusMode, TideStatusResult, WitnessRecordResult, WitnessResult,
+    FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult, LakeInitRequest,
+    LakeInitResult, MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults,
+    QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult,
+    StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState, StatusFrost,
+    StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
+    WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
@@ -29,8 +30,8 @@ use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     CONFIG_FILE_NAME, CheckMode, Entry, EntryArtifactPath, EntryDirectory,
     EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryId,
-    EntryMetadata, EntryQuery, EntryStructuralMatcher, Eterator, SirnoConfig, SirnoFrost,
-    SirnoLock, StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery,
+    EntryMetadata, EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig,
+    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery,
     WitnessCheckSettings, WitnessRecord,
 };
 
@@ -953,6 +954,43 @@ impl SurfaceContext {
         })
     }
 
+    /// Garbage-collect private frost storage.
+    pub fn frost_gc(&self) -> Result<FrostGcResult, CommandError> {
+        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
+        context.reject_checked_out_for_gc()?;
+        let mut frost = SirnoFrost::open(&context.frost_path)?;
+        let report = frost.gc_current_snapshot()?;
+        let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?
+            .unwrap_or_else(|| SirnoLock::current(report.before));
+        lock.frost = FrostLock::current(report.after);
+        lock.write(&context.lock_path)?;
+        let message = if report.collected() {
+            format!(
+                "garbage collected frost {}; kept version {} at generation {}",
+                context.frost_path.display(),
+                report.after.version(),
+                report.after.generation.number()
+            )
+        } else {
+            format!(
+                "frost {} had no collectable eter rows; kept version {} at generation {}",
+                context.frost_path.display(),
+                report.after.version(),
+                report.after.generation.number()
+            )
+        };
+        Ok(FrostGcResult {
+            ok: true,
+            frost_path: display_path(&context.frost_path),
+            before_generation: report.before.generation.number(),
+            before_version: report.before.version(),
+            after_generation: report.after.generation.number(),
+            after_version: report.after.version(),
+            collected: report.collected(),
+            message,
+        })
+    }
+
     /// Check out frost entries into the lake.
     pub fn frost_checkout(
         &self, request: FrostCheckoutRequest,
@@ -1324,6 +1362,16 @@ impl FrostContext {
         };
         if lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout() {
             return Err(CommandError::ImmutableFrostCheckout(lock.frost.version));
+        }
+        Ok(())
+    }
+
+    fn reject_checked_out_for_gc(&self) -> Result<(), CommandError> {
+        let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
+            return Ok(());
+        };
+        if lock.frost.is_checked_out() {
+            return Err(CommandError::FrostGcRequiresCurrentLake(lock.frost.version));
         }
         Ok(())
     }

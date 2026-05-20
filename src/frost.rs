@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 
 use eter::filesystem::{FilesystemBackend, FilesystemEntryId, FilesystemError, FilesystemWriteTxn};
 use eter::{
-    EntryFacet, Eter, Eterator, Field, Lifecycle, LiveEntries, Resolution, SnapshotRef, WriteTxn,
+    EntryFacet, Eter, Eterator, Field, GcOption, Lifecycle, LiveEntries, Resolution, SnapshotRef,
+    WriteTxn,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -71,6 +72,22 @@ pub struct SirnoFrost {
 }
 // sirno:witness:sirno-frost:end
 
+/// Result of garbage-collecting the private `eter` backend.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FrostGcReport {
+    /// Snapshot reference before collection.
+    pub before: SnapshotRef,
+    /// Snapshot reference after collection.
+    pub after: SnapshotRef,
+}
+
+impl FrostGcReport {
+    /// Return true when collection advanced the backend GC generation or version.
+    pub fn collected(self) -> bool {
+        self.before != self.after
+    }
+}
+
 impl SirnoFrost {
     /// Open or initialize Sirno Frost at `root`.
     // sirno:witness:sirno-frost:begin
@@ -122,6 +139,29 @@ impl SirnoFrost {
     // sirno:witness:sirno-frost:begin
     pub fn snapshot_for_version(&self, version: Eterator) -> Result<SnapshotRef, FrostError> {
         Ok(SnapshotRef::new(self.backend.gc_generation()?, version))
+    }
+    // sirno:witness:sirno-frost:end
+
+    /// Garbage-collect `eter` rows unreachable from the current frost snapshot.
+    ///
+    /// The filesystem backend does not persist retired snapshots.
+    /// Sirno supplies the latest frost snapshot as the explicit live set.
+    // sirno:witness:sirno-frost:begin
+    pub fn gc_current_snapshot(&mut self) -> Result<FrostGcReport, FrostError> {
+        trace!("sirno frost gc begin");
+        let before = self.current_snapshot()?;
+        if before.eterator == Eterator::EMPTY {
+            trace!("sirno frost gc end: empty");
+            return Ok(FrostGcReport { before, after: before });
+        }
+        self.backend.gc(GcOption::UseLiveSet(BTreeSet::from([before])))?;
+        let after = self.current_snapshot()?;
+        trace!(
+            "sirno frost gc end: before={} after={}",
+            before.generation.number(),
+            after.generation.number()
+        );
+        Ok(FrostGcReport { before, after })
     }
     // sirno:witness:sirno-frost:end
 
@@ -918,6 +958,49 @@ mod tests {
         );
         assert_eq!(artifacts.len(), 1);
         assert_eq!(artifacts[0].content, b"old");
+    }
+
+    #[test]
+    fn gc_current_snapshot_keeps_latest_entries_and_inherited_artifacts() {
+        let lake = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let mut entry = test_entry("alpha", "Alpha");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"old");
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let first = frost
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        entry.body = "Alpha changed body.\n".to_owned();
+        write_lake_entry(lake.path(), &entry);
+        let second = frost
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        let report = frost.gc_current_snapshot().unwrap();
+        let versions = entry_snapshot_versions(frost_path.path(), &entry.id)
+            .into_iter()
+            .map(SnapshotRef::version)
+            .collect::<Vec<_>>();
+        let artifacts = frost.read_all_artifacts_at_snapshot(report.after).unwrap();
+
+        assert!(report.collected());
+        assert_eq!(report.before, second);
+        assert!(report.after.generation > second.generation);
+        assert_eq!(report.after.version(), second.version());
+        assert_eq!(versions, [second.version()]);
+        assert_eq!(frost.read_entry_at_snapshot(report.after, &entry.id).unwrap(), Some(entry));
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0].content, b"old");
+        assert!(
+            artifact_snapshot_path(
+                frost_path.path(),
+                &artifacts[0].owner,
+                first,
+                "images/logo.bin"
+            )
+            .exists()
+        );
     }
 
     #[test]

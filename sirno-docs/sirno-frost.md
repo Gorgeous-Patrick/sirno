@@ -56,6 +56,10 @@ The move creates missing destination parents and refuses to replace an existing 
 When `PATH` is inside the current *frost* path,
 Sirno stages the directory through a temporary sibling
 and recreates the parent path before placing the moved *frost* path at `PATH`.
+`sirno frost gc` asks `eter` to collect rows unreachable from the latest frost snapshot.
+It supplies that latest snapshot as the explicit live set
+and writes the resulting GC generation to `Sirno.lock.toml`.
+It runs only while the lake is the current mutable frostline.
 
 ## Commit
 
@@ -97,6 +101,8 @@ all live *entries* at the current snapshot,
 or all live *entries* at a specific `SnapshotRef`.
 A CLI version coordinate is paired with the current `eter` GC generation
 before the snapshot is read.
+After `sirno frost gc`,
+older snapshot references from the previous GC generation are stale.
 
 Checkout materializes one frozen snapshot as Markdown files and `.artifacts` files.
 The conservative write policy writes only into an absent or empty target directory.

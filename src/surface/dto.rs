@@ -969,6 +969,27 @@ pub struct FrostCommitResult {
     pub message: String,
 }
 
+/// Result of garbage-collecting frost storage.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrostGcResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Configured frost path.
+    pub frost_path: String,
+    /// GC generation before collection.
+    pub before_generation: u64,
+    /// Frost version before collection.
+    pub before_version: u64,
+    /// GC generation after collection.
+    pub after_generation: u64,
+    /// Frost version after collection.
+    pub after_version: u64,
+    /// Whether `eter` physically collected rows.
+    pub collected: bool,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// Frost checkout request.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrostCheckoutRequest {

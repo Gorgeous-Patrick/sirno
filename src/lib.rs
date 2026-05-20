@@ -39,7 +39,7 @@ pub use crate::entry::{
     FrozenMarker, NAME_FIELD,
 };
 pub use crate::freeze::{FreezeError, FrozenPath};
-pub use crate::frost::{FrostError, SirnoFrost};
+pub use crate::frost::{FrostError, FrostGcReport, SirnoFrost};
 pub use crate::id::{EntryId, EntryIdError};
 pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
