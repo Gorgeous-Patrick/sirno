@@ -228,6 +228,9 @@ pub enum CommandError {
     /// Dry-run mode applies only to render writing.
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
+    /// Render JSON overrides apply only to generated-link writing.
+    #[error("`--override-json` only applies to `sirno render` without a subcommand")]
+    OverrideJsonWithRenderSubcommand,
     /// A command named a structural field not configured for this project.
     #[error("structural field `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
     UnconfiguredStructuralField(String),
@@ -311,7 +314,7 @@ pub enum CommandError {
     /// JSON-oriented ripgrep execution needs UTF-8 arguments.
     #[error("rg argument is not valid UTF-8: {0:?}")]
     RgArgumentNotUtf8(OsString),
-    /// Query JSON rendering failed.
+    /// JSON parsing or rendering failed.
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 }

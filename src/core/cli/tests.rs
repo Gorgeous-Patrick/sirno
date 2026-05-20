@@ -3206,6 +3206,109 @@ fn render_accepts_dry_run_aliases() {
 }
 
 #[test]
+fn render_accepts_override_json() {
+    let cli = Cli::parse_from(["sirno", "render", "--override-json", "{\"belongs\":{\"to\":{}}}"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::TopLevelLake(TopLevelLakeCommand::Render {
+            override_json: Some(source),
+            command: None,
+            ..
+        }) if source == "{\"belongs\":{\"to\":{}}}"
+    ));
+}
+
+#[test]
+fn render_rejects_override_json_with_subcommand() {
+    let error =
+        Cli::parse_from(["sirno", "render", "--override-json", "{}", "delete"]).run().unwrap_err();
+
+    assert!(matches!(error, CommandError::OverrideJsonWithRenderSubcommand));
+}
+
+#[test]
+fn render_override_json_temporarily_replaces_structural_settings() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    let config = SirnoConfig {
+        structural: StructuralSettings::from_fields([(
+            "belongs",
+            StructuralFieldSettings::render_only(false, true, false),
+        )]),
+        ..SirnoConfig::new("docs")
+    };
+    config.write_new(&config_path).unwrap();
+    fs::create_dir(&docs).unwrap();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("beta.md"),
+        "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("belongs.md"),
+        "\
+---
+name: Belongs
+desc: A structural field.
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "render",
+        "--override-json",
+        "{\"belongs\":{\"to\":{\"render\":true}}}",
+    ])
+    .run()
+    .unwrap();
+
+    let alpha = fs::read_to_string(docs.join("alpha.md")).unwrap();
+    let beta = fs::read_to_string(docs.join("beta.md")).unwrap();
+    let stored = SirnoConfig::from_file(&config_path).unwrap();
+    let belongs = stored
+        .structural
+        .fields()
+        .find(|(field, _)| *field == "belongs")
+        .map(|(_, settings)| settings)
+        .unwrap();
+
+    assert!(alpha.contains("- belongs (to):\n  - [beta](beta.md)"));
+    assert!(!beta.contains("belongs (from)"));
+    assert!(!beta.contains("[alpha](alpha.md)"));
+    assert!(!belongs.to.render);
+    assert!(belongs.from.render);
+}
+
+#[test]
 fn format_gen_link_report_lists_changed_paths() {
     let report = format_gen_link_report(
         Path::new("sirno-docs"),

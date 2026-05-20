@@ -284,15 +284,20 @@ enum TopLevelLakeCommand {
         #[arg(short = 'm', long, value_enum)]
         mode: Option<CheckModeArg>,
     },
+    // sirno:witness:interfaces:begin
     /// Render Markdown links in entry footers.
     Render {
         /// Report rendered-footer changes without writing files.
         #[arg(short = 'n', long, visible_alias = "dry-run")]
         dry: bool,
+        /// JSON structural render settings used instead of the configured settings for this run.
+        #[arg(long = "override-json", value_name = "JSON")]
+        override_json: Option<String>,
         /// Render command.
         #[command(subcommand)]
         command: Option<RenderCommand>,
     },
+    // sirno:witness:interfaces:end
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
     Status,
@@ -1038,10 +1043,11 @@ impl TopLevelLakeCommand {
             {
                 Err(CommandError::FrostPathRequiresCheck)
             }
-            | TopLevelLakeCommand::Render { command, dry } => match command {
+            // sirno:witness:interfaces:begin
+            | TopLevelLakeCommand::Render { command, dry, override_json } => match command {
                 | None => {
-                    let result =
-                        CoreContext::from_cli_paths(config_path, lake_path).lake_render(dry)?;
+                    let result = CoreContext::from_cli_paths(config_path, lake_path)
+                        .lake_render_with_override_json(dry, override_json.as_deref())?;
                     print_render_result(&result);
                     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
                 }
@@ -1049,12 +1055,16 @@ impl TopLevelLakeCommand {
                     if dry {
                         return Err(CommandError::DryWithRenderSubcommand);
                     }
+                    if override_json.is_some() {
+                        return Err(CommandError::OverrideJsonWithRenderSubcommand);
+                    }
                     let result =
                         CoreContext::from_cli_paths(config_path, lake_path).lake_render_delete()?;
                     print_render_result(&result);
                     Ok(ExitCode::SUCCESS)
                 }
             },
+            // sirno:witness:interfaces:end
             | TopLevelLakeCommand::Status => {
                 let result = CoreContext::from_cli_paths(config_path, lake_path).lake_status()?;
                 print_status_result(&result);

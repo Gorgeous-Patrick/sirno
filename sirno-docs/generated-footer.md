@@ -55,6 +55,8 @@ The `[structural]` edge policy controls which *structural fields* appear.
 `sirno check` reports stale *generated footer* regions when render checking is enabled.
 `sirno render` creates or replaces *generated footer* regions.
 `sirno render --dry` reports *generated footer* regions that would change without writing files.
+`sirno render --override-json JSON` applies temporary structural render settings.
+The override replaces the configured settings in memory and does not update `Sirno.toml`.
 `sirno render delete` removes them.
 The mutating commands leave prose outside the guard-bounded region under user ownership.
 `sirno rg` searches the *lake* as if those guard-bounded regions contain only whitespace.

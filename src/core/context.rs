@@ -670,8 +670,18 @@ impl CoreContext {
 
     /// Render Markdown links in entry footers.
     pub fn lake_render(&self, dry: bool) -> Result<RenderResult, CommandError> {
+        self.lake_render_with_override_json(dry, None)
+    }
+
+    /// Render Markdown links with temporary JSON structural settings.
+    pub fn lake_render_with_override_json(
+        &self, dry: bool, override_json: Option<&str>,
+    ) -> Result<RenderResult, CommandError> {
         let (lake, mut settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        if let Some(override_json) = override_json {
+            apply_structural_override_json(&mut settings.structural, override_json)?;
+        }
         settings.render = false;
         settings.witness = None;
 
@@ -1330,6 +1340,13 @@ fn default_repo_name(config_path: &Path) -> OsString {
     config_dir
         .and_then(|path| path.file_name().map(OsString::from))
         .unwrap_or_else(|| OsString::from("sirno"))
+}
+
+fn apply_structural_override_json(
+    settings: &mut StructuralSettings, override_json: &str,
+) -> Result<(), CommandError> {
+    *settings = serde_json::from_str(override_json)?;
+    Ok(())
 }
 
 fn artifact_path_from_cli(path: &Path) -> Result<EntryArtifactPath, CommandError> {

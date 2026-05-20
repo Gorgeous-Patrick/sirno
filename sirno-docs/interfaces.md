@@ -216,6 +216,11 @@ The top-level forms `sirno resolve` and `sirno unresolve` select the same operat
 `sirno render -n, --dry` reports *generated footer* regions that would change without writing files.
 Render commands print changed paths or blocking diagnostics before their summary line.
 `--dry-run` is an alias for `--dry`.
+`sirno render --override-json JSON` uses JSON structural render settings for that run,
+instead of the configured settings.
+The JSON uses structural field and edge names,
+such as `{"belongs":{"to":{"render":true}}}`.
+It does not write `Sirno.toml`.
 `sirno render delete` removes those regions.
 Render commands operate on the active *lake* path.
 
