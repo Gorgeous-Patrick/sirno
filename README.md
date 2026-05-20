@@ -52,7 +52,6 @@ and start the introduction session in the fresh conversation:
 
 ```text
 Start an introduction session with $sirno-narrative-session based on sirno-docs/introduction.md:
-
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
 <!-- sirno:witness:readme:end -->
