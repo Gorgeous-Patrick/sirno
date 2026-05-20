@@ -37,6 +37,7 @@ Use manual TOML edits only when the current MCP tools cannot express the intende
 Read the existing `Sirno.toml` before editing.
 Preserve user-authored structural field order.
 
+`sirno util config` without flags is an interactive human CLI TUI.
 This skill may call CLI `sirno util config --fix` directly.
 This is a narrow exception for deterministic `Sirno.toml` comment canonicalization.
 It does not expose utility commands through MCP

@@ -1,5 +1,9 @@
 //! CLI grammar and terminal dispatch for the shared command surface.
 
+mod config {
+    pub(crate) mod tui;
+}
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -651,8 +655,8 @@ impl From<CompletionShell> for Shell {
 #[derive(Debug, Subcommand)]
 enum UtilCommand {
     // sirno:witness:interfaces:begin
-    /// Check canonical comments in Sirno.toml.
-    Config(ConfigCommentArgs),
+    /// Open the interactive Sirno.toml maintenance UI.
+    Config(ConfigTuiArgs),
     // sirno:witness:interfaces:end
     /// Generate a shell completion script.
     Completion {
@@ -675,10 +679,13 @@ enum UtilCommand {
 }
 
 // sirno:witness:interfaces:begin
-/// Arguments for canonical config comment maintenance.
+/// Arguments for interactive config maintenance.
 #[derive(Debug, Args)]
-struct ConfigCommentArgs {
-    /// Rewrite Sirno.toml with canonical comments when any are missing.
+struct ConfigTuiArgs {
+    /// Print missing canonical comments without opening the TUI or writing the file.
+    #[arg(long, conflicts_with = "fix")]
+    dry: bool,
+    /// Rewrite Sirno.toml with canonical comments without opening the TUI.
     #[arg(long)]
     fix: bool,
 }
@@ -1680,14 +1687,19 @@ impl UtilCommand {
                 if frost_path.is_some() {
                     return Err(CommandError::ConfigRejectsFrostPath);
                 }
-                let context = CoreContext::new(config_path.to_path_buf());
-                let result = if args.fix {
-                    context.config_comments_fix()?
-                } else {
-                    context.config_comments_check()?
-                };
-                print_config_comment_result(&result);
-                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+                if args.dry {
+                    let result =
+                        CoreContext::new(config_path.to_path_buf()).config_comments_check()?;
+                    print_config_comment_result(&result);
+                    return if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) };
+                }
+                if args.fix {
+                    let result =
+                        CoreContext::new(config_path.to_path_buf()).config_comments_fix()?;
+                    print_config_comment_result(&result);
+                    return Ok(ExitCode::SUCCESS);
+                }
+                config::tui::run(config_path)
             }
             | UtilCommand::Completion { shell } => {
                 if frost_path.is_some() {

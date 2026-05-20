@@ -21,6 +21,7 @@ Prefer Sirno MCP tools for routine project config changes:
 `sirno_lake_init`, `sirno_lake_move`, `sirno_frost_init`, and `sirno_frost_move`.
 Manual edits are for schema changes or comment maintenance
 that the current MCP project tools cannot express.
+`sirno util config` without flags is an interactive human CLI TUI.
 The config-writer skill may call CLI `sirno util config --fix` directly.
 This is a narrow exception for deterministic `Sirno.toml` comment canonicalization.
 It does not expose utility commands through MCP

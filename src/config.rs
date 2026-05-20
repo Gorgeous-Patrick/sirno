@@ -574,9 +574,7 @@ impl ConfigRenderer {
             // sirno:witness:project-config-comments:end
         }
 
-        if let Some(repo) = &config.repo
-            && !repo.members.is_empty()
-        {
+        if let Some(repo) = &config.repo {
             self.out.push('\n');
             self.push_table("repo");
             // sirno:witness:project-config-comments:begin

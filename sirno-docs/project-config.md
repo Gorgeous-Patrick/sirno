@@ -16,9 +16,11 @@ and the operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
 and Sirno Frost.
 Generated config files include concise comments that describe how each written field is used.
-`sirno util config` checks whether those comments are present.
-`sirno util config --fix` rewrites the file through Sirno's canonical config renderer
-when comments are missing.
+`sirno util config` opens an interactive terminal UI for config section and comment maintenance.
+It shows whether each top-level section is present
+and whether that section's comments match Sirno's canonical renderer.
+`sirno util config --dry` runs the old non-interactive comment check without writing the file.
+`sirno util config --fix` runs the old non-interactive rewrite through that renderer.
 
 `[lake].path` names the Markdown *entry lake*.
 `[frost].path` optionally names the private Sirno Frost path.
@@ -86,7 +88,9 @@ because malformed sentinels make Sirno ownership ambiguous.
 `[check].structural-inhabitance` controls whether checks require each configured structural field
 to name an existing *entry*.
 When a check flag is present,
-`sirno util config --fix` writes its canonical comment.
+the config UI can restore that flag's canonical comment.
+`sirno util config --dry` reports when the comment is missing.
+`sirno util config --fix` writes the comment.
 
 `[tutorial]` controls optional instructional CLI output.
 The table is absent by default.

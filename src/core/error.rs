@@ -189,6 +189,9 @@ pub enum CommandError {
     /// The config utility only inspects the config file.
     #[error("`--frost-path` cannot be used with `sirno util config`; use `--config` only")]
     ConfigRejectsFrostPath,
+    /// The terminal UI failed.
+    #[error("terminal UI failed")]
+    TerminalUi(#[source] std::io::Error),
     /// The async MCP runtime could not be created.
     #[error("failed to create MCP runtime")]
     CreateMcpRuntime(#[source] std::io::Error),

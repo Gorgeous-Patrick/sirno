@@ -20,10 +20,10 @@ use crate::{
 };
 
 use super::{
-    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, ConfigCommentArgs,
-    CoreContext, EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand,
-    FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat,
-    QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
+    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, CoreContext,
+    EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs,
+    LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn,
+    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
     StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
     TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
     TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
@@ -414,18 +414,46 @@ fn util_mcp_accepts_config_launch_form() {
 }
 
 #[test]
-fn util_config_accepts_check_and_fix_form() {
-    let check = Cli::parse_from(["sirno", "util", "config"]);
-    let fix = Cli::parse_from(["sirno", "util", "config", "--fix"]);
+fn util_config_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "config"]);
 
     assert!(matches!(
-        check.command,
-        Command::Util { command: UtilCommand::Config(ConfigCommentArgs { fix: false }) }
+        cli.command,
+        Command::Util {
+            command: UtilCommand::Config(super::ConfigTuiArgs { dry: false, fix: false })
+        }
     ));
+}
+
+#[test]
+fn util_config_accepts_dry_check_form() {
+    let cli = Cli::parse_from(["sirno", "util", "config", "--dry"]);
+
     assert!(matches!(
-        fix.command,
-        Command::Util { command: UtilCommand::Config(ConfigCommentArgs { fix: true }) }
+        cli.command,
+        Command::Util {
+            command: UtilCommand::Config(super::ConfigTuiArgs { dry: true, fix: false })
+        }
     ));
+}
+
+#[test]
+fn util_config_accepts_fix_form() {
+    let cli = Cli::parse_from(["sirno", "util", "config", "--fix"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util {
+            command: UtilCommand::Config(super::ConfigTuiArgs { dry: false, fix: true })
+        }
+    ));
+}
+
+#[test]
+fn util_config_rejects_dry_and_fix_together() {
+    let error = Cli::try_parse_from(["sirno", "util", "config", "--dry", "--fix"]).unwrap_err();
+
+    assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
 }
 
 #[test]
