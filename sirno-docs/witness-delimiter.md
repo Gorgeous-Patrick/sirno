@@ -22,6 +22,7 @@ The captured text is then parsed through the normal *entry* id checks.
 A project may add `[[witness.delimiters]]` pairs
 when another repository surface needs a different marker shape.
 The configured pairs are the only delimiters Sirno scans for.
+An empty delimiter list disables repository witness lookup.
 
 Each configured pattern is validated before use.
 A pattern that is not a valid regex is rejected.

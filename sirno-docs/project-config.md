@@ -71,7 +71,7 @@ Glob members may match files or directories.
 Each delimiter table has `begin` and `end` regex fields.
 Each regex should capture the *entry* id as its first capture group.
 Sirno rejects empty, invalid, captureless, or empty-matching delimiter regexes.
-At least one delimiter table is required so the *repository* syntax is explicit.
+An empty delimiter list disables repository witness lookup.
 Generated configs write the standard syntax,
 which accepts `//` line comments and hidden Markdown HTML comments.
 The standard regexes use one canonical capture for filename-like *entry* ids.

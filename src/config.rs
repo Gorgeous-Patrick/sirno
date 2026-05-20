@@ -230,13 +230,14 @@ pub struct WitnessDelimiterSettings {
 
 /// Configured witness delimiter syntax.
 ///
-/// Invariant: `delimiters` is non-empty.
-/// Each delimiter pair is validated by `WitnessDelimiterSettings`.
+/// Invariant: each delimiter pair is validated by `WitnessDelimiterSettings`.
+/// An empty delimiter list disables repository witness lookup.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:project-config:begin
 pub struct WitnessSettings {
     /// Configured witness delimiter pairs.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub delimiters: Vec<WitnessDelimiterSettings>,
 }
 // sirno:witness:project-config:end
@@ -290,9 +291,6 @@ impl WitnessSettings {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
-        if self.delimiters.is_empty() {
-            return Err(ConfigError::WitnessDelimiterList);
-        }
         for (index, delimiter) in self.delimiters.iter().enumerate() {
             delimiter.validate(index)?;
         }
@@ -761,9 +759,6 @@ pub enum ConfigError {
     /// A structural field name is reserved for scalar Sirno metadata.
     #[error("structural field name is reserved for Sirno metadata: {0}")]
     ReservedStructuralField(String),
-    /// No witness delimiter pairs are configured.
-    #[error("witness.delimiters must contain at least one delimiter pair")]
-    WitnessDelimiterList,
     /// A witness delimiter regex is empty.
     #[error("{field} at index {index} must not be empty")]
     WitnessRegex {
@@ -994,6 +989,32 @@ end = '(?m)^STOP ([A-Za-z0-9_-]+)$'
                 ],
             }
         );
+    }
+
+    #[test]
+    fn parses_empty_witness_syntax_settings() {
+        let bare: SirnoConfig = toml::from_str(
+            r#"
+[lake]
+path = "docs"
+
+[witness]
+"#,
+        )
+        .unwrap();
+        let explicit: SirnoConfig = toml::from_str(
+            r#"
+[lake]
+path = "docs"
+
+[witness]
+delimiters = []
+"#,
+        )
+        .unwrap();
+
+        assert!(bare.witness.delimiters.is_empty());
+        assert!(explicit.witness.delimiters.is_empty());
     }
 
     #[test]
@@ -1314,7 +1335,7 @@ end = '(?m)^END ([A-Za-z0-9_-]+)$'
     }
 
     #[test]
-    fn rejects_empty_witness_delimiter_list() {
+    fn validates_empty_witness_delimiter_list() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
         fs::write(
@@ -1329,9 +1350,9 @@ delimiters = []
         )
         .unwrap();
 
-        let error = SirnoConfig::from_file(&path).unwrap_err();
+        let config = SirnoConfig::from_file(&path).unwrap();
 
-        assert!(matches!(error, ConfigError::WitnessDelimiterList));
+        assert!(config.witness.delimiters.is_empty());
     }
 
     #[test]

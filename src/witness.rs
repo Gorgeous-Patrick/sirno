@@ -33,6 +33,7 @@ const WITNESS_TRANSFORM: &str = "sirno-witness";
 /// Invariant: `root` is the directory relative to which members are resolved.
 /// `members` are already validated config-relative member patterns.
 /// `witness` contains the delimiter regex pairs used by `mosaika`.
+/// Empty delimiter settings disable scans.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WitnessCheckSettings {
     /// Directory relative to which repo members are resolved.
@@ -52,9 +53,9 @@ impl WitnessCheckSettings {
         Self { root: root.into(), members: members.into_iter().collect(), witness }
     }
 
-    /// Returns true when there is no repository surface to scan.
+    /// Returns true when no repository witness scan can produce records.
     pub fn is_empty(&self) -> bool {
-        self.members.is_empty()
+        self.members.is_empty() || self.witness.delimiters.is_empty()
     }
 
     /// Scan configured repository members for Sirno witness blocks.
@@ -67,6 +68,10 @@ impl WitnessCheckSettings {
             member_count = self.members.len(),
             "scan_witnesses begin"
         );
+        if self.is_empty() {
+            trace!("scan_witnesses end: empty settings");
+            return Ok(WitnessIndex::new());
+        }
         let files = self.resolve_member_files()?;
         let analysis = self.run_mosaika_analysis(&files)?;
         let mut index = WitnessIndex::from_mosaika_matches(analysis.match_records())?;
@@ -1031,6 +1036,26 @@ mod tests {
 
         assert!(index.contains_entry(&EntryId::new("custom").unwrap()));
         assert_eq!(records[0].body, custom_witness_block("custom").trim_end());
+    }
+
+    #[test]
+    fn empty_witness_delimiters_disable_scanning() {
+        let temp = tempfile::tempdir().unwrap();
+        let src = temp.path().join("src");
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::write(src.join("lib.rs"), witness_block("witness-lookup")).unwrap();
+        let settings = WitnessCheckSettings::new(
+            temp.path(),
+            [RepoMember::new("src").unwrap()],
+            WitnessSettings { delimiters: Vec::new() },
+        );
+
+        let index = settings.scan().unwrap();
+
+        assert!(settings.is_empty());
+        assert!(!index.contains_entry(&EntryId::new("witness-lookup").unwrap()));
+        assert!(index.entry_ids().next().is_none());
+        assert!(index.orphan_delimiters().is_empty());
     }
 
     #[test]

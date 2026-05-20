@@ -477,6 +477,31 @@ fn util_config_fix_writes_missing_comments() {
 }
 
 #[test]
+fn util_config_fix_accepts_empty_witness_delimiters() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    fs::write(
+        &config_path,
+        r#"
+[lake]
+path = "docs"
+
+[witness]
+"#,
+    )
+    .unwrap();
+
+    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
+    let source = fs::read_to_string(&config_path).unwrap();
+
+    assert!(fix.ok);
+    assert!(fix.changed);
+    assert!(source.contains("[witness]"));
+    assert!(source.contains("# Witness delimiter regex pairs"));
+    assert!(!source.contains("[[witness.delimiters]]"));
+}
+
+#[test]
 fn util_config_rejects_lake_and_frost_path_overrides() {
     let lake_error =
         Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config"]).run().unwrap_err();

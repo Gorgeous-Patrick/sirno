@@ -19,7 +19,8 @@ Glob members expand to matching files.
 Sirno projects each member file into a `mosaika` *transform* that analyzes *witness* blocks.
 The opening and closing delimiters both capture the *entry* id.
 Sirno rejects a *witness* block when the delimiter ids differ.
-The delimiter regex pairs come from the required `[[witness.delimiters]]` config tables.
+The delimiter regex pairs come from `[[witness.delimiters]]` config tables.
+An empty delimiter list disables witness scanning and yields no witness records.
 Generated configs write the standard syntax,
 which accepts `//` line comments and hidden Markdown HTML comments.
 Those standard regexes share one canonical capture for filename-like *entry* ids.

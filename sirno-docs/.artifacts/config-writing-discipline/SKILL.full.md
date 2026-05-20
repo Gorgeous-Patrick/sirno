@@ -73,7 +73,8 @@ It names the public Markdown entry lake.
 Configured `lake` paths resolve relative to the config file unless absolute.
 
 `[witness]` is required.
-It must contain at least one `[[witness.delimiters]]` table.
+It may contain zero or more `[[witness.delimiters]]` tables.
+An empty delimiter list disables repository witness lookup.
 Each delimiter table has `begin` and `end` regex fields.
 Each regex must be non-empty, valid, capture the entry id as its first capture group,
 and not match empty text.

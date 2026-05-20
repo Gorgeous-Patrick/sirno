@@ -25,7 +25,8 @@ or authorize other skills to call `sirno util` commands.
 
 The config schema is explicit.
 `[lake].path` is required.
-`[witness]` is required and must contain at least one `[[witness.delimiters]]` table.
+`[witness]` is required and may contain zero or more `[[witness.delimiters]]` tables.
+An empty delimiter list disables repository witness lookup.
 Each delimiter table has `begin` and `end` regex fields.
 Those regexes must be non-empty, valid, capture the entry id first, and not match empty text.
 Generated configs write the standard line-comment and Markdown-comment witness syntax.
