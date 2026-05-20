@@ -24,6 +24,8 @@ Start every repository edit in the configured lake.
 Read repository instructions, `Sirno.toml`, and the entries that govern the requested work.
 If `Sirno.toml` is missing, report that the repository is not currently Sirno-managed,
 then prompt the user to start with `sirno init`.
+Call `sirno_status` early to surface the lake path, frost state, tide blockers,
+and pending review entries.
 Use `sirno_entry_query` for discovery,
 follow `category`, `belongs`, `prerequisite`, and `refines`,
 and inspect existing evidence with `sirno_entry_witness` before editing repository material.
@@ -52,10 +54,20 @@ When manual `Sirno.toml` edits are needed, preserve schema comments and path rul
 then run deterministic config repair when available.
 Only add repository members when those paths are intended witness surfaces.
 
+Sync long-form public documentation from the entries that name its design claims.
+Use the repository's own documentation-writing method when one exists;
+otherwise fall back to `sirno://skills/design-doc-writer`.
+
 Validate at the review boundary.
 Run `sirno_lake_render` after lake metadata changes,
 then run `sirno_lake_check` in edit and review modes.
 Run direct witness queries for changed evidence.
+If `sirno_status` reports an open tide,
+walk workitems with `sirno_tide_status` and resolve them with
+`sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
+If the current checkout is frozen or an entry is immutable,
+use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
+instead of forcing a write.
 If checks are blocked, report the blocker and still validate entry parsing,
 metadata references, and witness output as far as the tools allow.
 

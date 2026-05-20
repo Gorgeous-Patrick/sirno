@@ -35,9 +35,9 @@ Use an impersonal voice without becoming bureaucratic.
 Write closer to concise mathematical prose than to a software README.
 
 Do not use motivational framing, rhetoric, or "this is important because."
-Introduce terms once, then trust them to carry the rest of the text.
-Use analogies sparingly and only to established PL concepts,
-such as well-typedness or nominal binding.
+Introduce a term once, then trust it to carry the rest of the text.
+Use analogies sparingly and only to established technical concepts,
+such as well-typedness or nominal binding from programming languages.
 Do not use everyday metaphors.
 
 ## Structure

@@ -10,39 +10,38 @@ description: >-
 ## Purpose
 
 Use this skill to guide a reader through project knowledge in a Sirno-managed repository.
-The session can be a temporary explanation,
+A session can be a temporary explanation,
 or it can become a compact narrative entry in the active project's configured lake.
 
 Treat entries as the durable source of knowledge.
-The narrative chooses sequence, prerequisites, pressure, and deferral.
-It should point to entries instead of copying the whole lake.
+A narrative chooses sequence, prerequisites, pressure, and deferral.
+It points to entries instead of copying the whole lake.
 
 This full skill text is served as `sirno://skills/sirno-narrative-session`.
-It follows the `narrative-session-discipline` entry.
+It follows the project's narrative-session discipline.
 
 ## Project Binding
 
-Before calling project tools through MCP,
-bind the server to the repository you are working in.
+Bind the MCP server to the repository before calling project tools.
 Call `sirno_cwd` with the repository root when the server may not already be there.
-Project tools resolve `Sirno.toml` from the server current working directory.
-Call `sirno_cwd` again before switching projects.
+Project tools resolve `Sirno.toml` from the server current working directory on each call.
+Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Source Reading
 
 Read `Sirno.toml` for the configured lake path.
 Then read the active project entries that can ground the route:
-entries named by the user,
-entries implied by the task,
+entries the user named,
+entries the task implies,
 and likely front-door entries found by `sirno_entry_query`.
 Do not assume any standard entry id exists.
-Good search terms include the user's domain terms,
-plus local words such as `introduction`, `methodology`, `narrative`, or `onboarding`
-when the project has those concepts.
+Good search terms include the user's domain words,
+plus local terms such as `introduction`, `methodology`, `narrative`, or `onboarding`
+when the project carries those concepts.
 
 If a source entry is missing,
-state the gap and continue only with the route that can be grounded in existing entries.
-Switch to `sirno-maintainer` if the session discovers a necessary repository,
+state the gap and continue only with the route that existing entries can ground.
+Hand off to `sirno-maintainer` if the session reveals a needed repository,
 configuration, witness, or lake maintenance edit.
 
 ## Reader Pull
@@ -101,7 +100,7 @@ when the route will guide future onboarding or review,
 or when the session produces a reusable way through a design region.
 
 Choose a lowercase kebab-case id.
-Use structural metadata configured by the active project.
+Use structural metadata that the active project already configures.
 If the project has no narrative category or equivalent convention,
 use the simplest valid metadata and explain the choice.
 
@@ -119,7 +118,7 @@ Keep the body short enough to read in place.
 Point to entries that carry durable detail instead of copying their contents.
 Do not include private chat transcript unless the user explicitly asks.
 
-Use the serializer from the skill directory when helpful.
+Use the serializer shipped beside this skill when its input contract fits.
 Pass the configured lake path explicitly:
 
 ```sh
