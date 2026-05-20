@@ -83,6 +83,7 @@ which opens an interactive setup plan. The full plan creates:
 - a few wrapper skills that teach your agent how to talk to the MCP server
 
 Use `sirno init --all` to run the full setup without prompts.
+Use `sirno init --all --claude-skills` to also link those wrappers into `.claude/skills`.
 You may also recreate them separately later with their own commands.
 
 ### For LLM: in MCP

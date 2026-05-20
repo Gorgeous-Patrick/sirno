@@ -35,12 +35,14 @@ A project can use Sirno without configured repo members or Sirno Frost.
 `sirno init` opens an interactive setup flow for the config, public *entry lake*,
 private Sirno Frost path, and packaged skill wrappers.
 `sirno init --all` runs the full setup without prompts.
+`sirno init --claude-skills` also links installed wrappers into `.claude/skills`.
 Its default paths are derived from the directory that contains `Sirno.toml`:
 `<repo>-lake` for `[lake].path` and `<repo>-frost` for `[frost].path`.
 `sirno init --lake PATH` chooses a non-default public *lake* path.
 `sirno init --frost PATH` chooses a non-default private *frost* path.
 `sirno init --no-lake`, `--no-frost`, and `--no-skills`
 skip their corresponding setup parts.
+`--claude-skills` is available only when packaged skill wrappers are selected.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
 `sirno lake init [PATH]` creates the config and public *entry lake* without configuring Frost.

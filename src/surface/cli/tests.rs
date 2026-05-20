@@ -244,6 +244,30 @@ fn top_level_init_can_skip_lake_and_frost() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn top_level_init_all_can_link_claude_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "init",
+        "--all",
+        "--no-lake",
+        "--no-frost",
+        "--claude-skills",
+    ])
+    .run()
+    .unwrap();
+
+    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
+    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+    assert_eq!(fs::read_link(link).unwrap(), expected);
+}
+
 #[test]
 fn top_level_init_prompt_can_cancel_confirmed_plan() {
     let temp = tempfile::tempdir().unwrap();
@@ -254,8 +278,9 @@ fn top_level_init_prompt_can_cancel_confirmed_plan() {
         init_lake: true,
         init_frost: true,
         init_skills: true,
+        init_claude_skills: false,
     };
-    let mut input = Cursor::new(b"y\ny\ny\ny\ny\nn\n".to_vec());
+    let mut input = Cursor::new(b"y\ny\ny\ny\ny\nn\nn\n".to_vec());
     let mut output = Vec::new();
 
     run_prompted_top_level_init(request, &config_path, None, &mut input, &mut output).unwrap();
@@ -265,6 +290,7 @@ fn top_level_init_prompt_can_cancel_confirmed_plan() {
     assert!(output.contains("public lake: yes"));
     assert!(output.contains("Sirno Frost: yes"));
     assert!(output.contains("skill wrappers: yes"));
+    assert!(output.contains("Claude skill links: no"));
     assert!(output.contains("init cancelled"));
     assert!(!config_path.exists());
     assert!(!temp.path().join(".agents").exists());
@@ -280,6 +306,7 @@ fn top_level_init_prompt_accepts_custom_paths_and_skips_skills() {
         init_lake: true,
         init_frost: true,
         init_skills: true,
+        init_claude_skills: false,
     };
     let mut input = Cursor::new(b"y\nn\ndocs\ny\nn\nfrost\nn\ny\n".to_vec());
     let mut output = Vec::new();
@@ -294,14 +321,43 @@ fn top_level_init_prompt_accepts_custom_paths_and_skips_skills() {
     assert!(!temp.path().join(".agents").exists());
 }
 
+#[cfg(unix)]
+#[test]
+fn top_level_init_prompt_can_link_claude_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let request = TopLevelInitRequest {
+        lake: None,
+        frost: None,
+        init_lake: true,
+        init_frost: true,
+        init_skills: true,
+        init_claude_skills: false,
+    };
+    let mut input = Cursor::new(b"n\nn\ny\ny\ny\n".to_vec());
+    let mut output = Vec::new();
+
+    run_prompted_top_level_init(request, &config_path, None, &mut input, &mut output).unwrap();
+
+    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
+    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+    assert_eq!(fs::read_link(link).unwrap(), expected);
+    assert!(
+        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+    );
+}
+
 #[test]
 fn top_level_init_rejects_path_flags_for_disabled_parts() {
     let no_lake_with_lake = Cli::try_parse_from(["sirno", "init", "--no-lake", "--lake", "docs"]);
     let no_frost_with_frost =
         Cli::try_parse_from(["sirno", "init", "--no-frost", "--frost", "sirno-frost"]);
+    let no_skills_with_claude =
+        Cli::try_parse_from(["sirno", "init", "--no-skills", "--claude-skills"]);
 
     assert!(no_lake_with_lake.is_err());
     assert!(no_frost_with_frost.is_err());
+    assert!(no_skills_with_claude.is_err());
 }
 
 #[test]
@@ -641,7 +697,21 @@ fn util_skills_init_accepts_nested_command() {
 
     assert!(matches!(
         cli.command,
-        Command::Util { command: UtilCommand::Skills { command: SkillCommand::Init } }
+        Command::Util { command: UtilCommand::Skills { command: SkillCommand::Init(_) } }
+    ));
+}
+
+#[test]
+fn util_skills_commands_accept_claude_option() {
+    let cli = Cli::parse_from(["sirno", "util", "skills", "check", "--claude-skills"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util {
+            command: UtilCommand::Skills {
+                command: SkillCommand::Check(args)
+            }
+        } if args.claude_skills
     ));
 }
 
@@ -661,6 +731,30 @@ fn util_skills_init_installs_bundled_wrappers() {
     assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
     assert!(check.ok);
     assert_eq!(check.records[0].status, "ok");
+}
+
+#[cfg(unix)]
+#[test]
+fn util_skills_init_can_link_claude_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let context = SurfaceContext::new(&config_path);
+
+    let init = context.skill_wrappers_init_with_claude(true).unwrap();
+    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
+    let check = context.skill_wrappers_check_with_claude(true).unwrap();
+    let listed = context.skill_wrappers_list_with_claude(true).unwrap();
+    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+
+    assert!(init.ok);
+    assert_eq!(init.records.len(), 12);
+    assert_eq!(fs::read_link(link).unwrap(), expected);
+    assert!(check.ok);
+    assert_eq!(check.records.len(), 12);
+    assert_eq!(listed.records.len(), 12);
+    assert!(listed.records.iter().any(|record| {
+        record.status == "link" && record.target_path == ".claude/skills/sirno-editor"
+    }));
 }
 
 #[test]

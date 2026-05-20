@@ -73,6 +73,7 @@ The section installs with `cargo install sirno`,
 then `sirno init`, which opens an interactive setup plan.
 The full plan creates the *lake*, the *frost* store, `Sirno.toml`,
 `Sirno.lock.toml`, and the packaged skill wrappers together.
+It can also link those wrappers into `.claude/skills` for Claude Code.
 
 It then splits by reader:
 

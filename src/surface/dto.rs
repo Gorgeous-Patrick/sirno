@@ -646,18 +646,18 @@ pub struct ArtifactChangeResult {
     pub message: String,
 }
 
-/// One discovered Sirno skill wrapper and package target.
+/// One discovered Sirno skill wrapper, package target, or adjacent skill link.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SkillWrapperRecord {
     /// Discipline entry that owns the wrapper artifact.
     pub entry_id: String,
     /// Installed skill package name.
     pub name: String,
-    /// Lake-owned wrapper artifact path.
+    /// Lake-owned wrapper artifact path or link source path.
     pub wrapper_path: String,
     /// Lake-owned full resource artifact path.
     pub full_path: String,
-    /// Repository-relative package target path.
+    /// Repository-relative package or link target path.
     pub target_path: String,
     /// Stable command status label.
     pub status: String,

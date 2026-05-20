@@ -48,6 +48,7 @@ select the same lake operation.
 `sirno init` prompts for public *lake*, private *frost* store,
 and packaged skill wrapper setup.
 `sirno init --all` initializes those parts together without prompts.
+`sirno init --claude-skills` also links installed skill packages into `.claude/skills`.
 `sirno commit` and `sirno checkout` select the same Frost operations
 as their grouped `sirno frost ...` forms.
 `sirno defrost` selects latest Frost checkout.
@@ -67,6 +68,7 @@ It reports the config path, *lake* path, optional *frost* path,
 
 `sirno init` opens an interactive setup flow.
 It asks which setup parts to run, asks for default paths when no path flag supplies them,
+asks whether installed wrappers should be linked into Claude skills,
 shows the init plan, and applies it after confirmation.
 `sirno init --all` creates a Sirno config, ordinary seed entries,
 an empty Frost version `0`, and packaged skill wrappers without prompts.
@@ -76,6 +78,8 @@ By default, it names those paths from the directory that contains `Sirno.toml`:
 `sirno init --frost PATH` chooses a non-default private *frost* path.
 `sirno init --no-lake`, `--no-frost`, and `--no-skills`
 skip their corresponding setup parts.
+`sirno init --claude-skills` creates `.claude/skills/sirno-*` links
+to the installed `.agents/skills/sirno-*` package directories.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
 `sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring Frost.
@@ -252,6 +256,8 @@ Config utility commands reject `--lake-path` and `--frost-path`.
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.
 `sirno util skills list` lists the bundled skill names and package targets.
+The `--claude-skills` option includes `.claude/skills/sirno-*` links in `init`, `check`,
+and `list` output.
 Skill utility commands print wrapper records as a table,
 followed by a summary line.
 Skill utility commands reject `--lake-path` and `--frost-path`.

@@ -87,6 +87,9 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
 ];
 // sirno:witness:agent-skills:end
 
+const AGENT_SKILL_ROOT: &str = ".agents/skills";
+const CLAUDE_SKILL_ROOT: &str = ".claude/skills";
+
 #[derive(Clone, Debug)]
 pub struct SurfaceContext {
     config_path: PathBuf,
@@ -574,6 +577,26 @@ impl SurfaceContext {
         })
     }
 
+    /// List bundled wrappers and optional Claude skill links.
+    pub fn skill_wrappers_list_with_claude(
+        &self, claude_skills: bool,
+    ) -> Result<SkillWrapperResult, CommandError> {
+        if !claude_skills {
+            return self.skill_wrappers_list();
+        }
+
+        let mut result = self.skill_wrappers_list()?;
+        result
+            .records
+            .extend(SKILL_WRAPPERS.iter().map(|source| source.claude_record("link", false)));
+        result.message = format!(
+            "found {} Sirno skill wrappers and {} Claude skill links",
+            SKILL_WRAPPERS.len(),
+            SKILL_WRAPPERS.len()
+        );
+        Ok(result)
+    }
+
     /// Check installed Sirno skill wrapper packages against bundled constants.
     pub fn skill_wrappers_check(&self) -> Result<SkillWrapperResult, CommandError> {
         let root = config_parent(&self.config_path);
@@ -601,6 +624,34 @@ impl SurfaceContext {
             },
             records,
         })
+    }
+
+    /// Check installed wrappers and optional Claude skill links.
+    pub fn skill_wrappers_check_with_claude(
+        &self, claude_skills: bool,
+    ) -> Result<SkillWrapperResult, CommandError> {
+        if !claude_skills {
+            return self.skill_wrappers_check();
+        }
+
+        let root = config_parent(&self.config_path);
+        let mut result = self.skill_wrappers_check()?;
+        for source in SKILL_WRAPPERS {
+            let status = check_claude_skill_link(&root, source)?;
+            result.records.push(source.claude_record(status, status != "ok"));
+        }
+
+        let changed = result.records.iter().filter(|record| record.changed).count();
+        result.ok = changed == 0;
+        result.message = if changed == 0 {
+            format!(
+                "all {} Sirno skill wrappers and Claude links match artifacts",
+                SKILL_WRAPPERS.len()
+            )
+        } else {
+            format!("{changed} Sirno skill wrappers or Claude links differ from artifacts")
+        };
+        Ok(result)
     }
 
     /// Install bundled Sirno skill wrapper constants into their package targets.
@@ -635,6 +686,29 @@ impl SurfaceContext {
             ),
             records,
         })
+    }
+
+    /// Install bundled wrappers and optional Claude skill links.
+    pub fn skill_wrappers_init_with_claude(
+        &self, claude_skills: bool,
+    ) -> Result<SkillWrapperResult, CommandError> {
+        if !claude_skills {
+            return self.skill_wrappers_init();
+        }
+
+        let root = config_parent(&self.config_path);
+        let mut result = self.skill_wrappers_init()?;
+        for source in SKILL_WRAPPERS {
+            let status = init_claude_skill_link(&root, source)?;
+            result.records.push(source.claude_record(status, status == "linked"));
+        }
+
+        let changed = result.records.iter().filter(|record| record.changed).count();
+        result.message = format!(
+            "installed {} Sirno skill wrappers and Claude links ({changed} changed)",
+            SKILL_WRAPPERS.len()
+        );
+        Ok(result)
     }
     // sirno:witness:agent-skills:end
 
@@ -1279,6 +1353,30 @@ impl SkillWrapperSpec {
             changed,
         }
     }
+
+    fn claude_record(&self, status: impl Into<String>, changed: bool) -> SkillWrapperRecord {
+        SkillWrapperRecord {
+            name: self.name.to_owned(),
+            entry_id: self.entry_id.to_owned(),
+            wrapper_path: self.agent_skill_path().display().to_string(),
+            full_path: self.full_path.to_owned(),
+            target_path: self.claude_skill_path().display().to_string(),
+            status: status.into(),
+            changed,
+        }
+    }
+
+    fn agent_skill_path(&self) -> PathBuf {
+        Path::new(AGENT_SKILL_ROOT).join(self.name)
+    }
+
+    fn claude_skill_path(&self) -> PathBuf {
+        Path::new(CLAUDE_SKILL_ROOT).join(self.name)
+    }
+
+    fn claude_link_source(&self) -> PathBuf {
+        Path::new("..").join("..").join(self.agent_skill_path())
+    }
 }
 
 fn config_parent(config_path: &Path) -> PathBuf {
@@ -1299,6 +1397,83 @@ fn write_skill_wrapper_target(target: &Path, content: &[u8]) -> Result<(), Comma
         path: target.to_path_buf(),
         source,
     })
+}
+
+fn check_claude_skill_link(
+    root: &Path, source: &SkillWrapperSpec,
+) -> Result<&'static str, CommandError> {
+    let target = root.join(source.claude_skill_path());
+    let expected = source.claude_link_source();
+    let metadata = match fs::symlink_metadata(&target) {
+        | Ok(metadata) => metadata,
+        | Err(error) if error.kind() == ErrorKind::NotFound => return Ok("missing"),
+        | Err(source) => {
+            return Err(CommandError::ReadSkillWrapperTarget { path: target, source });
+        }
+    };
+    if !metadata.file_type().is_symlink() {
+        return Ok("drifted");
+    }
+    let current = fs::read_link(&target)
+        .map_err(|source| CommandError::ReadSkillWrapperTarget { path: target, source })?;
+    if current == expected { Ok("ok") } else { Ok("drifted") }
+}
+
+fn init_claude_skill_link(
+    root: &Path, source: &SkillWrapperSpec,
+) -> Result<&'static str, CommandError> {
+    let target = root.join(source.claude_skill_path());
+    let expected = source.claude_link_source();
+    let status = check_claude_skill_link(root, source)?;
+    match status {
+        | "ok" => Ok("unchanged"),
+        | "missing" => {
+            create_claude_skill_link(&target, &expected)?;
+            Ok("linked")
+        }
+        | "drifted" => {
+            replace_claude_skill_link(&target, &expected)?;
+            Ok("linked")
+        }
+        | _ => unreachable!("unexpected Claude skill link status"),
+    }
+}
+
+fn replace_claude_skill_link(target: &Path, source: &Path) -> Result<(), CommandError> {
+    let metadata = fs::symlink_metadata(target).map_err(|error| {
+        CommandError::ReadSkillWrapperTarget { path: target.to_path_buf(), source: error }
+    })?;
+    if !metadata.file_type().is_symlink() {
+        return Err(CommandError::SkillWrapperTargetExists(target.to_path_buf()));
+    }
+    fs::remove_file(target).map_err(|source| CommandError::RemoveSkillWrapperTarget {
+        path: target.to_path_buf(),
+        source,
+    })?;
+    create_claude_skill_link(target, source)
+}
+
+fn create_claude_skill_link(target: &Path, source: &Path) -> Result<(), CommandError> {
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|source| {
+            CommandError::CreateSkillWrapperTargetDirectory { path: parent.to_path_buf(), source }
+        })?;
+    }
+    symlink_skill_directory(source, target).map_err(|error| CommandError::LinkSkillWrapperTarget {
+        source_path: source.to_path_buf(),
+        target_path: target.to_path_buf(),
+        source: error,
+    })
+}
+
+#[cfg(unix)]
+fn symlink_skill_directory(source: &Path, target: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, target)
+}
+
+#[cfg(windows)]
+fn symlink_skill_directory(source: &Path, target: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_dir(source, target)
 }
 
 fn frost_version(version: u64) -> Result<Eterator, CommandError> {

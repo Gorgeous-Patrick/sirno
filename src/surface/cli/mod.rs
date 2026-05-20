@@ -98,6 +98,9 @@ enum Command {
         /// Skip packaged skill wrapper initialization.
         #[arg(long = "no-skills")]
         no_skills: bool,
+        /// Link installed wrappers into Claude skills.
+        #[arg(long = "claude-skills", conflicts_with = "no_skills")]
+        claude_skills: bool,
     },
     /// Move an entry, the public lake path, or the Frost path.
     #[command(visible_alias = "mv")]
@@ -700,13 +703,21 @@ struct ConfigTuiArgs {
 #[derive(Debug, Subcommand)]
 enum SkillCommand {
     /// Install bundled wrappers into `.agents/skills/sirno-*`.
-    Init,
+    Init(SkillCommandArgs),
     /// Check installed wrappers against bundled wrappers.
-    Check,
+    Check(SkillCommandArgs),
     /// List bundled wrappers and package targets.
-    List,
+    List(SkillCommandArgs),
 }
 // sirno:witness:interfaces:end
+
+/// Options shared by skill wrapper utility commands.
+#[derive(Debug, Args)]
+struct SkillCommandArgs {
+    /// Include Claude skill links under `.claude/skills`.
+    #[arg(long = "claude-skills")]
+    claude_skills: bool,
+}
 
 /// Run Sirno from the current process environment.
 ///
@@ -738,7 +749,7 @@ impl Cli {
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
-            | Command::Init { all, lake, frost, no_lake, no_frost, no_skills } => {
+            | Command::Init { all, lake, frost, no_lake, no_frost, no_skills, claude_skills } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
@@ -748,6 +759,7 @@ impl Cli {
                     init_lake: !no_lake,
                     init_frost: !no_frost,
                     init_skills: !no_skills,
+                    init_claude_skills: claude_skills,
                 };
                 if all {
                     run_top_level_init(request, &config_path, lake_path.as_deref())
@@ -841,6 +853,7 @@ struct TopLevelInitRequest {
     init_lake: bool,
     init_frost: bool,
     init_skills: bool,
+    init_claude_skills: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -906,6 +919,16 @@ fn run_prompted_top_level_init<R: BufRead, W: Write>(
     if request.init_skills {
         request.init_skills =
             prompt_yes_no(input, output, "Install packaged skill wrappers?", PromptDefault::Yes)?;
+        if request.init_skills && !request.init_claude_skills {
+            request.init_claude_skills = prompt_yes_no(
+                input,
+                output,
+                "Link wrappers into Claude skills?",
+                PromptDefault::No,
+            )?;
+        }
+    } else {
+        request.init_claude_skills = false;
     }
 
     print_init_plan(output, &request, config_path, lake_path)?;
@@ -996,7 +1019,9 @@ fn print_init_plan<W: Write>(
     }
 
     let skills = if request.init_skills { "yes" } else { "no" };
-    writeln!(output, "  skill wrappers: {skills}").map_err(CommandError::InteractiveInit)
+    writeln!(output, "  skill wrappers: {skills}").map_err(CommandError::InteractiveInit)?;
+    let claude_skills = if request.init_claude_skills { "yes" } else { "no" };
+    writeln!(output, "  Claude skill links: {claude_skills}").map_err(CommandError::InteractiveInit)
 }
 
 fn planned_lake_path(
@@ -1047,7 +1072,7 @@ fn run_top_level_init(
         initialized = true;
     }
     if request.init_skills {
-        run_skill_wrappers_init(config_path)?;
+        run_skill_wrappers_init(config_path, request.init_claude_skills)?;
         initialized = true;
     }
     if !initialized {
@@ -1944,16 +1969,23 @@ impl SkillCommand {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let context = SurfaceContext::new(config_path.to_path_buf());
         let result = match self {
-            | SkillCommand::Init => context.skill_wrappers_init()?,
-            | SkillCommand::Check => context.skill_wrappers_check()?,
-            | SkillCommand::List => context.skill_wrappers_list()?,
+            | SkillCommand::Init(args) => {
+                context.skill_wrappers_init_with_claude(args.claude_skills)?
+            }
+            | SkillCommand::Check(args) => {
+                context.skill_wrappers_check_with_claude(args.claude_skills)?
+            }
+            | SkillCommand::List(args) => {
+                context.skill_wrappers_list_with_claude(args.claude_skills)?
+            }
         };
         Ok(print_skill_wrapper_result(result))
     }
 }
 
-fn run_skill_wrappers_init(config_path: &Path) -> Result<(), CommandError> {
-    let result = SurfaceContext::new(config_path.to_path_buf()).skill_wrappers_init()?;
+fn run_skill_wrappers_init(config_path: &Path, claude_skills: bool) -> Result<(), CommandError> {
+    let result = SurfaceContext::new(config_path.to_path_buf())
+        .skill_wrappers_init_with_claude(claude_skills)?;
     print_skill_wrapper_result(result);
     Ok(())
 }

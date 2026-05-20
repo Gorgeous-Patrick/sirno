@@ -234,6 +234,29 @@ pub enum CommandError {
         #[source]
         source: std::io::Error,
     },
+    /// A skill wrapper link target already exists as a non-link filesystem object.
+    #[error("skill wrapper target exists and is not a symlink: {0}")]
+    SkillWrapperTargetExists(PathBuf),
+    /// A stale skill wrapper symlink could not be removed.
+    #[error("failed to remove skill wrapper target {path}")]
+    RemoveSkillWrapperTarget {
+        /// Target path that could not be removed.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A skill wrapper package target could not be linked.
+    #[error("failed to link skill wrapper target {target_path} to {source_path}")]
+    LinkSkillWrapperTarget {
+        /// Link source path.
+        source_path: PathBuf,
+        /// Link target path.
+        target_path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// Dry-run mode applies only to render writing.
     #[error("`--dry` only applies to `sirno render` without a subcommand")]
     DryWithRenderSubcommand,
