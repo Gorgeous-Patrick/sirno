@@ -60,6 +60,8 @@ and recreates the parent path before placing the moved *frost* path at `PATH`.
 and removes artifact byte files unreachable from that snapshot.
 It supplies that latest snapshot as the explicit live set
 and writes the resulting GC generation to `Sirno.lock.toml`.
+It preserves the kept snapshot's CLI-visible version coordinate.
+The GC generation is the collision boundary for stale snapshot references.
 Inherited artifact bytes remain in older version directories
 when the latest artifact manifest still needs them.
 It runs only while the lake is the current mutable frostline.

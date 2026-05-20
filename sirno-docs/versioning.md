@@ -126,7 +126,10 @@ Retention is policy.
 `sirno frost gc` keeps the latest frost snapshot as the explicit live set
 and lets `eter` collect rows unreachable from that snapshot.
 It also removes artifact byte files that cannot serve that snapshot.
+It preserves the kept snapshot's CLI-visible version coordinate.
 It advances the GC generation when rows are physically removed.
+The GC generation is the collision boundary for stale `SnapshotRef`s.
+Any future coordinate recycling belongs to an explicit compaction or rebase operation.
 Long-term retention policy remains reserved for later design.
 Sirno may later keep named versions,
 recent versions,
