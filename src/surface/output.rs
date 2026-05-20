@@ -81,6 +81,18 @@ pub(crate) fn print_cli_error(error: &CommandError) {
         style_text("sirno:", SemanticStyle::Error, OutputStyle::Styled)
     );
 }
+
+pub(crate) fn format_success_text(value: &str, style: OutputStyle) -> String {
+    style_text(value, SemanticStyle::Success, style)
+}
+
+pub(crate) fn format_muted_text(value: &str, style: OutputStyle) -> String {
+    style_text(value, SemanticStyle::Muted, style)
+}
+
+pub(crate) fn format_warning_text(value: &str, style: OutputStyle) -> String {
+    style_text(value, SemanticStyle::Warning, style)
+}
 // sirno:witness:interfaces:end
 
 pub(crate) fn print_witness_records(records: &[WitnessRecord], full: bool) {

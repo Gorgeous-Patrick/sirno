@@ -35,6 +35,7 @@ use super::{
     format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
     format_tide_statuses_by_entry, format_witness_record, format_witness_records,
     rg_args_include_preprocessor, run_prompted_top_level_init,
+    run_prompted_top_level_init_with_style,
 };
 
 fn assert_before(source: &str, before: &str, after: &str) {
@@ -295,6 +296,38 @@ fn top_level_init_prompt_can_cancel_confirmed_plan() {
     assert!(output.contains("init cancelled"));
     assert!(!config_path.exists());
     assert!(!temp.path().join(".agents").exists());
+}
+
+#[test]
+fn top_level_init_prompt_colors_semantic_choices_when_forced() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let request = TopLevelInitRequest {
+        lake: None,
+        frost: None,
+        init_lake: true,
+        init_frost: true,
+        init_skills: true,
+        init_claude_skills: false,
+    };
+    let mut input = Cursor::new(b"y\ny\ny\ny\ny\nn\nn\n".to_vec());
+    let mut output = Vec::new();
+
+    run_prompted_top_level_init_with_style(
+        request,
+        &config_path,
+        None,
+        &mut input,
+        &mut output,
+        OutputStyle::Forced,
+    )
+    .unwrap();
+
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.contains("\u{1b}["));
+    assert!(output.contains("public lake:"));
+    assert!(output.contains("skill wrappers:"));
+    assert!(output.contains("init cancelled"));
 }
 
 #[test]

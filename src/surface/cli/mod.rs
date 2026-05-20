@@ -27,11 +27,11 @@ use crate::surface::dto::{
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
-    OutputStyle, format_human_table_semantic_with_width, format_path_table,
-    format_skill_wrapper_table_for_terminal, print_check_diagnostic, print_check_summary,
-    print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
-    print_lake_check_result, print_ok_path, print_query_results, print_render_result,
-    print_status_result, print_witness_records,
+    OutputStyle, format_human_table_semantic_with_width, format_muted_text, format_path_table,
+    format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
+    print_check_diagnostic, print_check_summary, print_cli_error, print_config_comment_result,
+    print_entry_directory_report, print_json, print_lake_check_result, print_ok_path,
+    print_query_results, print_render_result, print_status_result, print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -873,10 +873,14 @@ impl PromptDefault {
         }
     }
 
-    fn suffix(self) -> &'static str {
+    fn suffix(self, style: OutputStyle) -> String {
         match self {
-            | Self::Yes => "[Y/n]",
-            | Self::No => "[y/N]",
+            | Self::Yes => {
+                format!("[{}/{}]", format_success_text("Y", style), format_muted_text("n", style))
+            }
+            | Self::No => {
+                format!("[{}/{}]", format_success_text("y", style), format_muted_text("N", style))
+            }
         }
     }
 }
@@ -886,19 +890,41 @@ fn run_interactive_top_level_init(
 ) -> Result<ExitCode, CommandError> {
     let stdin = io::stdin();
     let mut input = stdin.lock();
-    let mut output = io::stdout();
-    run_prompted_top_level_init(request, config_path, lake_path, &mut input, &mut output)
+    let mut output = anstream::stdout();
+    run_prompted_top_level_init_with_style(
+        request,
+        config_path,
+        lake_path,
+        &mut input,
+        &mut output,
+        OutputStyle::Styled,
+    )
 }
 
+#[cfg(test)]
 fn run_prompted_top_level_init<R: BufRead, W: Write>(
-    mut request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
+    request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
     output: &mut W,
+) -> Result<ExitCode, CommandError> {
+    run_prompted_top_level_init_with_style(
+        request,
+        config_path,
+        lake_path,
+        input,
+        output,
+        OutputStyle::Plain,
+    )
+}
+
+fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
+    mut request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
+    output: &mut W, style: OutputStyle,
 ) -> Result<ExitCode, CommandError> {
     writeln!(output, "Interactive Sirno init").map_err(CommandError::InteractiveInit)?;
 
     if request.init_lake {
         request.init_lake =
-            prompt_yes_no(input, output, "Initialize the public lake?", PromptDefault::Yes)?;
+            prompt_yes_no(input, output, "Initialize the public lake?", PromptDefault::Yes, style)?;
         if request.init_lake && request.lake.is_none() && lake_path.is_none() {
             request.lake = prompt_default_path(
                 input,
@@ -906,38 +932,47 @@ fn run_prompted_top_level_init<R: BufRead, W: Write>(
                 "Use default public lake path",
                 "Public lake path",
                 default_lake_path(config_path),
+                style,
             )?;
         }
     }
 
     if request.init_frost {
         request.init_frost =
-            prompt_yes_no(input, output, "Initialize Sirno Frost?", PromptDefault::Yes)?;
+            prompt_yes_no(input, output, "Initialize Sirno Frost?", PromptDefault::Yes, style)?;
         if request.init_frost && request.frost.is_none() {
             let (prompt, path) = configured_or_default_frost_path(config_path);
-            request.frost = prompt_default_path(input, output, prompt, "Frost path", path)?;
+            request.frost = prompt_default_path(input, output, prompt, "Frost path", path, style)?;
         }
     }
 
     if request.init_skills {
-        request.init_skills =
-            prompt_yes_no(input, output, "Install packaged skill wrappers?", PromptDefault::Yes)?;
+        request.init_skills = prompt_yes_no(
+            input,
+            output,
+            "Install packaged skill wrappers?",
+            PromptDefault::Yes,
+            style,
+        )?;
         if request.init_skills && !request.init_claude_skills {
             request.init_claude_skills = prompt_yes_no(
                 input,
                 output,
                 "Link wrappers into Claude skills?",
                 PromptDefault::No,
+                style,
             )?;
         }
     } else {
         request.init_claude_skills = false;
     }
 
-    print_init_plan(output, &request, config_path, lake_path)?;
-    let confirmed = prompt_yes_no(input, output, "Apply this init plan?", PromptDefault::No)?;
+    print_init_plan(output, &request, config_path, lake_path, style)?;
+    let confirmed =
+        prompt_yes_no(input, output, "Apply this init plan?", PromptDefault::No, style)?;
     if !confirmed {
-        writeln!(output, "init cancelled").map_err(CommandError::InteractiveInit)?;
+        writeln!(output, "{}", format_warning_text("init cancelled", style))
+            .map_err(CommandError::InteractiveInit)?;
         return Ok(ExitCode::SUCCESS);
     }
 
@@ -945,10 +980,10 @@ fn run_prompted_top_level_init<R: BufRead, W: Write>(
 }
 
 fn prompt_yes_no<R: BufRead, W: Write>(
-    input: &mut R, output: &mut W, question: &str, default: PromptDefault,
+    input: &mut R, output: &mut W, question: &str, default: PromptDefault, style: OutputStyle,
 ) -> Result<bool, CommandError> {
     loop {
-        write!(output, "{question} {} ", default.suffix())
+        write!(output, "{question} {} ", default.suffix(style))
             .map_err(CommandError::InteractiveInit)?;
         output.flush().map_err(CommandError::InteractiveInit)?;
 
@@ -958,7 +993,7 @@ fn prompt_yes_no<R: BufRead, W: Write>(
             | "y" | "yes" => return Ok(true),
             | "n" | "no" => return Ok(false),
             | _ => {
-                writeln!(output, "Please answer yes or no.")
+                writeln!(output, "{}", format_warning_text("Please answer yes or no.", style))
                     .map_err(CommandError::InteractiveInit)?;
             }
         }
@@ -967,9 +1002,10 @@ fn prompt_yes_no<R: BufRead, W: Write>(
 
 fn prompt_default_path<R: BufRead, W: Write>(
     input: &mut R, output: &mut W, default_question: &str, value_question: &str, default: PathBuf,
+    style: OutputStyle,
 ) -> Result<Option<PathBuf>, CommandError> {
     let question = format!("{default_question} `{}`?", default.display());
-    if prompt_yes_no(input, output, &question, PromptDefault::Yes)? {
+    if prompt_yes_no(input, output, &question, PromptDefault::Yes, style)? {
         return Ok(None);
     }
 
@@ -981,7 +1017,8 @@ fn prompt_default_path<R: BufRead, W: Write>(
         if !path.is_empty() {
             return Ok(Some(PathBuf::from(path)));
         }
-        writeln!(output, "Please enter a path.").map_err(CommandError::InteractiveInit)?;
+        writeln!(output, "{}", format_warning_text("Please enter a path.", style))
+            .map_err(CommandError::InteractiveInit)?;
     }
 }
 
@@ -996,35 +1033,44 @@ fn read_prompt_line<R: BufRead>(input: &mut R) -> Result<String, CommandError> {
 
 fn print_init_plan<W: Write>(
     output: &mut W, request: &TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
+    style: OutputStyle,
 ) -> Result<(), CommandError> {
     writeln!(output).map_err(CommandError::InteractiveInit)?;
     writeln!(output, "Init plan:").map_err(CommandError::InteractiveInit)?;
     if request.init_lake {
         writeln!(
             output,
-            "  public lake: yes ({})",
+            "  public lake: {} ({})",
+            format_init_choice(true, style),
             planned_lake_path(request, config_path, lake_path).display()
         )
         .map_err(CommandError::InteractiveInit)?;
     } else {
-        writeln!(output, "  public lake: no").map_err(CommandError::InteractiveInit)?;
+        writeln!(output, "  public lake: {}", format_init_choice(false, style))
+            .map_err(CommandError::InteractiveInit)?;
     }
 
     if request.init_frost {
         writeln!(
             output,
-            "  Sirno Frost: yes ({})",
+            "  Sirno Frost: {} ({})",
+            format_init_choice(true, style),
             planned_frost_path(request, config_path).display()
         )
         .map_err(CommandError::InteractiveInit)?;
     } else {
-        writeln!(output, "  Sirno Frost: no").map_err(CommandError::InteractiveInit)?;
+        writeln!(output, "  Sirno Frost: {}", format_init_choice(false, style))
+            .map_err(CommandError::InteractiveInit)?;
     }
 
-    let skills = if request.init_skills { "yes" } else { "no" };
+    let skills = format_init_choice(request.init_skills, style);
     writeln!(output, "  skill wrappers: {skills}").map_err(CommandError::InteractiveInit)?;
-    let claude_skills = if request.init_claude_skills { "yes" } else { "no" };
+    let claude_skills = format_init_choice(request.init_claude_skills, style);
     writeln!(output, "  Claude skill links: {claude_skills}").map_err(CommandError::InteractiveInit)
+}
+
+fn format_init_choice(value: bool, style: OutputStyle) -> String {
+    if value { format_success_text("yes", style) } else { format_muted_text("no", style) }
 }
 
 fn planned_lake_path(
@@ -1079,7 +1125,7 @@ fn run_top_level_init(
         initialized = true;
     }
     if !initialized {
-        println!("nothing initialized");
+        anstream::println!("{}", format_muted_text("nothing initialized", OutputStyle::Styled));
     }
     Ok(ExitCode::SUCCESS)
 }

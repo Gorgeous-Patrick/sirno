@@ -23,8 +23,8 @@ The binary `main.rs` delegates process startup to that module.
 Reusable helpers in `sirno::surface` return typed query, path, tide, and witness data
 before the CLI renders human text or JSON.
 Human CLI output prints records, tables, or diagnostics before command summary lines.
-Terminal human output may color semantic labels such as diagnostic severity, check state,
-tide state, and wrapper status.
+Terminal human output may color semantic labels such as setup choices,
+diagnostic severity, check state, tide state, and wrapper status.
 JSON output remains structured data and carries no terminal styling.
 Commands with no detail may print only their summary.
 MCP tools should call those typed helpers and prefer JSON rendering through the shared serializer.
