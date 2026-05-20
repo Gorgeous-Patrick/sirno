@@ -3,7 +3,8 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
-use comfy_table::{ContentArrangement, Table, presets::UTF8_FULL};
+use anstyle::{AnsiColor, Style};
+use comfy_table::{Cell, Color as TableColor, ContentArrangement, Table, presets::UTF8_FULL};
 use indexmap::IndexMap;
 use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
@@ -26,6 +27,61 @@ pub(crate) fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<(), Command
     println!("{}", format_json(value)?);
     Ok(())
 }
+
+// sirno:witness:interfaces:begin
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum OutputStyle {
+    Plain,
+    Styled,
+    #[cfg(test)]
+    Forced,
+}
+
+impl OutputStyle {
+    fn colors(self) -> bool {
+        self != Self::Plain
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SemanticStyle {
+    Changed,
+    Error,
+    Muted,
+    Success,
+    Warning,
+}
+
+impl SemanticStyle {
+    fn text_style(self) -> Style {
+        let color = match self {
+            | Self::Changed => AnsiColor::Cyan,
+            | Self::Error => AnsiColor::Red,
+            | Self::Muted => AnsiColor::BrightBlack,
+            | Self::Success => AnsiColor::Green,
+            | Self::Warning => AnsiColor::Yellow,
+        };
+        Style::new().fg_color(Some(color.into()))
+    }
+
+    fn table_color(self) -> TableColor {
+        match self {
+            | Self::Changed => TableColor::Cyan,
+            | Self::Error => TableColor::Red,
+            | Self::Muted => TableColor::DarkGrey,
+            | Self::Success => TableColor::Green,
+            | Self::Warning => TableColor::Yellow,
+        }
+    }
+}
+
+pub(crate) fn print_cli_error(error: &CommandError) {
+    anstream::eprintln!(
+        "{} {error}",
+        style_text("sirno:", SemanticStyle::Error, OutputStyle::Styled)
+    );
+}
+// sirno:witness:interfaces:end
 
 pub(crate) fn print_witness_records(records: &[WitnessRecord], full: bool) {
     print!("{}", format_witness_records(records, full));
@@ -106,77 +162,103 @@ pub(crate) fn diagnostics_from_entry_report(
 }
 
 pub(crate) fn print_status_result(result: &StatusResult) {
-    println!("config: {}", result.config_path);
-    println!("lake: {}", result.lake_path);
+    let style = OutputStyle::Styled;
+    anstream::println!("config: {}", result.config_path);
+    anstream::println!("lake: {}", result.lake_path);
     if let Some(frost) = &result.frost_path {
-        println!("frost: {frost}");
-        println!("frost-state: {}", result.frost_state);
+        anstream::println!("frost: {frost}");
+        anstream::println!("frost-state: {}", styled_frost_state(&result.frost_state, style));
     } else {
-        println!("frost: (not configured)");
+        anstream::println!(
+            "frost: {}",
+            style_text("(not configured)", SemanticStyle::Muted, style)
+        );
     }
-    println!("entries: {}", result.entry_count);
-    println!("checks:");
-    println!("  render: {}", result.check_render);
-    println!("structural:");
+    anstream::println!("entries: {}", result.entry_count);
+    anstream::println!("checks:");
+    anstream::println!("  render: {}", result.check_render);
+    anstream::println!("structural:");
     for field in &result.structural_fields {
-        println!("  {}.to: {}", field.field, field.to);
-        println!("  {}.from: {}", field.field, field.from);
-        println!("  {}.clique: {}", field.field, field.clique);
+        anstream::println!("  {}.to: {}", field.field, field.to);
+        anstream::println!("  {}.from: {}", field.field, field.from);
+        anstream::println!("  {}.clique: {}", field.field, field.clique);
     }
     if result.ok {
-        println!("check: ok");
+        anstream::println!("check: {}", style_text("ok", SemanticStyle::Success, style));
     } else {
-        print_diagnostics(&result.check.diagnostics);
-        println!("check: failed");
+        print_diagnostics_with_style(&result.check.diagnostics, style);
+        anstream::println!("check: {}", style_text("failed", SemanticStyle::Error, style));
     }
 }
 
 pub(crate) fn print_lake_check_result(result: &LakeCheckResult) {
-    print!("{}", format_lake_check_result(result));
+    anstream::print!("{}", format_lake_check_result_with_style(result, OutputStyle::Styled));
 }
 
+#[cfg(test)]
 pub(crate) fn format_lake_check_result(result: &LakeCheckResult) -> String {
+    format_lake_check_result_with_style(result, OutputStyle::Plain)
+}
+
+fn format_lake_check_result_with_style(result: &LakeCheckResult, style: OutputStyle) -> String {
     if result.diagnostics.is_empty() {
-        return format!("ok: {}\n", result.root);
+        return format!("{}\n", format_ok_line(&result.root, style));
     }
 
-    let mut output = format_diagnostics(&result.diagnostics);
-    output.push_str(&format!("{}\n", lake_check_summary(result)));
+    let mut output = format_diagnostics_with_style(&result.diagnostics, style);
+    output.push_str(&format!("{}\n", lake_check_summary(result, style)));
     output
 }
 
-fn lake_check_summary(result: &LakeCheckResult) -> String {
+fn lake_check_summary(result: &LakeCheckResult, style: OutputStyle) -> String {
     if result.has_errors {
-        format!("check: failed in {}", result.root)
+        format!("check: {} in {}", style_text("failed", SemanticStyle::Error, style), result.root)
     } else {
-        format!("check: warnings in {}", result.root)
+        format!(
+            "check: {} in {}",
+            style_text("warnings", SemanticStyle::Warning, style),
+            result.root
+        )
     }
 }
 
 pub(crate) fn print_render_result(result: &RenderResult) {
-    print!("{}", format_render_result(result));
+    anstream::print!("{}", format_render_result_with_style(result, OutputStyle::Styled));
 }
 
+#[cfg(test)]
 pub(crate) fn format_render_result(result: &RenderResult) -> String {
+    format_render_result_with_style(result, OutputStyle::Plain)
+}
+
+fn format_render_result_with_style(result: &RenderResult, style: OutputStyle) -> String {
     if result.diagnostics.is_empty() {
         return format!("{}\n", result.message);
     }
 
-    let mut output = format_diagnostics(&result.diagnostics);
+    let mut output = format_diagnostics_with_style(&result.diagnostics, style);
     output.push_str(&result.message);
     output.push('\n');
     output
 }
 
 pub(crate) fn print_config_comment_result(result: &ConfigCommentResult) {
-    print!("{}", format_config_comment_result(result));
+    anstream::print!("{}", format_config_comment_result_with_style(result, OutputStyle::Styled));
 }
 
+#[cfg(test)]
 pub(crate) fn format_config_comment_result(result: &ConfigCommentResult) -> String {
+    format_config_comment_result_with_style(result, OutputStyle::Plain)
+}
+
+fn format_config_comment_result_with_style(
+    result: &ConfigCommentResult, style: OutputStyle,
+) -> String {
     let mut output = String::new();
     if !result.changed {
         for comment in &result.missing_comments {
-            output.push_str("missing: ");
+            output.push_str(&style_text("missing:", SemanticStyle::Warning, style));
+            output.push(' ');
             output.push_str(comment);
             output.push('\n');
         }
@@ -186,22 +268,52 @@ pub(crate) fn format_config_comment_result(result: &ConfigCommentResult) -> Stri
     output
 }
 
-fn print_diagnostics(diagnostics: &[DiagnosticRecord]) {
-    print!("{}", format_diagnostics(diagnostics));
+fn print_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: OutputStyle) {
+    anstream::print!("{}", format_diagnostics_with_style(diagnostics, style));
 }
 
-fn format_diagnostics(diagnostics: &[DiagnosticRecord]) -> String {
+fn format_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: OutputStyle) -> String {
     let mut output = String::new();
     for diagnostic in diagnostics {
+        let severity = styled_diagnostic_severity(&diagnostic.severity, style);
         if let Some(path) = &diagnostic.path {
-            output
-                .push_str(&format!("{}: {}: {}\n", diagnostic.severity, path, diagnostic.message));
+            output.push_str(&format!("{severity}: {path}: {}\n", diagnostic.message));
         } else {
-            output.push_str(&format!("{}: {}\n", diagnostic.severity, diagnostic.message));
+            output.push_str(&format!("{severity}: {}\n", diagnostic.message));
         }
     }
     output
 }
+
+// sirno:witness:interfaces:begin
+fn styled_diagnostic_severity(severity: &str, style: OutputStyle) -> String {
+    match severity {
+        | "error" => style_text(severity, SemanticStyle::Error, style),
+        | "warning" => style_text(severity, SemanticStyle::Warning, style),
+        | _ => severity.to_owned(),
+    }
+}
+
+fn styled_frost_state(value: &str, style: OutputStyle) -> String {
+    if value.starts_with("current ") {
+        style_text(value, SemanticStyle::Success, style)
+    } else if value.starts_with("checked-out ") {
+        style_text(value, SemanticStyle::Warning, style)
+    } else if value == "(unlocked)" {
+        style_text(value, SemanticStyle::Muted, style)
+    } else {
+        value.to_owned()
+    }
+}
+
+fn style_text(value: &str, semantic: SemanticStyle, style: OutputStyle) -> String {
+    if !style.colors() {
+        return value.to_owned();
+    }
+    let text_style = semantic.text_style();
+    format!("{text_style}{value}{text_style:#}")
+}
+// sirno:witness:interfaces:end
 
 pub(crate) fn frost_state_label(lock: Option<&SirnoLock>) -> String {
     let Some(lock) = lock else {
@@ -278,12 +390,23 @@ pub(crate) fn format_path_table(records: &[PathRecord]) -> String {
     format_human_table(headers, rows)
 }
 
+#[cfg(test)]
 pub(crate) fn format_skill_wrapper_table(records: &[SkillWrapperRecord]) -> String {
+    format_skill_wrapper_table_with_style(records, OutputStyle::Plain)
+}
+
+pub(crate) fn format_skill_wrapper_table_for_terminal(records: &[SkillWrapperRecord]) -> String {
+    format_skill_wrapper_table_with_style(records, OutputStyle::Styled)
+}
+
+fn format_skill_wrapper_table_with_style(
+    records: &[SkillWrapperRecord], style: OutputStyle,
+) -> String {
     let headers = ["status", "name", "target"];
     let rows = records
         .iter()
         .map(|record| [record.status.as_str(), record.name.as_str(), record.target_path.as_str()]);
-    format_human_table(headers, rows)
+    format_human_table_with_style(headers, rows, style)
 }
 
 pub(crate) fn query_result_rows(
@@ -347,16 +470,36 @@ fn format_human_table<'a>(
     headers: impl IntoIterator<Item = &'a str>,
     rows: impl IntoIterator<Item = impl IntoIterator<Item = &'a str>>,
 ) -> String {
+    format_human_table_with_style(headers, rows, OutputStyle::Plain)
+}
+
+fn format_human_table_with_style<'a>(
+    headers: impl IntoIterator<Item = &'a str>,
+    rows: impl IntoIterator<Item = impl IntoIterator<Item = &'a str>>, style: OutputStyle,
+) -> String {
     let headers = headers.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let rows = rows
         .into_iter()
         .map(|row| row.into_iter().map(str::to_owned).collect::<Vec<_>>())
         .collect::<Vec<_>>();
-    format_human_table_with_width(headers, rows, None)
+    format_human_table_with_width_and_style(headers, rows, None, style)
 }
 
+#[cfg(test)]
 pub(crate) fn format_human_table_with_width(
     headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
+) -> String {
+    format_human_table_with_width_and_style(headers, rows, width, OutputStyle::Plain)
+}
+
+pub(crate) fn format_human_table_semantic_with_width(
+    headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>, style: OutputStyle,
+) -> String {
+    format_human_table_with_width_and_style(headers, rows, width, style)
+}
+
+fn format_human_table_with_width_and_style(
+    headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>, style: OutputStyle,
 ) -> String {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
@@ -364,13 +507,56 @@ pub(crate) fn format_human_table_with_width(
     if let Some(width) = width {
         table.set_width(width);
     }
+    #[cfg(test)]
+    if style == OutputStyle::Forced {
+        table.enforce_styling();
+    }
     let (headers, rows) = elide_human_table_columns(headers, rows, table.width());
+    let styled_rows = rows
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .enumerate()
+                .map(|(index, cell)| {
+                    let header = headers.get(index).map(String::as_str).unwrap_or_default();
+                    semantic_cell(header, cell, style)
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
     table.set_header(headers);
-    table.add_rows(rows);
+    table.add_rows(styled_rows);
     let mut output = table.to_string();
     output.push('\n');
     output
 }
+
+fn semantic_cell(header: &str, value: String, style: OutputStyle) -> Cell {
+    let cell = Cell::new(value.clone());
+    if let Some(semantic) = semantic_table_cell_style(header, &value).filter(|_| style.colors()) {
+        cell.fg(semantic.table_color())
+    } else {
+        cell
+    }
+}
+
+// sirno:witness:interfaces:begin
+fn semantic_table_cell_style(header: &str, value: &str) -> Option<SemanticStyle> {
+    match header {
+        | "state" | "status" => semantic_status_style(value),
+        | _ => None,
+    }
+}
+
+fn semantic_status_style(value: &str) -> Option<SemanticStyle> {
+    match value {
+        | "ok" | "resolved" | "unchanged" => Some(SemanticStyle::Success),
+        | "drifted" | "missing" | "open" => Some(SemanticStyle::Warning),
+        | "linked" | "wrote" => Some(SemanticStyle::Changed),
+        | _ => None,
+    }
+}
+// sirno:witness:interfaces:end
 
 fn elide_human_table_columns(
     headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
@@ -412,19 +598,21 @@ fn min_table_width(headers: &[String]) -> usize {
 
 pub(crate) fn print_entry_directory_report(report: &EntryDirectoryReport) {
     if report.is_clean() {
-        println!("ok: {}", report.root().display());
+        print_ok_path(report.root());
         return;
     }
 
-    print!("{}", format_entry_directory_report(report));
+    anstream::print!("{}", format_entry_directory_report_with_style(report, OutputStyle::Styled));
 }
 
-fn format_entry_directory_report(report: &EntryDirectoryReport) -> String {
+fn format_entry_directory_report_with_style(
+    report: &EntryDirectoryReport, style: OutputStyle,
+) -> String {
     let mut output = String::new();
     for diagnostic in report.file_diagnostics() {
         output.push_str(&format!(
             "{}: {}: {}\n",
-            diagnostic.severity.label(),
+            styled_diagnostic_severity(diagnostic.severity.label(), style),
             diagnostic.path.display(),
             diagnostic.message
         ));
@@ -434,26 +622,57 @@ fn format_entry_directory_report(report: &EntryDirectoryReport) -> String {
         if let Some(path) = diagnostic.entry.as_ref().and_then(|entry| report.entry_path(entry)) {
             output.push_str(&format!(
                 "{}: {}: {}\n",
-                diagnostic.severity.label(),
+                styled_diagnostic_severity(diagnostic.severity.label(), style),
                 path.display(),
                 diagnostic.message()
             ));
         } else {
             output.push_str(&format!(
                 "{}: {}\n",
-                diagnostic.severity.label(),
+                styled_diagnostic_severity(diagnostic.severity.label(), style),
                 diagnostic.message()
             ));
         }
     }
-    output.push_str(&format!("{}\n", entry_directory_report_summary(report)));
+    output.push_str(&format!("{}\n", entry_directory_report_summary(report, style)));
     output
 }
 
-fn entry_directory_report_summary(report: &EntryDirectoryReport) -> String {
+fn entry_directory_report_summary(report: &EntryDirectoryReport, style: OutputStyle) -> String {
     if report.has_errors() {
-        format!("check: failed in {}", report.root().display())
+        format!(
+            "check: {} in {}",
+            style_text("failed", SemanticStyle::Error, style),
+            report.root().display()
+        )
     } else {
-        format!("check: warnings in {}", report.root().display())
+        format!(
+            "check: {} in {}",
+            style_text("warnings", SemanticStyle::Warning, style),
+            report.root().display()
+        )
     }
+}
+
+pub(crate) fn print_ok_path(path: &Path) {
+    anstream::println!("{}", format_ok_line(&path.display().to_string(), OutputStyle::Styled));
+}
+
+pub(crate) fn print_check_diagnostic(severity: &str, message: &str) {
+    let style = OutputStyle::Styled;
+    anstream::println!("{}: {message}", styled_diagnostic_severity(severity, style));
+}
+
+pub(crate) fn print_check_summary(has_errors: bool, root: &Path) {
+    let style = OutputStyle::Styled;
+    let label = if has_errors {
+        style_text("failed", SemanticStyle::Error, style)
+    } else {
+        style_text("warnings", SemanticStyle::Warning, style)
+    };
+    anstream::println!("check: {label} in {}", root.display());
+}
+
+fn format_ok_line(location: &str, style: OutputStyle) -> String {
+    format!("{}: {location}", style_text("ok", SemanticStyle::Success, style))
 }

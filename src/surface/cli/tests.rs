@@ -23,17 +23,18 @@ use crate::{
 use super::{
     ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
     EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand,
-    LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn, QueryColumns,
-    QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState, StructuralFilter,
-    StructuralPredicate, StructuralStateFilter, SurfaceContext, TideCommand, TideItemSelector,
-    TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
-    TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand, UnresolveArgs, UtilCommand,
-    entry_path_records, entry_query_from_filters, format_config_comment_result,
-    format_gen_link_report, format_human_table_with_width, format_json, format_lake_check_result,
-    format_path_table, format_query_json, format_query_table, format_render_result,
-    format_skill_wrapper_table, format_tide_review_entries, format_tide_review_waves,
-    format_tide_statuses, format_tide_statuses_by_entry, format_witness_record,
-    format_witness_records, rg_args_include_preprocessor, run_prompted_top_level_init,
+    LakeInitRequest, LakeMoveArgs, MoveCommand, OutputStyle, PathOutputFormat, QueryColumn,
+    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
+    StructuralFilter, StructuralPredicate, StructuralStateFilter, SurfaceContext, TideCommand,
+    TideItemSelector, TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode,
+    TopLevelEntryCommand, TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand,
+    UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
+    format_config_comment_result, format_gen_link_report, format_human_table_semantic_with_width,
+    format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
+    format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
+    format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
+    format_tide_statuses_by_entry, format_witness_record, format_witness_records,
+    rg_args_include_preprocessor, run_prompted_top_level_init,
 };
 
 fn assert_before(source: &str, before: &str, after: &str) {
@@ -2146,6 +2147,24 @@ fn human_table_elides_columns_when_width_is_too_small() {
 └────┴──────┴─────┘
 "
     );
+}
+
+#[test]
+fn semantic_table_colorizes_status_cells_when_forced() {
+    let rows = vec![
+        vec!["ok".to_owned(), "sirno-editor".to_owned()],
+        vec!["missing".to_owned(), "sirno-witness".to_owned()],
+    ];
+    let table = format_human_table_semantic_with_width(
+        vec!["status".to_owned(), "name".to_owned()],
+        rows,
+        None,
+        OutputStyle::Forced,
+    );
+
+    assert!(table.contains("\u{1b}["));
+    assert!(table.contains("ok"));
+    assert!(table.contains("missing"));
 }
 
 fn tide_status_fixture(

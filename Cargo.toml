@@ -6,6 +6,8 @@ description = "Sirno gives project design a semantic intermediate representation
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+anstream = "1.0.0"
+anstyle = "1.0.14"
 clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 comfy-table = { version = "7.2.2", default-features = false, features = ["tty"] }

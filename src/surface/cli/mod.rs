@@ -27,9 +27,11 @@ use crate::surface::dto::{
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
-    format_human_table_with_width, format_path_table, format_skill_wrapper_table,
-    print_config_comment_result, print_entry_directory_report, print_json, print_lake_check_result,
-    print_query_results, print_render_result, print_status_result, print_witness_records,
+    OutputStyle, format_human_table_semantic_with_width, format_path_table,
+    format_skill_wrapper_table_for_terminal, print_check_diagnostic, print_check_summary,
+    print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
+    print_lake_check_result, print_ok_path, print_query_results, print_render_result,
+    print_status_result, print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -47,8 +49,9 @@ use crate::surface::dto::{QueryColumn, StructuralFieldState};
 use crate::surface::error::OpenTideTutorial;
 #[cfg(test)]
 use crate::surface::output::{
-    format_config_comment_result, format_gen_link_report, format_json, format_lake_check_result,
-    format_query_json, format_query_table, format_render_result, format_witness_record,
+    format_config_comment_result, format_gen_link_report, format_human_table_with_width,
+    format_json, format_lake_check_result, format_query_json, format_query_table,
+    format_render_result, format_skill_wrapper_table, format_witness_record,
     format_witness_records,
 };
 #[cfg(test)]
@@ -727,7 +730,7 @@ pub fn run_cli_from_env() -> ExitCode {
         return match run_rg_preprocessor_from_env() {
             | Ok(code) => code,
             | Err(error) => {
-                eprintln!("sirno: {error}");
+                print_cli_error(&error);
                 ExitCode::FAILURE
             }
         };
@@ -736,7 +739,7 @@ pub fn run_cli_from_env() -> ExitCode {
     match Cli::parse().run() {
         | Ok(code) => code,
         | Err(error) => {
-            eprintln!("sirno: {error}");
+            print_cli_error(&error);
             ExitCode::FAILURE
         }
     }
@@ -1252,18 +1255,15 @@ impl TopLevelLakeCommand {
                 let frost = SirnoFrost::open(frost_path)?;
                 let report = frost.check_current(mode.into())?;
                 if report.is_clean() {
-                    println!("ok: {}", frost.root().display());
+                    print_ok_path(frost.root());
                     return Ok(ExitCode::SUCCESS);
                 }
 
                 for diagnostic in report.diagnostics() {
-                    println!("{}: {}", diagnostic.severity.label(), diagnostic.message());
+                    let message = diagnostic.message();
+                    print_check_diagnostic(diagnostic.severity.label(), &message);
                 }
-                if report.has_errors() {
-                    println!("check: failed in {}", frost.root().display());
-                } else {
-                    println!("check: warnings in {}", frost.root().display());
-                }
+                print_check_summary(report.has_errors(), frost.root());
 
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
@@ -1472,7 +1472,10 @@ fn print_tide_statuses(
             print_json(statuses)?;
         }
         | TideOutputFormat::Human => {
-            print!("{}", format_tide_statuses_grouped(statuses, grouping));
+            anstream::print!(
+                "{}",
+                format_tide_statuses_grouped_with_style(statuses, grouping, OutputStyle::Styled)
+            );
         }
     }
     Ok(())
@@ -1571,14 +1574,21 @@ fn format_tide_review_entries(statuses: &[TideStatus]) -> String {
     output
 }
 
-fn format_tide_statuses_grouped(statuses: &[TideStatus], grouping: TideStatusGrouping) -> String {
+fn format_tide_statuses_grouped_with_style(
+    statuses: &[TideStatus], grouping: TideStatusGrouping, style: OutputStyle,
+) -> String {
     match grouping {
-        | TideStatusGrouping::Wave => format_tide_statuses(statuses),
-        | TideStatusGrouping::Entry => format_tide_statuses_by_entry(statuses),
+        | TideStatusGrouping::Wave => format_tide_statuses_with_style(statuses, style),
+        | TideStatusGrouping::Entry => format_tide_statuses_by_entry_with_style(statuses, style),
     }
 }
 
+#[cfg(test)]
 fn format_tide_statuses(statuses: &[TideStatus]) -> String {
+    format_tide_statuses_with_style(statuses, OutputStyle::Plain)
+}
+
+fn format_tide_statuses_with_style(statuses: &[TideStatus], style: OutputStyle) -> String {
     let waves = tide_status_waves(statuses);
     if waves.is_empty() {
         return "tide: clear\n".to_owned();
@@ -1606,7 +1616,7 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
             })
         })
         .collect::<Vec<_>>();
-    let mut output = format_tide_grouped_table(
+    let mut output = format_tide_grouped_table_with_style(
         vec![
             "wave".to_owned(),
             "entry".to_owned(),
@@ -1616,6 +1626,7 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
             "sources".to_owned(),
         ],
         rows,
+        style,
     );
     output.push('\n');
     output.push_str(&tide_summary_sentence(
@@ -1629,7 +1640,12 @@ fn format_tide_statuses(statuses: &[TideStatus]) -> String {
     output
 }
 
+#[cfg(test)]
 fn format_tide_statuses_by_entry(statuses: &[TideStatus]) -> String {
+    format_tide_statuses_by_entry_with_style(statuses, OutputStyle::Plain)
+}
+
+fn format_tide_statuses_by_entry_with_style(statuses: &[TideStatus], style: OutputStyle) -> String {
     let entries = tide_status_entry_groups(statuses);
     if entries.is_empty() {
         return "tide: clear\n".to_owned();
@@ -1658,7 +1674,7 @@ fn format_tide_statuses_by_entry(statuses: &[TideStatus]) -> String {
             })
         })
         .collect::<Vec<_>>();
-    let mut output = format_tide_grouped_table(
+    let mut output = format_tide_grouped_table_with_style(
         vec![
             "entry".to_owned(),
             "reason".to_owned(),
@@ -1668,6 +1684,7 @@ fn format_tide_statuses_by_entry(statuses: &[TideStatus]) -> String {
             "sources".to_owned(),
         ],
         rows,
+        style,
     );
     output.push('\n');
     output.push_str(&tide_summary_sentence(
@@ -1708,6 +1725,12 @@ struct TideGroupedTableRow {
 }
 
 fn format_tide_grouped_table(headers: Vec<String>, rows: Vec<TideGroupedTableRow>) -> String {
+    format_tide_grouped_table_with_style(headers, rows, OutputStyle::Plain)
+}
+
+fn format_tide_grouped_table_with_style(
+    headers: Vec<String>, rows: Vec<TideGroupedTableRow>, style: OutputStyle,
+) -> String {
     let group_start_rows = rows
         .iter()
         .enumerate()
@@ -1715,7 +1738,7 @@ fn format_tide_grouped_table(headers: Vec<String>, rows: Vec<TideGroupedTableRow
         .filter(|index| *index > 0)
         .collect::<Vec<_>>();
     let rows = rows.into_iter().map(|row| row.cells).collect::<Vec<_>>();
-    let table = format_human_table_with_width(headers, rows, None);
+    let table = format_human_table_semantic_with_width(headers, rows, None, style);
     strengthen_tide_group_separators(&table, &group_start_rows)
 }
 
@@ -1991,8 +2014,8 @@ fn run_skill_wrappers_init(config_path: &Path, claude_skills: bool) -> Result<()
 }
 
 fn print_skill_wrapper_result(result: SkillWrapperResult) -> ExitCode {
-    print!("{}", format_skill_wrapper_table(&result.records));
-    println!("{}", result.message);
+    anstream::print!("{}", format_skill_wrapper_table_for_terminal(&result.records));
+    anstream::println!("{}", result.message);
     if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE }
 }
 
