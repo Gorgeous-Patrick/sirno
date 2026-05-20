@@ -160,7 +160,7 @@ sirno reset                                  # clear all tide resolutions
 Explore an existing lake; this repository keeps its current design source in `sirno-docs/`:
 
 ```sh
-sirno status                                 # current project and frost state
+sirno status                                 # project, tide, and commit readiness
 sirno check --mode review                    # review boundary; dangling refs are errors
 sirno query --columns id,desc                # list entry ids and desc as a table
 sirno query --has category=meta              # filter by structural field target

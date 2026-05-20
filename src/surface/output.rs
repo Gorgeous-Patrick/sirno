@@ -11,12 +11,11 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
-    QueryOutputFormat, QueryResults, RenderResult, SkillWrapperRecord, StatusResult,
+    QueryOutputFormat, QueryResults, RenderResult, SkillWrapperRecord, StatusCommitBlocker,
+    StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
 };
 use crate::surface::error::CommandError;
-use crate::{
-    Entry, EntryDirectoryError, EntryDirectoryReport, FrostLockStatus, SirnoLock, WitnessRecord,
-};
+use crate::{Entry, EntryDirectoryError, EntryDirectoryReport, WitnessRecord};
 
 /// Render any serializable value as pretty JSON.
 pub fn format_json<T: Serialize + ?Sized>(value: &T) -> Result<String, CommandError> {
@@ -174,33 +173,128 @@ pub(crate) fn diagnostics_from_entry_report(
 }
 
 pub(crate) fn print_status_result(result: &StatusResult) {
-    let style = OutputStyle::Styled;
-    anstream::println!("config: {}", result.config_path);
-    anstream::println!("lake: {}", result.lake_path);
-    if let Some(frost) = &result.frost_path {
-        anstream::println!("frost: {frost}");
-        anstream::println!("frost-state: {}", styled_frost_state(&result.frost_state, style));
+    anstream::print!("{}", format_status_result_with_style(result, OutputStyle::Styled));
+}
+
+#[cfg(test)]
+pub(crate) fn format_status_result(result: &StatusResult) -> String {
+    format_status_result_with_style(result, OutputStyle::Plain)
+}
+
+fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) -> String {
+    let mut output = String::new();
+    output.push_str(&format!("config: {}\n", result.config_path));
+    output.push_str(&format!("lake: {} ({} entries)\n", result.lake_path, result.entry_count));
+    if let Some(frost) = &result.frost {
+        output.push_str(&format!("frost: {}\n", status_frost_label(frost, style)));
     } else {
-        anstream::println!(
-            "frost: {}",
+        output.push_str(&format!(
+            "frost: {}\n",
             style_text("(not configured)", SemanticStyle::Muted, style)
-        );
+        ));
     }
-    anstream::println!("entries: {}", result.entry_count);
-    anstream::println!("checks:");
-    anstream::println!("  render: {}", result.check_render);
-    anstream::println!("structural:");
-    for field in &result.structural_fields {
-        anstream::println!("  {}.to: {}", field.field, field.to);
-        anstream::println!("  {}.from: {}", field.field, field.from);
-        anstream::println!("  {}.clique: {}", field.field, field.clique);
+    output.push_str(&format!(
+        "structure: {} configured {}\n",
+        result.structural_fields.len(),
+        plural(result.structural_fields.len(), "field", "fields")
+    ));
+    let render =
+        if result.check_policy.render { "render links checked" } else { "render links skipped" };
+    if !result.check.ok {
+        output.push_str(&format_diagnostics_with_style(&result.check.diagnostics, style));
     }
-    if result.ok {
-        anstream::println!("check: {}", style_text("ok", SemanticStyle::Success, style));
+    if result.check.ok {
+        output.push_str(&format!(
+            "lake check: {} (review; {render})\n",
+            style_text("ok", SemanticStyle::Success, style)
+        ));
     } else {
-        print_diagnostics_with_style(&result.check.diagnostics, style);
-        anstream::println!("check: {}", style_text("failed", SemanticStyle::Error, style));
+        output.push_str(&format!(
+            "lake check: {} (review; {render})\n",
+            style_text("failed", SemanticStyle::Error, style)
+        ));
     }
+    if let Some(tide) = &result.tide {
+        if tide.clear {
+            output.push_str(&format!(
+                "tide: {}\n",
+                style_text("clear", SemanticStyle::Success, style)
+            ));
+        } else {
+            output.push_str(&format!(
+                "tide: {} open {} in {} {}, {} review {}\n",
+                tide.open_workitems,
+                plural(tide.open_workitems, "workitem", "workitems"),
+                tide.open_waves,
+                plural(tide.open_waves, "wave", "waves"),
+                tide.review_entries,
+                plural(tide.review_entries, "entry", "entries")
+            ));
+        }
+    }
+    output.push_str(&format!("commit: {}\n", status_commit_label(result, style)));
+    output
+}
+
+fn status_frost_label(frost: &StatusFrost, style: OutputStyle) -> String {
+    match frost.state {
+        | StatusFrostState::Unlocked => {
+            format!("{} ({})", frost.path, style_text("unlocked", SemanticStyle::Muted, style))
+        }
+        | StatusFrostState::Current => {
+            let version = frost.version.map(|version| format!("v{version}")).unwrap_or_default();
+            format!(
+                "{} ({})",
+                frost.path,
+                style_text(&format!("current {version}"), SemanticStyle::Success, style)
+            )
+        }
+        | StatusFrostState::CheckedOut => {
+            let version = frost.version.map(|version| format!("v{version}")).unwrap_or_default();
+            let mutable =
+                if frost.mutable.unwrap_or(false) { ", unsafe mutable" } else { ", immutable" };
+            format!(
+                "{} ({})",
+                frost.path,
+                style_text(
+                    &format!("checked-out {version}{mutable}"),
+                    SemanticStyle::Warning,
+                    style,
+                )
+            )
+        }
+    }
+}
+
+fn status_commit_label(result: &StatusResult, style: OutputStyle) -> String {
+    match result.commit.state {
+        | StatusCommitState::Ready => style_text("ready", SemanticStyle::Success, style),
+        | StatusCommitState::Unavailable => {
+            style_text("unavailable; frost not configured", SemanticStyle::Muted, style)
+        }
+        | StatusCommitState::Blocked => {
+            let detail = result
+                .commit
+                .blockers
+                .iter()
+                .map(commit_blocker_label)
+                .collect::<Vec<_>>()
+                .join("; ");
+            style_text(&format!("blocked; {detail}"), SemanticStyle::Warning, style)
+        }
+    }
+}
+
+fn commit_blocker_label(blocker: &StatusCommitBlocker) -> &'static str {
+    match blocker {
+        | StatusCommitBlocker::LakeCheck => "fix lake check",
+        | StatusCommitBlocker::Tide => "run `sirno tide status`",
+        | StatusCommitBlocker::ImmutableCheckout => "checkout is immutable",
+    }
+}
+
+fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
+    if count == 1 { singular } else { plural }
 }
 
 pub(crate) fn print_lake_check_result(result: &LakeCheckResult) {
@@ -280,10 +374,6 @@ fn format_config_comment_result_with_style(
     output
 }
 
-fn print_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: OutputStyle) {
-    anstream::print!("{}", format_diagnostics_with_style(diagnostics, style));
-}
-
 fn format_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: OutputStyle) -> String {
     let mut output = String::new();
     for diagnostic in diagnostics {
@@ -306,18 +396,6 @@ fn styled_diagnostic_severity(severity: &str, style: OutputStyle) -> String {
     }
 }
 
-fn styled_frost_state(value: &str, style: OutputStyle) -> String {
-    if value.starts_with("current ") {
-        style_text(value, SemanticStyle::Success, style)
-    } else if value.starts_with("checked-out ") {
-        style_text(value, SemanticStyle::Warning, style)
-    } else if value == "(unlocked)" {
-        style_text(value, SemanticStyle::Muted, style)
-    } else {
-        value.to_owned()
-    }
-}
-
 fn style_text(value: &str, semantic: SemanticStyle, style: OutputStyle) -> String {
     if !style.colors() {
         return value.to_owned();
@@ -326,32 +404,6 @@ fn style_text(value: &str, semantic: SemanticStyle, style: OutputStyle) -> Strin
     format!("{text_style}{value}{text_style:#}")
 }
 // sirno:witness:interfaces:end
-
-pub(crate) fn frost_state_label(lock: Option<&SirnoLock>) -> String {
-    let Some(lock) = lock else {
-        return "(unlocked)".to_owned();
-    };
-    match lock.frost.status {
-        | FrostLockStatus::Current => {
-            format!(
-                "current version {} (generation {}, mutable)",
-                lock.frost.version, lock.frost.generation
-            )
-        }
-        | FrostLockStatus::CheckedOut if lock.frost.mutable => {
-            format!(
-                "checked-out version {} (generation {}, unsafe mutable)",
-                lock.frost.version, lock.frost.generation
-            )
-        }
-        | FrostLockStatus::CheckedOut => {
-            format!(
-                "checked-out version {} (generation {}, immutable)",
-                lock.frost.version, lock.frost.generation
-            )
-        }
-    }
-}
 
 pub(crate) fn format_gen_link_report(
     root: &Path, entry_count: usize, changed_paths: &[PathBuf],

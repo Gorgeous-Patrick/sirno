@@ -237,7 +237,7 @@ sirno_entry_rg
 sirno_lake_check mode=edit
 sirno_lake_render
 sirno_lake_check mode=review
-sirno_lake_status
+sirno_status
 ```
 
 If review-mode checks fail because local editor/tool directories are inside the lake,

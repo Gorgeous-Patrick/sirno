@@ -372,9 +372,9 @@ impl SirnoMcpServer {
     }
 
     /// Show the current Sirno project status.
-    #[tool(name = "sirno_lake_status")]
-    fn lake_status(&self) -> McpToolResult {
-        result(self.context.lake_status())
+    #[tool(name = "sirno_status")]
+    fn status(&self) -> McpToolResult {
+        result(self.context.status())
     }
 
     /// Configure frost.
@@ -906,7 +906,7 @@ mod tests {
         "sirno_lake_move",
         "sirno_lake_render",
         "sirno_lake_render_delete",
-        "sirno_lake_status",
+        "sirno_status",
         "sirno_tide_reset",
         "sirno_tide_resolve",
         "sirno_tide_status",
@@ -1187,7 +1187,7 @@ Changed body.
     }
 
     #[tokio::test]
-    async fn stdio_smoke_lists_tools_and_calls_lake_status() {
+    async fn stdio_smoke_lists_tools_and_calls_status() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_project(temp.path());
         let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
@@ -1200,7 +1200,7 @@ Changed body.
 
         let tools = client.peer().list_tools(None).await.unwrap();
         assert_eq!(tools.tools.len(), EXPECTED_TOOLS.len());
-        assert!(tools.tools.iter().any(|tool| tool.name == "sirno_lake_status"));
+        assert!(tools.tools.iter().any(|tool| tool.name == "sirno_status"));
 
         let resources = client.peer().list_resources(None).await.unwrap();
         assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
@@ -1281,14 +1281,18 @@ Changed body.
         let result = client
             .peer()
             .call_tool(
-                CallToolRequestParams::new("sirno_lake_status")
+                CallToolRequestParams::new("sirno_status")
                     .with_arguments(json!({}).as_object().unwrap().clone()),
             )
             .await
             .unwrap();
 
-        assert_eq!(result.structured_content.as_ref().unwrap()["ok"], true);
-        assert_eq!(result.structured_content.as_ref().unwrap()["entry_count"], 1);
+        let status = result.structured_content.as_ref().unwrap();
+        assert_eq!(status["ok"], true);
+        assert_eq!(status["entry_count"], 1);
+        assert_eq!(status["check_policy"]["mode"], "review");
+        assert_eq!(status["commit"]["state"], "unavailable");
+        assert!(status.get("frost").is_none());
 
         let cwd = client
             .peer()

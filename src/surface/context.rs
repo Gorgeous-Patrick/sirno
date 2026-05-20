@@ -15,15 +15,15 @@ use crate::surface::dto::{
     EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
     FrostCommitResult, FrostInitResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
     MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult,
-    RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusResult,
-    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
-    WitnessRecordResult, WitnessResult,
+    RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy, StatusCommit,
+    StatusCommitBlocker, StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
+    StatusTide, StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter,
+    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
+    TideSelectionRequest, TideStatusMode, TideStatusResult, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
-    diagnostics_from_entry_report, display_path, display_paths, frost_state_label, output_path,
-    query_result_rows,
+    diagnostics_from_entry_report, display_path, display_paths, output_path, query_result_rows,
 };
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
@@ -784,7 +784,7 @@ impl SurfaceContext {
     }
 
     /// Show the current Sirno project status.
-    pub fn lake_status(&self) -> Result<StatusResult, CommandError> {
+    pub fn status(&self) -> Result<StatusResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let frost = config.resolve_frost(&self.config_path);
         let lock_path = SirnoLock::path_for_config(&self.config_path);
@@ -793,25 +793,65 @@ impl SurfaceContext {
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report =
             EntryDirectory::new(&lake).check_with_settings(CheckMode::Review, &settings)?;
+        let check = LakeCheckResult::from_report(&report);
+        let mut blockers = Vec::new();
+        if check.has_errors {
+            blockers.push(StatusCommitBlocker::LakeCheck);
+        }
+        if lock.as_ref().is_some_and(|lock| {
+            lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout()
+        }) {
+            blockers.push(StatusCommitBlocker::ImmutableCheckout);
+        }
+        let tide = if frost.is_some() && !check.has_errors {
+            let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+            let lock = tide_context.load_lock_or_current()?;
+            let tide = tide_context.tide(&lock)?;
+            let status = StatusTide::from_tide(&tide);
+            if !status.clear {
+                blockers.push(StatusCommitBlocker::Tide);
+            }
+            Some(status)
+        } else {
+            None
+        };
+        let commit = if frost.is_none() {
+            StatusCommit {
+                ready: false,
+                state: StatusCommitState::Unavailable,
+                blockers: Vec::new(),
+            }
+        } else if blockers.is_empty() {
+            StatusCommit { ready: true, state: StatusCommitState::Ready, blockers }
+        } else {
+            StatusCommit { ready: false, state: StatusCommitState::Blocked, blockers }
+        };
+        let ok = check.ok && !matches!(commit.state, StatusCommitState::Blocked);
         Ok(StatusResult {
-            ok: !report.has_errors(),
+            ok,
             config_path: display_path(&self.config_path),
             lake_path: display_path(report.root()),
-            frost_path: frost.as_ref().map(|path| display_path(path)),
-            frost_state: frost_state_label(lock.as_ref()),
             entry_count: report.entries().len(),
-            check_render: config.check.render_enabled(),
+            frost: frost
+                .as_ref()
+                .map(|path| status_frost_from_lock(display_path(path), lock.as_ref())),
+            check_policy: StatusCheckPolicy {
+                mode: CheckMode::Review,
+                render: config.check.render_enabled(),
+            },
             structural_fields: config
                 .structural
                 .fields()
                 .map(|(field, settings)| StructuralFieldStatus {
                     field: field.to_owned(),
-                    to: settings.to.to_string(),
-                    from: settings.from.to_string(),
-                    clique: settings.clique.to_string(),
+                    to: StructuralEdgeStatus::from_settings(&settings.to),
+                    from: StructuralEdgeStatus::from_settings(&settings.from),
+                    clique: StructuralEdgeStatus::from_settings(&settings.clique),
                 })
                 .collect(),
-            check: LakeCheckResult::from_report(&report),
+            tide,
+            commit,
+            check,
         })
     }
 
@@ -1551,6 +1591,32 @@ fn entry_directory_check_settings(
         structural: config.structural.clone(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
+    }
+}
+
+fn status_frost_from_lock(path: String, lock: Option<&SirnoLock>) -> StatusFrost {
+    let Some(lock) = lock else {
+        return StatusFrost {
+            path,
+            state: StatusFrostState::Unlocked,
+            version: None,
+            generation: None,
+            mutable: None,
+        };
+    };
+    let state = if lock.frost.is_checked_out() {
+        StatusFrostState::CheckedOut
+    } else {
+        StatusFrostState::Current
+    };
+    let mutable =
+        if lock.frost.is_checked_out() { lock.frost.is_unsafe_mutable_checkout() } else { true };
+    StatusFrost {
+        path,
+        state,
+        version: Some(lock.frost.version),
+        generation: Some(lock.frost.generation),
+        mutable: Some(mutable),
     }
 }
 

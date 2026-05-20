@@ -7,6 +7,7 @@ use clap::{CommandFactory, Parser};
 
 use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, RenderResult, SkillWrapperRecord,
+    StatusCommitBlocker, StatusCommitState,
 };
 
 use super::OpenTideTutorial;
@@ -32,9 +33,9 @@ use super::{
     format_config_comment_result, format_gen_link_report, format_human_table_semantic_with_width,
     format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
     format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
-    format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
-    format_tide_statuses_by_entry, format_witness_record, format_witness_records,
-    rg_args_include_preprocessor, run_prompted_top_level_init,
+    format_status_result, format_tide_review_entries, format_tide_review_waves,
+    format_tide_statuses, format_tide_statuses_by_entry, format_witness_record,
+    format_witness_records, rg_args_include_preprocessor, run_prompted_top_level_init,
     run_prompted_top_level_init_with_style,
 };
 
@@ -468,7 +469,7 @@ fn short_config_matches_global_config() {
     let cli = Cli::parse_from(["sirno", "-C", "Sirno.alt.toml", "status"]);
 
     assert_eq!(cli.config, Some(PathBuf::from("Sirno.alt.toml")));
-    assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
+    assert!(matches!(cli.command, Command::Status));
 }
 
 #[test]
@@ -476,7 +477,7 @@ fn short_lake_path_matches_global_lake_path() {
     let cli = Cli::parse_from(["sirno", "-L", "scratch-docs", "status"]);
 
     assert_eq!(cli.lake_path.as_deref(), Some(Path::new("scratch-docs")));
-    assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
+    assert!(matches!(cli.command, Command::Status));
 }
 
 #[test]
@@ -1041,6 +1042,140 @@ Changed body.
     let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
     assert!(lock.tide.resolved.is_empty());
     assert_eq!(lock.frost.version, 2);
+}
+
+#[test]
+fn status_summarizes_tide_and_commit_readiness() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    let config = SirnoConfig {
+        structural: StructuralSettings::from_fields([(
+            "belongs",
+            StructuralFieldSettings::new(
+                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                StructuralEdgeSettings::default(),
+                StructuralEdgeSettings::default(),
+            ),
+        )]),
+        ..SirnoConfig::new("docs").with_frost("sirno-frost")
+    };
+    config.write_new(&config_path).unwrap();
+    fs::create_dir(&docs).unwrap();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("beta.md"),
+        "\
+---
+name: Beta
+desc: Beta entry.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("belongs.md"),
+        "\
+---
+name: Belongs
+desc: A structural field.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "frost",
+        "commit",
+        "--unsafe-resolve-all",
+    ])
+    .run()
+    .unwrap();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+belongs:
+  - beta
+---
+
+Changed body.
+",
+    )
+    .unwrap();
+
+    let status = SurfaceContext::new(config_path).status().unwrap();
+    let tide = status.tide.as_ref().unwrap();
+    let frost = status.frost.as_ref().unwrap();
+    let output = format_status_result(&status);
+
+    assert!(!status.ok);
+    assert!(status.check.ok);
+    assert_eq!(frost.version, Some(1));
+    assert_eq!(frost.mutable, Some(true));
+    assert!(status.structural_fields[0].to.ripple_lake);
+    assert_eq!(tide.open_workitems, 1);
+    assert_eq!(tide.open_waves, 1);
+    assert_eq!(tide.review_entries, 1);
+    assert_eq!(status.commit.state, StatusCommitState::Blocked);
+    assert_eq!(status.commit.blockers, vec![StatusCommitBlocker::Tide]);
+    assert!(output.contains("(3 entries)"));
+    assert!(output.contains("structure: 1 configured field"));
+    assert!(output.contains("lake check: ok (review; render links checked)"));
+    assert!(output.contains("tide: 1 open workitem in 1 wave, 1 review entry"));
+    assert!(output.contains("commit: blocked; run `sirno tide status`"));
+}
+
+#[test]
+fn status_without_frost_keeps_commit_unavailable() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    fs::create_dir(&docs).unwrap();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    let status = SurfaceContext::new(config_path).status().unwrap();
+    let output = format_status_result(&status);
+
+    assert!(status.ok);
+    assert!(status.frost.is_none());
+    assert!(status.tide.is_none());
+    assert_eq!(status.commit.state, StatusCommitState::Unavailable);
+    assert!(output.contains("frost: (not configured)"));
+    assert!(output.contains("commit: unavailable; frost not configured"));
 }
 
 #[test]
@@ -3295,7 +3430,7 @@ fn witness_accepts_entry_id() {
 fn status_accepts_short_alias() {
     let cli = Cli::parse_from(["sirno", "st"]);
 
-    assert!(matches!(cli.command, Command::TopLevelLake(TopLevelLakeCommand::Status)));
+    assert!(matches!(cli.command, Command::Status));
 }
 
 #[test]
@@ -3314,13 +3449,12 @@ fn witness_accepts_short_aliases() {
 }
 
 #[test]
-fn lake_subcommand_accepts_status_alias() {
-    let status = Cli::parse_from(["sirno", "lake", "st"]);
+fn lake_subcommand_rejects_status_alias() {
+    let error = Cli::try_parse_from(["sirno", "lake", "status"]).unwrap_err();
+    assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
 
-    assert!(matches!(
-        status.command,
-        Command::Lake { command: LakeCommand::TopLevel(TopLevelLakeCommand::Status) }
-    ));
+    let error = Cli::try_parse_from(["sirno", "lake", "st"]).unwrap_err();
+    assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
 }
 
 #[test]

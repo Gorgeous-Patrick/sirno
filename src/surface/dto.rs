@@ -14,8 +14,8 @@ use crate::surface::output::{
     format_query_json, query_result_records,
 };
 use crate::{
-    EntryDirectoryReport, EntryId, EntryIdError, EntryStructuralMatcher, GenLinkDirectoryReport,
-    TideStatus, TideWorkitem, WitnessRecord,
+    CheckMode, EntryDirectoryReport, EntryId, EntryIdError, EntryStructuralMatcher,
+    GenLinkDirectoryReport, StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, WitnessRecord,
 };
 
 /// Shared human-or-JSON output renderer.
@@ -777,38 +777,168 @@ impl RenderResult {
     }
 }
 
+/// Structured edge policy for one structural field direction.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StructuralEdgeStatus {
+    /// Whether generated footers render this edge direction.
+    pub render: bool,
+    /// Whether lake-side neighbors create tide workitems.
+    pub ripple_lake: bool,
+    /// Whether frost-side neighbors create tide workitems.
+    pub ripple_frost: bool,
+}
+
+impl StructuralEdgeStatus {
+    pub(crate) fn from_settings(settings: &StructuralEdgeSettings) -> Self {
+        Self {
+            render: settings.render,
+            ripple_lake: settings.ripple.lake,
+            ripple_frost: settings.ripple.frost,
+        }
+    }
+}
+
 /// Structural field status in one Sirno config.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralFieldStatus {
     /// Structural field name.
     pub field: String,
     /// Outgoing edge settings.
-    pub to: String,
+    pub to: StructuralEdgeStatus,
     /// Incoming edge settings.
-    pub from: String,
+    pub from: StructuralEdgeStatus,
     /// Shared-target edge settings.
-    pub clique: String,
+    pub clique: StructuralEdgeStatus,
+}
+
+/// Current lock state of a configured Frost store.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StatusFrostState {
+    /// No Sirno lock exists for the configured Frost path.
+    Unlocked,
+    /// The public lake is the current editable Frost version.
+    Current,
+    /// The public lake materializes a selected Frost version.
+    CheckedOut,
+}
+
+/// Typed Frost status for the current project.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusFrost {
+    /// Configured Frost path.
+    pub path: String,
+    /// Current public-lake state relative to Frost.
+    pub state: StatusFrostState,
+    /// Frost version when a lock names one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<u64>,
+    /// Frost generation when a lock names one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generation: Option<u64>,
+    /// Whether the public lake is writable as a Frost checkout.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutable: Option<bool>,
+}
+
+/// Check policy used by project status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusCheckPolicy {
+    /// Check boundary used for status.
+    pub mode: CheckMode,
+    /// Whether generated-footer freshness is checked.
+    pub render: bool,
+}
+
+/// Compact Tide summary for project status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusTide {
+    /// Whether no open tide workitem remains.
+    pub clear: bool,
+    /// Number of open workitems.
+    pub open_workitems: usize,
+    /// Number of waves with at least one open workitem.
+    pub open_waves: usize,
+    /// Number of entries that still need review.
+    pub review_entries: usize,
+}
+
+impl StatusTide {
+    pub(crate) fn from_tide(tide: &Tide) -> Self {
+        let open_statuses = tide.open_statuses().collect::<Vec<_>>();
+        let open_waves = open_statuses
+            .iter()
+            .map(|status| &status.workitem.ripple)
+            .collect::<std::collections::BTreeSet<_>>()
+            .len();
+        Self {
+            clear: open_statuses.is_empty(),
+            open_workitems: open_statuses.len(),
+            open_waves,
+            review_entries: tide.review_entries().len(),
+        }
+    }
+}
+
+/// Commit readiness for the configured project.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StatusCommitState {
+    /// A Frost commit can proceed.
+    Ready,
+    /// A Frost commit is blocked by one or more project states.
+    Blocked,
+    /// Frost commits are unavailable because Frost is not configured.
+    Unavailable,
+}
+
+/// Specific project state that blocks a Frost commit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StatusCommitBlocker {
+    /// Review-mode lake checks currently report errors.
+    LakeCheck,
+    /// The active Tide has open workitems.
+    Tide,
+    /// The public lake is an immutable Frost checkout.
+    ImmutableCheckout,
+}
+
+/// Commit readiness summary for project status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusCommit {
+    /// Whether a Frost commit can proceed.
+    pub ready: bool,
+    /// Human-independent readiness state.
+    pub state: StatusCommitState,
+    /// States that block a commit.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub blockers: Vec<StatusCommitBlocker>,
 }
 
 /// JSON-ready project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusResult {
-    /// Whether the configured lake passes review checks.
+    /// Whether the configured project has no status blockers.
     pub ok: bool,
     /// Config file used for the status command.
     pub config_path: String,
     /// Lake path.
     pub lake_path: String,
-    /// Optional frost path.
-    pub frost_path: Option<String>,
-    /// Current lock state summary.
-    pub frost_state: String,
     /// Number of parsed entries.
     pub entry_count: usize,
-    /// Whether generated-footer checks are enabled.
-    pub check_render: bool,
+    /// Optional typed Frost status.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frost: Option<StatusFrost>,
+    /// Status check policy.
+    pub check_policy: StatusCheckPolicy,
     /// Configured structural field summaries.
     pub structural_fields: Vec<StructuralFieldStatus>,
+    /// Tide summary when Frost is configured and the lake can be compared.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tide: Option<StatusTide>,
+    /// Frost commit readiness.
+    pub commit: StatusCommit,
     /// Review-mode check result.
     pub check: LakeCheckResult,
 }

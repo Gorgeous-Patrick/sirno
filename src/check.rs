@@ -5,12 +5,15 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::entry::Entry;
 use crate::id::EntryId;
 use crate::structural::StructuralSettings;
 
 /// Boundary at which Sirno checks structure.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum CheckMode {
     /// Editing checks keep local movement fast.
     Edit,

@@ -51,7 +51,7 @@ use crate::surface::error::OpenTideTutorial;
 use crate::surface::output::{
     format_config_comment_result, format_gen_link_report, format_human_table_with_width,
     format_json, format_lake_check_result, format_query_json, format_query_table,
-    format_render_result, format_skill_wrapper_table, format_witness_record,
+    format_render_result, format_skill_wrapper_table, format_status_result, format_witness_record,
     format_witness_records,
 };
 #[cfg(test)]
@@ -136,8 +136,11 @@ enum Command {
         #[command(subcommand)]
         command: TideCommand,
     },
-    /// Run an entry operation at the top level.
     // sirno:witness:interfaces:begin
+    /// Show the current Sirno project status.
+    #[command(visible_alias = "st")]
+    Status,
+    /// Run an entry operation at the top level.
     #[command(flatten)]
     TopLevelEntry(TopLevelEntryCommand),
     /// Run a lake operation at the top level.
@@ -312,9 +315,6 @@ enum TopLevelLakeCommand {
         command: Option<RenderCommand>,
     },
     // sirno:witness:interfaces:end
-    /// Show the current Sirno project status.
-    #[command(visible_alias = "st")]
-    Status,
 }
 
 /// Supported top-level move wrappers.
@@ -793,6 +793,12 @@ impl Cli {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Status => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                run_status_command(&config_path, lake_path.as_deref())
             }
             | Command::TopLevelEntry(command) => {
                 if frost_path.is_some() {
@@ -1313,9 +1319,7 @@ impl TopLevelLakeCommand {
 
                 if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
-            | TopLevelLakeCommand::Render { .. } | TopLevelLakeCommand::Status
-                if frost_path.is_some() =>
-            {
+            | TopLevelLakeCommand::Render { .. } if frost_path.is_some() => {
                 Err(CommandError::FrostPathRequiresCheck)
             }
             // sirno:witness:interfaces:begin
@@ -1340,14 +1344,16 @@ impl TopLevelLakeCommand {
                 }
             },
             // sirno:witness:interfaces:end
-            | TopLevelLakeCommand::Status => {
-                let result =
-                    SurfaceContext::from_cli_paths(config_path, lake_path).lake_status()?;
-                print_status_result(&result);
-                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
-            }
         }
     }
+}
+
+fn run_status_command(
+    config_path: &Path, lake_path: Option<&Path>,
+) -> Result<ExitCode, CommandError> {
+    let result = SurfaceContext::from_cli_paths(config_path, lake_path).status()?;
+    print_status_result(&result);
+    if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
 }
 
 impl TopLevelFrostCommand {

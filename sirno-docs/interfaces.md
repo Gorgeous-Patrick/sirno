@@ -46,8 +46,7 @@ When a top-level command delegates to a group,
 the grouped spelling uses the same subcommands and aliases.
 For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
-Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
-select the same lake operation.
+`sirno status` and `sirno st` are project-level status operations.
 `sirno init` prompts for lake, frost, and packaged skill wrapper setup.
 `sirno init --all` initializes those parts together without prompts.
 `sirno init --claude-skills` also links installed skill packages into `.claude/skills`.
@@ -64,9 +63,12 @@ For artifact mutation,
 Those commands should remain plain enough to use from a terminal
 and stable enough to share behavior with MCP tools.
 
-`sirno status` summarizes the configured *repository*.
-It reports the config path, *lake* path, optional *frost* path,
-*frost* lock state, *entry* count, check policy, structural policy, and current check result.
+`sirno status` summarizes the configured project as an operational dashboard.
+It reports the config path, *lake* path, *entry* count, optional typed *frost* state,
+structural field count, review-mode *lake* check, active *tide* summary,
+and *frost* commit readiness.
+CLI status keeps structural policy collapsed.
+MCP status returns the full typed structural edge policy.
 
 `sirno init` opens an interactive setup flow.
 It asks which setup parts to run, asks for default paths when no path flag supplies them,
@@ -303,14 +305,14 @@ Reading one entry resource returns the full stored Markdown source as `text/mark
 
 MCP tool names are stable snake-case names prefixed with `sirno_`:
 
-- project binding: `sirno_cwd`
+- project binding: `sirno_cwd`, `sirno_status`
 - entries: `sirno_entry_new`, `sirno_entry_rename`, `sirno_entry_freeze`,
   `sirno_entry_melt`, `sirno_entry_path`, `sirno_entry_read`, `sirno_entry_query`,
   `sirno_entry_rg`, and `sirno_entry_witness`
 - entry artifacts: `sirno_entry_artifact_list`, `sirno_entry_artifact_add`,
   `sirno_entry_artifact_rename`, and `sirno_entry_artifact_remove`
 - lake: `sirno_lake_init`, `sirno_lake_move`, `sirno_lake_check`,
-  `sirno_lake_render`, `sirno_lake_render_delete`, and `sirno_lake_status`
+  `sirno_lake_render`, and `sirno_lake_render_delete`
 - frost: `sirno_frost_init`, `sirno_frost_move`, `sirno_frost_commit`,
   `sirno_frost_checkout`, and `sirno_frost_defrost`
 - tide: `sirno_tide_status`, `sirno_tide_resolve`, `sirno_tide_unresolve`,
@@ -329,6 +331,8 @@ MCP tools accept typed JSON arguments.
 - Structural states may use `{ field, state }` objects
   or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 - Tide selectors use neighbor id arrays and existing JSON-shaped workitem objects.
+- `sirno_status` returns typed *frost*, check-policy, structural-edge,
+  *tide*, and commit-readiness objects.
 - `sirno_tide_status` returns review entry ids by default.
   Its `show` argument selects `review`, `full`, or `all`.
 - `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
