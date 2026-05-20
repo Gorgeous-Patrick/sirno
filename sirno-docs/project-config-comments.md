@@ -3,7 +3,7 @@ name: Project Config Comments
 desc: The exact comments Sirno writes beside generated project config fields.
 category:
   - concept
-refines:
+prerequisite:
   - project-config
 ---
 

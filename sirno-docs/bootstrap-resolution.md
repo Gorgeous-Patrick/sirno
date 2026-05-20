@@ -5,7 +5,7 @@ category:
   - narrative
 belongs:
   - narrative
-refines:
+prerequisite:
   - project-self-application
 ---
 

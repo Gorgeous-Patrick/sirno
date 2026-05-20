@@ -3,7 +3,7 @@ name: Narrative Serializer
 desc: The deterministic contract that turns a narrative session into a lake entry.
 category:
   - concept
-refines:
+prerequisite:
   - interactive-narrative-session
 ---
 

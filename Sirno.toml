@@ -54,6 +54,6 @@ to = { render = true, ripple = { lake = true } }
 from = { render = true, ripple = { lake = true, frost = true } }
 clique = { ripple = { lake = true } }
 
-[structural.refines]
+[structural.prerequisite]
 to = { ripple = { lake = true } }
 from = { ripple = { lake = true, frost = true } }

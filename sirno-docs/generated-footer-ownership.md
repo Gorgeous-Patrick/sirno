@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - generated-navigation
-refines:
+prerequisite:
   - generated-footer
 ---
 

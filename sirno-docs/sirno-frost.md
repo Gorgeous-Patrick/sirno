@@ -3,7 +3,7 @@ name: Sirno Frost
 desc: The private eter-backed path that freezes immutable snapshots of the public Sirno Lake.
 category:
   - concept
-refines:
+prerequisite:
   - versioning
 ---
 

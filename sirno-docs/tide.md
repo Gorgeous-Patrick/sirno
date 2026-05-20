@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - sirno-tide
-refines:
+prerequisite:
   - ripple
 ---
 

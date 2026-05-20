@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - sirno-witness
-refines:
+prerequisite:
   - witness-lookup
 ---
 

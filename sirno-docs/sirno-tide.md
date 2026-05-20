@@ -6,7 +6,7 @@ category:
 belongs:
   - sirno-frost
   - lake
-refines:
+prerequisite:
   - versioning
 ---
 

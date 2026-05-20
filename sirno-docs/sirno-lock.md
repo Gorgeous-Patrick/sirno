@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - sirno-frost
-refines:
+prerequisite:
   - versioning
 ---
 

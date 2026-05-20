@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - development-style
-refines:
+prerequisite:
   - concept-driven-development
 ---
 

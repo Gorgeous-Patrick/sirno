@@ -6,7 +6,7 @@ category:
   - concept
 belongs:
   - narrative
-refines:
+prerequisite:
   - project-self-application
 ---
 

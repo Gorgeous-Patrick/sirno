@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - structural-field
-refines:
+prerequisite:
   - refinement
 ---
 

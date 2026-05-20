@@ -3,7 +3,7 @@ name: Interactive Narrative Session
 desc: A user-shaped route through Sirno concepts that can be saved as a narrative entry.
 category:
   - concept
-refines:
+prerequisite:
   - narrative
 ---
 

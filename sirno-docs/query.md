@@ -5,7 +5,7 @@ category:
   - concept
 belongs:
   - lake
-refines:
+prerequisite:
   - interfaces
 ---
 

@@ -6,7 +6,7 @@ category:
   - narrative
 belongs:
   - narrative
-refines:
+prerequisite:
   - concept-driven-development
   - sirno-witness
   - meta
