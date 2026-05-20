@@ -52,10 +52,10 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
 const SKILL_RESOURCES: &[SkillResourceSpec] = &[
     DESIGN_DOC_WRITER_SKILL_RESOURCE,
     SkillResourceSpec {
-        uri: "sirno://skills/sirno-maintainer",
-        name: "sirno-maintainer",
-        title: "Sirno Maintainer",
-        description: "Full Sirno maintainer skill text.",
+        uri: "sirno://skills/sirno-editor",
+        name: "sirno-editor",
+        title: "Sirno Editor",
+        description: "Full Sirno editor skill text.",
         content: include_str!(
             "../sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
         ),
@@ -1188,7 +1188,7 @@ Changed body.
         let resources = client.peer().list_resources(None).await.unwrap();
         assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
         assert!(resources.resources.iter().any(|resource| {
-            resource.uri == "sirno://skills/sirno-maintainer"
+            resource.uri == "sirno://skills/sirno-editor"
                 && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
         }));
         assert!(resources.resources.iter().any(|resource| {
@@ -1205,7 +1205,7 @@ Changed body.
 
         let skill = client
             .peer()
-            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-maintainer"))
+            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-editor"))
             .await
             .unwrap();
         let Some(ResourceContents::TextResourceContents { text, mime_type, .. }) =
@@ -1214,7 +1214,7 @@ Changed body.
             panic!("expected text skill resource");
         };
         assert_eq!(mime_type.as_deref(), Some(SKILL_RESOURCE_MIME_TYPE));
-        assert!(text.contains("# Sirno Maintainer"));
+        assert!(text.contains("# Sirno Editor"));
         assert!(text.contains("## Workflow"));
 
         let design_skill = client

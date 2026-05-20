@@ -1,11 +1,11 @@
 ---
-name: sirno-maintainer
+name: sirno-editor
 description: >-
-  Maintain a Sirno-managed repository by reading its configured lake before source, docs, config,
+  Edit a Sirno-managed repository by reading its configured lake before source, docs, config,
   witness, or skill edits, then syncing entries and validating the result.
 ---
 
-# Sirno Maintainer
+# Sirno Editor
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Repository material covers source, tests, generated artifacts, configuration,
 README files, design documents outside the configured lake, witness blocks, and skill packages.
 Any important local commitment should trace back to an entry in the active project.
 
-This full skill text is served as `sirno://skills/sirno-maintainer`.
+This full skill text is served as `sirno://skills/sirno-editor`.
 Apply it to the project currently bound through Sirno MCP.
 
 ## Project Binding

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Sirno Maintainer"
-  short_description: "Maintain Sirno-managed codebases from the lake first"
-  default_prompt: "Use $sirno-maintainer to start this edit in the lake, sync entries and witnesses, then validate."

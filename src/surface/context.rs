@@ -38,11 +38,11 @@ use crate::{
 // sirno:witness:agent-skills:begin
 const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
     SkillWrapperSpec {
-        name: "sirno-maintainer",
+        name: "sirno-editor",
         entry_id: "lake-first-maintenance-discipline",
         wrapper_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md",
         full_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md",
-        target_path: ".agents/skills/sirno-maintainer/SKILL.md",
+        target_path: ".agents/skills/sirno-editor/SKILL.md",
         content: include_str!(
             "../../sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md"
         ),

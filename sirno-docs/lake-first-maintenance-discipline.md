@@ -16,9 +16,9 @@ prerequisite:
 
 Lake-first maintenance is the default agent procedure for changing a Sirno-managed repository.
 Its full MCP resource text lives in `.artifacts/lake-first-maintenance-discipline/SKILL.full.md`
-and is embedded by `src/mcp.rs` as `sirno://skills/sirno-maintainer`.
+and is embedded by `src/mcp.rs` as `sirno://skills/sirno-editor`.
 Its packaged wrapper lives in `.artifacts/lake-first-maintenance-discipline/SKILL.md`
-and renders to `.agents/skills/sirno-maintainer/SKILL.md`.
+and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
 Start every repository edit in the configured lake.
 Read repository instructions, `Sirno.toml`, and the entries that govern the requested work.

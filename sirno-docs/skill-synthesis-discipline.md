@@ -72,7 +72,7 @@ The wrapper `SKILL.md` artifact keeps the same frontmatter,
 names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
-Project configuration maintenance lives in the maintainer skill.
+Project configuration maintenance lives in the editor skill.
 Other full resources should point back to the lake-first maintenance workflow
 instead of copying the `Sirno.toml` schema checklist.
 
@@ -84,7 +84,7 @@ The utility command family remains human CLI operator maintenance;
 do not make it part of agent skill procedure or MCP workflow.
 When utility maintenance is needed,
 report the human CLI action rather than turning it into an agent step.
-The maintainer skill may call CLI `sirno util config --fix`
+The editor skill may call CLI `sirno util config --fix`
 for deterministic `Sirno.toml` comment repair.
 
 Inspect the current Sirno MCP tools before writing tool names into a skill.

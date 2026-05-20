@@ -27,7 +27,7 @@ Packaged `.agents/skills/sirno-*` wrappers tell agents to read these resources.
 MCP resources are:
 
 - `sirno://skills/design-doc-writer`
-- `sirno://skills/sirno-maintainer`
+- `sirno://skills/sirno-editor`
 - `sirno://skills/sirno-narrative-session`
 - `sirno://skills/sirno-skill-synthesizer`
 - `sirno://entries/{id}` through the entry resource template

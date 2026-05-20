@@ -61,7 +61,7 @@ correct the artifact or wrapper, never the lake.
    Add nothing the lake does not commit.
    Include failure paths for missing sources, unavailable tools, blocked validation,
    absent evidence, and design changes that must be internalized into the lake.
-   Defer project configuration maintenance to the maintainer skill rather than copying its checklist.
+   Defer project configuration maintenance to the editor skill rather than copying its checklist.
 
 5. Render wrappers.
    The wrapper keeps the same frontmatter as the full resource.

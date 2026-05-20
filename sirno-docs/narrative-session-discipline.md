@@ -25,7 +25,7 @@ Also read any entries the user named or the task implies.
 Do not assume any standard entry id exists.
 If a source entry is missing,
 state the gap and continue only with the route that can be grounded in existing entries.
-Switch to the maintainer skill if a session discovers a necessary repository,
+Switch to the editor skill if a session discovers a necessary repository,
 configuration, witness, or lake maintenance edit.
 
 Maintain a small private session state.

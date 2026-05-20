@@ -13,7 +13,7 @@ prerequisite:
 Sirno ships an agent skill set that renders the method into operational procedure.
 
 There are three packaged Sirno skills.
-The maintainer skill is the default entry point for codebase changes.
+The editor skill is the default entry point for codebase changes.
 It starts in the configured lake,
 updates or creates the entries that govern the work,
 actualizes from those entries into repository material,
@@ -62,11 +62,11 @@ Any edit to source, tests, generated artifacts, configuration, README files,
 design documents outside the configured lake, or packaged skills begins by reading the relevant
 active-project entries.
 When the edit changes the design,
-the maintainer skill updates the configured lake before the repository material becomes the new
+the editor skill updates the configured lake before the repository material becomes the new
 habit.
 The resulting code, docs, config, and witnesses should be able to answer which entry explains
 an important local commitment.
-The maintainer skill uses repository documentation-writing skills for `README`, `DESIGN`,
+The editor skill uses repository documentation-writing skills for `README`, `DESIGN`,
 and `METHODOLOGY` prose when those documents have their own roles and style.
 The `design-doc-writer-skill` entry documents the adjacent meta-management skill
 for design documents.
@@ -95,7 +95,7 @@ Utility commands copy exact bundled wrapper constants;
 they do not ask a model to rewrite the skill text.
 When an agent discovers that utility maintenance is needed,
 it should report the needed human CLI action instead of treating it as an MCP operation.
-The maintainer skill may call CLI `sirno util config --fix`
+The editor skill may call CLI `sirno util config --fix`
 to canonicalize `Sirno.toml` comments.
 That exception belongs to lake-first maintenance and does not add utility commands to MCP.
 

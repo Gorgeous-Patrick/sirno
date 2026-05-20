@@ -41,7 +41,7 @@ when the project carries those concepts.
 
 If a source entry is missing,
 state the gap and continue only with the route that existing entries can ground.
-Hand off to `sirno-maintainer` if the session reveals a needed repository,
+Hand off to `sirno-editor` if the session reveals a needed repository,
 configuration, witness, or lake maintenance edit.
 
 ## Reader Pull
