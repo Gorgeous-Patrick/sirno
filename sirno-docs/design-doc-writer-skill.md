@@ -13,7 +13,7 @@ prerequisite:
 for maintaining design documents.
 Here, meta-management means keeping design documents about a project and its method coherent.
 The skill is documented in this lake because Sirno skill work can depend on its ideas,
-but it is not one of the six packaged Sirno skills.
+but it is not one of the three packaged Sirno skills.
 Its full MCP resource text lives in `.artifacts/design-doc-writer-skill/SKILL.full.md`.
 That artifact follows the exact `.agents/skills/design-doc-writer/SKILL.md` document.
 `src/mcp.rs` embeds it as `sirno://skills/design-doc-writer`.
@@ -46,7 +46,7 @@ and uses definition by negation only when it prevents a likely confusion.
 Sirno skills use this entry as method input only as the default design-document method.
 When a repository has its own design-document skill or documented manner,
 use that instead.
-Lake editing folds in its reader-evaluation and design-prose standards.
+Lake-first maintenance folds in its reader-evaluation and design-prose standards.
 Skill synthesis may read it as shared method,
 but this entry does not render a `.agents/skills/sirno-*` package.
 Only the Sirno discipline entries named by `agent-skills` render those packages.

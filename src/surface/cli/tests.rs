@@ -101,10 +101,7 @@ fn top_level_init_initializes_lake_and_frost() {
     assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("alpha-project-frost") }));
     assert!(repo.join("alpha-project-lake").join("concept.md").exists());
     assert!(repo.join("alpha-project-frost").join("Eter.lock.toml").exists());
-    assert!(
-        repo.join(".agents").join("skills").join("sirno-config-writer").join("SKILL.md").exists()
-    );
-    assert!(repo.join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists());
+    assert!(repo.join(".agents").join("skills").join("sirno-maintainer").join("SKILL.md").exists());
     assert_eq!(lock.frost.status, FrostLockStatus::Current);
     assert_eq!(lock.frost.version, Eterator::EMPTY.version());
 }
@@ -134,7 +131,12 @@ fn top_level_init_accepts_explicit_paths() {
     assert!(temp.path().join("custom-lake").join("concept.md").exists());
     assert!(temp.path().join("custom-frost").join("Eter.lock.toml").exists());
     assert!(
-        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+        temp.path()
+            .join(".agents")
+            .join("skills")
+            .join("sirno-maintainer")
+            .join("SKILL.md")
+            .exists()
     );
 }
 
@@ -243,7 +245,12 @@ fn top_level_init_can_skip_lake_and_frost() {
     assert!(!config_path.exists());
     assert!(!temp.path().join("sirno-frost").exists());
     assert!(
-        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+        temp.path()
+            .join(".agents")
+            .join("skills")
+            .join("sirno-maintainer")
+            .join("SKILL.md")
+            .exists()
     );
 }
 
@@ -266,8 +273,9 @@ fn top_level_init_all_can_link_claude_skills() {
     .run()
     .unwrap();
 
-    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
-    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+    let link = temp.path().join(".claude").join("skills").join("sirno-maintainer");
+    let expected =
+        Path::new("..").join("..").join(".agents").join("skills").join("sirno-maintainer");
     assert_eq!(fs::read_link(link).unwrap(), expected);
 }
 
@@ -374,11 +382,17 @@ fn top_level_init_prompt_can_link_claude_skills() {
 
     run_prompted_top_level_init(request, &config_path, None, &mut input, &mut output).unwrap();
 
-    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
-    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+    let link = temp.path().join(".claude").join("skills").join("sirno-maintainer");
+    let expected =
+        Path::new("..").join("..").join(".agents").join("skills").join("sirno-maintainer");
     assert_eq!(fs::read_link(link).unwrap(), expected);
     assert!(
-        temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
+        temp.path()
+            .join(".agents")
+            .join("skills")
+            .join("sirno-maintainer")
+            .join("SKILL.md")
+            .exists()
     );
 }
 
@@ -773,13 +787,14 @@ fn util_skills_init_installs_bundled_wrappers() {
     let context = SurfaceContext::new(&config_path);
 
     let init = context.skill_wrappers_init().unwrap();
-    let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
+    let target =
+        temp.path().join(".agents").join("skills").join("sirno-maintainer").join("SKILL.md");
     let check = context.skill_wrappers_check().unwrap();
 
     assert!(init.ok);
-    assert_eq!(init.records.len(), 6);
+    assert_eq!(init.records.len(), 3);
     assert_eq!(init.records[0].status, "wrote");
-    assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
+    assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-maintainer"));
     assert!(check.ok);
     assert_eq!(check.records[0].status, "ok");
 }
@@ -792,19 +807,20 @@ fn util_skills_init_can_link_claude_skills() {
     let context = SurfaceContext::new(&config_path);
 
     let init = context.skill_wrappers_init_with_claude(true).unwrap();
-    let link = temp.path().join(".claude").join("skills").join("sirno-editor");
+    let link = temp.path().join(".claude").join("skills").join("sirno-maintainer");
     let check = context.skill_wrappers_check_with_claude(true).unwrap();
     let listed = context.skill_wrappers_list_with_claude(true).unwrap();
-    let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
+    let expected =
+        Path::new("..").join("..").join(".agents").join("skills").join("sirno-maintainer");
 
     assert!(init.ok);
-    assert_eq!(init.records.len(), 12);
+    assert_eq!(init.records.len(), 6);
     assert_eq!(fs::read_link(link).unwrap(), expected);
     assert!(check.ok);
-    assert_eq!(check.records.len(), 12);
-    assert_eq!(listed.records.len(), 12);
+    assert_eq!(check.records.len(), 6);
+    assert_eq!(listed.records.len(), 6);
     assert!(listed.records.iter().any(|record| {
-        record.status == "link" && record.target_path == ".claude/skills/sirno-editor"
+        record.status == "link" && record.target_path == ".claude/skills/sirno-maintainer"
     }));
 }
 
@@ -814,14 +830,15 @@ fn util_skills_check_reports_drift_without_writing() {
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let context = SurfaceContext::new(&config_path);
     context.skill_wrappers_init().unwrap();
-    let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
+    let target =
+        temp.path().join(".agents").join("skills").join("sirno-maintainer").join("SKILL.md");
     fs::write(&target, "local edit\n").unwrap();
 
     let check = context.skill_wrappers_check().unwrap();
     let drifted = check.records.iter().find(|record| record.status == "drifted").unwrap();
 
     assert!(!check.ok);
-    assert_eq!(drifted.target_path, ".agents/skills/sirno-editor/SKILL.md");
+    assert_eq!(drifted.target_path, ".agents/skills/sirno-maintainer/SKILL.md");
     assert_eq!(fs::read_to_string(target).unwrap(), "local edit\n");
 }
 
@@ -837,11 +854,12 @@ fn util_skills_rejects_global_lake_path() {
 #[test]
 fn skill_wrapper_output_uses_table() {
     let table = format_skill_wrapper_table(&[SkillWrapperRecord {
-        entry_id: "lake-editing-discipline".to_owned(),
-        name: "sirno-editor".to_owned(),
-        wrapper_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.md".to_owned(),
-        full_path: "sirno-docs/.artifacts/lake-editing-discipline/SKILL.full.md".to_owned(),
-        target_path: ".agents/skills/sirno-editor/SKILL.md".to_owned(),
+        entry_id: "lake-first-maintenance-discipline".to_owned(),
+        name: "sirno-maintainer".to_owned(),
+        wrapper_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md".to_owned(),
+        full_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+            .to_owned(),
+        target_path: ".agents/skills/sirno-maintainer/SKILL.md".to_owned(),
         status: "ok".to_owned(),
         changed: false,
     }]);
@@ -849,8 +867,8 @@ fn skill_wrapper_output_uses_table() {
     assert!(table.contains("status"));
     assert!(table.contains("name"));
     assert!(table.contains("target"));
-    assert!(table.contains("sirno-editor"));
-    assert!(table.contains(".agents/skills/sirno-editor/SKILL.md"));
+    assert!(table.contains("sirno-maintainer"));
+    assert!(table.contains(".agents/skills/sirno-maintainer/SKILL.md"));
     assert!(!table.contains("wrapper"));
     assert!(!table.contains('\t'));
 }
@@ -2386,8 +2404,8 @@ fn human_table_elides_columns_when_width_is_too_small() {
 #[test]
 fn semantic_table_colorizes_status_cells_when_forced() {
     let rows = vec![
-        vec!["ok".to_owned(), "sirno-editor".to_owned()],
-        vec!["missing".to_owned(), "sirno-witness".to_owned()],
+        vec!["ok".to_owned(), "sirno-maintainer".to_owned()],
+        vec!["missing".to_owned(), "sirno-narrative-session".to_owned()],
     ];
     let table = format_human_table_semantic_with_width(
         vec!["status".to_owned(), "name".to_owned()],

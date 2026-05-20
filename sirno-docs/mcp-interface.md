@@ -27,12 +27,9 @@ Packaged `.agents/skills/sirno-*` wrappers tell agents to read these resources.
 MCP resources are:
 
 - `sirno://skills/design-doc-writer`
-- `sirno://skills/sirno-config-writer`
-- `sirno://skills/sirno-editor`
-- `sirno://skills/sirno-explorer`
+- `sirno://skills/sirno-maintainer`
 - `sirno://skills/sirno-narrative-session`
 - `sirno://skills/sirno-skill-synthesizer`
-- `sirno://skills/sirno-witness`
 - `sirno://entries/{id}` through the entry resource template
 
 Reading one entry resource returns the full stored Markdown source as `text/markdown`.

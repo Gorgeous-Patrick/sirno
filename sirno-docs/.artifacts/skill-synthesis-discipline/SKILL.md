@@ -1,10 +1,8 @@
 ---
 name: sirno-skill-synthesizer
 description: >-
-  Rebuild the packaged Sirno agent skill wrappers and MCP skill resources from the lake. Use for
-  regenerating or auditing `.agents/skills/sirno-*/SKILL.md`, editing a `meta`-categorized
-  discipline entry, finding a skill resource or wrapper that has drifted from the Sirno Lake,
-  or adding a new skill to the `agent-skills` roster.
+  Rebuild packaged Sirno skill wrappers and MCP skill resources from the active project's lake,
+  when that project owns such a skill surface.
 ---
 
 # Sirno Skill Synthesizer

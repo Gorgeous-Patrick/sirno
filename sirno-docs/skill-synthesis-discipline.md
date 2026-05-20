@@ -7,10 +7,11 @@ belongs:
   - agent-skills
 prerequisite:
   - agent-skills
+  - portable-agent-skill-language
 ---
 
 Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resources
-from the lake's `meta`-categorized entries.
+from the active project's `meta`-categorized entries.
 Its full MCP resource text lives in the `SKILL.full.md` entry artifact
 and is embedded by `src/mcp.rs` as `sirno://skills/sirno-skill-synthesizer`.
 Its packaged wrapper lives in the `SKILL.md` entry artifact
@@ -25,9 +26,14 @@ then `agent-skills` for the skill roster and the handoffs between skills,
 then every `meta`-categorized entry through `sirno_entry_query`.
 The lake is authoritative.
 The full resource and wrapper are reproducible surfaces.
+Any synthesis change is a repository edit.
+Read and update the governing lake entries before changing skill artifacts,
+installed packages, MCP resources, or Rust bundle lists.
+Discover those surfaces in the active project.
+Do not assume this source repository's file layout unless the active project's lake says to use it.
 
 Separate disciplines from shared method.
-A `meta` entry named by the Sirno skill roster and ending in `-discipline` is a skill source.
+A `meta` entry named by the active project's Sirno skill roster is a skill source.
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.
@@ -49,7 +55,7 @@ and one `.agents/skills/sirno-<role>/SKILL.md` installed wrapper package.
 The target package path is written in the discipline body until the project defines
 a structural field for skill packages.
 Keep the existing skill directory name and do not invent a new role
-unless `agent-skills` adds one to the roster.
+unless the active roster adds one.
 Every rostered Sirno discipline should have both artifacts and a package,
 and every `sirno-*` package should trace back to a discipline.
 
@@ -66,9 +72,9 @@ The wrapper `SKILL.md` artifact keeps the same frontmatter,
 names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
-Config-writing procedure lives in the config-writer skill.
-Other full resources should hand off `Sirno.toml` edits to that skill
-instead of copying the schema checklist.
+Project configuration maintenance lives in the maintainer skill.
+Other full resources should point back to the lake-first maintenance workflow
+instead of copying the `Sirno.toml` schema checklist.
 
 Routine project initialization installs wrappers by default.
 Skill synthesis edits the lake-owned artifacts and installed wrappers directly.
@@ -78,8 +84,8 @@ The utility command family remains human CLI operator maintenance;
 do not make it part of agent skill procedure or MCP workflow.
 When utility maintenance is needed,
 report the human CLI action rather than turning it into an agent step.
-The config-writer skill is the only exception:
-it may call CLI `sirno util config --fix` for deterministic `Sirno.toml` comment repair.
+The maintainer skill may call CLI `sirno util config --fix`
+for deterministic `Sirno.toml` comment repair.
 
 Inspect the current Sirno MCP tools before writing tool names into a skill.
 A full skill resource that names a missing tool is worse than one that only names the procedure.
@@ -92,7 +98,7 @@ the synthesizer rebuilds its own full resource and wrapper the same way it rebui
 
 Validate after writing.
 Run render maintenance if lake metadata changed,
-then the review-mode structural check.
+then the edit-mode and review-mode structural checks.
 Confirm each `SKILL.md` has valid frontmatter,
 confirm each `SKILL.full.md` has valid frontmatter,
 and that the disciplines, resources, wrappers, and packages still correspond one to one.

@@ -43,7 +43,7 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
     uri: "sirno://skills/design-doc-writer",
     name: "design-doc-writer",
     title: "Design Doc Writer",
-    description: "Full design-doc-writer skill text from the bundled lake artifact.",
+    description: "Full design-doc-writer skill text.",
     content: include_str!("../sirno-docs/.artifacts/design-doc-writer-skill/SKILL.full.md"),
 };
 // sirno:witness:design-doc-writer-skill:end
@@ -52,31 +52,19 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
 const SKILL_RESOURCES: &[SkillResourceSpec] = &[
     DESIGN_DOC_WRITER_SKILL_RESOURCE,
     SkillResourceSpec {
-        uri: "sirno://skills/sirno-config-writer",
-        name: "sirno-config-writer",
-        title: "Sirno Config Writer",
-        description: "Full Sirno config-writer skill text from the bundled lake artifact.",
-        content: include_str!("../sirno-docs/.artifacts/config-writing-discipline/SKILL.full.md"),
-    },
-    SkillResourceSpec {
-        uri: "sirno://skills/sirno-editor",
-        name: "sirno-editor",
-        title: "Sirno Editor",
-        description: "Full Sirno editor skill text from the bundled lake artifact.",
-        content: include_str!("../sirno-docs/.artifacts/lake-editing-discipline/SKILL.full.md"),
-    },
-    SkillResourceSpec {
-        uri: "sirno://skills/sirno-explorer",
-        name: "sirno-explorer",
-        title: "Sirno Explorer",
-        description: "Full Sirno explorer skill text from the bundled lake artifact.",
-        content: include_str!("../sirno-docs/.artifacts/lake-exploration-discipline/SKILL.full.md"),
+        uri: "sirno://skills/sirno-maintainer",
+        name: "sirno-maintainer",
+        title: "Sirno Maintainer",
+        description: "Full Sirno maintainer skill text.",
+        content: include_str!(
+            "../sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+        ),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-narrative-session",
         name: "sirno-narrative-session",
         title: "Sirno Narrative Session",
-        description: "Full Sirno narrative-session skill text from the bundled lake artifact.",
+        description: "Full Sirno narrative-session skill text.",
         content: include_str!(
             "../sirno-docs/.artifacts/narrative-session-discipline/SKILL.full.md"
         ),
@@ -85,15 +73,8 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         uri: "sirno://skills/sirno-skill-synthesizer",
         name: "sirno-skill-synthesizer",
         title: "Sirno Skill Synthesizer",
-        description: "Full Sirno skill-synthesizer text from the bundled lake artifact.",
+        description: "Full Sirno skill-synthesizer text.",
         content: include_str!("../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
-    },
-    SkillResourceSpec {
-        uri: "sirno://skills/sirno-witness",
-        name: "sirno-witness",
-        title: "Sirno Witness",
-        description: "Full Sirno witness skill text from the bundled lake artifact.",
-        content: include_str!("../sirno-docs/.artifacts/witness-linking-discipline/SKILL.full.md"),
     },
 ];
 // sirno:witness:agent-skills:end
@@ -1207,11 +1188,7 @@ Changed body.
         let resources = client.peer().list_resources(None).await.unwrap();
         assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
         assert!(resources.resources.iter().any(|resource| {
-            resource.uri == "sirno://skills/sirno-editor"
-                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
-        }));
-        assert!(resources.resources.iter().any(|resource| {
-            resource.uri == "sirno://skills/sirno-config-writer"
+            resource.uri == "sirno://skills/sirno-maintainer"
                 && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
         }));
         assert!(resources.resources.iter().any(|resource| {
@@ -1228,7 +1205,7 @@ Changed body.
 
         let skill = client
             .peer()
-            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-editor"))
+            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-maintainer"))
             .await
             .unwrap();
         let Some(ResourceContents::TextResourceContents { text, mime_type, .. }) =
@@ -1237,21 +1214,8 @@ Changed body.
             panic!("expected text skill resource");
         };
         assert_eq!(mime_type.as_deref(), Some(SKILL_RESOURCE_MIME_TYPE));
-        assert!(text.contains("# Sirno Editor"));
-        assert!(text.contains("## Core Judgment"));
-
-        let config_skill = client
-            .peer()
-            .read_resource(ReadResourceRequestParams::new("sirno://skills/sirno-config-writer"))
-            .await
-            .unwrap();
-        let Some(ResourceContents::TextResourceContents { text, .. }) =
-            config_skill.contents.first()
-        else {
-            panic!("expected text config-writer resource");
-        };
-        assert!(text.contains("# Sirno Config Writer"));
-        assert!(text.contains("## Required Tables"));
+        assert!(text.contains("# Sirno Maintainer"));
+        assert!(text.contains("## Workflow"));
 
         let design_skill = client
             .peer()

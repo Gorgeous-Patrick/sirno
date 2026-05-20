@@ -16,7 +16,7 @@ After it succeeds, hand off to `$sirno-narrative-session` or any other Sirno ski
 
 This skill is self-contained on purpose.
 It runs before the Sirno MCP server exists, because it is what registers that server.
-So unlike the six synthesized Sirno skills,
+So unlike the synthesized Sirno skill roster,
 it does not defer to an `sirno://skills/*` MCP resource and must not call Sirno MCP tools.
 It is hand-authored and deliberately outside the `sirno util skills` synthesized roster,
 so the skill synthesizer neither generates nor manages it.

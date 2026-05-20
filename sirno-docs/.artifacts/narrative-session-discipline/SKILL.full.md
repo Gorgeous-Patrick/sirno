@@ -1,41 +1,57 @@
 ---
 name: sirno-narrative-session
 description: >-
-  Conduct adaptive Sirno narrative sessions with users and materialize the resulting route as a
-  Sirno Lake entry. Use for teaching, onboarding, reviewing, or exploring project knowledge
-  through questions, feedback loops, reader-state tracking, narrative route design, or serialized
-  narrative artifacts in `sirno-docs/`.
+  Conduct adaptive Sirno narrative sessions in the active repository and materialize the route as a
+  narrative entry when the route should persist.
 ---
 
 # Sirno Narrative Session
 
 ## Purpose
 
-Create an interactive route through Sirno knowledge for a particular reader or task.
-The session may be ephemeral while the user is learning,
-but the final artifact should be a compact Sirno narrative entry when the user asked for one.
-This full skill text is served as the MCP resource `sirno://skills/sirno-narrative-session`.
-It follows the `narrative-session-discipline` lake entry.
+Use this skill to guide a reader through project knowledge in a Sirno-managed repository.
+The session can be a temporary explanation,
+or it can become a compact narrative entry in the active project's configured lake.
 
 Treat entries as the durable source of knowledge.
 The narrative chooses sequence, prerequisites, pressure, and deferral.
-It should not duplicate the whole lake.
+It should point to entries instead of copying the whole lake.
 
-## MCP Project Resolution
+This full skill text is served as `sirno://skills/sirno-narrative-session`.
+It follows the `narrative-session-discipline` entry.
 
-When using Sirno through MCP, call `sirno_cwd` with the repository root before project tools
-if the server started without `--config`.
-Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
-Call `sirno_cwd` again before switching projects in the same server process.
+## Project Binding
+
+Before calling project tools through MCP,
+bind the server to the repository you are working in.
+Call `sirno_cwd` with the repository root when the server may not already be there.
+Project tools resolve `Sirno.toml` from the server current working directory.
+Call `sirno_cwd` again before switching projects.
+
+## Source Reading
+
+Read `Sirno.toml` for the configured lake path.
+Then read the active project entries that can ground the route:
+entries named by the user,
+entries implied by the task,
+and likely front-door entries found by `sirno_entry_query`.
+Do not assume any standard entry id exists.
+Good search terms include the user's domain terms,
+plus local words such as `introduction`, `methodology`, `narrative`, or `onboarding`
+when the project has those concepts.
+
+If a source entry is missing,
+state the gap and continue only with the route that can be grounded in existing entries.
+Switch to `sirno-maintainer` if the session discovers a necessary repository,
+configuration, witness, or lake maintenance edit.
 
 ## Reader Pull
 
 Make knowledge feel worth moving toward before making it complete.
-The pull may be practical, aesthetic, playful, urgent, elegant, sexy, relieving, or clarifying.
-Desire is safe to name when it is the route's real pull.
-Do not reduce every route to appetite, sexiness, or any single desire.
+The pull may be practical, aesthetic, playful, urgent, elegant, relieving, or clarifying.
+Use the pull that genuinely helps this reader understand the project.
 
-Use these heuristics while designing the route:
+Useful moves:
 
 - Pull before explanation: show the tension before giving the name.
 - Clean first bite: give the smallest useful version before the full model.
@@ -44,33 +60,15 @@ Use these heuristics while designing the route:
 - Agency: ask what the reader is trying to do, then route knowledge toward that action.
 - Aftertaste: leave a phrase, handle, or entry id the reader can reuse later.
 
-Do not force every move into every answer.
 Use the moves that make the next concept arrive at the right time.
-
-## Source Reading
-
-Before designing the route, read:
-
-- `Sirno.toml` for the configured lake path
-- `sirno-docs/narrative.md`
-- `sirno-docs/introduction.md`
-- `sirno-docs/methodology.md`
-- any entries named by the user or implied by the task
-
-Read `references/narrative-artifact.md` when preparing the session notes or serialized entry.
-Use `scripts/serialize_narrative_entry.py` when a deterministic entry draft is useful.
-If a source entry is missing,
-state the gap and continue only with the route that can be grounded in existing entries.
-Use `sirno-config-writer` if the session discovers a necessary `Sirno.toml` change.
 
 ## Session Workflow
 
 Start by naming the session frame in one or two sentences.
 State the likely route goal and the current uncertainty.
 
-Ask targeted questions when the answer would change the route.
+Ask targeted questions only when the answer changes the route.
 Prefer one question at a time.
-Use at most three questions in a single turn.
 Good questions identify the reader's task, prior vocabulary, desired depth, confusion point,
 or preferred artifact shape.
 
@@ -90,30 +88,11 @@ Loop in short segments:
 
 1. Explain the next concept or route choice.
 2. Ask for feedback, confirmation, or a concrete input when it affects the next step.
-3. Revise the route when the user shows confusion, boredom, urgency, or a sharper goal.
+3. Revise the route when the user shows confusion, urgency, or a sharper goal.
 4. Name what moved earlier, what moved later, and why.
 
-Prefer questions that unlock better sequencing.
-Do not ask questions only to create a feeling of interactivity.
 When the user wants momentum and the next step is clear,
 continue and state the assumption.
-
-## Route Design
-
-A good route makes accurate concepts arrive at the right time.
-Choose what must be understood first,
-what can be named and deferred,
-and what local detail should stay in entries.
-
-For each route step, record:
-
-- entry id or proposed entry id
-- role in the route
-- prerequisite it satisfies
-- detail deferred to the entry body or another entry
-
-Use existing entry ids exactly.
-Create proposed ids only when the session discovers a missing durable object.
 
 ## Materializing The Narrative
 
@@ -122,17 +101,14 @@ when the route will guide future onboarding or review,
 or when the session produces a reusable way through a design region.
 
 Choose a lowercase kebab-case id.
-Use configured structural metadata.
-This repository recommends `category: narrative` for narrative entries,
-`belongs` for the project area the route belongs to,
-and `refines: narrative` when the entry is a specific form of the general narrative concept.
-Add other `refines` targets only when the route makes a broader entry concrete.
+Use structural metadata configured by the active project.
+If the project has no narrative category or equivalent convention,
+use the simplest valid metadata and explain the choice.
 
 The entry body should state:
 
 - who the route serves
 - why the route matters
-- what pull or tension made the route useful
 - useful prerequisites
 - the ordered route through entries
 - what detail is intentionally deferred
@@ -143,21 +119,21 @@ Keep the body short enough to read in place.
 Point to entries that carry durable detail instead of copying their contents.
 Do not include private chat transcript unless the user explicitly asks.
 
-Use the serializer from the skill directory when helpful:
+Use the serializer from the skill directory when helpful.
+Pass the configured lake path explicitly:
 
 ```sh
 python3 .agents/skills/sirno-narrative-session/scripts/serialize_narrative_entry.py \
-  --lake sirno-docs \
+  --lake <configured-lake-path> \
   --input session.json
 ```
 
-After changing lake metadata, run render maintenance.
-Then run structural checks.
-Prefer the current Sirno MCP tools:
+After changing lake metadata, run render maintenance and structural checks:
 
 ```text
 sirno_lake_render
 sirno_lake_check mode=edit
+sirno_lake_check mode=review
 ```
 
 If the serializer script is unavailable or its input contract does not fit the session,
@@ -169,5 +145,4 @@ do not create a lake entry.
 
 Finish by naming the route artifact, the entry path, and the main sequencing choice.
 Mention any assumption that shaped the route.
-Check that the route preserves pull, a clean first bite, and an aftertaste.
-If checks were not run, say why.
+Say whether checks were run.

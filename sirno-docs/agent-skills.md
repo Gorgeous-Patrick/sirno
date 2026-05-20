@@ -10,15 +10,14 @@ prerequisite:
   - interfaces
 ---
 
-Sirno ships an agent skill set that renders this lake's method into operational procedure.
+Sirno ships an agent skill set that renders the method into operational procedure.
 
-There are six Sirno skills.
-The config-writer skill writes, repairs, and validates `Sirno.toml`.
-The editor skill creates, revises, and reorganizes entries,
-and internalizes durable design knowledge into the lake.
-The explorer skill reads a Sirno-managed repository from the lake outward to locate design
-and its evidence.
-The witness skill links lake entries to repository evidence and keeps that evidence precise.
+There are three packaged Sirno skills.
+The maintainer skill is the default entry point for codebase changes.
+It starts in the configured lake,
+updates or creates the entries that govern the work,
+actualizes from those entries into repository material,
+and keeps witnesses, configuration, and generated skill artifacts synced.
 The narrative-session skill conducts an adaptive route through lake knowledge
 and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
@@ -47,21 +46,32 @@ This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
 so a skill can be rebuilt from the lake rather than only from its packaged wrapper.
 Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
-The discipline entries are `config-writing-discipline`, `lake-editing-discipline`,
-`lake-exploration-discipline`, `witness-linking-discipline`,
+The discipline entries are `lake-first-maintenance-discipline`,
 `narrative-session-discipline`, and `skill-synthesis-discipline`.
 
-The skills hand off rather than overlap.
-Exploration switches to the witness skill when the task changes from reading evidence
-to creating or refining it.
-Exploration switches to the editor skill when the task changes from reading entries to editing them.
-Skills switch to the config-writer skill when the task changes to writing `Sirno.toml`.
-The editor skill defers to the repository documentation-writing skills for `README`, `DESIGN`,
-and `METHODOLOGY` prose, because those documents have their own roles and style.
+Packaged skills are portable.
+They are installed into arbitrary user repositories,
+so their user-facing procedure must speak from the active project perspective.
+Use the configured lake path from `Sirno.toml`,
+query and read the active project's entries,
+and avoid assuming this source repository's `sirno-docs/` path or self-hosted entry set.
+The `portable-agent-skill-language` entry carries this rule.
+
+The skills share one lake-first rule.
+Any edit to source, tests, generated artifacts, configuration, README files,
+design documents outside the configured lake, or packaged skills begins by reading the relevant
+active-project entries.
+When the edit changes the design,
+the maintainer skill updates the configured lake before the repository material becomes the new
+habit.
+The resulting code, docs, config, and witnesses should be able to answer which entry explains
+an important local commitment.
+The maintainer skill uses repository documentation-writing skills for `README`, `DESIGN`,
+and `METHODOLOGY` prose when those documents have their own roles and style.
 The `design-doc-writer-skill` entry documents the adjacent meta-management skill
 for design documents.
-It is documented in this lake as a method input,
-not as part of the six packaged Sirno skills.
+It is documented in the Sirno source lake as a method input,
+not as part of the three packaged Sirno skills.
 `design-doc-writer-skill` contributes reusable design-document habits:
 read the whole design document,
 order sections by conceptual dependency and scope,
@@ -85,9 +95,9 @@ Utility commands copy exact bundled wrapper constants;
 they do not ask a model to rewrite the skill text.
 When an agent discovers that utility maintenance is needed,
 it should report the needed human CLI action instead of treating it as an MCP operation.
-The config-writer skill is the only exception:
-it may call CLI `sirno util config --fix` to canonicalize `Sirno.toml` comments.
-That exception belongs to config ownership and does not add utility commands to MCP.
+The maintainer skill may call CLI `sirno util config --fix`
+to canonicalize `Sirno.toml` comments.
+That exception belongs to lake-first maintenance and does not add utility commands to MCP.
 
 A full skill resource is an operational rendering of lake method, not a separate authority.
 When a resource or wrapper and the lake disagree, the lake and `Sirno.toml` win,
@@ -103,12 +113,10 @@ so installed skills stay small while the full method remains source-controlled.
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [config-writing-discipline](config-writing-discipline.md)
   - [design-doc-writer-skill](design-doc-writer-skill.md)
-  - [lake-editing-discipline](lake-editing-discipline.md)
-  - [lake-exploration-discipline](lake-exploration-discipline.md)
+  - [lake-first-maintenance-discipline](lake-first-maintenance-discipline.md)
   - [narrative-session-discipline](narrative-session-discipline.md)
+  - [portable-agent-skill-language](portable-agent-skill-language.md)
   - [skill-synthesis-discipline](skill-synthesis-discipline.md)
-  - [witness-linking-discipline](witness-linking-discipline.md)
 
 > **Sirno generated links end.**
