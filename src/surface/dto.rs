@@ -8,8 +8,8 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::core::error::CommandError;
-use crate::core::output::{
+use crate::surface::error::CommandError;
+use crate::surface::output::{
     diagnostics_from_entry_report, display_path, display_paths, format_gen_link_report,
     format_query_json, query_result_records,
 };

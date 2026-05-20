@@ -9,7 +9,7 @@ use std::process::Command as ProcessCommand;
 
 use indexmap::IndexMap;
 
-use crate::core::dto::{
+use crate::surface::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
     EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
@@ -20,12 +20,12 @@ use crate::core::dto::{
     TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
     WitnessRecordResult, WitnessResult,
 };
-use crate::core::error::{CommandError, OpenTideTutorial};
-use crate::core::output::{
+use crate::surface::error::{CommandError, OpenTideTutorial};
+use crate::surface::output::{
     diagnostics_from_entry_report, display_path, display_paths, frost_state_label, output_path,
     query_result_rows,
 };
-use crate::core::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
+use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     CONFIG_FILE_NAME, CheckMode, Entry, EntryArtifactPath, EntryDirectory,
     EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryId,
@@ -88,12 +88,12 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
 // sirno:witness:agent-skills:end
 
 #[derive(Clone, Debug)]
-pub struct CoreContext {
+pub struct SurfaceContext {
     config_path: PathBuf,
     lake_path: Option<PathBuf>,
 }
 
-impl CoreContext {
+impl SurfaceContext {
     /// Create a context rooted at one Sirno config path.
     pub fn new(config_path: impl Into<PathBuf>) -> Self {
         Self { config_path: config_path.into(), lake_path: None }

@@ -1,8 +1,8 @@
 //! MCP server adapter for Sirno.
 //!
 //! The adapter exposes grouped Sirno command tools and skill resources over stdio.
-//! Command behavior remains in `core`; this module only converts JSON parameters
-//! into typed core requests and converts core DTOs into MCP tool results.
+//! Command behavior remains in `surface`; this module only converts JSON parameters
+//! into typed surface requests and converts surface DTOs into MCP tool results.
 
 use std::error::Error;
 use std::future::{self, Future};
@@ -24,12 +24,12 @@ use rmcp::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::core::{
-    ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, CoreContext, EntryNewRequest,
+use crate::surface::{
+    ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
     QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, TideResolveRequest, TideSelectionRequest,
-    TideStatusMode,
+    StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
+    TideSelectionRequest, TideStatusMode,
 };
 use crate::{CheckMode, EntryId, StructuralEdgeDirection, TideWorkitem};
 
@@ -143,19 +143,21 @@ fn entry_resource_template() -> ResourceTemplate {
 /// so changing the process current working directory can change the active project.
 #[derive(Clone, Debug)]
 pub struct SirnoMcpServer {
-    context: CoreContext,
+    context: SurfaceContext,
     tool_router: ToolRouter<Self>,
 }
 
 impl SirnoMcpServer {
-    /// Create an MCP server around one core command context.
-    pub fn new(context: CoreContext) -> Self {
+    /// Create an MCP server around one surface command context.
+    pub fn new(context: SurfaceContext) -> Self {
         Self { context, tool_router: Self::tool_router() }
     }
 }
 
 /// Run one Sirno MCP server on stdio until the client closes the transport.
-pub async fn run_stdio(context: CoreContext) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+pub async fn run_stdio(
+    context: SurfaceContext,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let service = SirnoMcpServer::new(context).serve(rmcp::transport::stdio()).await?;
     service.waiting().await?;
     Ok(())
@@ -1024,7 +1026,7 @@ Body.
 ",
         )
         .unwrap();
-        CoreContext::new(&config_path).frost_commit(true).unwrap();
+        SurfaceContext::new(&config_path).frost_commit(true).unwrap();
         fs::write(
             docs.join("alpha.md"),
             "\
@@ -1048,7 +1050,7 @@ Changed body.
 
     #[test]
     fn tool_router_exposes_grouped_tool_surface() {
-        let server = SirnoMcpServer::new(CoreContext::new("Sirno.toml"));
+        let server = SirnoMcpServer::new(SurfaceContext::new("Sirno.toml"));
         let names = server
             .tool_router
             .list_all()
@@ -1066,7 +1068,7 @@ Changed body.
     fn direct_tool_call_returns_structured_content_and_pretty_text() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
-        let server = SirnoMcpServer::new(CoreContext::new(&config_path));
+        let server = SirnoMcpServer::new(SurfaceContext::new(&config_path));
 
         let cwd = server.cwd(Parameters(CwdParams::default())).unwrap();
         let init = server
@@ -1119,7 +1121,7 @@ Changed body.
     fn tide_status_defaults_to_review_entries() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_open_tide_project(temp.path());
-        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
 
         let summary = server.tide_status(Parameters(TideStatusParams::default())).unwrap();
         let full = server
@@ -1141,7 +1143,7 @@ Changed body.
     fn entry_witness_defaults_to_body_and_hides_delimiter_spans() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_witness_project(temp.path());
-        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
 
         let result = server
             .entry_witness(Parameters(EntryWitnessParams {
@@ -1162,7 +1164,7 @@ Changed body.
     fn entry_witness_verbose_includes_delimiter_spans() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_witness_project(temp.path());
-        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
 
         let result = server
             .entry_witness(Parameters(EntryWitnessParams { id: "alpha".to_owned(), verbose: true }))
@@ -1188,7 +1190,7 @@ Changed body.
     async fn stdio_smoke_lists_tools_and_calls_lake_status() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_project(temp.path());
-        let server = SirnoMcpServer::new(CoreContext::new(config_path));
+        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
         let (server_transport, client_transport) = tokio::io::duplex(8192);
 
         let server_handle = tokio::spawn(async move {

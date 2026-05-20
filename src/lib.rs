@@ -8,7 +8,7 @@
 pub mod artifact;
 pub mod check;
 pub mod config;
-pub mod core;
+pub mod surface;
 pub mod entry;
 pub mod freeze;
 pub mod frost;

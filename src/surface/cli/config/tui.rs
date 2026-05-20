@@ -11,7 +11,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState};
 use ratatui::{DefaultTerminal, Frame};
 
-use crate::core::error::CommandError;
+use crate::surface::error::CommandError;
 use crate::{
     CheckSettings, ConfigError, FrostSettings, RepoSettings, SirnoConfig, TutorialSettings,
 };

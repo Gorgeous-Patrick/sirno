@@ -15,22 +15,22 @@ use clap_complete::{Shell, generate};
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::core::CoreContext;
-use crate::core::context::{default_config_path, default_lake_path};
-use crate::core::dto::{
+use crate::surface::SurfaceContext;
+use crate::surface::context::{default_config_path, default_lake_path};
+use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathRecord, PathSelection,
     QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
     StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
     TideResolveRequest, TideSelectionRequest, TideStatusMode,
 };
-use crate::core::error::CommandError;
-use crate::core::output::{
+use crate::surface::error::CommandError;
+use crate::surface::output::{
     format_human_table_with_width, format_path_table, format_skill_wrapper_table,
     print_config_comment_result, print_entry_directory_report, print_json, print_lake_check_result,
     print_query_results, print_render_result, print_status_result, print_witness_records,
 };
-use crate::core::rg::{
+use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
@@ -39,19 +39,19 @@ use crate::{
 };
 
 #[cfg(test)]
-use crate::core::context::entry_query_from_filters;
+use crate::surface::context::entry_query_from_filters;
 #[cfg(test)]
-use crate::core::dto::{QueryColumn, StructuralFieldState};
+use crate::surface::dto::{QueryColumn, StructuralFieldState};
 #[cfg(test)]
-use crate::core::error::OpenTideTutorial;
+use crate::surface::error::OpenTideTutorial;
 #[cfg(test)]
-use crate::core::output::{
+use crate::surface::output::{
     format_config_comment_result, format_gen_link_report, format_json, format_lake_check_result,
     format_query_json, format_query_table, format_render_result, format_witness_record,
     format_witness_records,
 };
 #[cfg(test)]
-use crate::core::rg::rg_args_include_preprocessor;
+use crate::surface::rg::rg_args_include_preprocessor;
 
 /// Sirno command-line entry point.
 #[derive(Debug, Parser)]
@@ -876,8 +876,8 @@ fn ensure_config_for_top_level_frost(
 fn run_lake_init(
     lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
-    let result =
-        CoreContext::from_cli_paths(config_path, lake_path).lake_init(LakeInitRequest { lake })?;
+    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+        .lake_init(LakeInitRequest { lake })?;
     println!("{}", result.message);
     Ok(ExitCode::SUCCESS)
 }
@@ -896,7 +896,7 @@ impl EntryRenameArgs {
         let old_id = EntryId::new(&self.old_id)?;
         let new_id = EntryId::new(&self.new_id)?;
         let result =
-            CoreContext::from_cli_paths(config_path, lake_path).entry_rename(old_id, new_id)?;
+            SurfaceContext::from_cli_paths(config_path, lake_path).entry_rename(old_id, new_id)?;
         println!("{}", result.message);
         println!("updated {} paths", result.updated_paths.len());
         Ok(ExitCode::SUCCESS)
@@ -912,7 +912,7 @@ impl TopLevelEntryCommand {
                     .into_iter()
                     .map(|target| StructuralTarget { field: target.field, target: target.target })
                     .collect();
-                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                     .entry_new(EntryNewRequest { id, name, desc, structural, body })?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
@@ -920,13 +920,14 @@ impl TopLevelEntryCommand {
             | TopLevelEntryCommand::Freeze { id } => {
                 let id = EntryId::new(&id)?;
                 let result =
-                    CoreContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
+                    SurfaceContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Melt { id } => {
                 let id = EntryId::new(&id)?;
-                let result = CoreContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
+                let result =
+                    SurfaceContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
@@ -943,7 +944,7 @@ impl TopLevelEntryCommand {
                     is,
                     columns: columns.unwrap_or_default(),
                 };
-                let results = match CoreContext::from_cli_paths(config_path, lake_path)
+                let results = match SurfaceContext::from_cli_paths(config_path, lake_path)
                     .query_entries(request)?
                 {
                     | QueryRun::InvalidLake(report) => {
@@ -958,7 +959,7 @@ impl TopLevelEntryCommand {
             }
             | TopLevelEntryCommand::Rg { with_generated_footer, args } => {
                 let args = rg_args_to_strings(args)?;
-                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                     .entry_rg(RgRequest { with_generated_footer, args })?;
                 print!("{}", result.stdout);
                 eprint!("{}", result.stderr);
@@ -989,7 +990,7 @@ impl LakeCommand {
 
 impl LakeMoveArgs {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let result = CoreContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
+        let result = SurfaceContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
@@ -1006,7 +1007,7 @@ impl TopLevelLakeCommand {
                 }
                 let mode = mode.unwrap_or(CheckModeArg::Review);
                 if lake_path.is_some() {
-                    let result = CoreContext::from_cli_paths(config_path, lake_path)
+                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                         .lake_check(mode.into())?;
                     print_lake_check_result(&result);
                     return if result.has_errors {
@@ -1018,7 +1019,7 @@ impl TopLevelLakeCommand {
 
                 let Some(frost_path) = frost_path else {
                     let result =
-                        CoreContext::new(config_path.to_path_buf()).lake_check(mode.into())?;
+                        SurfaceContext::new(config_path.to_path_buf()).lake_check(mode.into())?;
                     print_lake_check_result(&result);
                     return if result.has_errors {
                         Ok(ExitCode::FAILURE)
@@ -1053,7 +1054,7 @@ impl TopLevelLakeCommand {
             // sirno:witness:interfaces:begin
             | TopLevelLakeCommand::Render { command, dry, override_json } => match command {
                 | None => {
-                    let result = CoreContext::from_cli_paths(config_path, lake_path)
+                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                         .lake_render_with_override_json(dry, override_json.as_deref())?;
                     print_render_result(&result);
                     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
@@ -1065,15 +1066,16 @@ impl TopLevelLakeCommand {
                     if override_json.is_some() {
                         return Err(CommandError::OverrideJsonWithRenderSubcommand);
                     }
-                    let result =
-                        CoreContext::from_cli_paths(config_path, lake_path).lake_render_delete()?;
+                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+                        .lake_render_delete()?;
                     print_render_result(&result);
                     Ok(ExitCode::SUCCESS)
                 }
             },
             // sirno:witness:interfaces:end
             | TopLevelLakeCommand::Status => {
-                let result = CoreContext::from_cli_paths(config_path, lake_path).lake_status()?;
+                let result =
+                    SurfaceContext::from_cli_paths(config_path, lake_path).lake_status()?;
                 print_status_result(&result);
                 if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
             }
@@ -1087,7 +1089,7 @@ impl TopLevelFrostCommand {
     ) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelFrostCommand::Commit { unsafe_resolve_all } => {
-                let result = CoreContext::from_cli_paths(config_path, lake_path)
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                     .frost_commit(unsafe_resolve_all)?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
@@ -1104,7 +1106,7 @@ impl CheckoutArgs {
     }
 
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let result = CoreContext::from_cli_paths(config_path, lake_path).frost_checkout(
+        let result = SurfaceContext::from_cli_paths(config_path, lake_path).frost_checkout(
             FrostCheckoutRequest {
                 version: self.version,
                 latest: self.latest,
@@ -1123,7 +1125,7 @@ impl FrostCommand {
         match self {
             | FrostCommand::Init { frost } => {
                 let result =
-                    CoreContext::from_cli_paths(config_path, lake_path).frost_init(frost)?;
+                    SurfaceContext::from_cli_paths(config_path, lake_path).frost_init(frost)?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
@@ -1135,7 +1137,7 @@ impl FrostCommand {
 
 impl FrostMoveArgs {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let result = CoreContext::new(config_path.to_path_buf()).frost_move(self.frost)?;
+        let result = SurfaceContext::new(config_path.to_path_buf()).frost_move(self.frost)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
@@ -1147,7 +1149,7 @@ impl TideCommand {
     ) -> Result<ExitCode, CommandError> {
         match self {
             | TideCommand::Status { show, by, format } => {
-                let context = CoreContext::from_cli_paths(config_path, lake_path);
+                let context = SurfaceContext::from_cli_paths(config_path, lake_path);
                 let format = format.unwrap_or_default();
                 if show.includes_workitems() {
                     let statuses = context.tide_statuses(show)?;
@@ -1165,7 +1167,7 @@ impl TideCommand {
             }
             | TideCommand::Review(command) => command.run(config_path, lake_path),
             | TideCommand::Reset => {
-                let result = CoreContext::from_cli_paths(config_path, lake_path).tide_reset()?;
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path).tide_reset()?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
@@ -1199,7 +1201,8 @@ impl ResolveArgs {
                 ..TideResolveRequest::default()
             }
         };
-        let result = CoreContext::from_cli_paths(config_path, lake_path).tide_resolve(request)?;
+        let result =
+            SurfaceContext::from_cli_paths(config_path, lake_path).tide_resolve(request)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
@@ -1208,7 +1211,8 @@ impl ResolveArgs {
 impl UnresolveArgs {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let request = tide_selection_from_items(self.items);
-        let result = CoreContext::from_cli_paths(config_path, lake_path).tide_unresolve(request)?;
+        let result =
+            SurfaceContext::from_cli_paths(config_path, lake_path).tide_unresolve(request)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
@@ -1638,7 +1642,7 @@ fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
 
 impl ArtifactCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let context = CoreContext::from_cli_paths(config_path, lake_path);
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
         match self {
             | ArtifactCommand::List { id } => {
                 let id = EntryId::new(&id)?;
@@ -1689,13 +1693,13 @@ impl UtilCommand {
                 }
                 if args.dry {
                     let result =
-                        CoreContext::new(config_path.to_path_buf()).config_comments_check()?;
+                        SurfaceContext::new(config_path.to_path_buf()).config_comments_check()?;
                     print_config_comment_result(&result);
                     return if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) };
                 }
                 if args.fix {
                     let result =
-                        CoreContext::new(config_path.to_path_buf()).config_comments_fix()?;
+                        SurfaceContext::new(config_path.to_path_buf()).config_comments_fix()?;
                     print_config_comment_result(&result);
                     return Ok(ExitCode::SUCCESS);
                 }
@@ -1732,7 +1736,7 @@ impl UtilCommand {
                     .build()
                     .map_err(CommandError::CreateMcpRuntime)?;
                 runtime
-                    .block_on(crate::mcp::run_stdio(CoreContext::new(config_path.to_path_buf())))
+                    .block_on(crate::mcp::run_stdio(SurfaceContext::new(config_path.to_path_buf())))
                     .map_err(|error| CommandError::McpServer(error.to_string()))?;
                 Ok(ExitCode::SUCCESS)
             }
@@ -1742,7 +1746,7 @@ impl UtilCommand {
 
 impl SkillCommand {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let context = CoreContext::new(config_path.to_path_buf());
+        let context = SurfaceContext::new(config_path.to_path_buf());
         let result = match self {
             | SkillCommand::Init => context.skill_wrappers_init()?,
             | SkillCommand::Check => context.skill_wrappers_check()?,
@@ -1753,7 +1757,7 @@ impl SkillCommand {
 }
 
 fn run_skill_wrappers_init(config_path: &Path) -> Result<(), CommandError> {
-    let result = CoreContext::new(config_path.to_path_buf()).skill_wrappers_init()?;
+    let result = SurfaceContext::new(config_path.to_path_buf()).skill_wrappers_init()?;
     print_skill_wrapper_result(result);
     Ok(())
 }
@@ -1768,7 +1772,7 @@ fn run_witness_command(
     config_path: &Path, lake_path: Option<&Path>, raw_id: &str, full: bool,
 ) -> Result<ExitCode, CommandError> {
     let id = EntryId::new(raw_id)?;
-    let records = CoreContext::from_cli_paths(config_path, lake_path).witness_records(&id)?;
+    let records = SurfaceContext::from_cli_paths(config_path, lake_path).witness_records(&id)?;
     if records.is_empty() {
         println!("no witness found for {id}");
         return Ok(ExitCode::FAILURE);
@@ -1785,7 +1789,7 @@ fn entry_path_records(
         path_selection_from_args(args),
         args.absolute,
     );
-    CoreContext::from_cli_paths(config_path, lake_path).entry_paths(request)
+    SurfaceContext::from_cli_paths(config_path, lake_path).entry_paths(request)
 }
 
 fn print_path_records(

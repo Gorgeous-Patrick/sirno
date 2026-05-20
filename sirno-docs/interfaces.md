@@ -17,10 +17,10 @@ Human interaction with Sirno should happen through the CLI.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
 move configured storage paths, maintain *generated footer* links,
 manage optional Frost snapshots, and manage the active *tide*.
-The `sirno::core` module is the shared command surface behind the CLI.
+The `sirno::surface` module is the shared command surface behind the CLI.
 The binary `main.rs` delegates process startup to that module.
 `sirno --version` prints the package version from `Cargo.toml` before command dispatch.
-Reusable helpers in `sirno::core` return typed query, path, tide, and witness data
+Reusable helpers in `sirno::surface` return typed query, path, tide, and witness data
 before the CLI renders human text or JSON.
 Human CLI output prints records, tables, or diagnostics before command summary lines.
 Commands with no detail may print only their summary.
@@ -326,10 +326,10 @@ MCP tools accept typed JSON arguments.
   and nonzero `rg` exits return structured results with `ok: false`.
 - Command failures return MCP tool errors with concise text.
 
-The MCP adapter calls `sirno::core` methods for command behavior.
-Public request and result DTOs live in `sirno::core`.
-The adapter only converts JSON parameters into core requests
-and core DTOs into MCP tool results.
+The MCP adapter calls `sirno::surface` methods for command behavior.
+Public request and result DTOs live in `sirno::surface`.
+The adapter only converts JSON parameters into surface requests
+and surface DTOs into MCP tool results.
 This keeps CLI JSON and MCP JSON aligned without duplicating command logic.
 
 The MCP interface serves interactive tooling.

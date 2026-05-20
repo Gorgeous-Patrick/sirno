@@ -24,7 +24,7 @@ and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
 from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
-`src/core/context.rs` bundles the packaged wrappers as compile-time constants
+`src/surface/context.rs` bundles the packaged wrappers as compile-time constants
 from the lake-owned `SKILL.md` artifact files.
 Project initialization installs those bundled wrappers by default.
 Human CLI operator maintenance can refresh wrappers and detect installed wrapper drift.

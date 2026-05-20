@@ -8,11 +8,11 @@ use indexmap::IndexMap;
 use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
 
-use crate::core::dto::{
+use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
     QueryOutputFormat, QueryResults, RenderResult, SkillWrapperRecord, StatusResult,
 };
-use crate::core::error::CommandError;
+use crate::surface::error::CommandError;
 use crate::{
     Entry, EntryDirectoryError, EntryDirectoryReport, FrostLockStatus, SirnoLock, WitnessRecord,
 };

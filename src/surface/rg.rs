@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::core::error::CommandError;
+use crate::surface::error::CommandError;
 use crate::{GeneratedLinkBody, SirnoConfig};
 
 const RG_PREPROCESSOR_ARGV0_PREFIX: &str = "sirno-rg-preprocess-";

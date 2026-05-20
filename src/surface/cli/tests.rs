@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use clap::{CommandFactory, Parser};
 
-use crate::core::dto::{
+use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, RenderResult, SkillWrapperRecord,
 };
 
@@ -20,11 +20,11 @@ use crate::{
 };
 
 use super::{
-    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, CoreContext,
-    EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs,
-    LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn,
-    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
-    StructuralFilter, StructuralPredicate, StructuralStateFilter, TideCommand, TideItemSelector,
+    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
+    EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand,
+    LakeInitRequest, LakeMoveArgs, MoveCommand, PathOutputFormat, QueryColumn, QueryColumns,
+    QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState, StructuralFilter,
+    StructuralPredicate, StructuralStateFilter, SurfaceContext, TideCommand, TideItemSelector,
     TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
     TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
     entry_query_from_filters, format_config_comment_result, format_gen_link_report,
@@ -285,10 +285,10 @@ fn lake_init_accepts_lake_path() {
 }
 
 #[test]
-fn core_context_lake_init_and_entry_new_return_json_dtos() {
+fn surface_context_lake_init_and_entry_new_return_json_dtos() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
-    let context = CoreContext::new(&config_path);
+    let context = SurfaceContext::new(&config_path);
 
     let init = context.lake_init(LakeInitRequest { lake: Some(PathBuf::from("docs")) }).unwrap();
     let entry = context
@@ -469,7 +469,7 @@ fn util_config_check_reports_missing_comments_without_writing() {
         .join("\n");
     fs::write(&config_path, format!("{uncommented}\n")).unwrap();
 
-    let result = CoreContext::new(&config_path).config_comments_check().unwrap();
+    let result = SurfaceContext::new(&config_path).config_comments_check().unwrap();
 
     assert!(!result.ok);
     assert!(!result.changed);
@@ -494,8 +494,8 @@ fn util_config_fix_writes_missing_comments() {
         .join("\n");
     fs::write(&config_path, format!("{uncommented}\n")).unwrap();
 
-    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
-    let check = CoreContext::new(&config_path).config_comments_check().unwrap();
+    let fix = SurfaceContext::new(&config_path).config_comments_fix().unwrap();
+    let check = SurfaceContext::new(&config_path).config_comments_check().unwrap();
 
     assert!(fix.ok);
     assert!(fix.changed);
@@ -519,7 +519,7 @@ path = "docs"
     )
     .unwrap();
 
-    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
+    let fix = SurfaceContext::new(&config_path).config_comments_fix().unwrap();
     let source = fs::read_to_string(&config_path).unwrap();
 
     assert!(fix.ok);
@@ -547,8 +547,8 @@ structural-inhabitance = false
     )
     .unwrap();
 
-    let fix = CoreContext::new(&config_path).config_comments_fix().unwrap();
-    let check = CoreContext::new(&config_path).config_comments_check().unwrap();
+    let fix = SurfaceContext::new(&config_path).config_comments_fix().unwrap();
+    let check = SurfaceContext::new(&config_path).config_comments_check().unwrap();
     let source = fs::read_to_string(&config_path).unwrap();
 
     assert!(fix.ok);
@@ -585,7 +585,7 @@ fn util_skills_init_accepts_nested_command() {
 fn util_skills_init_installs_bundled_wrappers() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
-    let context = CoreContext::new(&config_path);
+    let context = SurfaceContext::new(&config_path);
 
     let init = context.skill_wrappers_init().unwrap();
     let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
@@ -603,7 +603,7 @@ fn util_skills_init_installs_bundled_wrappers() {
 fn util_skills_check_reports_drift_without_writing() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
-    let context = CoreContext::new(&config_path);
+    let context = SurfaceContext::new(&config_path);
     context.skill_wrappers_init().unwrap();
     let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
     fs::write(&target, "local edit\n").unwrap();
@@ -2276,7 +2276,7 @@ Body.
     )
     .unwrap();
 
-    let result = CoreContext::new(&config_path).lake_check(CheckMode::Review).unwrap();
+    let result = SurfaceContext::new(&config_path).lake_check(CheckMode::Review).unwrap();
 
     assert!(!result.has_errors);
     assert!(result.diagnostics.is_empty());
