@@ -74,13 +74,15 @@ and then initialize it in your project,
 sirno init
 ```
 
-which creates all of the following:
+which opens an interactive setup plan. The full plan creates:
+
 - a *lake* (documentation directory)
 - a *frost* (history store)
 - `Sirno.toml` (project level configuration)
 - `Sirno.lock.toml` (project state management; don't edit or delete this)
-- a few wrapper skills that teaches your agent how to talk to the MCP server
+- a few wrapper skills that teach your agent how to talk to the MCP server
 
+Use `sirno init --all` to run the full setup without prompts.
 You may also recreate them separately later with their own commands.
 
 ### For LLM: in MCP
@@ -122,7 +124,7 @@ and inspect it with `sirno_entry_witness`.
 Start a *lake* of your own:
 
 ```sh
-sirno init                                   # config, public lake, frost store, skill wrappers
+sirno init                                   # choose config, public lake, frost store, skills
 sirno new architecture --name "Architecture" \
   --desc "How the system is structured"      # create one entry
 sirno check --mode edit                      # check while editing; dangling refs are warnings

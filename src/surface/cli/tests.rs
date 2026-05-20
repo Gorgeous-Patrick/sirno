@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
 use clap::{CommandFactory, Parser};
@@ -26,13 +27,13 @@ use super::{
     QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState, StructuralFilter,
     StructuralPredicate, StructuralStateFilter, SurfaceContext, TideCommand, TideItemSelector,
     TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
-    TopLevelFrostCommand, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
-    entry_query_from_filters, format_config_comment_result, format_gen_link_report,
-    format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
-    format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
-    format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
-    format_tide_statuses_by_entry, format_witness_record, format_witness_records,
-    rg_args_include_preprocessor,
+    TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand, UnresolveArgs, UtilCommand,
+    entry_path_records, entry_query_from_filters, format_config_comment_result,
+    format_gen_link_report, format_human_table_with_width, format_json, format_lake_check_result,
+    format_path_table, format_query_json, format_query_table, format_render_result,
+    format_skill_wrapper_table, format_tide_review_entries, format_tide_review_waves,
+    format_tide_statuses, format_tide_statuses_by_entry, format_witness_record,
+    format_witness_records, rg_args_include_preprocessor, run_prompted_top_level_init,
 };
 
 fn assert_before(source: &str, before: &str, after: &str) {
@@ -87,7 +88,9 @@ fn top_level_init_initializes_lake_and_frost() {
     fs::create_dir(&repo).unwrap();
     let config_path = repo.join(CONFIG_FILE_NAME);
 
-    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "init"]).run().unwrap();
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "init", "--all"])
+        .run()
+        .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
     let lock = SirnoLock::from_file(repo.join(LOCK_FILE_NAME)).unwrap();
@@ -113,6 +116,7 @@ fn top_level_init_accepts_explicit_paths() {
         "--config",
         config_path.to_str().unwrap(),
         "init",
+        "--all",
         "--lake",
         "custom-lake",
         "--frost",
@@ -139,9 +143,16 @@ fn top_level_init_can_skip_skills() {
     let lake = PathBuf::from(format!("{repo_name}-lake"));
     let frost = PathBuf::from(format!("{repo_name}-frost"));
 
-    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "init", "--no-skills"])
-        .run()
-        .unwrap();
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "init",
+        "--all",
+        "--no-skills",
+    ])
+    .run()
+    .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
     let configured_frost = config.frost.as_ref().unwrap().path.clone();
@@ -164,6 +175,7 @@ fn top_level_init_can_skip_frost_and_skills() {
         "--config",
         config_path.to_str().unwrap(),
         "init",
+        "--all",
         "--no-frost",
         "--no-skills",
     ])
@@ -191,6 +203,7 @@ fn top_level_init_can_skip_lake_and_skills() {
         "--config",
         config_path.to_str().unwrap(),
         "init",
+        "--all",
         "--no-lake",
         "--no-skills",
     ])
@@ -217,6 +230,7 @@ fn top_level_init_can_skip_lake_and_frost() {
         "--config",
         config_path.to_str().unwrap(),
         "init",
+        "--all",
         "--no-lake",
         "--no-frost",
     ])
@@ -228,6 +242,56 @@ fn top_level_init_can_skip_lake_and_frost() {
     assert!(
         temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists()
     );
+}
+
+#[test]
+fn top_level_init_prompt_can_cancel_confirmed_plan() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let request = TopLevelInitRequest {
+        lake: None,
+        frost: None,
+        init_lake: true,
+        init_frost: true,
+        init_skills: true,
+    };
+    let mut input = Cursor::new(b"y\ny\ny\ny\ny\nn\n".to_vec());
+    let mut output = Vec::new();
+
+    run_prompted_top_level_init(request, &config_path, None, &mut input, &mut output).unwrap();
+
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.contains("Init plan:"));
+    assert!(output.contains("public lake: yes"));
+    assert!(output.contains("Sirno Frost: yes"));
+    assert!(output.contains("skill wrappers: yes"));
+    assert!(output.contains("init cancelled"));
+    assert!(!config_path.exists());
+    assert!(!temp.path().join(".agents").exists());
+}
+
+#[test]
+fn top_level_init_prompt_accepts_custom_paths_and_skips_skills() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let request = TopLevelInitRequest {
+        lake: None,
+        frost: None,
+        init_lake: true,
+        init_frost: true,
+        init_skills: true,
+    };
+    let mut input = Cursor::new(b"y\nn\ndocs\ny\nn\nfrost\nn\ny\n".to_vec());
+    let mut output = Vec::new();
+
+    run_prompted_top_level_init(request, &config_path, None, &mut input, &mut output).unwrap();
+
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    assert_eq!(config.lake.path, PathBuf::from("docs"));
+    assert_eq!(config.frost.unwrap().path, PathBuf::from("frost"));
+    assert!(temp.path().join("docs").join("concept.md").exists());
+    assert!(temp.path().join("frost").join("Eter.lock.toml").exists());
+    assert!(!temp.path().join(".agents").exists());
 }
 
 #[test]

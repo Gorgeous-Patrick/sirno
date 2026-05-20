@@ -70,8 +70,9 @@ so the two-prompt block earns its own witness.
 A collapsible `Setup Sirno and Quick Start` section holds the concrete commands.
 It is one witnessed nice bit because it demonstrates Sirno's dual audience in a single place.
 The section installs with `cargo install sirno`,
-then `sirno init`, which creates the *lake*, the *frost* store,
-`Sirno.toml`, `Sirno.lock.toml`, and the packaged skill wrappers together.
+then `sirno init`, which opens an interactive setup plan.
+The full plan creates the *lake*, the *frost* store, `Sirno.toml`,
+`Sirno.lock.toml`, and the packaged skill wrappers together.
 
 It then splits by reader:
 

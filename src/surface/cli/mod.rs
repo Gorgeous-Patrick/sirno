@@ -6,6 +6,7 @@ mod config {
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
@@ -16,7 +17,7 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use crate::surface::SurfaceContext;
-use crate::surface::context::{default_config_path, default_lake_path};
+use crate::surface::context::{default_config_path, default_frost_path, default_lake_path};
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathRecord, PathSelection,
@@ -79,6 +80,9 @@ pub struct Cli {
 enum Command {
     /// Create a Sirno config, public lake, Frost store, and skill wrappers.
     Init {
+        /// Run non-interactively with the selected init parts.
+        #[arg(long)]
+        all: bool,
         /// Public Markdown entry lake path written to Sirno.toml.
         #[arg(long)]
         lake: Option<PathBuf>,
@@ -734,7 +738,7 @@ impl Cli {
         let lake_path = self.lake_path;
         let frost_path = self.frost_path;
         match self.command {
-            | Command::Init { lake, frost, no_lake, no_frost, no_skills } => {
+            | Command::Init { all, lake, frost, no_lake, no_frost, no_skills } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
@@ -745,7 +749,11 @@ impl Cli {
                     init_frost: !no_frost,
                     init_skills: !no_skills,
                 };
-                run_top_level_init(request, &config_path, lake_path.as_deref())
+                if all {
+                    run_top_level_init(request, &config_path, lake_path.as_deref())
+                } else {
+                    run_interactive_top_level_init(request, &config_path, lake_path.as_deref())
+                }
             }
             | Command::Move { command } => {
                 command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
@@ -833,6 +841,194 @@ struct TopLevelInitRequest {
     init_lake: bool,
     init_frost: bool,
     init_skills: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum PromptDefault {
+    Yes,
+    No,
+}
+
+impl PromptDefault {
+    fn answer(self) -> bool {
+        match self {
+            | Self::Yes => true,
+            | Self::No => false,
+        }
+    }
+
+    fn suffix(self) -> &'static str {
+        match self {
+            | Self::Yes => "[Y/n]",
+            | Self::No => "[y/N]",
+        }
+    }
+}
+
+fn run_interactive_top_level_init(
+    request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
+) -> Result<ExitCode, CommandError> {
+    let stdin = io::stdin();
+    let mut input = stdin.lock();
+    let mut output = io::stdout();
+    run_prompted_top_level_init(request, config_path, lake_path, &mut input, &mut output)
+}
+
+fn run_prompted_top_level_init<R: BufRead, W: Write>(
+    mut request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
+    output: &mut W,
+) -> Result<ExitCode, CommandError> {
+    writeln!(output, "Interactive Sirno init").map_err(CommandError::InteractiveInit)?;
+
+    if request.init_lake {
+        request.init_lake =
+            prompt_yes_no(input, output, "Initialize the public lake?", PromptDefault::Yes)?;
+        if request.init_lake && request.lake.is_none() && lake_path.is_none() {
+            request.lake = prompt_default_path(
+                input,
+                output,
+                "Use default public lake path",
+                "Public lake path",
+                default_lake_path(config_path),
+            )?;
+        }
+    }
+
+    if request.init_frost {
+        request.init_frost =
+            prompt_yes_no(input, output, "Initialize Sirno Frost?", PromptDefault::Yes)?;
+        if request.init_frost && request.frost.is_none() {
+            let (prompt, path) = configured_or_default_frost_path(config_path);
+            request.frost = prompt_default_path(input, output, prompt, "Frost path", path)?;
+        }
+    }
+
+    if request.init_skills {
+        request.init_skills =
+            prompt_yes_no(input, output, "Install packaged skill wrappers?", PromptDefault::Yes)?;
+    }
+
+    print_init_plan(output, &request, config_path, lake_path)?;
+    let confirmed = prompt_yes_no(input, output, "Apply this init plan?", PromptDefault::No)?;
+    if !confirmed {
+        writeln!(output, "init cancelled").map_err(CommandError::InteractiveInit)?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    run_top_level_init(request, config_path, lake_path)
+}
+
+fn prompt_yes_no<R: BufRead, W: Write>(
+    input: &mut R, output: &mut W, question: &str, default: PromptDefault,
+) -> Result<bool, CommandError> {
+    loop {
+        write!(output, "{question} {} ", default.suffix())
+            .map_err(CommandError::InteractiveInit)?;
+        output.flush().map_err(CommandError::InteractiveInit)?;
+
+        let answer = read_prompt_line(input)?;
+        match answer.trim().to_ascii_lowercase().as_str() {
+            | "" => return Ok(default.answer()),
+            | "y" | "yes" => return Ok(true),
+            | "n" | "no" => return Ok(false),
+            | _ => {
+                writeln!(output, "Please answer yes or no.")
+                    .map_err(CommandError::InteractiveInit)?;
+            }
+        }
+    }
+}
+
+fn prompt_default_path<R: BufRead, W: Write>(
+    input: &mut R, output: &mut W, default_question: &str, value_question: &str, default: PathBuf,
+) -> Result<Option<PathBuf>, CommandError> {
+    let question = format!("{default_question} `{}`?", default.display());
+    if prompt_yes_no(input, output, &question, PromptDefault::Yes)? {
+        return Ok(None);
+    }
+
+    loop {
+        write!(output, "{value_question}: ").map_err(CommandError::InteractiveInit)?;
+        output.flush().map_err(CommandError::InteractiveInit)?;
+        let answer = read_prompt_line(input)?;
+        let path = answer.trim();
+        if !path.is_empty() {
+            return Ok(Some(PathBuf::from(path)));
+        }
+        writeln!(output, "Please enter a path.").map_err(CommandError::InteractiveInit)?;
+    }
+}
+
+fn read_prompt_line<R: BufRead>(input: &mut R) -> Result<String, CommandError> {
+    let mut answer = String::new();
+    let bytes = input.read_line(&mut answer).map_err(CommandError::InteractiveInit)?;
+    if bytes == 0 {
+        return Err(CommandError::InteractiveInitEof);
+    }
+    Ok(answer)
+}
+
+fn print_init_plan<W: Write>(
+    output: &mut W, request: &TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
+) -> Result<(), CommandError> {
+    writeln!(output).map_err(CommandError::InteractiveInit)?;
+    writeln!(output, "Init plan:").map_err(CommandError::InteractiveInit)?;
+    if request.init_lake {
+        writeln!(
+            output,
+            "  public lake: yes ({})",
+            planned_lake_path(request, config_path, lake_path).display()
+        )
+        .map_err(CommandError::InteractiveInit)?;
+    } else {
+        writeln!(output, "  public lake: no").map_err(CommandError::InteractiveInit)?;
+    }
+
+    if request.init_frost {
+        writeln!(
+            output,
+            "  Sirno Frost: yes ({})",
+            planned_frost_path(request, config_path).display()
+        )
+        .map_err(CommandError::InteractiveInit)?;
+    } else {
+        writeln!(output, "  Sirno Frost: no").map_err(CommandError::InteractiveInit)?;
+    }
+
+    let skills = if request.init_skills { "yes" } else { "no" };
+    writeln!(output, "  skill wrappers: {skills}").map_err(CommandError::InteractiveInit)
+}
+
+fn planned_lake_path(
+    request: &TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
+) -> PathBuf {
+    request
+        .lake
+        .clone()
+        .or_else(|| lake_path.map(Path::to_path_buf))
+        .unwrap_or_else(|| default_lake_path(config_path))
+}
+
+fn planned_frost_path(request: &TopLevelInitRequest, config_path: &Path) -> PathBuf {
+    request
+        .frost
+        .clone()
+        .or_else(|| configured_frost_path(config_path))
+        .unwrap_or_else(|| default_frost_path(config_path))
+}
+
+fn configured_or_default_frost_path(config_path: &Path) -> (&'static str, PathBuf) {
+    if let Some(path) = configured_frost_path(config_path) {
+        ("Use configured Frost path", path)
+    } else {
+        ("Use default Frost path", default_frost_path(config_path))
+    }
+}
+
+fn configured_frost_path(config_path: &Path) -> Option<PathBuf> {
+    SirnoConfig::from_file(config_path)
+        .ok()
+        .and_then(|config| config.frost.as_ref().map(|settings| settings.path.clone()))
 }
 
 fn run_top_level_init(

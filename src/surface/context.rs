@@ -1316,7 +1316,7 @@ pub(crate) fn default_lake_path(config_path: &Path) -> PathBuf {
     default_repo_path(config_path, "lake")
 }
 
-fn default_frost_path(config_path: &Path) -> PathBuf {
+pub(crate) fn default_frost_path(config_path: &Path) -> PathBuf {
     default_repo_path(config_path, "frost")
 }
 

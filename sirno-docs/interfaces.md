@@ -45,8 +45,9 @@ For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
-`sirno init` initializes the public *lake*, private *frost* store,
-and packaged skill wrappers together.
+`sirno init` prompts for public *lake*, private *frost* store,
+and packaged skill wrapper setup.
+`sirno init --all` initializes those parts together without prompts.
 `sirno commit` and `sirno checkout` select the same Frost operations
 as their grouped `sirno frost ...` forms.
 `sirno defrost` selects latest Frost checkout.
@@ -64,8 +65,11 @@ and stable enough to share behavior with MCP tools.
 It reports the config path, *lake* path, optional *frost* path,
 *frost* lock state, *entry* count, check policy, structural policy, and current check result.
 
-`sirno init` creates a Sirno config, ordinary seed entries,
-an empty Frost version `0`, and packaged skill wrappers.
+`sirno init` opens an interactive setup flow.
+It asks which setup parts to run, asks for default paths when no path flag supplies them,
+shows the init plan, and applies it after confirmation.
+`sirno init --all` creates a Sirno config, ordinary seed entries,
+an empty Frost version `0`, and packaged skill wrappers without prompts.
 By default, it names those paths from the directory that contains `Sirno.toml`:
 `<repo>-lake` for the public *lake* and `<repo>-frost` for the private *frost* path.
 `sirno init --lake PATH` chooses a non-default public *lake* path.

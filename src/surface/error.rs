@@ -192,6 +192,12 @@ pub enum CommandError {
     /// The terminal UI failed.
     #[error("terminal UI failed")]
     TerminalUi(#[source] std::io::Error),
+    /// The interactive init prompt failed while reading or writing the terminal.
+    #[error("interactive init prompt failed")]
+    InteractiveInit(#[source] std::io::Error),
+    /// The interactive init prompt reached the end of its input.
+    #[error("interactive init prompt reached end of input")]
+    InteractiveInitEof,
     /// The async MCP runtime could not be created.
     #[error("failed to create MCP runtime")]
     CreateMcpRuntime(#[source] std::io::Error),
