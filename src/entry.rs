@@ -254,6 +254,27 @@ impl EntryMetadata {
         }
         changed
     }
+
+    /// Rename one structural metadata field.
+    ///
+    /// The field stays in its original order position.
+    pub fn rename_structural_field(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+        let old_field = old_id.as_str();
+        if !self.structural.contains_key(old_field) {
+            return false;
+        }
+
+        let mut renamed = EntryStructuralFields::with_capacity(self.structural.len());
+        for (field, targets) in std::mem::take(&mut self.structural) {
+            if field == old_field {
+                renamed.insert(new_id.as_str().to_owned(), targets);
+            } else {
+                renamed.insert(field, targets);
+            }
+        }
+        self.structural = renamed;
+        true
+    }
 }
 
 /// Marker for the canonical `frozen:` metadata field.
@@ -716,6 +737,26 @@ Body.
             &[new_id.clone(), EntryId::new("other-entry").unwrap()]
         );
         assert_eq!(metadata.structural_targets_for("refines"), &[new_id]);
+    }
+
+    #[test]
+    fn renames_structural_fields() {
+        let old_id = EntryId::new("refines").unwrap();
+        let new_id = EntryId::new("prerequisite").unwrap();
+        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        metadata.push_structural_target("category", EntryId::new("concept").unwrap());
+        metadata.push_structural_target("refines", EntryId::new("broader").unwrap());
+        metadata.push_structural_target("belongs", EntryId::new("area").unwrap());
+
+        assert!(metadata.rename_structural_field(&old_id, &new_id));
+
+        let fields = metadata.structural_fields().map(|(field, _)| field).collect::<Vec<_>>();
+        assert_eq!(fields, ["category", "prerequisite", "belongs"]);
+        assert_eq!(
+            metadata.structural_targets_for("prerequisite"),
+            &[EntryId::new("broader").unwrap()]
+        );
+        assert!(metadata.structural_field("refines").is_none());
     }
 
     #[test]

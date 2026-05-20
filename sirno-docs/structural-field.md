@@ -25,6 +25,12 @@ Sirno uses that order when rendering configured structural surfaces.
 Humans discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.
 Agents use the corresponding MCP witness tool.
 
+Because a configured field name is also an *entry* id,
+`sirno entry rename OLD NEW` treats that field name as part of the rename.
+It rewrites authored metadata keys from `OLD` to `NEW` across the *lake*
+and rewrites `[structural.OLD]` in `Sirno.toml` to `[structural.NEW]`.
+The same operation also rewrites structural target values that name `OLD`.
+
 This *entry* is the review front door for the structural field *entries*.
 It gives the field set one review front door while leaving each field *entry* free
 to carry its own meaning and other `belongs` targets.

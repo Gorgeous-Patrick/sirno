@@ -11,11 +11,12 @@ use crate::core::dto::{
 use super::OpenTideTutorial;
 
 use crate::{
-    CONFIG_FILE_NAME, Entry, EntryId, EntryMetadata, EntryQuery, Eterator, FrostError,
-    FrostLockStatus, FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralEdgeDirection, StructuralEdgeSettings,
-    StructuralFieldSettings, StructuralRippleSettings, StructuralSettings, TideSource, TideStatus,
-    TideWorkitem, TutorialSettings, WitnessRecord, WitnessSpan,
+    CONFIG_FILE_NAME, CheckMode, Entry, EntryDirectory, EntryDirectoryCheckSettings, EntryId,
+    EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus, FrostSettings,
+    LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
+    StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings,
+    StructuralRippleSettings, StructuralSettings, TideSource, TideStatus, TideWorkitem,
+    TutorialSettings, WitnessRecord, WitnessSpan,
 };
 
 use super::{
@@ -2740,6 +2741,93 @@ fn sample() {{}}
     assert!(reader_source.contains("area:\n  - new-entry\n"));
     assert!(witness_source.contains("sirno:witness:new-entry:begin"));
     assert!(witness_source.contains("sirno:witness:new-entry:end"));
+}
+
+#[test]
+fn rename_command_updates_structural_field_names_and_config() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    SirnoConfig {
+        structural: StructuralSettings::from_fields([(
+            "refines",
+            StructuralFieldSettings::render_only(true, true, false),
+        )]),
+        ..SirnoConfig::new("docs")
+    }
+    .write_new(&config_path)
+    .unwrap();
+    fs::create_dir(&docs).unwrap();
+    fs::write(
+        docs.join("concept.md"),
+        "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("refines.md"),
+        "\
+---
+name: Refines
+desc: A structural field.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("reader.md"),
+        "\
+---
+name: Reader
+desc: Reader entry.
+refines:
+  - concept
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    Cli::parse_from([
+        "sirno",
+        "--config",
+        config_path.to_str().unwrap(),
+        "entry",
+        "rename",
+        "refines",
+        "prerequisite",
+    ])
+    .run()
+    .unwrap();
+
+    let reader_source = fs::read_to_string(docs.join("reader.md")).unwrap();
+    let config_source = fs::read_to_string(&config_path).unwrap();
+    let checked = EntryDirectory::new(&docs)
+        .check_with_settings(
+            CheckMode::Review,
+            &EntryDirectoryCheckSettings {
+                structural: SirnoConfig::from_file(&config_path).unwrap().structural,
+                ..EntryDirectoryCheckSettings::default()
+            },
+        )
+        .unwrap();
+
+    assert!(!docs.join("refines.md").exists());
+    assert!(docs.join("prerequisite.md").exists());
+    assert!(reader_source.contains("prerequisite:\n  - concept\n"));
+    assert!(!reader_source.contains("refines:"));
+    assert!(config_source.contains("[structural.prerequisite]"));
+    assert!(!config_source.contains("[structural.refines]"));
+    assert!(checked.is_clean());
 }
 
 #[test]

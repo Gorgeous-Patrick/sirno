@@ -231,6 +231,27 @@ impl StructuralSettings {
     pub fn contains_field(&self, field: &str) -> bool {
         self.fields.contains_key(field)
     }
+
+    /// Rename one configured structural field.
+    ///
+    /// The field stays in its original order position.
+    pub fn rename_field(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+        let old_field = old_id.as_str();
+        if !self.fields.contains_key(old_field) {
+            return false;
+        }
+
+        let mut renamed = StructuralFieldMap::with_capacity(self.fields.len());
+        for (field, settings) in std::mem::take(&mut self.fields) {
+            if field == old_field {
+                renamed.insert(new_id.as_str().to_owned(), settings);
+            } else {
+                renamed.insert(field, settings);
+            }
+        }
+        self.fields = renamed;
+        true
+    }
 }
 
 /// Lake-wide structural edge context.
@@ -330,4 +351,28 @@ impl StructuralEdgeIndex {
         targets
     }
     // sirno:witness:structural-edge-policy:end
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn renames_structural_setting_field_in_place() {
+        let mut settings = StructuralSettings::from_fields([
+            ("category", StructuralFieldSettings::default()),
+            ("refines", StructuralFieldSettings::render_only(true, false, false)),
+            ("belongs", StructuralFieldSettings::default()),
+        ]);
+
+        assert!(settings.rename_field(
+            &EntryId::new("refines").unwrap(),
+            &EntryId::new("prerequisite").unwrap()
+        ));
+
+        let fields = settings.fields().map(|(field, _)| field).collect::<Vec<_>>();
+        assert_eq!(fields, ["category", "prerequisite", "belongs"]);
+        assert_eq!(settings.fields().nth(1).map(|(_, settings)| settings.to.render), Some(true));
+        assert!(!settings.contains_field("refines"));
+    }
 }

@@ -517,8 +517,9 @@ impl EntryDirectory {
         self.set_entry_frozen(id, false)
     }
 
-    /// Rename one entry id and every structural metadata target that references it.
+    /// Rename one entry id and every structural metadata reference that names it.
     ///
+    /// When the old id is a configured structural field, entry metadata keys are renamed too.
     /// Existing generated-link regions are refreshed after metadata changes.
     /// Prose outside generated-link regions remains user-owned.
     pub fn rename_entry(
@@ -563,6 +564,9 @@ impl EntryDirectory {
             | Err(source) => return Err(source.into()),
         }
 
+        let mut renamed_structural = settings.structural.clone();
+        let rename_structural_field = renamed_structural.rename_field(old_id, new_id);
+
         let mut entries = Vec::<(EntryId, Entry, bool)>::new();
         for entry in checked.entries() {
             let original_id = entry.id.clone();
@@ -570,7 +574,10 @@ impl EntryDirectory {
             if &entry.id == old_id {
                 entry.id = new_id.clone();
             }
-            let content_changed = entry.metadata.rename_structural_target(old_id, new_id);
+            let mut content_changed = entry.metadata.rename_structural_target(old_id, new_id);
+            if rename_structural_field {
+                content_changed |= entry.metadata.rename_structural_field(old_id, new_id);
+            }
             entries.push((original_id, entry, content_changed));
         }
 
@@ -587,7 +594,7 @@ impl EntryDirectory {
                 .ok_or_else(|| EntryDirectoryError::MissingEntryPath(original_id.clone()))?;
             let destination_path =
                 if &original_id == old_id { new_path.as_path() } else { source_path };
-            let footer = link_index.render_entry(&entry, &settings.structural);
+            let footer = link_index.render_entry(&entry, &renamed_structural);
             let body = GeneratedLinkBody::new(&entry.body);
             if body.is_stale(&footer)? {
                 entry.body = body.apply(&footer)?;
@@ -2327,6 +2334,73 @@ Body.
         assert!(!reader_source.contains("old-entry"));
         assert!(renamed_source.contains("[reader](reader.md)"));
         assert!(checked.is_clean());
+    }
+
+    #[test]
+    fn rename_entry_updates_configured_structural_field_names() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("docs");
+        fs::create_dir(&root).unwrap();
+        write_entry(
+            &root,
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+        );
+        write_entry(
+            &root,
+            "refines.md",
+            "\
+---
+name: Refines
+desc: A structural field.
+---
+
+Body.
+",
+        );
+        write_entry(
+            &root,
+            "reader.md",
+            "\
+---
+name: Reader
+desc: Reader entry.
+refines:
+  - concept
+---
+
+Body.
+",
+        );
+        let settings = EntryDirectoryCheckSettings {
+            structural: structural_settings([("refines", render_settings(true, true, false))]),
+            ..EntryDirectoryCheckSettings::default()
+        };
+        let directory = entry_directory(&root);
+        directory.generate_links(&settings.structural).unwrap();
+
+        directory
+            .rename_entry(
+                &EntryId::new("refines").unwrap(),
+                &EntryId::new("prerequisite").unwrap(),
+                &settings,
+            )
+            .unwrap();
+        let reader_source = fs::read_to_string(root.join("reader.md")).unwrap();
+        let concept_source = fs::read_to_string(root.join("concept.md")).unwrap();
+
+        assert!(!root.join("refines.md").exists());
+        assert!(root.join("prerequisite.md").exists());
+        assert!(reader_source.contains("prerequisite:\n  - concept\n"));
+        assert!(!reader_source.contains("refines:"));
+        assert!(concept_source.contains("- prerequisite (from):\n  - [reader](reader.md)"));
     }
 
     #[test]

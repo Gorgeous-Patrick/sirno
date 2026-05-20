@@ -322,10 +322,25 @@ impl CoreContext {
     pub fn entry_rename(
         &self, old_id: EntryId, new_id: EntryId,
     ) -> Result<EntryRenameResult, CommandError> {
+        let renamed_config = if self.config_path.exists() {
+            let mut config = SirnoConfig::from_file(&self.config_path)?;
+            if config.structural.rename_field(&old_id, &new_id) {
+                config.validate_for_file(&self.config_path)?;
+                Some(config)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report = EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
         let mut changed_paths = report.changed_paths().to_vec();
+        if let Some(config) = renamed_config {
+            config.write(&self.config_path)?;
+            changed_paths.push(self.config_path.clone());
+        }
         if let Some(witness) = &settings.witness {
             changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
         }
