@@ -35,21 +35,33 @@ impl CheckMode {
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
     ) -> CheckReport {
+        self.check_entries_with_structural_inhabitance(entries, structural, true)
+    }
+
+    /// Check structural metadata targets, with explicit structural-inhabitance policy.
+    ///
+    /// Structural inhabitance requires each configured structural field to name an existing entry.
+    pub fn check_entries_with_structural_inhabitance<'a>(
+        self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
+        structural_inhabitance: bool,
+    ) -> CheckReport {
         let entries = entries.into_iter().collect::<Vec<_>>();
         let entries_by_id =
             entries.iter().map(|entry| (entry.id.clone(), *entry)).collect::<BTreeMap<_, _>>();
         let severity = self.severity();
 
         let mut report = CheckReport::new();
-        for (field, _) in structural.fields() {
-            if !entries_by_id.keys().any(|id| id.as_str() == field) {
-                report.push(CheckDiagnostic {
-                    severity,
-                    kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
-                    entry: None,
-                    field: field.to_owned(),
-                    target: None,
-                });
+        if structural_inhabitance {
+            for (field, _) in structural.fields() {
+                if !entries_by_id.keys().any(|id| id.as_str() == field) {
+                    report.push(CheckDiagnostic {
+                        severity,
+                        kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
+                        entry: None,
+                        field: field.to_owned(),
+                        target: None,
+                    });
+                }
             }
         }
         for entry in entries {
@@ -257,6 +269,19 @@ mod tests {
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
         assert!(report.has_errors());
         assert!(report.diagnostics()[0].message().contains("entry `topic` does not exist"));
+    }
+
+    #[test]
+    fn structural_inhabitance_can_be_skipped() {
+        let concept = entry("concept");
+
+        let report = CheckMode::Review.check_entries_with_structural_inhabitance(
+            [&concept],
+            &structural_settings(),
+            false,
+        );
+
+        assert!(report.is_clean());
     }
 
     #[test]

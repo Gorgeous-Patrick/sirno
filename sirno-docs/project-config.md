@@ -82,6 +82,9 @@ but they should include every *entry* id allowed by the active project policy.
 It is enabled by default.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
+`[check].structural-inhabitance` controls whether checks require each configured structural field
+to name an existing *entry*.
+It is enabled by default.
 
 `[tutorial]` controls optional instructional CLI output.
 The table is absent by default.
@@ -95,6 +98,8 @@ Removing the table silences all tutorial text.
 Each structural field is written as a `[structural.FIELD]` subtable.
 The field name should also name the *entry* that documents that structural field
 and follow normal *entry* id rules.
+When `[check].structural-inhabitance` is enabled,
+checks report configured structural fields without matching *entries*.
 It must be a non-empty single-line metadata key,
 must not contain a comma,
 and must not be `name`, `desc`, or `frozen`.
@@ -123,6 +128,7 @@ They are cleared after a successful Frost commit.
 
 - belongs (to):
   - [lake](lake.md)
-- belongs (from): (none)
+- belongs (from):
+  - [project-config-comments](project-config-comments.md)
 
 > **Sirno generated links end.**

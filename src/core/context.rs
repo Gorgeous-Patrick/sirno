@@ -692,13 +692,9 @@ impl CoreContext {
         }
 
         let report = if dry {
-            directory.check_generated_links_with_ignored_paths(
-                &settings.structural,
-                settings.ignore.clone(),
-            )?
+            directory.check_generated_links_with_check_settings(&settings)?
         } else {
-            directory
-                .generate_links_with_ignored_paths(&settings.structural, settings.ignore.clone())?
+            directory.generate_links_with_check_settings(&settings)?
         };
         Ok(RenderResult::from_report(&report, dry))
     }
@@ -1376,6 +1372,7 @@ fn entry_directory_check_settings(
 ) -> EntryDirectoryCheckSettings {
     EntryDirectoryCheckSettings {
         render: config.check.render,
+        structural_inhabitance: config.check.structural_inhabitance,
         structural: config.structural.clone(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),

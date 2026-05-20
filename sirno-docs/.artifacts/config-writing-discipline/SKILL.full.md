@@ -98,6 +98,9 @@ Ignored paths must not be absolute and must not escape upward.
 
 `[check].render` controls generated-footer freshness checks.
 It defaults to true.
+`[check].structural-inhabitance` controls the check that every configured structural field
+has a matching entry.
+It defaults to true.
 
 `[tutorial]` enables tutorial text by table presence.
 `frost_commit_tide` controls the tutorial for Frost commits blocked by open tide workitems.
@@ -110,6 +113,8 @@ Each structural field is configured by one `[structural.FIELD]` subtable.
 `FIELD` must be non-empty, single-line, contain no comma,
 and must not be `name`, `desc`, or `frozen`.
 The field should also name the lake entry that documents it.
+When `[check].structural-inhabitance` is true,
+checks require that documentation entry to exist.
 
 Each structural field may define `to`, `from`, and `clique` edge tables.
 Each edge may set:

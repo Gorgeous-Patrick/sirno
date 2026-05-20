@@ -18,6 +18,8 @@ reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
 Each configured structural field must also name an existing *entry*.
+That structural-inhabitance check is controlled by `[check].structural-inhabitance`
+and is enabled by default.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 They also report configured *witness* delimiters that are not part of a complete block.
@@ -58,6 +60,7 @@ If an *entry* names a target through configured structural metadata,
 that target should exist by the time the *lake* is reviewed.
 If `Sirno.toml` configures a structural field,
 the field name should also exist as the *entry* that documents that field.
+`[check].structural-inhabitance` controls that configured-field entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
 

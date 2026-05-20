@@ -63,6 +63,8 @@ pub struct EntryDirectoryReport {
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
+    /// Check that each configured structural field has a matching entry.
+    pub structural_inhabitance: bool,
     /// Configured structural fields and generated footer settings.
     pub structural: StructuralSettings,
     /// Lake-root-relative paths ignored by Sirno.
@@ -76,6 +78,7 @@ impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
         Self {
             render: true,
+            structural_inhabitance: true,
             structural: StructuralSettings::default(),
             ignore: Vec::new(),
             witness: None,
@@ -452,7 +455,11 @@ impl EntryDirectory {
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         trace!("check_entry_directory begin: root={}", self.root.display());
         let loaded = LoadedEntryDirectory::load(&self.root, mode, settings)?;
-        let structural_report = mode.check_entries(&loaded.entries, &settings.structural);
+        let structural_report = mode.check_entries_with_structural_inhabitance(
+            &loaded.entries,
+            &settings.structural,
+            settings.structural_inhabitance,
+        );
         trace!(
             "check_entry_directory end: entries={} file_diagnostics={} structural_diagnostics={}",
             loaded.entries.len(),
@@ -765,7 +772,19 @@ impl EntryDirectory {
     pub fn generate_links_with_ignored_paths(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(settings, ignore, GenLinkOperation::Write)
+        self.process_generated_links(settings, ignore, true, GenLinkOperation::Write)
+    }
+
+    /// Generate Markdown link footers using directory check settings.
+    pub fn generate_links_with_check_settings(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
+        self.process_generated_links(
+            &settings.structural,
+            settings.ignore.clone(),
+            settings.structural_inhabitance,
+            GenLinkOperation::Write,
+        )
     }
 
     /// Check which generated Markdown link footers would change with ignored paths.
@@ -775,12 +794,26 @@ impl EntryDirectory {
     pub fn check_generated_links_with_ignored_paths(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(settings, ignore, GenLinkOperation::Check)
+        self.process_generated_links(settings, ignore, true, GenLinkOperation::Check)
+    }
+
+    /// Check generated Markdown link footers using directory check settings.
+    ///
+    /// No file is written.
+    pub fn check_generated_links_with_check_settings(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
+        self.process_generated_links(
+            &settings.structural,
+            settings.ignore.clone(),
+            settings.structural_inhabitance,
+            GenLinkOperation::Check,
+        )
     }
 
     fn process_generated_links(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
-        operation: GenLinkOperation,
+        structural_inhabitance: bool, operation: GenLinkOperation,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
         trace!(
             "gen_link_entry_directory begin: root={} operation={}",
@@ -789,6 +822,7 @@ impl EntryDirectory {
         );
         let check_settings = EntryDirectoryCheckSettings {
             render: false,
+            structural_inhabitance,
             structural: settings.clone(),
             ignore: ignore.into_iter().collect(),
             witness: None,
@@ -850,6 +884,7 @@ impl EntryDirectory {
         trace!("delete_gen_link_entry_directory begin: root={}", self.root.display());
         let check_settings = EntryDirectoryCheckSettings {
             render: false,
+            structural_inhabitance: true,
             structural: StructuralSettings::default(),
             ignore: ignore.into_iter().collect(),
             witness: None,
@@ -2084,6 +2119,39 @@ kind:
 
         assert!(report.has_errors());
         assert_eq!(report.structural_report().diagnostics().len(), 1);
+    }
+
+    #[test]
+    fn check_can_skip_structural_inhabitance() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+        );
+
+        let report = entry_directory(temp.path())
+            .check_with_settings(
+                CheckMode::Review,
+                &EntryDirectoryCheckSettings {
+                    structural_inhabitance: false,
+                    structural: structural_settings([(
+                        FIELD_KIND,
+                        StructuralFieldSettings::default(),
+                    )]),
+                    ..EntryDirectoryCheckSettings::default()
+                },
+            )
+            .unwrap();
+
+        assert!(report.is_clean());
     }
 
     #[test]

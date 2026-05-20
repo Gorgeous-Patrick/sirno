@@ -60,11 +60,14 @@ pub const STANDARD_MARKDOWN_WITNESS_END_REGEX: &str = concat!(
 pub struct CheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
+    /// Check that each configured structural field has a matching entry.
+    #[serde(rename = "structural-inhabitance")]
+    pub structural_inhabitance: bool,
 }
 
 impl Default for CheckSettings {
     fn default() -> Self {
-        Self { render: true }
+        Self { render: true, structural_inhabitance: true }
     }
 }
 
@@ -586,6 +589,11 @@ impl ConfigRenderer {
             &config.check.render,
             "Require generated footers to match current metadata during checks.",
         )?;
+        self.push_field(
+            "structural-inhabitance",
+            &config.check.structural_inhabitance,
+            "Require each configured structural field to have a matching entry during checks.",
+        )?;
         // sirno:witness:project-config-comments:end
 
         if let Some(tutorial) = config.tutorial {
@@ -897,10 +905,11 @@ path = "docs"
 
 [check]
 render = false
+structural-inhabitance = false
 "#,
         );
 
-        assert_eq!(config.check, CheckSettings { render: false });
+        assert_eq!(config.check, CheckSettings { render: false, structural_inhabitance: false });
     }
 
     #[test]
@@ -1411,6 +1420,7 @@ delimiters = []
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("structural-inhabitance = true"));
         assert!(!source.contains("[tutorial]"));
         assert!(source.contains("[structural]"));
         assert!(!source.contains("# Structural metadata field"));
@@ -1427,7 +1437,7 @@ delimiters = []
             frost: Some(FrostSettings::new("sirno-frost")),
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
-            check: CheckSettings { render: false },
+            check: CheckSettings { render: false, structural_inhabitance: false },
             tutorial: Some(TutorialSettings {
                 frost_commit_tide: true,
                 frost_bootstrap_tide: false,
@@ -1464,6 +1474,8 @@ delimiters = []
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
+        assert!(source.contains("# Require each configured structural field"));
+        assert!(source.contains("structural-inhabitance = false"));
         assert!(source.contains("[tutorial]"));
         assert!(source.contains(
             "# Presence of this table enables tutorial text for recoverable command failures."

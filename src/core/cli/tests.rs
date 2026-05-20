@@ -11,8 +11,8 @@ use crate::core::dto::{
 use super::OpenTideTutorial;
 
 use crate::{
-    CONFIG_FILE_NAME, CheckMode, Entry, EntryDirectory, EntryDirectoryCheckSettings, EntryId,
-    EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus, FrostSettings,
+    CONFIG_FILE_NAME, CheckMode, CheckSettings, Entry, EntryDirectory, EntryDirectoryCheckSettings,
+    EntryId, EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus, FrostSettings,
     LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
     StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings,
     StructuralRippleSettings, StructuralSettings, TideSource, TideStatus, TideWorkitem,
@@ -2187,6 +2187,40 @@ fn check_accepts_short_mode() {
         cli.command,
         Command::TopLevelLake(TopLevelLakeCommand::Check { mode: Some(CheckModeArg::Review), .. })
     ));
+}
+
+#[test]
+fn check_config_can_skip_structural_inhabitance() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    fs::create_dir(&docs).unwrap();
+    let config = SirnoConfig {
+        check: CheckSettings { render: true, structural_inhabitance: false },
+        structural: StructuralSettings::from_fields([(
+            "topic",
+            StructuralFieldSettings::default(),
+        )]),
+        ..SirnoConfig::new("docs")
+    };
+    config.write_new(&config_path).unwrap();
+    fs::write(
+        docs.join("concept.md"),
+        "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    let result = CoreContext::new(&config_path).lake_check(CheckMode::Review).unwrap();
+
+    assert!(!result.has_errors);
+    assert!(result.diagnostics.is_empty());
 }
 
 #[test]

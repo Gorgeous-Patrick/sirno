@@ -3,6 +3,8 @@ name: Project Config Comments
 desc: The exact comments Sirno writes beside generated project config fields.
 category:
   - concept
+belongs:
+  - project-config
 prerequisite:
   - project-config
 ---
@@ -27,6 +29,7 @@ The generated comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
+- `Require each configured structural field to have a matching entry during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`
 - `Show tutorial text when frost commit is blocked by open tide workitems.`
@@ -49,7 +52,8 @@ The Rust config types and TOML parser remain the schema boundary.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [project-config](project-config.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

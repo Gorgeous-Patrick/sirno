@@ -54,6 +54,8 @@ Optional tables describe configured surfaces and policy.
 `[repo].members` names files, directories, or globs scanned for witness blocks.
 `[lake].ignore` names lake-root-relative paths Sirno skips.
 `[check].render` controls generated-footer freshness checks and defaults to true.
+`[check].structural-inhabitance` controls the configured-field entry check
+and defaults to true.
 The presence of `[tutorial]` enables tutorial text,
 with `frost_commit_tide` and `frost_bootstrap_tide` defaulting to true.
 
@@ -68,6 +70,8 @@ Structural fields are `[structural.FIELD]` subtables.
 `FIELD` must be non-empty, single-line, contain no comma,
 and must not be `name`, `desc`, or `frozen`.
 It should also name the lake entry that documents the field.
+When `[check].structural-inhabitance` is true,
+checks require that documentation entry to exist.
 Each structural field may define `to`, `from`, and `clique` edge tables.
 Each edge may set `render = true` and `ripple = { lake = true, frost = true }`.
 Omitted structural edge values are false.
