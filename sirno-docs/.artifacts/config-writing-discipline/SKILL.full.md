@@ -28,12 +28,10 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 Prefer Sirno MCP tools for routine project config writes:
 
-```text
-sirno_lake_init
-sirno_lake_move
-sirno_frost_init
-sirno_frost_move
-```
+- `sirno_lake_init`
+- `sirno_lake_move`
+- `sirno_frost_init`
+- `sirno_frost_move`
 
 Use manual TOML edits only when the current MCP tools cannot express the intended schema change.
 Read the existing `Sirno.toml` before editing.
@@ -50,13 +48,8 @@ After writing `Sirno.toml`, run:
 sirno util config --fix
 ```
 
-Then run:
-
-```text
-sirno_lake_check mode=review
-```
-
-If lake metadata changed, run `sirno_lake_render` before the review check.
+Then run `sirno_lake_check mode=review`.
+If lake metadata changed, also run `sirno_lake_render` before the review check.
 
 ## Minimal Config
 
@@ -68,13 +61,6 @@ When writing `Sirno.toml` manually, start from this valid minimal form:
 path = "sirno-docs"
 
 [witness]
-[[witness.delimiters]]
-begin = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):begin'
-end = '(?m)^[ \t]*//[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):end'
-
-[[witness.delimiters]]
-begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):begin[ \t]*-->'
-end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+):end[ \t]*-->'
 ```
 
 After writing a manual config,
