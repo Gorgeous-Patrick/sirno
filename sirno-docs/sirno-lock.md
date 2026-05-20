@@ -6,7 +6,7 @@ category:
 belongs:
   - sirno-frost
 prerequisite:
-  - versioning
+  - sirno-frost
 ---
 
 `Sirno.lock.toml` records the public *lake*'s state relative to the configured *frost* path.

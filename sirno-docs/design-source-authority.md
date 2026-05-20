@@ -6,6 +6,8 @@ category:
   - meta
 belongs:
   - lake
+prerequisite:
+  - form
 ---
 
 Before editing a *lake*, decide which form currently carries design authority.

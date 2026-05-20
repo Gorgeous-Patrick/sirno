@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - witness-lookup
 ---
 
 A *witness record* is one resolved *repository witness* block.

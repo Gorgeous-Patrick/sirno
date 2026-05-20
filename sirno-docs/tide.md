@@ -6,7 +6,7 @@ category:
 belongs:
   - sirno-tide
 prerequisite:
-  - ripple
+  - sirno-tide
 ---
 
 A *tide* is the dependency-based review worklist for the current public *lake*.

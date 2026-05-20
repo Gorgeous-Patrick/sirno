@@ -5,6 +5,9 @@ category:
   - concept
 belongs:
   - form
+prerequisite:
+  - lake
+  - repo
 ---
 
 A *transform* names a kind of work between Sirno *forms*.

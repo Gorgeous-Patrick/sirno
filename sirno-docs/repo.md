@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - form
+prerequisite:
+  - form
 ---
 
 The `repo` form is the *repository*.

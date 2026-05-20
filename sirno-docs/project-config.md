@@ -99,7 +99,7 @@ It must be a non-empty single-line metadata key,
 must not contain a comma,
 and must not be `name`, `desc`, or `frozen`.
 The subtable may define `to`, `from`, and `clique` edge policies.
-This repository recommends `category`, `belongs`, and `refines`.
+This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The key order is user-authored project structure.
 Sirno preserves that order when it rewrites `Sirno.toml`.
 Each edge policy may set `render = true`

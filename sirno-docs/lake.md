@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - form
+prerequisite:
+  - form
 ---
 
 The Sirno Lake is the configured directory of Markdown *entries*.
@@ -52,7 +54,7 @@ The *lake* should feel like a set of well-named design cards.
 Each card has enough prose to be useful on its own,
 but it also participates in a larger graph through metadata.
 The graph is intentionally small:
-classification, belonging, refinement, and *witnesses*.
+classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 The `frozen:` marker adds a file-level protection state,
 so one current Frost-backed public *entry* can be held read-only

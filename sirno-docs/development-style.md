@@ -3,6 +3,8 @@ name: Development Style
 desc: The review neighborhood for the named development styles a Sirno project can adopt.
 category:
   - concept
+prerequisite:
+  - concept
 ---
 
 A development style names how a project chooses to drive implementation work.

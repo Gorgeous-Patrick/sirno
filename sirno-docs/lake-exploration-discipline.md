@@ -5,6 +5,10 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
+  - query
+  - sirno-witness
 ---
 
 Exploration reads a Sirno-managed repository from the lake outward.

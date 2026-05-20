@@ -5,6 +5,8 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
 ---
 
 `design-doc-writer-skill` documents the adjacent meta-management skill

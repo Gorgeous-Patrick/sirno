@@ -6,6 +6,8 @@ category:
   - meta
 belongs:
   - lake
+prerequisite:
+  - concept
 ---
 
 Refinement is the discipline of making a concrete version of a broader claim

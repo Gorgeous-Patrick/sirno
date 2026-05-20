@@ -5,11 +5,13 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - metadata
 ---
 
 A structural field is a configured metadata field that Sirno reads as project structure.
 
-This repository recommends `category`, `belongs`, and `refines`.
+This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 `Sirno.toml` defines the active set with `[structural.FIELD]` subtables.
 Each configured `FIELD` should also name the *entry* that documents that field
 and follow normal *entry* id rules.
@@ -48,5 +50,6 @@ The active field set is defined by `Sirno.toml`.
   - [belongs](belongs.md)
   - [category](category.md)
   - [prerequisite](prerequisite.md)
+  - [refines](refines.md)
 
 > **Sirno generated links end.**

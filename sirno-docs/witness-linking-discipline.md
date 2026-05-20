@@ -5,6 +5,9 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
+  - sirno-witness
 ---
 
 Witness linking connects an entry claim to the repository region that makes it inspectable.

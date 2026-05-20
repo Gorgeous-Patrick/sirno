@@ -5,6 +5,9 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
+  - project-config
 ---
 
 Config writing keeps `Sirno.toml` valid, commented, and aligned with the lake model.

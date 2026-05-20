@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - tide
+prerequisite:
+  - tide
 ---
 
 A *tide workitem* is one dependency review obligation.

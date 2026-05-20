@@ -7,7 +7,9 @@ belongs:
   - sirno-frost
   - lake
 prerequisite:
-  - versioning
+  - sirno-frost
+  - ripple
+  - structural-edge-policy
 ---
 
 Sirno Tide is the dependency-review subsystem of a *frost*-versioned *lake*.

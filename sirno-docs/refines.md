@@ -6,6 +6,7 @@ category:
 belongs:
   - structural-field
 prerequisite:
+  - structural-field
   - refinement
 ---
 

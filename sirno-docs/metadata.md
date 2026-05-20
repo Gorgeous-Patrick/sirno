@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - lake
+prerequisite:
+  - entry
 ---
 
 Metadata is the exact schema that carries Sirno structure.
@@ -14,7 +16,7 @@ The required fields are `name` and `desc`,
 both plain strings.
 
 Configured structural fields are optional.
-This repository configures `category`, `belongs`, and `refines`.
+This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
 They are always lists when present,
 and their values are *entry* ids.
 An empty list is a present empty field.
@@ -37,7 +39,7 @@ and structural fields are lists of ids.
 
 The body can explain nuance,
 but the metadata must not require prose parsing.
-If a tool needs to know that one *entry* refines another,
+If a tool needs to know that one *entry* depends on or refines another,
 the configured structural metadata must say so.
 If an agent needs to inspect *repository* evidence for an *entry*,
 it should use the agent-facing MCP tool.

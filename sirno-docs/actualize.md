@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - transform
+prerequisite:
+  - transform
 ---
 
 `actualize` moves from `lake` to `repo`.
@@ -13,7 +15,7 @@ Actualizing uses the canonical *lake* to shape repository material.
 Before editing source, tests, configuration, README files, generated output,
 or design documents outside the *lake*,
 read the *entries* that govern the work,
-follow their category, belongs, and refines structure,
+follow their category, belongs, prerequisite, and refines structure,
 and inspect any witnessed *repository* regions.
 
 An actualization step should be able to answer which *entry* explains a local commitment.

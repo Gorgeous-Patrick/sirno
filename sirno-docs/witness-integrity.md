@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - witness-lookup
 ---
 
 *Witness integrity* is the set of failures Sirno reports

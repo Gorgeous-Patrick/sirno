@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - witness-lookup
 ---
 
 *Witness rename* keeps *repository witness* blocks pointing at the right *entry*

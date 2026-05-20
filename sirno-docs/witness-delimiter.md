@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - sirno-witness
 ---
 
 A *witness delimiter* is a configured regex pair that marks a block.

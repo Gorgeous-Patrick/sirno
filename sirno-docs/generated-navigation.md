@@ -3,6 +3,8 @@ name: Generated Navigation
 desc: The review neighborhood for Sirno-owned generated footer navigation.
 category:
   - concept
+prerequisite:
+  - generated-footer
 ---
 
 Generated navigation is the review front door for the Sirno-owned footer machinery.

@@ -7,6 +7,7 @@ belongs:
   - lake
 prerequisite:
   - interfaces
+  - metadata
 ---
 
 Query selects parsed *entries* from the public *lake* or,

@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - lake
+prerequisite:
+  - lake
 ---
 
 An *entry* is a Markdown file in the Sirno Lake.
@@ -26,7 +28,7 @@ so the final `.md` filename stays inside common component limits.
 
 Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
-This repository recommends `category`, `belongs`, and `refines`.
+This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
 The `frozen:` field marks a current Frost-backed *entry* as read-only
 through `sirno freeze ENTRY_ID`.
@@ -34,8 +36,9 @@ An *entry* file may use LF or CRLF line endings.
 Use one line-ending style per file so byte-preserving tools can keep the file predictable.
 
 An *entry* should be focused enough to read in place.
-It can state a concept, category, review neighborhood, refinement, invariant,
-interface, implementation commitment, witnessable claim, or narrative route.
+It can state a concept, category, review neighborhood, knowledge dependency,
+refinement, invariant, interface, implementation commitment, witnessable claim,
+or narrative route.
 
 The body of an *entry* should be useful prose, not just a label.
 It should tell a future reader what the *entry* means,

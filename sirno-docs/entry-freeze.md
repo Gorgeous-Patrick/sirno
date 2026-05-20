@@ -6,6 +6,9 @@ category:
 belongs:
   - entry
   - sirno-frost
+prerequisite:
+  - entry
+  - sirno-frost
 ---
 
 An *entry freeze* is an explicit protection state for one public Markdown *entry*

@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - generated-navigation
+prerequisite:
+  - structural-field
 ---
 
 Sirno may generate and maintain a footer at the bottom of *entries*.

@@ -7,6 +7,8 @@ category:
   - concept
 belongs:
   - structural-field
+prerequisite:
+  - structural-field
 ---
 
 `category` classifies an *entry* by other *entries*.
@@ -37,6 +39,8 @@ The project can grow vocabulary by adding *entries*.
 Categories should stay semantic rather than decorative.
 If a label only helps browsing by topic,
 `belongs` may be a better fit.
+If a label names earlier knowledge needed for understanding,
+`prerequisite` is the sharper field.
 If an *entry* makes another *entry* more concrete,
 `refines` is the sharper field.
 The category field is most useful when it tells the reader what kind of object they are looking at.

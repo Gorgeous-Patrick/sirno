@@ -7,6 +7,7 @@ category:
 belongs:
   - narrative
 prerequisite:
+  - introduction
   - concept-driven-development
   - transform
   - sirno-witness
@@ -30,7 +31,8 @@ It makes the relevant objects easier to name, connect, revise, and witness.
 Start from the *lake*.
 This repository keeps its design source in `sirno-docs/`.
 Read `introduction` first when you need the first route through the project.
-Then follow categories, `belongs`, `refines`, and *witnesses* to the local design.
+Then follow categories, `belongs`, `prerequisite`, `refines`, and *witnesses*
+to the local design.
 
 Name the thing before the work becomes local.
 An *entry* should be small enough to read in place
@@ -41,6 +43,7 @@ implementation commitment, or narrative route.
 Use `category` for kind.
 A category target must itself be categorized by `category`.
 Use `belongs` for review locality.
+Use `prerequisite` for knowledge dependencies.
 Use `refines` for semantic narrowing.
 Use *repository witness* blocks when the *repository* contains evidence for the *entry* claim.
 Leave a *structural field* out when it does not improve navigation, review, or accountability.
@@ -54,7 +57,7 @@ guiding principles, terms, splitting rules, narrative habits, review expectation
 Actualize from named objects.
 Before editing repository material,
 read the *entries* that govern the work.
-Inspect their `belongs`, `refines`, and *witnesses*.
+Inspect their `belongs`, `prerequisite`, `refines`, and *witnesses*.
 Code, tests, README files, generated output, and design documents outside the *lake*
 should be able to answer which *entry* explains an important commitment.
 
@@ -93,13 +96,15 @@ They do not replace judgment about meaning.
 
 Treat planning as a use of Sirno, not a core primitive.
 A worklist can be represented as ordinary *entries* when that helps.
-Those *entries* can use categories, `belongs`, `refines`, and *witnesses* like the rest of the *lake*.
+Those *entries* can use categories, `belongs`, `prerequisite`, `refines`, and *witnesses*
+like the rest of the *lake*.
 
 The habit is simple.
 Name the thing.
 Write the *entry*.
 Classify it only when classification helps.
 Place it in a review neighborhood when the shared subject deserves a front door.
+Name prerequisites when earlier knowledge unlocks the current claim.
 Refine it when broad design needs local form.
 Witness it when the *repository* contains its evidence.
 

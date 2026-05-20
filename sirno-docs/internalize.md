@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - transform
+prerequisite:
+  - transform
 ---
 
 `internalize` moves from `repo` to `lake`.

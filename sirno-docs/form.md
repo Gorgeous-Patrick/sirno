@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - sirno
 ---
 
 Sirno works through two *forms*: `lake` and `repo`.

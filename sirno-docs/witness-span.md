@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - witness-record
 ---
 
 A *witness span* is a source range inside a repository file.

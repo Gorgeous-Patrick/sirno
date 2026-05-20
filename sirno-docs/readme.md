@@ -7,9 +7,8 @@ category:
 belongs:
   - narrative
 prerequisite:
-  - concept-driven-development
-  - sirno-witness
-  - meta
+  - introduction
+  - methodology
 ---
 
 The README is the first-impression route for Sirno.

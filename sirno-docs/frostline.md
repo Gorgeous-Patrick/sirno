@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - ripple
+prerequisite:
+  - ripple
 ---
 
 The *frostline* is the latest Sirno Frost snapshot:

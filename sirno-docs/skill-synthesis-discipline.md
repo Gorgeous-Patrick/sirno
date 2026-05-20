@@ -5,6 +5,8 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
 ---
 
 Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resources

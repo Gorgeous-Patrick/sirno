@@ -1,11 +1,14 @@
 ---
 name: Meta
-desc: A category for entries that define the project's principles, vocabulary, and documentation method.
+desc: A category for entries that define the project's principles, vocabulary, and documentation
+  method.
 category:
   - category
   - meta
   - concept
 belongs:
+  - category
+prerequisite:
   - category
 ---
 

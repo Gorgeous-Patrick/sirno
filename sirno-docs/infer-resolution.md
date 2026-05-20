@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - tide
+prerequisite:
+  - tide-resolution
 ---
 
 *Infer resolution* is `sirno resolve --infer`.

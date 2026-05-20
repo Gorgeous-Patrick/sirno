@@ -5,6 +5,9 @@ category:
   - concept
 belongs:
   - tide
+prerequisite:
+  - tide
+  - ripple-fingerprint
 ---
 
 A *tide resolution* is a recorded statement that one review obligation was met.

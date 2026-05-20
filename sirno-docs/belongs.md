@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - structural-field
+prerequisite:
+  - structural-field
 ---
 
 `belongs` places an *entry* in a named review neighborhood.
@@ -26,6 +28,7 @@ The field says that the member belongs to a named neighborhood.
 It does not say that the member is an instance of a kind
 or that it makes the target *entry* more concrete.
 Use `category` for kind.
+Use `prerequisite` when the current *entry* depends on target knowledge.
 Use `refines` when the current *entry* narrows a broader design claim.
 
 Keep `belongs` targets sparse.

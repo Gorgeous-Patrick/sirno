@@ -6,6 +6,9 @@ category:
 belongs:
   - entry
   - sirno-frost
+prerequisite:
+  - entry
+  - sirno-frost
 ---
 
 An *entry artifact* is a lake-owned file attached to one *entry*.

@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - entry
 ---
 
 Planning lives in skills built on top of Sirno.
@@ -13,7 +15,8 @@ The *entries* are durable, named, and structured by metadata.
 That structure can support persistent planning without adding a planning primitive to Sirno.
 
 A skill may represent a worklist as ordinary *entries*.
-Those *entries* can use categories, `belongs`, `refines`, and *witnesses* like any other *lake entries*.
+Those *entries* can use categories, `belongs`, `prerequisite`, `refines`, and *witnesses*
+like any other *lake entries*.
 
 This keeps the core model small.
 Planning often needs state, priorities, sequencing, ownership, and progress signals.

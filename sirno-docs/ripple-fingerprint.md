@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - ripple
+prerequisite:
+  - ripple
 ---
 
 A *ripple fingerprint* is a short hash of one *ripple*'s delta.

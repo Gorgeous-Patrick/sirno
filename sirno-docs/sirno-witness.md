@@ -5,6 +5,9 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - entry
+  - repo
 ---
 
 A *witness* is *repository* evidence for an *entry* claim.

@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - sirno
 ---
 
 Sirno describes its own design through its own model.
@@ -32,7 +34,7 @@ the self-hosted Sirno Lake that describes Sirno.
 
 The introduction should stay readable as one route.
 Local details that become dense should stay in *entries*
-and be linked through categories, `belongs`, `refines`, and *witnesses*.
+and be linked through categories, `belongs`, `prerequisite`, `refines`, and *witnesses*.
 
 This self-application exercises the design under its own constraints.
 When implementation work changes the model,

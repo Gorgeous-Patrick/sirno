@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - sirno
+prerequisite:
+  - project-config
 ---
 
 Sirno exposes configured project storage through CLI and MCP interfaces.

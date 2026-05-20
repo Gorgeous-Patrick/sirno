@@ -5,6 +5,10 @@ category:
   - concept
 belongs:
   - lake
+prerequisite:
+  - metadata
+  - generated-footer
+  - sirno-witness
 ---
 
 Sirno checks structure.

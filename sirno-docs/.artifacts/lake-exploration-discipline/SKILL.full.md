@@ -53,7 +53,7 @@ It gives each candidate's intended meaning and prevents id-only matching.
 
 3. Read the most relevant entry files from the configured lake.
    Prefer a few high-signal entries over broad scans.
-   Follow `belongs`, `refines`, and configured structural fields when they clarify the route.
+   Follow `belongs`, `prerequisite`, `refines`, and configured structural fields when they clarify the route.
    Ignore generated footer links as authority;
    they project metadata and may be useful only as navigation hints.
 
@@ -104,7 +104,7 @@ Combine vague terms and structural filters when useful:
 
 Use `--columns id,path,desc` when you need entry file paths from the result set.
 Use the configured structural field names from `Sirno.toml`.
-This repository recommends `category`, `belongs`, and `refines`,
+This repository recommends `category`, `belongs`, `prerequisite`, and `refines`,
 but commands should use the structural fields configured in `Sirno.toml`.
 
 Use `sirno_entry_rg` when you need literal text inside Sirno documents:

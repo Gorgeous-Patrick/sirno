@@ -7,6 +7,8 @@ category:
   - concept
 belongs:
   - category
+prerequisite:
+  - category
 ---
 
 A narrative is the storytelling layer over the *lake*.

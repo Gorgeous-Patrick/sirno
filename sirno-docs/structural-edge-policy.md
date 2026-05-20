@@ -7,6 +7,7 @@ belongs:
   - generated-navigation
 prerequisite:
   - structural-field
+  - generated-footer
 ---
 
 Structural edge policy decides how configured structural edges participate in Sirno tooling.
@@ -36,18 +37,23 @@ clique = { ripple = { lake = true } }
 [structural.refines]
 to = { ripple = { lake = true, frost = false } }
 from = { ripple = { lake = true, frost = true } }
+
+[structural.prerequisite]
+to = { ripple = { lake = true, frost = false } }
+from = { ripple = { lake = true, frost = true } }
 ```
 
 `to` follows outgoing metadata targets.
 `from` follows incoming sources that name the current *entry*.
 `clique` follows entries connected through a shared target in that field.
-`refines` uses direct `to` and `from` edges without clique expansion,
-because refinement is a vertical relation.
-`refines` does not render generated footer sections by default.
-It stays available for query and tide review without making every page show refinement navigation.
+`prerequisite` and `refines` use direct `to` and `from` edges without clique expansion,
+because both relations are directional.
+They do not render generated footer sections by default.
+They stay available for query and tide review without making every page show dependency navigation.
 
 Waterline `to` catches the targets named by the ripple after the edit.
 For `belongs`, those targets are current review neighborhoods.
+For `prerequisite`, they are current knowledge dependencies.
 For `refines`, they are current broader entries.
 Frostline `to` is disabled because `to` targets are outgoing metadata on the edited ripple entry itself.
 Old outgoing targets were visible where the edit happened,

@@ -35,6 +35,7 @@ The prose keeps the handle meaningful.
 Sirno keeps its metadata vocabulary small.
 `category` says what kind of *entry* something is.
 `belongs` places an *entry* in one or more review neighborhoods.
+`prerequisite` points to the *entries* a reader should understand first.
 `refines` connects a local *entry* back to the broader *entry* it makes concrete.
 These recommended fields form this repository's structural graph.
 Other Sirno projects may configure a different structural field set.
@@ -79,7 +80,8 @@ The `methodology` *entry* is the compact working guide for acting inside this *l
 The detailed design lives in the *entries* themselves:
 *forms*, *structural fields*, *transforms*, storage, checks, *witnesses*, and *generated footers*.
 Read this *entry* first,
-then follow `belongs`, `refines`, and *witnesses* to the local design you need.
+then follow `belongs`, `prerequisite`, `refines`, and *witnesses*
+to the local design you need.
 
 Agents act inside this *lake* through a packaged skill set;
 the `agent-skills` *entry* is its front door.

@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - entry
+prerequisite:
+  - entry
 ---
 
 ## Model

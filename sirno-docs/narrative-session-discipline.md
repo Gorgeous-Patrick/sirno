@@ -5,6 +5,9 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
+  - interactive-narrative-session
 ---
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.

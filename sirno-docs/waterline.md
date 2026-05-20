@@ -5,6 +5,8 @@ category:
   - concept
 belongs:
   - ripple
+prerequisite:
+  - ripple
 ---
 
 The *waterline* is the current public *lake*:

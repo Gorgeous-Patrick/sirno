@@ -5,6 +5,9 @@ category:
   - meta
 belongs:
   - agent-skills
+prerequisite:
+  - agent-skills
+  - methodology
 ---
 
 Lake editing follows a fixed procedure so the lake stays precise and reviewable.
@@ -40,7 +43,7 @@ order concepts by dependency and scope,
 write declarative, dry, precise prose,
 merge avoidable overlap,
 and evaluate whether each paragraph carries one idea.
-Choose `category`, `belongs`, and `refines` by their own entries,
+Choose `category`, `belongs`, `prerequisite`, and `refines` by their own entries,
 and leave a structural field out when it is merely decorative.
 Use section headings only when they frame the material that follows.
 Do not leave a heading empty by placing another heading, diagram, or list directly under it.

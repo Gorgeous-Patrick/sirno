@@ -5,6 +5,9 @@ category:
   - concept
 belongs:
   - sirno-witness
+prerequisite:
+  - witness-delimiter
+  - project-config
 ---
 
 The *witness* lookup resolves *repository* evidence by scanning configured repo members with `mosaika`.
