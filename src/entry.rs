@@ -133,13 +133,13 @@ pub struct EntryMetadata {
     pub name: String,
     /// Short prose summary of the entry.
     pub desc: String,
-    // sirno:witness:structural-field:begin
+    // sirno:witness:structural:begin
     /// Structural metadata fields keyed by their Markdown metadata field name.
     ///
     /// Field order follows the user-authored metadata order and is preserved when entries move
     /// through other storage forms.
     pub structural: EntryStructuralFields,
-    // sirno:witness:structural-field:end
+    // sirno:witness:structural:end
     /// Freeze marker declaring that this Sirno Lake entry file is read-only.
     pub frozen: Option<FrozenMarker>,
 }

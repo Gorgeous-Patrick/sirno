@@ -6,7 +6,7 @@ category:
 belongs:
   - generated-navigation
 prerequisite:
-  - structural-field
+  - structural
 ---
 
 Sirno may generate and maintain a footer at the bottom of *entries*.

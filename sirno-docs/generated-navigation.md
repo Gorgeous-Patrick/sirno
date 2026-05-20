@@ -4,7 +4,7 @@ desc: The review neighborhood for Sirno-owned generated footer navigation.
 category:
   - concept
 belongs:
-  - structural-field
+  - structural
 prerequisite:
   - generated-footer
 ---
@@ -30,7 +30,7 @@ This neighborhood is the separate horizontal view:
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [structural-field](structural-field.md)
+  - [structural](structural.md)
 - belongs (from):
   - [generated-footer](generated-footer.md)
   - [generated-footer-ownership](generated-footer-ownership.md)

@@ -4,9 +4,9 @@ desc: A structural field that places an entry in a review neighborhood.
 category:
   - concept
 belongs:
-  - structural-field
+  - structural
 prerequisite:
-  - structural-field
+  - structural
 ---
 
 `belongs` places an *entry* in a named review neighborhood.
@@ -66,7 +66,7 @@ Create a new `belongs` target only when the split creates a real new review boun
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [structural-field](structural-field.md)
+  - [structural](structural.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

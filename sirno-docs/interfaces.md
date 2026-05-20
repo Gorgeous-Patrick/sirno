@@ -264,7 +264,7 @@ that would be written under the current `Sirno.toml`.
 `a` inserts all missing defaults.
 `q` and Esc exit.
 The defaults include category vocabulary such as `category`, `meta`, `concept`, and `narrative`,
-and structural-field vocabulary such as `structural-field`, `belongs`, `refines`, and `prerequisite`.
+and structural vocabulary such as `structural`, `belongs`, `refines`, and `prerequisite`.
 The utility accepts `--lake-path` and rejects `--frost-path`.
 
 `sirno util skills init` installs bundled Sirno skill wrappers

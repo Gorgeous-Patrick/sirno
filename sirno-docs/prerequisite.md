@@ -4,9 +4,9 @@ desc: A structural field that defines a knowledge dependency between entries.
 category:
   - concept
 belongs:
-  - structural-field
+  - structural
 prerequisite:
-  - structural-field
+  - structural
 ---
 
 `prerequisite` records a knowledge dependency from an *entry*
@@ -45,7 +45,7 @@ Waterline and frostline `from` catch entries that currently or formerly depend o
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [structural-field](structural-field.md)
+  - [structural](structural.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

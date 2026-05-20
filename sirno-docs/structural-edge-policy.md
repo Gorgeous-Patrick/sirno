@@ -6,7 +6,7 @@ category:
 belongs:
   - generated-navigation
 prerequisite:
-  - structural-field
+  - structural
   - generated-footer
 ---
 

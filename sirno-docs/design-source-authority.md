@@ -23,7 +23,7 @@ When the *lake* is authoritative, preserve its stable facts even while rewriting
 Stable facts include the central definition and scope,
 the configured `lake` path and repository material surface,
 *entry* id rules and the metadata schema,
-the configured structural-field and witness-lookup meanings,
+the configured `structural` and witness-lookup meanings,
 generated-footer ownership,
 and future-work items that are intentionally reserved.
 These are commitments, not wording, so they survive a revision that changes how they are said.

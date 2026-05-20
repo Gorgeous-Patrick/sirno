@@ -61,7 +61,7 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
         body: "A narrative records an order in which a reader can understand concepts.\n",
     },
     DefaultEntrySpec {
-        id: "structural-field",
+        id: "structural",
         name: "Structural Field",
         desc: "A metadata field that carries operational Sirno structure.",
         category: &["concept"],
@@ -74,8 +74,8 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
         name: "Belongs",
         desc: "A structural field that places an entry in a review neighborhood.",
         category: &["concept"],
-        belongs: &["structural-field"],
-        prerequisite: &["structural-field"],
+        belongs: &["structural"],
+        prerequisite: &["structural"],
         body: "`belongs` places an entry in a named review neighborhood.\n",
     },
     DefaultEntrySpec {
@@ -83,8 +83,8 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
         name: "Refines",
         desc: "A structural field from a specific entry to the broader entries it makes concrete.",
         category: &["concept"],
-        belongs: &["structural-field"],
-        prerequisite: &["structural-field"],
+        belongs: &["structural"],
+        prerequisite: &["structural"],
         body: "`refines` records a refinement edge from a specific entry to a broader entry.\n",
     },
     DefaultEntrySpec {
@@ -92,8 +92,8 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
         name: "Prerequisite",
         desc: "A structural field that defines a knowledge dependency between entries.",
         category: &["concept"],
-        belongs: &["structural-field"],
-        prerequisite: &["structural-field"],
+        belongs: &["structural"],
+        prerequisite: &["structural"],
         body: "`prerequisite` records knowledge an entry expects the reader to understand first.\n",
     },
 ];
@@ -415,7 +415,7 @@ mod tests {
                 .iter()
                 .map(EntryId::as_str)
                 .collect::<Vec<_>>(),
-            ["structural-field"]
+            ["structural"]
         );
     }
 

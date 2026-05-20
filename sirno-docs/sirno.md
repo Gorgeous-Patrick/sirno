@@ -66,6 +66,6 @@ Sirno keeps the polarity between those forms explicit.
   - [project-self-application](project-self-application.md)
   - [sirno-witness](sirno-witness.md)
   - [storage](storage.md)
-  - [structural-field](structural-field.md)
+  - [structural](structural.md)
 
 > **Sirno generated links end.**

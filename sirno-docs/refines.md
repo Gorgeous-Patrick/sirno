@@ -4,9 +4,9 @@ desc: A structural field from a specific entry to the broader entries it makes c
 category:
   - concept
 belongs:
-  - structural-field
+  - structural
 prerequisite:
-  - structural-field
+  - structural
   - refinement
 ---
 
@@ -57,7 +57,7 @@ The prose should explain the combined responsibility so a future reader can tell
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [structural-field](structural-field.md)
+  - [structural](structural.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
