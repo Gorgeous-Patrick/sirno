@@ -3,13 +3,15 @@
 //! Sirno checks the shape of entries and structural targets.
 //! It does not decide whether prose is true or whether code satisfies a claim.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
 use crate::entry::Entry;
 use crate::id::EntryId;
 use crate::structural::StructuralSettings;
+
+const CATEGORY_FIELD: &str = "category";
 
 /// Boundary at which Sirno checks structure.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,7 +69,7 @@ impl CheckMode {
                 }
             }
         }
-        for entry in entries {
+        for entry in &entries {
             for (field, targets) in entry.metadata.structural_fields() {
                 if !structural.contains_field(field) {
                     report.push(CheckDiagnostic {
@@ -92,7 +94,52 @@ impl CheckMode {
                 }
             }
         }
+        self.check_category_targets(&entries_by_id, structural, &mut report);
         report
+    }
+
+    fn check_category_targets(
+        self, entries_by_id: &BTreeMap<EntryId, &Entry>, structural: &StructuralSettings,
+        report: &mut CheckReport,
+    ) {
+        let category_id =
+            EntryId::new(CATEGORY_FIELD).expect("built-in category entry id is valid");
+        let category_targets = entries_by_id
+            .values()
+            .flat_map(|entry| entry.metadata.structural_targets_for(CATEGORY_FIELD))
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        if category_targets.is_empty() && !structural.contains_field(CATEGORY_FIELD) {
+            return;
+        }
+        if !entries_by_id.contains_key(&category_id) {
+            report.push(CheckDiagnostic {
+                severity: CheckSeverity::Warning,
+                kind: CheckDiagnosticKind::MissingCategoryEntry,
+                entry: None,
+                field: CATEGORY_FIELD.to_owned(),
+                target: Some(category_id.clone()),
+            });
+        }
+        for target in category_targets {
+            let Some(target_entry) = entries_by_id.get(&target) else {
+                continue;
+            };
+            let has_category_marker = target_entry
+                .metadata
+                .structural_targets_for(CATEGORY_FIELD)
+                .iter()
+                .any(|id| id == &category_id);
+            if !has_category_marker {
+                report.push(CheckDiagnostic {
+                    severity: self.severity(),
+                    kind: CheckDiagnosticKind::CategoryTargetMissingCategoryMarker,
+                    entry: Some(target.clone()),
+                    field: CATEGORY_FIELD.to_owned(),
+                    target: Some(category_id.clone()),
+                });
+            }
+        }
     }
     // sirno:witness:structural-check:end
 }
@@ -125,6 +172,10 @@ pub enum CheckDiagnosticKind {
     UnconfiguredStructuralField,
     /// A structural target id does not name an entry.
     MissingTarget,
+    /// Category metadata is present but the `category` entry is missing.
+    MissingCategoryEntry,
+    /// An entry used as a category target is not itself marked as a category.
+    CategoryTargetMissingCategoryMarker,
 }
 
 /// One structural diagnostic.
@@ -160,6 +211,15 @@ impl CheckDiagnostic {
                 self.entry.as_ref().expect("missing target diagnostic has entry"),
                 self.target.as_ref().expect("missing target diagnostic has target"),
                 self.field
+            ),
+            | CheckDiagnosticKind::MissingCategoryEntry => {
+                "`category` metadata needs entry `category`; add it with `sirno util entry`"
+                    .to_owned()
+            }
+            | CheckDiagnosticKind::CategoryTargetMissingCategoryMarker => format!(
+                "`{}` is used as a category target, but it is not categorized by `{}`",
+                self.entry.as_ref().expect("category target diagnostic has entry"),
+                self.target.as_ref().expect("category target diagnostic has target")
             ),
         }
     }
@@ -205,6 +265,7 @@ mod tests {
     use crate::structural::StructuralFieldSettings;
 
     const FIELD_TOPIC: &str = "topic";
+    const FIELD_CATEGORY: &str = "category";
 
     fn entry(id: &str) -> Entry {
         Entry::new(EntryId::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
@@ -212,6 +273,10 @@ mod tests {
 
     fn structural_settings() -> StructuralSettings {
         StructuralSettings::from_fields([(FIELD_TOPIC, StructuralFieldSettings::default())])
+    }
+
+    fn category_settings() -> StructuralSettings {
+        StructuralSettings::from_fields([(FIELD_CATEGORY, StructuralFieldSettings::default())])
     }
 
     #[test]
@@ -296,6 +361,69 @@ mod tests {
 
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnconfiguredStructuralField);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
+        assert!(!report.has_errors());
+    }
+
+    #[test]
+    fn category_metadata_warns_when_category_entry_is_missing() {
+        let mut concept = entry("concept");
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        let mut meta = entry("meta");
+        meta.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+
+        let report = CheckMode::Review.check_entries([&concept, &meta], &category_settings());
+
+        assert!(
+            report
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.kind == CheckDiagnosticKind::MissingCategoryEntry
+                    && diagnostic.severity == CheckSeverity::Warning)
+        );
+    }
+
+    #[test]
+    fn review_mode_reports_category_target_without_category_marker_as_error() {
+        let mut concept = entry("concept");
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        let meta = entry("meta");
+        let mut category = entry("category");
+        category.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+
+        let report =
+            CheckMode::Review.check_entries([&concept, &meta, &category], &category_settings());
+
+        let diagnostic = report
+            .diagnostics()
+            .iter()
+            .find(|diagnostic| {
+                diagnostic.kind == CheckDiagnosticKind::CategoryTargetMissingCategoryMarker
+            })
+            .expect("category target marker diagnostic");
+        assert_eq!(diagnostic.entry.as_ref().unwrap().as_str(), "meta");
+        assert_eq!(diagnostic.severity, CheckSeverity::Error);
+        assert!(report.has_errors());
+    }
+
+    #[test]
+    fn edit_mode_reports_category_target_without_category_marker_as_warning() {
+        let mut concept = entry("concept");
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        let meta = entry("meta");
+        let mut category = entry("category");
+        category.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+
+        let report =
+            CheckMode::Edit.check_entries([&concept, &meta, &category], &category_settings());
+
+        let diagnostic = report
+            .diagnostics()
+            .iter()
+            .find(|diagnostic| {
+                diagnostic.kind == CheckDiagnosticKind::CategoryTargetMissingCategoryMarker
+            })
+            .expect("category target marker diagnostic");
+        assert_eq!(diagnostic.severity, CheckSeverity::Warning);
         assert!(!report.has_errors());
     }
 }

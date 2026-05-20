@@ -3,6 +3,10 @@
 mod config {
     pub(crate) mod tui;
 }
+mod entry {
+    pub(crate) mod tui;
+}
+mod tui;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
@@ -667,6 +671,10 @@ enum UtilCommand {
     // sirno:witness:interfaces:begin
     /// Open the interactive Sirno.toml maintenance UI.
     Config(ConfigTuiArgs),
+    // sirno:witness:interfaces:end
+    // sirno:witness:interfaces:begin
+    /// Open the interactive entry default maintenance UI.
+    Entry,
     // sirno:witness:interfaces:end
     /// Generate a shell completion script.
     Completion {
@@ -2000,6 +2008,12 @@ impl UtilCommand {
                     return Ok(ExitCode::SUCCESS);
                 }
                 config::tui::run(config_path)
+            }
+            | UtilCommand::Entry => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                entry::tui::run(config_path, lake_path)
             }
             | UtilCommand::Completion { shell } => {
                 if frost_path.is_some() {

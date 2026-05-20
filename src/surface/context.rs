@@ -1640,7 +1640,7 @@ fn resolve_lake_path(
     lake_path.map(Path::to_path_buf).unwrap_or_else(|| config.resolve_lake(config_path))
 }
 
-fn resolve_lake_directory(
+pub(crate) fn resolve_lake_directory(
     lake_path: Option<&Path>, config_path: &std::path::Path,
 ) -> Result<(PathBuf, EntryDirectoryCheckSettings), CommandError> {
     if let Some(lake_path) = lake_path {

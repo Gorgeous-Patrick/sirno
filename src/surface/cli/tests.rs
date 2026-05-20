@@ -581,6 +581,22 @@ fn util_config_accepts_tui_form() {
 }
 
 #[test]
+fn util_entry_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "entry"]);
+
+    assert!(matches!(cli.command, Command::Util { command: UtilCommand::Entry }));
+}
+
+#[test]
+fn util_entry_rejects_global_frost_path() {
+    let error = Cli::parse_from(["sirno", "--frost-path", "sirno-frost", "util", "entry"])
+        .run()
+        .unwrap_err();
+
+    assert!(matches!(error, CommandError::FrostPathRequiresCheck));
+}
+
+#[test]
 fn util_config_accepts_dry_check_form() {
     let cli = Cli::parse_from(["sirno", "util", "config", "--dry"]);
 

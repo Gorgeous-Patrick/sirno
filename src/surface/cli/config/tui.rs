@@ -11,6 +11,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState};
 use ratatui::{DefaultTerminal, Frame};
 
+use crate::surface::cli::tui::run_terminal_ui;
 use crate::surface::error::CommandError;
 use crate::{
     CheckSettings, ConfigError, FrostSettings, RepoSettings, SirnoConfig, TutorialSettings,
@@ -28,14 +29,7 @@ const SECTIONS: [ConfigSection; 7] = [
 
 /// Run the interactive config maintenance UI.
 pub(crate) fn run(config_path: &Path) -> Result<ExitCode, CommandError> {
-    let mut terminal = ratatui::try_init().map_err(CommandError::TerminalUi)?;
-    let result = run_app(&mut terminal, config_path);
-    let restore = ratatui::try_restore().map_err(CommandError::TerminalUi);
-    match (result, restore) {
-        | (Ok(code), Ok(())) => Ok(code),
-        | (Err(error), _) => Err(error),
-        | (Ok(_), Err(error)) => Err(error),
-    }
+    run_terminal_ui(|terminal| run_app(terminal, config_path))
 }
 
 fn run_app(terminal: &mut DefaultTerminal, config_path: &Path) -> Result<ExitCode, CommandError> {

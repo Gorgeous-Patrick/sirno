@@ -22,6 +22,8 @@ The `category` *entry* classifies the *entries* that may be used as category tar
 A category target should therefore be categorized by `category`.
 This includes `category` itself and the initialized `concept`, `narrative`, and `meta` *entries*.
 The marker is self-applied, which keeps the category vocabulary closed under its own rule.
+`sirno check` reports a category target that lacks this marker.
+It also warns when category metadata needs the `category` *entry* and that entry is missing.
 
 The reserved `locked` field may later protect *entries* or regions that a project treats as controlled.
 

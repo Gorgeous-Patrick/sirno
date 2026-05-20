@@ -256,6 +256,17 @@ It rewrites `Sirno.toml` through the canonical config renderer when comments are
 `--dry` and `--fix` are mutually exclusive.
 Config utility commands reject `--lake-path` and `--frost-path`.
 
+`sirno util entry` opens an interactive terminal UI for common entry defaults.
+Each row is a default entry id with its presence status and the structural fields
+that would be written under the current `Sirno.toml`.
+`j`, `k`, Up, and Down move the selected row.
+`i` inserts the selected missing entry.
+`a` inserts all missing defaults.
+`q` and Esc exit.
+The defaults include category vocabulary such as `category`, `meta`, `concept`, and `narrative`,
+and structural-field vocabulary such as `structural-field`, `belongs`, `refines`, and `prerequisite`.
+The utility accepts `--lake-path` and rejects `--frost-path`.
+
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.

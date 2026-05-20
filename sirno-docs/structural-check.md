@@ -20,6 +20,10 @@ They check references through fields configured by `[structural.FIELD]` subtable
 Each configured structural field must also name an existing *entry*.
 That structural-inhabitance check is controlled by `[check].structural-inhabitance`
 and is enabled when the flag or the whole `[check]` table is absent.
+Category metadata also has a semantic target check.
+Every *entry* used as a `category` target must itself include `category: category`.
+When `category` metadata is present or `[structural.category]` is configured,
+checks warn if the `category` *entry* is missing.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
 They also report configured *witness* delimiters that are not part of a complete block.
@@ -63,6 +67,14 @@ the field name should also exist as the *entry* that documents that field.
 `[check].structural-inhabitance` controls that configured-field entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
+
+Category target checks keep kind vocabulary explicit.
+An *entry* that appears in another *entry*'s `category` list is a category target.
+That target must include `category: category`,
+so a reader can tell which *entries* may classify other *entries*.
+Missing markers follow the edit-warning and review-error boundary.
+The missing `category` *entry* diagnostic is always a warning,
+because it points to the default vocabulary entry rather than one authored edge.
 
 Semantic review remains human and agent work.
 The checker can say that a *witness* block is shaped correctly.
