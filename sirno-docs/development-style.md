@@ -3,8 +3,10 @@ name: Development Style
 desc: The review neighborhood for the named development styles a Sirno project can adopt.
 category:
   - concept
+belongs:
+  - methodology
 prerequisite:
-  - concept
+  - methodology
 ---
 
 A development style names how a project chooses to drive implementation work.
@@ -26,7 +28,8 @@ This neighborhood is the separate horizontal view:
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [methodology](methodology.md)
 - belongs (from):
   - [concept-driven-development](concept-driven-development.md)
   - [intent-driven-development](intent-driven-development.md)

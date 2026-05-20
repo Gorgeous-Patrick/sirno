@@ -1,6 +1,6 @@
 ---
 name: Entry Lifecycle
-desc: The state model for one public Sirno entry file.
+desc: The state model for one lake entry file.
 category:
   - concept
 belongs:
@@ -11,14 +11,14 @@ prerequisite:
 
 ## Model
 
-An *entry lifecycle* describes how one public Markdown *entry* moves through the lake.
-The public file is the working form.
-Sirno Frost is the committed reference line when Frost is configured.
-The state definitions use *waterline* for the current public *lake*
-and *frostline* for the latest Frost snapshot.
+An *entry lifecycle* describes how one lake Markdown *entry* moves through the lake.
+The lake file is the working form.
+The frost layer is the committed reference line when frost is configured.
+The state definitions use *waterline* for the current lake
+and *frostline* for the latest frost snapshot.
 
 The lifecycle has stored states and check gates.
-Stored states are visible from files, Frost snapshots, and the lock file.
+Stored states are visible from files, frost snapshots, and the lock file.
 Check gates are predicates that commands require before they continue.
 `sirno check`, `sirno query`, `sirno rg`, `sirno witness`, and `sirno status`
 observe entries without changing their lifecycle state.
@@ -31,8 +31,8 @@ Each edge is a command or event that moves one entry between states.
 
 ### Creation And Editing
 
-Creation and ordinary editing are public-lake operations.
-They create or change the working file before Frost is involved.
+Creation and ordinary editing are lake operations.
+They create or change the working file before frost is involved.
 Edits, render operations, and renames keep an entry in the working state,
 so they are explained below rather than drawn as state changes.
 
@@ -65,7 +65,7 @@ stateDiagram-v2
 ### Freeze Protection
 
 Freeze protects one aligned entry from drift.
-It does not create a Frost snapshot.
+It does not create a frost snapshot.
 A failed commit from the drifted state leaves the entry drifted.
 
 ```mermaid
@@ -75,14 +75,14 @@ stateDiagram-v2
     frozen --> drifted: changed despite protection
 
     drifted --> working: melt
-    drifted --> frozen: restore to current Frost
+    drifted --> frozen: restore to current frost
 ```
 
 ### Checkout And History
 
-Checkout materializes Frost snapshots back into the public lake.
+Checkout materializes frost snapshots back into the lake.
 Latest checkout returns to the aligned state.
-Explicit version checkout creates a historical public file.
+Explicit version checkout creates a historical lake file.
 
 ```mermaid
 stateDiagram-v2
@@ -109,7 +109,7 @@ they are not drawn as lifecycle transitions.
 
 `absent` means no managed Markdown file exists for the *entry* id in the waterline.
 `sirno new`, `sirno init`, `sirno lake init`, manual file creation,
-or checkout of a live Frost entry can create the file.
+or checkout of a live frost entry can create the file.
 If an entry is absent from the waterline but live in the frostline,
 `sirno commit` records a lifecycle deletion marker.
 
@@ -118,7 +118,7 @@ It is the normal editing state.
 Direct Markdown edits, generated-link rendering,
 metadata updates, and renames keep the file in working state.
 A rename changes the *entry* id.
-For Frost, the old id and new id are different entries.
+For frost, the old id and new id are different entries.
 
 `reviewed` means the working file set passed the review checks required for commit.
 It is a gate, not a stored state.
@@ -128,19 +128,19 @@ bad witness reference,
 parse error, or unsupported lake file can remove this gate.
 
 `aligned` means the committed form of the waterline *entry* matches the frostline.
-Generated-link regions are public lake projections
-and are removed before comparison with Frost.
+Generated-link regions are lake projections
+and are removed before comparison with frost.
 An aligned entry can still be writable.
-Editing it moves it back to working state until the next successful Frost commit.
+Editing it moves it back to working state until the next successful frost commit.
 
 `frozen` means the waterline file carries `frozen:`
 and its committed form matches the frostline.
 `sirno freeze ENTRY_ID` enters this state.
-The command verifies current Frost first,
+The command verifies current frost first,
 then adds the marker and applies local file protection.
 `sirno melt ENTRY_ID` removes the marker,
 clears local file protection,
-and returns the entry to the aligned state if the content still matches Frost.
+and returns the entry to the aligned state if the content still matches frost.
 
 `drifted` means a frozen waterline entry no longer matches the frostline.
 This is an error state.
@@ -148,10 +148,10 @@ It can happen if a read-only file is changed outside Sirno,
 if a frozen entry is renamed,
 or if metadata or prose is changed after bypassing file permissions.
 `sirno commit` refuses this state.
-The supported exits are to restore the entry to current Frost
+The supported exits are to restore the entry to current frost
 or to melt it before intentionally changing it.
 
-`historical` means the public file was materialized from an explicit Frost version.
+`historical` means the lake file was materialized from an explicit frost version.
 A normal version checkout is immutable:
 Sirno writes a read-only blockquote
 and applies local file protection to the *lake* root,
@@ -165,20 +165,20 @@ into a writable working baseline.
 
 `sirno render` changes only Sirno-owned generated footer regions.
 Those regions help readers navigate,
-but they are removed before Frost commits.
+but they are removed before frost commits.
 Authored prose and metadata are the committed entry content.
 
 `sirno query`, `sirno rg`, `sirno witness`, `sirno check`, and `sirno status`
 do not move an entry between lifecycle states.
-They read the public lake,
+They read the lake,
 report structure,
 or inspect configured repository evidence.
 
 Storage commands affect the frame around entries.
-`sirno init` prompts for public lake, private Frost path, and packaged skill wrapper setup.
+`sirno init` prompts for lake, frost path, and packaged skill wrapper setup.
 `sirno init --all` creates those parts together without prompts.
-`sirno lake move PATH` moves the public lake path.
-`sirno frost init` and `sirno frost move PATH` configure or move the private Frost path.
+`sirno lake move PATH` moves the lake path.
+`sirno frost init` and `sirno frost move PATH` configure or move the frost path.
 `sirno move lake PATH` and `sirno move frost PATH` select the same storage moves.
 They do not change one entry file's lifecycle state by themselves.
 `sirno move entry OLD_ID NEW_ID` follows the same lifecycle behavior as `sirno entry move`.

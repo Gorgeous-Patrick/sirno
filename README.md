@@ -125,7 +125,7 @@ and inspect it with `sirno_entry_witness`.
 Start a *lake* of your own:
 
 ```sh
-sirno init                                   # choose config, public lake, frost store, skills
+sirno init                                   # choose config, lake, frost, skills
 sirno new architecture --name "Architecture" \
   --desc "How the system is structured"      # create one entry
 sirno check --mode edit                      # check while editing; dangling refs are warnings
@@ -135,9 +135,9 @@ Edit the generated Markdown under the lake path, then re-run `check`.
 Add a `sirno:witness:architecture:begin` and `sirno:witness:architecture:end` block in code
 to link evidence back to the entry.
 
-*Frost* is the history layer for the *lake*: the public *lake* stays mutable while you draft,
+*Frost* is the history layer for the *lake*: the lake stays mutable while you draft,
 while *frost* keeps the frozen snapshots you commit, stored separately over `eter`.
-`Sirno.lock.toml` records whether the public *lake* is current or pinned to a frozen version.
+`Sirno.lock.toml` records whether the *lake* is current or pinned to a frozen version.
 
 ```sh
 sirno commit                                 # freeze the current lake into a new frost version
@@ -246,7 +246,7 @@ I am new to Sirno. Ask about my background and goals. Guide me through the entri
 Sirno currently provides a Rust library, both CLI and MCP for Markdown entry storage,
 project configuration, structural checks, generated footers,
 querying, lake-local ripgrep search, witness lookup over `mosaika`, entry freezing,
-and optional Sirno frost snapshots over `eter`.
+and optional frost snapshots over `eter`.
 
 Future interfaces may add lightweight GUI, or Obsidian integration.
 

@@ -1,7 +1,7 @@
 //! Entry identifiers.
 //!
 //! An entry id is the stable nominal handle for a Sirno entry.
-//! It is derived from the filename stem in the public lake model
+//! It is derived from the filename stem in the Sirno Lake model
 //! and reused by structural metadata, generated footers, and witness lookup.
 
 use std::fmt::{Display, Formatter};

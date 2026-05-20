@@ -1,6 +1,6 @@
 ---
 name: Ripple
-desc: The named delta between two Sirno Lake states.
+desc: The named delta between two lake states.
 category:
   - concept
 belongs:
@@ -10,14 +10,14 @@ prerequisite:
 ---
 
 A *ripple* is the named delta between the frostline and the waterline.
-The frostline is the latest Sirno Frost snapshot.
-The waterline is the current public *lake*.
+The frostline is the latest frost snapshot.
+The waterline is the current lake.
 
 A *ripple* exists when an *entry* differs between those two states.
 The difference may be a changed name, description, prose body, or structural field.
 Added and deleted *entries* are ripples too.
 Generated footer regions are ignored,
-because Sirno Frost stores canonical metadata and prose rather than rendered navigation.
+because frost stores canonical metadata and prose rather than rendered navigation.
 
 The term fits the *lake* model.
 A *lake* is the readable body of project knowledge.

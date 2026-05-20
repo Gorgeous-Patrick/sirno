@@ -70,7 +70,7 @@ run `sirno util config --fix` to add canonical comments and default rendered sec
 ## Required Tables
 
 `[lake].path` is required.
-It names the public Markdown entry lake.
+It names the Sirno Lake.
 Configured `lake` paths resolve relative to the config file unless absolute.
 
 `[witness]` is required.
@@ -84,9 +84,9 @@ and hidden Markdown HTML-comment delimiter syntax.
 
 ## Optional Tables
 
-`[frost].path` names the optional private Frost path.
+`[frost].path` names the optional frost path.
 Configured `frost` paths resolve relative to the config file unless absolute.
-The Frost path must not equal, contain, or sit inside the public lake path.
+The frost path must not equal, contain, or sit inside the lake path.
 
 `[repo].members` lists files, directories, or globs scanned for witness blocks.
 Members are relative to the config file.
@@ -107,7 +107,7 @@ When a check flag is present,
 `sirno util config --fix` writes its canonical comment.
 
 `[tutorial]` enables tutorial text by table presence.
-`frost_commit_tide` controls the tutorial for Frost commits blocked by open tide workitems.
+`frost_commit_tide` controls the tutorial for frost commits blocked by open tide workitems.
 `frost_bootstrap_tide` adds first-snapshot context to that tutorial.
 Both fields default to true when the table is present.
 

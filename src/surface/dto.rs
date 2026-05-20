@@ -391,18 +391,18 @@ impl EntryPathRequest {
 /// Lake initialization request shared by non-CLI front ends.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LakeInitRequest {
-    /// Public Markdown entry lake path written to `Sirno.toml`.
+    /// Sirno Lake path written to `Sirno.toml`.
     pub lake: Option<PathBuf>,
 }
 
-/// Result of creating a public lake.
+/// Result of creating a Sirno Lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LakeInitResult {
     /// Whether the command completed successfully.
     pub ok: bool,
     /// Config file that was written.
     pub config_path: String,
-    /// Public lake directory that was initialized.
+    /// Sirno Lake directory that was initialized.
     pub lake_path: String,
     /// Number of seed entries written.
     pub entry_count: usize,
@@ -442,20 +442,20 @@ pub struct EntryPathResult {
     pub ok: bool,
     /// Entry id affected by the command.
     pub id: String,
-    /// Public entry path affected by the command.
+    /// Sirno Lake entry path affected by the command.
     pub path: String,
     /// Concise human-readable summary.
     pub message: String,
 }
 
-/// Result of reading one public Markdown entry.
+/// Result of reading one Sirno Lake Markdown entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryReadResult {
     /// Whether the command completed successfully.
     pub ok: bool,
     /// Entry id that was read.
     pub id: String,
-    /// Public entry file path.
+    /// Sirno Lake entry file path.
     pub path: String,
     /// Human-readable entry name.
     pub name: String,
@@ -793,13 +793,13 @@ pub struct StructuralFieldStatus {
 /// JSON-ready project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusResult {
-    /// Whether the configured public lake passes review checks.
+    /// Whether the configured lake passes review checks.
     pub ok: bool,
     /// Config file used for the status command.
     pub config_path: String,
-    /// Public lake path.
+    /// Lake path.
     pub lake_path: String,
-    /// Optional Frost path.
+    /// Optional frost path.
     pub frost_path: Option<String>,
     /// Current lock state summary.
     pub frost_state: String,
@@ -813,27 +813,27 @@ pub struct StatusResult {
     pub check: LakeCheckResult,
 }
 
-/// Result of initializing Frost.
+/// Result of initializing frost.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrostInitResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Configured Frost path.
+    /// Configured frost path.
     pub frost_path: String,
-    /// Current Frost version after initialization.
+    /// Current frost version after initialization.
     pub version: u64,
     /// Concise human-readable summary.
     pub message: String,
 }
 
-/// Result of committing a Frost snapshot.
+/// Result of committing a frost snapshot.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrostCommitResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// New Frost version.
+    /// New frost version.
     pub version: u64,
-    /// Lake path committed to Frost.
+    /// Lake path committed to frost.
     pub lake_path: String,
     /// Concise human-readable summary.
     pub message: String,
@@ -842,9 +842,9 @@ pub struct FrostCommitResult {
 /// Frost checkout request.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrostCheckoutRequest {
-    /// Explicit Frost version to check out.
+    /// Explicit frost version to check out.
     pub version: Option<u64>,
-    /// Check out the latest version as mutable current lake.
+    /// Check out the latest frost version as mutable current lake.
     #[serde(default)]
     pub latest: bool,
     /// Leave an explicit version checkout writable.
@@ -852,14 +852,14 @@ pub struct FrostCheckoutRequest {
     pub unsafe_mutable: bool,
 }
 
-/// Result of checking out a Frost snapshot.
+/// Result of checking out a frost snapshot.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrostCheckoutResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Checked-out Frost version.
+    /// Checked-out frost version.
     pub version: u64,
-    /// Public lake path written by checkout.
+    /// Lake path written by checkout.
     pub lake_path: String,
     /// Number of entries written.
     pub entry_count: usize,
@@ -926,7 +926,7 @@ pub struct PathSelection {
 }
 
 impl PathSelection {
-    /// Select entry, artifact, and Frost paths.
+    /// Select entry, artifact, and frost paths.
     pub fn all() -> Self {
         Self { entry: true, artifact: true, frost: true }
     }

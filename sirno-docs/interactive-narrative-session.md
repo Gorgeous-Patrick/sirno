@@ -3,6 +3,8 @@ name: Interactive Narrative Session
 desc: A user-shaped route through Sirno concepts that can be saved as a narrative entry.
 category:
   - concept
+belongs:
+  - narrative-session-discipline
 prerequisite:
   - narrative
 ---
@@ -34,7 +36,9 @@ The local `sirno-narrative-session` skill implements this workflow for agent con
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
-- belongs (from): (none)
+- belongs (to):
+  - [narrative-session-discipline](narrative-session-discipline.md)
+- belongs (from):
+  - [narrative-serializer](narrative-serializer.md)
 
 > **Sirno generated links end.**

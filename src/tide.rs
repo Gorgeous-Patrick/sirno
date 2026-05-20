@@ -1,6 +1,6 @@
-//! Dependency review worklists for Sirno Lake edits.
+//! Dependency review worklists for lake edits.
 //!
-//! Tide compares the current public lake against the latest Sirno Frost snapshot.
+//! Tide compares the current lake against the latest frost snapshot.
 //! It derives review obligations from configured structural edge policies.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -22,9 +22,9 @@ use crate::structural::{
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TideSource {
-    /// The current public lake.
+    /// The current lake.
     Lake,
-    /// The latest Sirno Frost snapshot.
+    /// The latest frost snapshot.
     Frost,
 }
 

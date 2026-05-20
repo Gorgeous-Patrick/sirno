@@ -4,7 +4,7 @@ desc: Validation of entry shape, structural targets, footers, and witnesses.
 category:
   - concept
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
   - metadata
   - generated-footer
@@ -44,7 +44,7 @@ Warnings keep that work visible without blocking movement.
 At review time, dangling references should be fixed,
 because the *lake* is being treated as a coherent design form.
 
-File checks keep the public *lake* shape predictable.
+File checks keep the Sirno Lake shape predictable.
 An *entry* directory contains Markdown *entry* files with valid ids.
 Each file starts with accepted frontmatter.
 Files may use LF or CRLF line endings.
@@ -76,7 +76,7 @@ That distinction keeps Sirno useful without pretending to solve judgment.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

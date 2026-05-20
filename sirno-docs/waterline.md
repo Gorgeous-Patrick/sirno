@@ -1,6 +1,6 @@
 ---
 name: Waterline
-desc: The current public lake state, one side of the ripple comparison.
+desc: The current Sirno Lake state, one side of the ripple comparison.
 category:
   - concept
 belongs:
@@ -9,7 +9,7 @@ prerequisite:
   - ripple
 ---
 
-The *waterline* is the current public *lake*:
+The *waterline* is the current Sirno Lake:
 the editable Markdown *entries* as they exist on disk right now.
 It is one of the two states a *ripple* compares.
 
@@ -26,7 +26,7 @@ These are the neighbors that exist *after* the edit,
 so a *belongs* target reached this way is a current review neighborhood.
 
 The waterline has no stored identity.
-It is whatever the public *lake* currently holds.
+It is whatever the lake currently holds.
 Freezing it with a *frost* commit turns the present waterline into the next *frostline*.
 
 ---

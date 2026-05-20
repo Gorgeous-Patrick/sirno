@@ -1,6 +1,6 @@
 //! Lake-owned artifacts attached to Sirno entries.
 //!
-//! Entry artifacts live under `.artifacts/<entry-id>/` in the public lake.
+//! Entry artifacts live under `.artifacts/<entry-id>/` in the Sirno Lake.
 //! The entry Markdown files stay flat at the lake root.
 
 use std::fmt::{Display, Formatter};
@@ -132,7 +132,7 @@ pub enum EntryArtifactPathError {
     /// Artifact paths must not contain parent, root, prefix, or current-directory components.
     #[error("artifact path must contain only normal relative components: {0}")]
     NonRelative(PathBuf),
-    /// Artifact paths must be valid UTF-8 so Frost can store stable path ids.
+    /// Artifact paths must be valid UTF-8 so Sirno Frost can store stable path ids.
     #[error("artifact path must be valid UTF-8: {0}")]
     NonUtf8(PathBuf),
     /// Empty components cannot be represented in normalized artifact paths.

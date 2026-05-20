@@ -1,7 +1,7 @@
 //! Project configuration for a Sirno-managed repository.
 //!
 //! A repository is Sirno-managed when it contains `Sirno.toml`.
-//! The config names the public Markdown entry lake.
+//! The config names the Sirno Lake.
 //! It may also opt into repository witness members and Sirno Frost.
 
 use std::fs::{self, OpenOptions};
@@ -90,9 +90,9 @@ impl CheckSettings {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TutorialSettings {
-    /// Show tutorial text when Frost commit is blocked by open tide workitems.
+    /// Show tutorial text when frost commit is blocked by open tide workitems.
     pub frost_commit_tide: bool,
-    /// Include first-snapshot bootstrap context in the Frost commit tide tutorial.
+    /// Include first-snapshot bootstrap context in the frost commit tide tutorial.
     pub frost_bootstrap_tide: bool,
 }
 
@@ -109,14 +109,14 @@ impl Default for TutorialSettings {
     }
 }
 
-/// Configured public Markdown lake settings.
+/// Configured Sirno Lake settings.
 ///
-/// Invariant: `path` points to the public Markdown entry lake.
+/// Invariant: `path` points to the Sirno Lake.
 /// `ignore` contains paths relative to the lake root that Sirno does not read.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LakeSettings {
-    /// Configured public Markdown entry lake path.
+    /// Configured Sirno Lake path.
     pub path: PathBuf,
     /// Lake-root-relative paths ignored by Sirno.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -316,8 +316,8 @@ impl WitnessSettings {
 
 /// Sirno project configuration.
 ///
-/// `lake.path` points to the configured public Markdown entry lake path.
-/// `frost.path`, when present, points to the configured Sirno Frost path.
+/// `lake.path` points to the configured lake path.
+/// `frost.path`, when present, points to the configured frost path.
 /// `lake.ignore` contains paths relative to the lake root that Sirno skips.
 /// `repo.members`, when present, contains relative member paths or globs for witness lookup.
 /// `witness` controls the delimiter syntax for repository witness blocks.
@@ -329,9 +329,9 @@ impl WitnessSettings {
 #[serde(deny_unknown_fields)]
 // sirno:witness:project-config:begin
 pub struct SirnoConfig {
-    /// Configured public Markdown entry lake settings.
+    /// Configured Sirno Lake settings.
     pub lake: LakeSettings,
-    /// Configured Sirno Frost settings.
+    /// Configured frost settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frost: Option<FrostSettings>,
     /// Configured repository artifact members.
@@ -367,13 +367,13 @@ impl SirnoConfig {
     }
     // sirno:witness:project-config:end
 
-    /// Return this config with a configured public lake path.
+    /// Return this config with a configured Sirno Lake path.
     pub fn with_lake(mut self, lake: impl Into<PathBuf>) -> Self {
         self.lake.path = lake.into();
         self
     }
 
-    /// Return this config with a configured Sirno Frost path.
+    /// Return this config with a configured frost path.
     pub fn with_frost(mut self, frost: impl Into<PathBuf>) -> Self {
         self.frost = Some(FrostSettings::new(frost));
         self
@@ -477,7 +477,7 @@ impl SirnoConfig {
         Self::resolve_config_relative(config_path.as_ref(), &self.lake.path)
     }
 
-    /// Resolve the Sirno Frost path relative to a config file path when configured.
+    /// Resolve the frost path relative to a config file path when configured.
     pub fn resolve_frost(&self, config_path: impl AsRef<Path>) -> Option<PathBuf> {
         self.frost
             .as_ref()
@@ -551,7 +551,7 @@ impl ConfigRenderer {
         self.push_field(
             "path",
             &config.lake.path,
-            "Markdown entry lake path, resolved relative to this config file.",
+            "Sirno Lake path, resolved relative to this config file.",
         )?;
         if !config.lake.ignore.is_empty() {
             self.push_field(
@@ -566,11 +566,7 @@ impl ConfigRenderer {
             self.out.push('\n');
             self.push_table("frost");
             // sirno:witness:project-config-comments:begin
-            self.push_field(
-                "path",
-                &frost.path,
-                "Sirno Frost path, kept outside the public lake.",
-            )?;
+            self.push_field("path", &frost.path, "frost path, kept outside the lake.")?;
             // sirno:witness:project-config-comments:end
         }
 
@@ -819,12 +815,12 @@ pub enum ConfigError {
         /// Zero-based delimiter pair index.
         index: usize,
     },
-    /// The Sirno Frost path overlaps the public lake path.
-    #[error("frost path must be separate from public lake path: lake={lake} frost={frost}")]
+    /// The frost path overlaps the lake path.
+    #[error("frost path must be separate from lake path: lake={lake} frost={frost}")]
     FrostLakePath {
-        /// Resolved public lake path.
+        /// Resolved lake path.
         lake: PathBuf,
-        /// Resolved Sirno Frost path.
+        /// Resolved frost path.
         frost: PathBuf,
     },
     /// The config file could not be created.
@@ -1456,7 +1452,7 @@ delimiters = []
         assert!(source.contains("[lake]"));
         assert!(source.contains("[witness]"));
         assert!(source.contains("[[witness.delimiters]]"));
-        assert!(source.contains("# Markdown entry lake path"));
+        assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(
             "# Canonical filename entry-id capture: {WITNESS_ENTRY_ID_CAPTURE_REGEX}"
@@ -1508,9 +1504,9 @@ delimiters = []
         let read: SirnoConfig = toml::from_str(&source).unwrap();
 
         assert_eq!(read, config);
-        assert!(source.contains("# Markdown entry lake path"));
+        assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Paths in lake that Sirno skips"));
-        assert!(source.contains("# Sirno Frost path"));
+        assert!(source.contains("# frost path"));
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(
@@ -1584,18 +1580,18 @@ delimiters = []
         let source = config
             .to_commented_toml()
             .unwrap()
-            .replace("# Markdown entry lake path, resolved relative to this config file.\n", "");
+            .replace("# Sirno Lake path, resolved relative to this config file.\n", "");
 
         let missing = config.missing_comments_in(&source).unwrap();
 
         assert_eq!(
             missing,
-            vec!["Markdown entry lake path, resolved relative to this config file.".to_owned()]
+            vec!["Sirno Lake path, resolved relative to this config file.".to_owned()]
         );
     }
 
     #[test]
-    fn rejects_frost_path_inside_public_lake() {
+    fn rejects_frost_path_inside_lake() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
         fs::write(

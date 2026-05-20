@@ -102,7 +102,7 @@ impl SurfaceContext {
         Self { config_path: config_path.into(), lake_path: None }
     }
 
-    /// Override the public lake path used by lake-backed operations.
+    /// Override the Sirno Lake path used by lake-backed operations.
     pub fn with_lake_path(mut self, lake_path: impl Into<PathBuf>) -> Self {
         self.lake_path = Some(lake_path.into());
         self
@@ -207,7 +207,7 @@ impl SurfaceContext {
     }
 
     // sirno:witness:interfaces:begin
-    /// Read one public Markdown entry and return its parsed body and stored source.
+    /// Read one Sirno Lake Markdown entry and return its parsed body and stored source.
     pub fn entry_read(&self, id: EntryId) -> Result<EntryReadResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
@@ -359,7 +359,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Freeze one current Frost entry and make its public file read-only.
+    /// Freeze one current frost entry and make its lake file read-only.
     pub fn entry_freeze(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
         let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
         context.reject_immutable_checkout()?;
@@ -377,7 +377,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Melt one public Markdown entry and make its file writable.
+    /// Melt one Sirno Lake Markdown entry and make its file writable.
     pub fn entry_melt(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
         let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let path = EntryDirectory::new(&lake).melt_entry(&id)?;
@@ -408,7 +408,7 @@ impl SurfaceContext {
         }
     }
 
-    /// Run ripgrep in the configured public Markdown lake and capture its output.
+    /// Run ripgrep in the configured Sirno Lake and capture its output.
     pub fn entry_rg(&self, request: RgRequest) -> Result<RgResult, CommandError> {
         if !request.with_generated_footer
             && request.args.iter().any(|arg| arg == "--pre" || arg.starts_with("--pre="))
@@ -712,7 +712,7 @@ impl SurfaceContext {
     }
     // sirno:witness:agent-skills:end
 
-    /// Move the configured public Markdown entry lake.
+    /// Move the configured Sirno Lake.
     pub fn lake_move(&self, lake: PathBuf) -> Result<MovePathResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let old_lake = config.resolve_lake(&self.config_path);
@@ -851,7 +851,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Move the configured Sirno Frost path.
+    /// Move the configured frost path.
     pub fn frost_move(&self, frost: PathBuf) -> Result<MovePathResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let Some(old_frost) = config.resolve_frost(&self.config_path) else {
@@ -875,7 +875,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Freeze the current public Markdown lake.
+    /// Freeze the current lake.
     pub fn frost_commit(
         &self, unsafe_resolve_all: bool,
     ) -> Result<FrostCommitResult, CommandError> {
@@ -913,7 +913,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Check out Frost entries into the public Markdown lake.
+    /// Check out frost entries into the lake.
     pub fn frost_checkout(
         &self, request: FrostCheckoutRequest,
     ) -> Result<FrostCheckoutResult, CommandError> {
@@ -970,7 +970,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Check out the latest Frost version as the mutable current lake.
+    /// Check out the latest frost version as the mutable current lake.
     pub fn frost_defrost(&self) -> Result<FrostCheckoutResult, CommandError> {
         self.frost_checkout(FrostCheckoutRequest {
             version: None,

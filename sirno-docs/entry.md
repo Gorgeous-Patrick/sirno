@@ -4,9 +4,9 @@ desc: A named Markdown document in the Sirno Lake.
 category:
   - concept
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
-  - lake
+  - sirno-lake
 ---
 
 An *entry* is a Markdown file in the Sirno Lake.
@@ -30,7 +30,7 @@ Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
-The `frozen:` field marks a current Frost-backed *entry* as read-only
+The `frozen:` field marks a current frost-backed *entry* as read-only
 through `sirno freeze ENTRY_ID`.
 An *entry* file may use LF or CRLF line endings.
 Use one line-ending style per file so byte-preserving tools can keep the file predictable.
@@ -67,7 +67,7 @@ its prose may briefly say what the *witness* is expected to demonstrate.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from):
   - [entry-artifact](entry-artifact.md)
   - [entry-freeze](entry-freeze.md)

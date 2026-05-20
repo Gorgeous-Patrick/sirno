@@ -48,7 +48,7 @@ impl fmt::Display for OpenTideTutorial {
         if self.bootstrap && self.frost_bootstrap_tide {
             writeln!(
                 formatter,
-                "This Frost path is still at empty version 0, so the first commit compares",
+                "This frost path is still at empty version 0, so the first commit compares",
             )?;
             writeln!(formatter, "the full lake to an empty frostline.")?;
         }
@@ -72,7 +72,7 @@ pub enum CommandError {
     /// Sirno Frost is required for a frost command but is not configured.
     #[error("frost is not configured; run `sirno frost init` first")]
     FrostNotConfigured,
-    /// Immutable Frost checkouts cannot be committed.
+    /// Immutable frost checkouts cannot be committed.
     #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
     ImmutableFrostCheckout(u64),
     /// Frost commit requires all tide workitems to be resolved.
@@ -83,7 +83,7 @@ pub enum CommandError {
         /// Optional tutorial text controlled by Sirno.toml.
         tutorial: OpenTideTutorial,
     },
-    /// Empty Frost cannot be checked out as a version.
+    /// Empty frost cannot be checked out as a version.
     #[error("frost version {0} is not a check-outable snapshot")]
     InvalidFrostVersion(u64),
     /// Frost checkout needs one target selector.
@@ -171,10 +171,10 @@ pub enum CommandError {
     /// Witness lookup requires an existing entry id.
     #[error("entry `{0}` does not exist")]
     MissingWitnessEntry(EntryId),
-    /// Lake path override does not apply to checking a Frost path directly.
+    /// Lake path override does not apply to checking a frost path directly.
     #[error("`--lake-path` cannot be used with `check --frost-path`")]
     LakePathWithFrostPath,
-    /// Frost path override applies only to direct Frost checks.
+    /// Frost path override applies only to direct frost checks.
     #[error("`--frost-path` only applies to `sirno check`")]
     FrostPathRequiresCheck,
     /// The MCP server selects its project only through the config path.
@@ -322,7 +322,7 @@ pub enum CommandError {
     /// Witness lookup failed.
     #[error(transparent)]
     Witness(#[from] WitnessError),
-    /// Public Markdown entry directory command failed.
+    /// Sirno Lake entry directory command failed.
     #[error(transparent)]
     EntryDirectory(#[from] EntryDirectoryError),
     /// Entry id parsing failed.

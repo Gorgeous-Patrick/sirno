@@ -1,6 +1,6 @@
 //! Cross-platform immutable file operations.
 //!
-//! Sirno uses this module as the local enforcement layer for frozen public files.
+//! Sirno uses this module as the local enforcement layer for frozen Sirno Lake files.
 //! The public interface is platform-neutral.
 //! Each backend uses the strongest ordinary filesystem primitive available on that platform.
 

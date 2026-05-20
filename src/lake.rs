@@ -1,4 +1,4 @@
-//! Public Sirno Lake support.
+//! Sirno Lake support.
 //!
 //! This module reads the human-facing Sirno Lake shape:
 //! a flat directory of `*.md` files whose filename stems are entry ids.
@@ -34,19 +34,19 @@ const READONLY_CHECKOUT_WARNING: &str = "\
 
 ";
 
-/// Public Markdown entry directory.
+/// Sirno Lake entry directory.
 ///
 /// Invariant: `root` is the directory containing one flat `*.md` file per entry id.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:lake:begin
+// sirno:witness:sirno-lake:begin
 pub struct EntryDirectory {
     root: PathBuf,
 }
-// sirno:witness:lake:end
+// sirno:witness:sirno-lake:end
 
-/// Check report for a public Markdown entry directory.
+/// Check report for a Sirno Lake entry directory.
 #[derive(Debug)]
-// sirno:witness:lake:begin
+// sirno:witness:sirno-lake:begin
 pub struct EntryDirectoryReport {
     root: PathBuf,
     entries: Vec<Entry>,
@@ -55,11 +55,11 @@ pub struct EntryDirectoryReport {
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
 }
-// sirno:witness:lake:end
+// sirno:witness:sirno-lake:end
 
-/// Settings for checking a public Markdown entry directory.
+/// Settings for checking a Sirno Lake entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:lake:begin
+// sirno:witness:sirno-lake:begin
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
@@ -72,7 +72,7 @@ pub struct EntryDirectoryCheckSettings {
     /// Repository witness scan settings.
     pub witness: Option<WitnessCheckSettings>,
 }
-// sirno:witness:lake:end
+// sirno:witness:sirno-lake:end
 
 impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
@@ -88,14 +88,14 @@ impl Default for EntryDirectoryCheckSettings {
 
 impl EntryDirectoryCheckSettings {
     /// Return true when a root-relative path is ignored.
-    // sirno:witness:lake:begin
+    // sirno:witness:sirno-lake:begin
     pub fn ignores(&self, relative_path: &Path) -> bool {
         self.ignore.iter().any(|ignored| {
             !ignored.as_os_str().is_empty()
                 && (relative_path == ignored || relative_path.starts_with(ignored))
         })
     }
-    // sirno:witness:lake:end
+    // sirno:witness:sirno-lake:end
 }
 
 impl EntryDirectoryReport {
@@ -141,7 +141,7 @@ impl EntryDirectoryReport {
     }
 }
 
-/// Diagnostic produced while loading the public Markdown entry lake.
+/// Diagnostic produced while loading the Sirno Lake.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryFileDiagnostic {
     /// Diagnostic severity.
@@ -177,7 +177,7 @@ impl GenLinkDirectoryReport {
     }
 }
 
-/// Result of renaming one entry id in a public entry directory.
+/// Result of renaming one entry id in a Sirno Lake entry directory.
 #[derive(Debug)]
 pub struct EntryRenameReport {
     old_id: EntryId,
@@ -202,7 +202,7 @@ impl EntryRenameReport {
     }
 }
 
-/// Conflict policy for writing a complete public entry directory.
+/// Conflict policy for writing a complete Sirno Lake entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EntryDirectoryWritePolicy {
     /// Require the target directory to be absent or empty before writing entries.
@@ -229,22 +229,22 @@ impl EntryDirectory {
         Self { root: root.into() }
     }
 
-    /// Directory containing public Markdown entry files.
+    /// Directory containing Sirno Lake Markdown entry files.
     pub fn root(&self) -> &Path {
         &self.root
     }
 
-    /// Public Markdown file path for one entry id.
+    /// Sirno Lake Markdown file path for one entry id.
     pub fn entry_path(&self, id: &EntryId) -> PathBuf {
         self.entry_file_path(id)
     }
 
-    /// Public artifact directory path for one entry id.
+    /// Sirno Lake artifact directory path for one entry id.
     pub fn entry_artifact_root_path(&self, id: &EntryId) -> PathBuf {
         self.entry_artifact_directory(id)
     }
 
-    /// Public artifact file path for one entry-owned artifact.
+    /// Sirno Lake artifact file path for one entry-owned artifact.
     pub fn entry_artifact_path(&self, id: &EntryId, path: &EntryArtifactPath) -> PathBuf {
         self.entry_artifact_directory(id).join(path.to_path_buf())
     }
@@ -266,7 +266,7 @@ impl EntryDirectory {
         }
     }
 
-    /// Read one public Markdown entry file source by id.
+    /// Read one Sirno Lake Markdown entry file source by id.
     pub fn read_entry_source(&self, id: &EntryId) -> Result<String, EntryDirectoryError> {
         if !self.root.exists() {
             return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
@@ -288,7 +288,7 @@ impl EntryDirectory {
         Ok(fs::read_to_string(path)?)
     }
 
-    /// Read one public Markdown entry file by id.
+    /// Read one Sirno Lake Markdown entry file by id.
     pub fn read_entry(&self, id: &EntryId) -> Result<Entry, EntryDirectoryError> {
         let source = self.read_entry_source(id)?;
         Ok(Entry::from_markdown(id.clone(), &source)?)
@@ -443,13 +443,13 @@ impl EntryDirectory {
         Ok(path)
     }
 
-    /// Check this public Markdown entry directory.
+    /// Check this Sirno Lake entry directory.
     pub fn check(&self, mode: CheckMode) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         self.check_with_settings(mode, &EntryDirectoryCheckSettings::default())
     }
 
-    /// Check this public Markdown entry directory with explicit settings.
-    // sirno:witness:lake:begin
+    /// Check this Sirno Lake entry directory with explicit settings.
+    // sirno:witness:sirno-lake:begin
     pub fn check_with_settings(
         &self, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
@@ -475,12 +475,12 @@ impl EntryDirectory {
             structural_report,
         })
     }
-    // sirno:witness:lake:end
+    // sirno:witness:sirno-lake:end
 
     /// Initialize this directory with ordinary seed entries.
     ///
     /// Existing entry files are never overwritten.
-    // sirno:witness:lake:begin
+    // sirno:witness:sirno-lake:begin
     pub fn init(&self) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         trace!("init_entry_directory begin: root={}", self.root.display());
         fs::create_dir_all(&self.root)?;
@@ -492,13 +492,13 @@ impl EntryDirectory {
         trace!("init_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:lake:end
+    // sirno:witness:sirno-lake:end
 
-    /// Create one public Markdown entry file in this directory.
+    /// Create one Sirno Lake Markdown entry file in this directory.
     ///
     /// The entry directory is created if needed.
     /// Existing entry files are never overwritten.
-    // sirno:witness:lake:begin
+    // sirno:witness:sirno-lake:begin
     pub fn create_entry(&self, entry: &Entry) -> Result<PathBuf, EntryDirectoryError> {
         trace!("create_entry_file begin: root={} id={}", self.root.display(), entry.id);
         fs::create_dir_all(&self.root)?;
@@ -506,9 +506,9 @@ impl EntryDirectory {
         trace!("create_entry_file end: path={}", path.display());
         Ok(path)
     }
-    // sirno:witness:lake:end
+    // sirno:witness:sirno-lake:end
 
-    /// Mark one public Markdown entry as frozen and read-only.
+    /// Mark one Sirno Lake Markdown entry as frozen and read-only.
     ///
     /// The entry metadata gains the canonical `frozen:` marker.
     /// Local file protection is applied after the marker is written.
@@ -516,7 +516,7 @@ impl EntryDirectory {
         self.set_entry_frozen(id, true)
     }
 
-    /// Mark one public Markdown entry as melted and writable.
+    /// Mark one Sirno Lake Markdown entry as melted and writable.
     ///
     /// The canonical `frozen:` marker is removed from entry metadata.
     /// The file is left writable so normal editing can resume.
@@ -679,17 +679,17 @@ impl EntryDirectory {
         Ok(EntryRenameReport { old_id: old_id.clone(), new_id: new_id.clone(), changed_paths })
     }
 
-    /// Write a complete public Markdown entry directory.
+    /// Write a complete Sirno Lake entry directory.
     ///
     /// The write policy controls how existing target contents are handled.
-    // sirno:witness:lake:begin
+    // sirno:witness:sirno-lake:begin
     pub fn write(
         &self, entries: &[Entry], policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         self.write_with_artifacts(entries, &[], policy)
     }
 
-    /// Write a complete public entry directory with lake-owned artifacts.
+    /// Write a complete Sirno Lake entry directory with lake-owned artifacts.
     ///
     /// The write policy controls how existing target contents are handled.
     pub fn write_with_artifacts(
@@ -709,7 +709,7 @@ impl EntryDirectory {
         trace!("write_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:lake:end
+    // sirno:witness:sirno-lake:end
 
     /// Mark this directory as read-only.
     ///
@@ -748,7 +748,7 @@ impl EntryDirectory {
         Ok(())
     }
 
-    /// Generate Markdown link footers for this public entry directory.
+    /// Generate Markdown link footers for this Sirno Lake entry directory.
     ///
     /// The directory must pass review-mode checks before any file is written.
     pub fn generate_links(
@@ -868,7 +868,7 @@ impl EntryDirectory {
         })
     }
 
-    /// Delete generated Markdown link footers from this public entry directory.
+    /// Delete generated Markdown link footers from this Sirno Lake entry directory.
     ///
     /// The directory must parse cleanly before any file is written.
     pub fn delete_generated_links(&self) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {

@@ -1,6 +1,6 @@
 ---
 name: Tide
-desc: The Frost-based worklist of review obligations for lake edits.
+desc: The frost-based worklist of review obligations for lake edits.
 category:
   - concept
 belongs:
@@ -9,9 +9,9 @@ prerequisite:
   - sirno-tide
 ---
 
-A *tide* is the dependency-based review worklist for the current public *lake*.
-It compares the *waterline*, the current public *lake*,
-against the *frostline*, the latest Sirno Frost snapshot.
+A *tide* is the dependency-based review worklist for the current lake.
+It compares the *waterline*, the current lake,
+against the *frostline*, the latest frost snapshot.
 
 Every changed *entry* is a *ripple*.
 For each *ripple*, Sirno reads the configured structural edge policies

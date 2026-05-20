@@ -83,7 +83,7 @@ impl SirnoFrost {
     }
     // sirno:witness:sirno-frost:end
 
-    /// The private Frost backend path.
+    /// The private Sirno Frost backend path.
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -223,17 +223,17 @@ impl SirnoFrost {
         Ok(mode.check_entries(&entries, &StructuralSettings::default()))
     }
 
-    /// Require a public entry to match the current Frost snapshot.
+    /// Require a lake entry to match the current frost snapshot.
     ///
-    /// Generated-link regions and the `frozen:` marker are public lake state.
-    /// They are removed before comparing to Frost storage.
+    /// Generated-link regions and the `frozen:` marker are lake state.
+    /// They are removed before comparing to frost storage.
     pub fn ensure_entry_current(&self, entry: &Entry) -> Result<(), FrostError> {
         let entries = Self::entries_without_generated_links(std::slice::from_ref(entry))?;
         let entry = Self::entry_without_frozen_marker(&entries[0]);
         self.ensure_entry_matches_snapshot(self.current_snapshot()?, &entry)
     }
 
-    /// Require a public entry and its artifacts to match the current Frost snapshot.
+    /// Require a lake entry and its artifacts to match the current frost snapshot.
     // sirno:witness:entry-artifact:begin
     pub fn ensure_entry_bundle_current(
         &self, entry: &Entry, artifacts: &[EntryArtifact],
@@ -251,7 +251,7 @@ impl SirnoFrost {
     }
     // sirno:witness:entry-artifact:end
 
-    /// Freeze a public Markdown entry directory into Sirno Frost.
+    /// Freeze a lake entry directory into frost.
     ///
     /// The directory must pass review-mode checks before any frozen row is written.
     /// Generated-link regions are stripped from the committed snapshot.
@@ -272,7 +272,7 @@ impl SirnoFrost {
     }
     // sirno:witness:sirno-frost:end
 
-    /// Materialize a frozen snapshot into a public Markdown entry directory.
+    /// Materialize a frozen snapshot into a lake entry directory.
     // sirno:witness:sirno-frost:begin
     pub fn checkout_entry_directory(
         &self, at: SnapshotRef, root: impl Into<PathBuf>, policy: EntryDirectoryWritePolicy,
@@ -365,10 +365,10 @@ impl SirnoFrost {
                 | None => true,
             })
             .collect::<Vec<_>>();
-        let public_ids = entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
+        let lake_ids = entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
         let deleted_ids = previous_entries
             .keys()
-            .filter(|id| !public_ids.contains(*id))
+            .filter(|id| !lake_ids.contains(*id))
             .cloned()
             .collect::<Vec<_>>();
         let changed_artifacts = current_artifacts
@@ -560,10 +560,7 @@ fn artifacts_by_owner(
 
 fn next_version(current: SnapshotRef) -> Eterator {
     Eterator(
-        current
-            .version()
-            .checked_add(1)
-            .unwrap_or_else(|| panic!("Sirno Frost version space exhausted")),
+        current.version().checked_add(1).unwrap_or_else(|| panic!("frost version space exhausted")),
     )
 }
 
@@ -723,7 +720,7 @@ pub enum FrostError {
     /// Filesystem scanning failed.
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    /// Public Markdown entry directory operation failed.
+    /// Sirno Lake entry directory operation failed.
     #[error(transparent)]
     EntryDirectory(#[from] EntryDirectoryError),
     /// A filesystem directory cannot be interpreted as a Sirno entry id.
@@ -732,15 +729,15 @@ pub enum FrostError {
     /// A stored artifact path cannot be interpreted as a lake artifact path.
     #[error(transparent)]
     ArtifactPath(#[from] EntryArtifactPathError),
-    /// Public Markdown entry directory must pass review checks before Frost commit.
-    #[error("entry directory must pass review checks before Frost commit: {0}")]
+    /// Lake entry directory must pass review checks before frost commit.
+    #[error("entry directory must pass review checks before frost commit: {0}")]
     InvalidEntryDirectory(PathBuf),
     /// Seed initialization would overwrite an existing entry.
     #[error("entry `{0}` already exists")]
     EntryAlreadyExists(EntryId),
-    /// A frozen entry differs from the current Frost snapshot.
+    /// A frozen entry differs from the current frost snapshot.
     #[error(
-        "entry `{0}` is frozen but does not match the current Frost snapshot; run `sirno melt {0}` before changing it"
+        "entry `{0}` is frozen but does not match the current frost snapshot; run `sirno melt {0}` before changing it"
     )]
     FrozenEntryChanged(EntryId),
     /// A frozen entry is missing a required Sirno field.
@@ -759,7 +756,7 @@ pub enum FrostError {
         /// Owner-relative artifact path.
         path: EntryArtifactPath,
     },
-    /// A Frost artifact snapshot directory cannot be decoded.
+    /// A Sirno Frost artifact snapshot directory cannot be decoded.
     #[error("frozen artifact snapshot directory is corrupt: {0}")]
     CorruptArtifactSnapshotDirectory(String),
     /// Seed metadata could not be constructed.
@@ -817,14 +814,14 @@ mod tests {
 
     #[test]
     fn commit_entry_directory_round_trips_single_entry() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let version = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let read = frost.read_entry_at_snapshot(version, &entry.id).unwrap();
 
@@ -834,19 +831,19 @@ mod tests {
     // sirno:witness:entry-artifact:begin
     #[test]
     fn commit_entry_directory_stores_artifacts_in_entry_version_directories() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
-        write_public_artifact(public.path(), &entry.id, "images/logo.bin", b"old");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"old");
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        write_public_artifact(public.path(), &entry.id, "images/logo.bin", b"new");
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"new");
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let artifacts = frost.read_all_artifacts_at_snapshot(second).unwrap();
 
@@ -892,20 +889,20 @@ mod tests {
 
     #[test]
     fn unchanged_artifact_content_is_inherited_from_older_entry_version_directory() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
-        write_public_artifact(public.path(), &entry.id, "images/logo.bin", b"old");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"old");
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         entry.body = "Alpha changed body.\n".to_owned();
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let artifacts = frost.read_all_artifacts_at_snapshot(second).unwrap();
 
@@ -925,20 +922,20 @@ mod tests {
 
     #[test]
     fn artifact_deletion_is_recorded_by_entry_manifest() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
-        write_public_artifact(public.path(), &entry.id, "images/logo.bin", b"old");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"old");
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        fs::remove_file(public.path().join(".artifacts").join("alpha").join("images/logo.bin"))
+        fs::remove_file(lake.path().join(".artifacts").join("alpha").join("images/logo.bin"))
             .unwrap();
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_ne!(first, second);
@@ -949,17 +946,17 @@ mod tests {
 
     #[test]
     fn checkout_preserves_structural_field_order_after_frost_round_trip() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let checkout = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
         entry.metadata.push_structural_target("zeta", EntryId::new("concept").unwrap());
         entry.metadata.push_structural_target("area", EntryId::new("meta").unwrap());
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let version = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         frost
             .checkout_entry_directory(
@@ -978,17 +975,17 @@ mod tests {
 
     #[test]
     fn commit_entry_directory_strips_generated_links_from_frost() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
         let footer = StructuralEdgeIndex::from_entries(std::slice::from_ref(&entry))
             .render_entry(&entry, &StructuralSettings::default());
         entry.body = GeneratedLinkBody::new(&entry.body).apply(&footer).unwrap();
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let version = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let read = frost.read_entry_at_snapshot(version, &entry.id).unwrap().unwrap();
 
@@ -998,25 +995,25 @@ mod tests {
 
     #[test]
     fn commit_entry_directory_allows_current_frozen_entry() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
         let beta = test_entry("beta", "Beta");
-        write_public_entry(public.path(), &alpha);
-        write_public_entry(public.path(), &beta);
+        write_lake_entry(lake.path(), &alpha);
+        write_lake_entry(lake.path(), &beta);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let mut frozen_alpha = alpha.clone();
         frozen_alpha.metadata.frozen = Some(FrozenMarker::Present);
         let mut changed_beta = beta.clone();
         changed_beta.body = "Beta changed body.\n".to_owned();
-        write_public_entry(public.path(), &frozen_alpha);
-        write_public_entry(public.path(), &changed_beta);
+        write_lake_entry(lake.path(), &frozen_alpha);
+        write_lake_entry(lake.path(), &changed_beta);
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_ne!(first, second);
@@ -1028,21 +1025,19 @@ mod tests {
 
     #[test]
     fn commit_entry_directory_rejects_changed_frozen_entry() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
-        frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
-            .unwrap();
+        frost.commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default()).unwrap();
         let mut changed_entry = entry.clone();
         changed_entry.metadata.frozen = Some(FrozenMarker::Present);
         changed_entry.body = "Changed body.\n".to_owned();
-        write_public_entry(public.path(), &changed_entry);
+        write_lake_entry(lake.path(), &changed_entry);
 
         let error = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap_err();
 
         assert!(matches!(error, FrostError::FrozenEntryChanged(id) if id == entry.id));
@@ -1050,15 +1045,15 @@ mod tests {
 
     #[test]
     fn commit_entry_directory_rejects_new_frozen_entry() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
         entry.metadata.frozen = Some(FrozenMarker::Present);
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let error = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap_err();
 
         assert!(matches!(error, FrostError::FrozenEntryChanged(id) if id == entry.id));
@@ -1096,16 +1091,16 @@ mod tests {
 
     #[test]
     fn multi_entry_commit_uses_one_snapshot() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
         let beta = test_entry("beta", "Beta");
-        write_public_entry(public.path(), &alpha);
-        write_public_entry(public.path(), &beta);
+        write_lake_entry(lake.path(), &alpha);
+        write_lake_entry(lake.path(), &beta);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let version = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_eq!(frost.current_snapshot().unwrap(), version);
@@ -1115,22 +1110,22 @@ mod tests {
 
     #[test]
     fn changed_entry_commit_writes_only_changed_entry_snapshot() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
         let beta = test_entry("beta", "Beta");
-        write_public_entry(public.path(), &alpha);
-        write_public_entry(public.path(), &beta);
+        write_lake_entry(lake.path(), &alpha);
+        write_lake_entry(lake.path(), &beta);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let mut changed_alpha = alpha.clone();
         changed_alpha.body = "Alpha changed body.\n".to_owned();
-        write_public_entry(public.path(), &changed_alpha);
+        write_lake_entry(lake.path(), &changed_alpha);
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_ne!(first, second);
@@ -1142,17 +1137,17 @@ mod tests {
 
     #[test]
     fn no_op_commit_returns_current_snapshot() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let entry = test_entry("alpha", "Alpha");
-        write_public_entry(public.path(), &entry);
+        write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_eq!(first, second);
@@ -1160,21 +1155,21 @@ mod tests {
     }
 
     #[test]
-    fn removing_public_entry_creates_frost_lifecycle_deletion() {
-        let public = tempfile::tempdir().unwrap();
+    fn removing_lake_entry_creates_frost_lifecycle_deletion() {
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
         let beta = test_entry("beta", "Beta");
-        write_public_entry(public.path(), &alpha);
-        write_public_entry(public.path(), &beta);
+        write_lake_entry(lake.path(), &alpha);
+        write_lake_entry(lake.path(), &beta);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        fs::remove_file(public.path().join("beta.md")).unwrap();
+        fs::remove_file(lake.path().join("beta.md")).unwrap();
         let second = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert_ne!(first, second);
@@ -1187,23 +1182,21 @@ mod tests {
 
     #[test]
     fn checkout_entry_directory_materializes_frozen_state() {
-        let public = tempfile::tempdir().unwrap();
+        let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let checkout = tempfile::tempdir().unwrap();
         let alpha = test_entry("alpha", "Alpha");
         let beta = test_entry("beta", "Beta");
-        write_public_entry(public.path(), &alpha);
-        write_public_entry(public.path(), &beta);
-        write_public_artifact(public.path(), &alpha.id, "notes.txt", b"artifact");
+        write_lake_entry(lake.path(), &alpha);
+        write_lake_entry(lake.path(), &beta);
+        write_lake_artifact(lake.path(), &alpha.id, "notes.txt", b"artifact");
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
         let first = frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
-        fs::remove_file(public.path().join("beta.md")).unwrap();
-        frost
-            .commit_entry_directory(public.path(), &EntryDirectoryCheckSettings::default())
-            .unwrap();
+        fs::remove_file(lake.path().join("beta.md")).unwrap();
+        frost.commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default()).unwrap();
         frost
             .checkout_entry_directory(
                 first,
@@ -1227,12 +1220,12 @@ mod tests {
         Entry::new(EntryId::new(id).expect("valid id"), metadata, format!("{name} body.\n"))
     }
 
-    fn write_public_entry(root: &Path, entry: &Entry) {
+    fn write_lake_entry(root: &Path, entry: &Entry) {
         let path = root.join(format!("{}.md", entry.id.as_str()));
         fs::write(path, entry.to_markdown().expect("render entry")).expect("write entry");
     }
 
-    fn write_public_artifact(root: &Path, owner: &EntryId, path: &str, content: &[u8]) {
+    fn write_lake_artifact(root: &Path, owner: &EntryId, path: &str, content: &[u8]) {
         let path = root.join(".artifacts").join(owner.as_str()).join(path);
         fs::create_dir_all(path.parent().expect("artifact has parent")).unwrap();
         fs::write(path, content).unwrap();

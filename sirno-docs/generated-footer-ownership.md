@@ -18,7 +18,7 @@ Malformed, missing, duplicated, or reversed sentinels are structural errors.
 Prose outside the generated-link region remains user-owned.
 Mutating render commands preserve that prose.
 A *frost* commit removes generated-link regions before writing snapshots,
-so Sirno Frost keeps canonical metadata and prose rather than navigation projections.
+so the frost layer keeps canonical metadata and prose rather than navigation projections.
 
 ---
 

@@ -3,6 +3,8 @@ name: Generated Navigation
 desc: The review neighborhood for Sirno-owned generated footer navigation.
 category:
   - concept
+belongs:
+  - structural-field
 prerequisite:
   - generated-footer
 ---
@@ -27,7 +29,8 @@ This neighborhood is the separate horizontal view:
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [structural-field](structural-field.md)
 - belongs (from):
   - [generated-footer](generated-footer.md)
   - [generated-footer-ownership](generated-footer-ownership.md)

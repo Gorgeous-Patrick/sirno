@@ -28,11 +28,11 @@ glossing each word with an `It is X because` clause:
 and *nominal* because each design object is named first by an *entry* id.
 
 A short feature list follows, each item led by a Sirno term:
-*Lake*, *Entry*, *Witness*, *Frost*, and *Tide*.
+*lake*, *entry*, *witness*, *frost*, and *tide*.
 The list says the *lake* is queryable and misty,
 an *entry* is a named design object whose id acts as a symbol,
 a *witness* links a design claim back to the code, tests, config files, or assets it describes,
-*Frost* keeps history for frozen *lake* snapshots,
+*frost* keeps history for frozen *lake* snapshots,
 and *Tide* is the design review worklist between *frost* commits
 that keeps locally reasonable changes from freezing into suboptimal design.
 

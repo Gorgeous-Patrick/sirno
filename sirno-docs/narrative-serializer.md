@@ -3,6 +3,8 @@ name: Narrative Serializer
 desc: The deterministic contract that turns a narrative session into a lake entry.
 category:
   - concept
+belongs:
+  - interactive-narrative-session
 prerequisite:
   - interactive-narrative-session
 ---
@@ -53,7 +55,8 @@ The contract is the durable design fact and lives here so a session tool can be 
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [interactive-narrative-session](interactive-narrative-session.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

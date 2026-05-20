@@ -1,7 +1,7 @@
-//! Project-local lock state for Sirno Frost.
+//! Project-local lock state for frost.
 //!
 //! `Sirno.toml` configures paths and policy.
-//! `Sirno.lock.toml` records the Frost snapshot reference represented by the public lake.
+//! `Sirno.lock.toml` records the frost snapshot reference represented by the lake.
 
 use std::ffi::{OsStr, OsString};
 use std::fs::{self, OpenOptions};
@@ -25,15 +25,15 @@ const LOCK_FILE_HEADER: &str = "\
 
 ";
 
-/// Project-local Frost state.
+/// Project-local frost state.
 ///
 /// Invariant: `frost.generation` and `frost.version` name the `eter` snapshot represented
-/// by the public lake.
+/// by the lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:sirno-lock:begin
 pub struct SirnoLock {
-    /// Current public-lake Frost state.
+    /// Current lake state relative to frost.
     pub frost: FrostLock,
     /// Explicit dependency review resolutions for the current lake edit session.
     #[serde(default, skip_serializing_if = "TideLock::is_empty")]
@@ -42,14 +42,14 @@ pub struct SirnoLock {
 // sirno:witness:sirno-lock:end
 
 impl SirnoLock {
-    /// Construct a lock for the current editable public lake.
+    /// Construct a lock for the current editable lake.
     // sirno:witness:sirno-lock:begin
     pub fn current(snapshot: SnapshotRef) -> Self {
         Self { frost: FrostLock::current(snapshot), tide: TideLock::default() }
     }
     // sirno:witness:sirno-lock:end
 
-    /// Construct a lock for a checked-out Frost snapshot.
+    /// Construct a lock for a checked-out frost snapshot.
     // sirno:witness:sirno-lock:begin
     pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
         Self { frost: FrostLock::checked_out(snapshot, mutable), tide: TideLock::default() }
@@ -183,11 +183,11 @@ impl TideLock {
 #[serde(deny_unknown_fields)]
 // sirno:witness:versioning:begin
 pub struct FrostLock {
-    /// Public lake status relative to the configured Frost path.
+    /// lake status relative to the configured frost path.
     pub status: FrostLockStatus,
     /// GC generation for the represented snapshot.
     pub generation: u64,
-    /// Raw `Eterator` coordinate represented by the public lake.
+    /// Raw `Eterator` coordinate represented by the lake.
     pub version: u64,
     /// Whether a checked-out frozen snapshot was intentionally left writable.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -196,7 +196,7 @@ pub struct FrostLock {
 // sirno:witness:versioning:end
 
 impl FrostLock {
-    /// Construct state for the current editable public lake.
+    /// Construct state for the current editable lake.
     // sirno:witness:versioning:begin
     pub fn current(snapshot: SnapshotRef) -> Self {
         Self {
@@ -208,7 +208,7 @@ impl FrostLock {
     }
     // sirno:witness:versioning:end
 
-    /// Construct state for a checked-out Frost snapshot.
+    /// Construct state for a checked-out frost snapshot.
     // sirno:witness:versioning:begin
     pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
         Self {
@@ -227,13 +227,13 @@ impl FrostLock {
     }
     // sirno:witness:versioning:end
 
-    /// Returns true when the public lake is a Frost checkout.
+    /// Returns true when the lake is a frost checkout.
     // sirno:witness:versioning:begin
     pub fn is_checked_out(&self) -> bool {
         self.status == FrostLockStatus::CheckedOut
     }
 
-    /// Returns true when the public lake is a writable historical checkout.
+    /// Returns true when the lake is a writable historical checkout.
     pub fn is_unsafe_mutable_checkout(&self) -> bool {
         self.is_checked_out() && self.mutable
     }
@@ -249,14 +249,14 @@ impl FrostLock {
     // sirno:witness:versioning:end
 }
 
-/// Public-lake status relative to Sirno Frost.
+/// lake status relative to frost.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 // sirno:witness:versioning:begin
 pub enum FrostLockStatus {
-    /// The public lake is the current editable version.
+    /// The lake is the current editable version.
     Current,
-    /// The public lake is a materialized frozen snapshot.
+    /// The lake is a materialized frozen snapshot.
     CheckedOut,
 }
 // sirno:witness:versioning:end
@@ -289,7 +289,7 @@ pub enum LockError {
     /// The lock file could not be rendered.
     #[error("failed to render lock file")]
     Render(#[source] toml::ser::Error),
-    /// Current public-lake state must be editable.
+    /// Current lake state must be editable.
     #[error("current frost state cannot be marked mutable")]
     CurrentMutable,
     /// The temporary lock file could not be created.

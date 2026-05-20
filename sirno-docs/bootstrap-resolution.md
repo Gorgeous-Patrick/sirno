@@ -29,7 +29,8 @@ or the self-hosted Sirno Lake in `sirno-docs/`.
 
 The second answer was vocabulary.
 Sirno terms become proper names when they appear with Sirno:
-Sirno Lake and Sirno Frost.
+Sirno Lake is the standard proper-name form.
+When lake and frost appear together, both stay lowercase.
 Otherwise they stay lowercase and italic when they carry Sirno meaning:
 *lake*, *entry*, *witness*, *frost*, *ripple*, *transform*, and *repository*.
 Ordinary project words remain plain.

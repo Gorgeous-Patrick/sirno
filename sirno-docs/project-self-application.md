@@ -19,7 +19,7 @@ and Sirno is also the tool used to organize the description.
 The *lake* makes Sirno's design addressable in small *entries*.
 A materialized introduction *entry* gives the *lake* a first narrative route.
 A materialized methodology *entry* gives the *lake* a working guide.
-An optional Sirno Frost path can preserve frozen *lake* snapshots.
+An optional frost path can preserve frozen *lake* snapshots.
 Repository artifacts can witness *entries* through `mosaika`.
 
 The recursive form is useful,
@@ -50,7 +50,7 @@ checks, *generated footers*, *witnesses*, and storage boundaries.
 Those names become the handles used by code work, documentation work, and review.
 
 Sirno terms become proper names when they appear with Sirno:
-Sirno Lake and Sirno Frost.
+lake and frost.
 Otherwise, lowercase italics mark local model terms:
 *lake*, *entry*, *witness*, *ripple*, *transform*, and *repository*.
 Ordinary words stay plain when they describe normal project work.

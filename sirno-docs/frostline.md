@@ -1,6 +1,6 @@
 ---
 name: Frostline
-desc: The latest Sirno Frost snapshot, one side of the ripple comparison.
+desc: The latest frost snapshot, one side of the ripple comparison.
 category:
   - concept
 belongs:
@@ -9,13 +9,13 @@ prerequisite:
   - ripple
 ---
 
-The *frostline* is the latest Sirno Frost snapshot:
+The *frostline* is the latest frost snapshot:
 the most recently committed frozen *lake* state.
 It is the other state a *ripple* compares against the *waterline*.
 
 Sirno reads the frostline from the configured *frost* path,
-not from the public *lake*.
-Sirno Frost stores canonical metadata and prose without generated footers,
+not from the lake.
+The frost layer stores canonical metadata and prose without generated footers,
 so the frostline already excludes rendered navigation.
 
 The frostline is the stable side of *wave* derivation.
@@ -27,7 +27,7 @@ This surfaces former dependents that the editor may never have opened,
 such as a *belongs* member moved out of a neighborhood.
 
 Before the first *frost* commit the frostline is empty.
-Every public *entry* then differs from an absent counterpart,
+Every lake *entry* then differs from an absent counterpart,
 so the first commit can surface the whole *lake* as a bootstrap *tide*.
 Each successful *frost* commit advances the frostline to the committed snapshot.
 

@@ -31,9 +31,9 @@ it rewrites `Sirno.toml` through the canonical renderer when comments are missin
 
 The generated comments are:
 
-- `Markdown entry lake path, resolved relative to this config file.`
+- `Sirno Lake path, resolved relative to this config file.`
 - `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
-- `Sirno Frost path, kept outside the public lake.`
+- `frost path, kept outside the lake.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry id.`
 - `Canonical filename entry-id capture: ([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+)`

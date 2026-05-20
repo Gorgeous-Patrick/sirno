@@ -117,6 +117,7 @@ People and agents keep the meaning alive.
 
 - belongs (to):
   - [narrative](narrative.md)
-- belongs (from): (none)
+- belongs (from):
+  - [development-style](development-style.md)
 
 > **Sirno generated links end.**

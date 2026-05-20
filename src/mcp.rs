@@ -131,7 +131,7 @@ fn entry_resource_template() -> ResourceTemplate {
     Annotated::new(
         RawResourceTemplate::new(ENTRY_RESOURCE_URI_TEMPLATE, "entry")
             .with_title("Sirno Entry")
-            .with_description("Full Markdown source for one public Sirno entry by id.")
+            .with_description("Full Markdown source for one Sirno Lake entry by id.")
             .with_mime_type(ENTRY_RESOURCE_MIME_TYPE),
         None,
     )
@@ -242,13 +242,13 @@ impl SirnoMcpServer {
         result(self.context.entry_rename(entry_id(params.old_id)?, entry_id(params.new_id)?))
     }
 
-    /// Freeze one current Frost entry and make its public file read-only.
+    /// Freeze one current frost entry and make its lake file read-only.
     #[tool(name = "sirno_entry_freeze")]
     fn entry_freeze(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_freeze(entry_id(params.id)?))
     }
 
-    /// Melt one public Markdown entry and make its file writable.
+    /// Melt one Sirno Lake Markdown entry and make its file writable.
     #[tool(name = "sirno_entry_melt")]
     fn entry_melt(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_melt(entry_id(params.id)?))
@@ -266,13 +266,13 @@ impl SirnoMcpServer {
         result(self.context.entry_paths(request))
     }
 
-    /// Read one public Markdown entry.
+    /// Read one Sirno Lake Markdown entry.
     #[tool(name = "sirno_entry_read")]
     fn entry_read(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
         result(self.context.entry_read(entry_id(params.id)?))
     }
 
-    /// Query public Markdown entries.
+    /// Query Sirno Lake Markdown entries.
     #[tool(name = "sirno_entry_query")]
     fn entry_query(&self, Parameters(params): Parameters<EntryQueryParams>) -> McpToolResult {
         let request = QueryRequest {
@@ -285,7 +285,7 @@ impl SirnoMcpServer {
         result(self.context.entry_query(request))
     }
 
-    /// Run ripgrep in the configured public Markdown lake.
+    /// Run ripgrep in the configured Sirno Lake.
     #[tool(name = "sirno_entry_rg")]
     fn entry_rg(&self, Parameters(params): Parameters<EntryRgParams>) -> McpToolResult {
         result(self.context.entry_rg(RgRequest {
@@ -347,7 +347,7 @@ impl SirnoMcpServer {
         result(self.context.lake_init(LakeInitRequest { lake: params.lake }))
     }
 
-    /// Move the configured public Markdown entry lake.
+    /// Move the configured Sirno Lake.
     #[tool(name = "sirno_lake_move")]
     fn lake_move(&self, Parameters(params): Parameters<LakeMoveParams>) -> McpToolResult {
         result(self.context.lake_move(params.lake))
@@ -377,25 +377,25 @@ impl SirnoMcpServer {
         result(self.context.lake_status())
     }
 
-    /// Configure Sirno Frost.
+    /// Configure frost.
     #[tool(name = "sirno_frost_init")]
     fn frost_init(&self, Parameters(params): Parameters<FrostInitParams>) -> McpToolResult {
         result(self.context.frost_init(params.frost))
     }
 
-    /// Move the configured Sirno Frost path.
+    /// Move the configured frost path.
     #[tool(name = "sirno_frost_move")]
     fn frost_move(&self, Parameters(params): Parameters<FrostMoveParams>) -> McpToolResult {
         result(self.context.frost_move(params.frost))
     }
 
-    /// Freeze the current public Markdown lake.
+    /// Freeze the current lake.
     #[tool(name = "sirno_frost_commit")]
     fn frost_commit(&self, Parameters(params): Parameters<FrostCommitParams>) -> McpToolResult {
         result(self.context.frost_commit(params.unsafe_resolve_all))
     }
 
-    /// Check out Frost entries into the public Markdown lake.
+    /// Check out frost entries into the lake.
     #[tool(name = "sirno_frost_checkout")]
     fn frost_checkout(&self, Parameters(params): Parameters<FrostCheckoutParams>) -> McpToolResult {
         result(self.context.frost_checkout(FrostCheckoutRequest {
@@ -405,7 +405,7 @@ impl SirnoMcpServer {
         }))
     }
 
-    /// Check out the latest Frost version as the mutable current lake.
+    /// Check out the latest frost version as the mutable current lake.
     #[tool(name = "sirno_frost_defrost")]
     fn frost_defrost(&self) -> McpToolResult {
         result(self.context.frost_defrost())

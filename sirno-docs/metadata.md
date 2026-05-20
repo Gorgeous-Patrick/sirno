@@ -4,7 +4,7 @@ desc: The exact YAML schema that carries Sirno entry structure.
 category:
   - concept
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
   - entry
 ---
@@ -23,9 +23,9 @@ An empty list is a present empty field.
 Their field order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 
-`frozen:` declares that the public *entry* is protected
-because it matches the current Sirno Frost snapshot.
-Sirno Frost accepts it only while its committed form still matches that snapshot.
+`frozen:` declares that the lake *entry* is protected
+because it matches the current frost snapshot.
+The frost layer accepts it only while its committed form still matches that snapshot.
 It is written without a value.
 
 Operational structure is formed only from metadata.
@@ -66,7 +66,7 @@ Unconfigured list-valued metadata fields remain visible as check warnings.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

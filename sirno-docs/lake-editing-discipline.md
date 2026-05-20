@@ -62,7 +62,7 @@ then run the editing-mode structural check and the review-mode check.
 
 Validation can be partly blocked.
 If the entry is frozen or a checkout is immutable,
-use the configured Frost workflow before editing instead of forcing a write.
+use the configured frost workflow before editing instead of forcing a write.
 If review-mode checks fail only because local editor or tool directories live inside the lake,
 preserve those files unless the user asks to remove them,
 report the blocker,

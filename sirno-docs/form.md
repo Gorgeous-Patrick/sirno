@@ -15,7 +15,8 @@ Sirno works through two *forms*: `lake` and `repo`.
 It is the canonical design source for a Sirno-managed project.
 It contains compact Markdown *entries* with exact metadata,
 and may contain lake-owned *entry artifacts* attached to those *entries*.
-When Sirno Frost is configured,
+
+When *frost* is configured,
 the *lake* is versioned through a separate `eter` *frost* path,
 so one *lake* version names one immutable entry and artifact set.
 
@@ -61,8 +62,8 @@ flowchart LR
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [lake](lake.md)
   - [repo](repo.md)
+  - [sirno-lake](sirno-lake.md)
   - [transform](transform.md)
 
 > **Sirno generated links end.**

@@ -245,7 +245,7 @@ preserve those files unless the user asks to remove them.
 Report the blocker and still validate entry parsing and metadata references as far as possible.
 
 If the entry is frozen or a checkout is immutable,
-use the configured Frost workflow before editing instead of forcing a write.
+use the configured frost workflow before editing instead of forcing a write.
 If a tool named by older guidance is missing,
 inspect the current MCP tool list and use the closest current tool only when its behavior is clear.
 If authored metadata, references, or generated-footer freshness fail,

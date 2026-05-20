@@ -5,7 +5,7 @@ category:
   - concept
   - meta
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
   - form
 ---
@@ -43,7 +43,7 @@ but it must not promise behavior the tool does not have.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

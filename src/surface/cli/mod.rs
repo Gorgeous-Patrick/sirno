@@ -68,10 +68,10 @@ pub struct Cli {
     /// Sirno project config file.
     #[arg(short = 'C', long, global = true)]
     config: Option<PathBuf>,
-    /// Public Markdown lake path override.
+    /// Sirno Lake path override.
     #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
-    /// Sirno Frost path override for commands that inspect Frost directly.
+    /// Frost path override for commands that inspect frost directly.
     #[arg(short = 'F', long = "frost-path", global = true)]
     frost_path: Option<PathBuf>,
     #[command(subcommand)]
@@ -81,21 +81,21 @@ pub struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Create a Sirno config, public lake, Frost store, and skill wrappers.
+    /// Create a Sirno config, lake, frost, and skill wrappers.
     Init {
         /// Run non-interactively with the selected init parts.
         #[arg(long)]
         all: bool,
-        /// Public Markdown entry lake path written to Sirno.toml.
+        /// Lake path written to Sirno.toml.
         #[arg(long)]
         lake: Option<PathBuf>,
-        /// Sirno Frost path written to Sirno.toml.
+        /// Frost path written to Sirno.toml.
         #[arg(long)]
         frost: Option<PathBuf>,
-        /// Skip public lake initialization.
+        /// Skip lake initialization.
         #[arg(long = "no-lake", conflicts_with = "lake")]
         no_lake: bool,
-        /// Skip Sirno Frost initialization.
+        /// Skip frost initialization.
         #[arg(long = "no-frost", conflicts_with = "frost")]
         no_frost: bool,
         /// Skip packaged skill wrapper initialization.
@@ -105,26 +105,26 @@ enum Command {
         #[arg(long = "claude-skills", conflicts_with = "no_skills")]
         claude_skills: bool,
     },
-    /// Move an entry, the public lake path, or the Frost path.
+    /// Move an entry, the lake path, or the frost path.
     #[command(visible_alias = "mv")]
     Move {
         /// Move target.
         #[command(subcommand)]
         command: MoveCommand,
     },
-    /// Manage public Markdown lake entries.
+    /// Manage Sirno Lake entries.
     Entry {
         /// Entry command.
         #[command(subcommand)]
         command: EntryCommand,
     },
-    /// Manage public Markdown lake storage.
+    /// Manage lake storage.
     Lake {
         /// Lake command.
         #[command(subcommand)]
         command: LakeCommand,
     },
-    /// Manage optional Sirno Frost snapshots.
+    /// Manage optional frost snapshots.
     Frost {
         /// Frost command.
         #[command(subcommand)]
@@ -143,7 +143,7 @@ enum Command {
     /// Run a lake operation at the top level.
     #[command(flatten)]
     TopLevelLake(TopLevelLakeCommand),
-    /// Run a Frost snapshot operation at the top level.
+    /// Run a frost snapshot operation at the top level.
     #[command(flatten)]
     TopLevelFrost(TopLevelFrostCommand),
     /// Run a tide review operation at the top level.
@@ -158,7 +158,7 @@ enum Command {
     // sirno:witness:interfaces:end
 }
 
-/// Supported public entry commands.
+/// Supported Sirno Lake entry commands.
 #[derive(Debug, Subcommand)]
 enum EntryCommand {
     /// Run a top-level entry operation under `sirno entry`.
@@ -169,7 +169,7 @@ enum EntryCommand {
     Rename(EntryRenameArgs),
 }
 
-/// Supported top-level public entry commands.
+/// Supported top-level Sirno Lake entry commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelEntryCommand {
     /// Create one Markdown entry.
@@ -191,14 +191,14 @@ enum TopLevelEntryCommand {
         body: Option<String>,
     },
     // sirno:witness:interfaces:end
-    /// Freeze one current Frost entry and make its public file read-only.
+    /// Freeze one current frost entry and make its lake file read-only.
     // sirno:witness:interfaces:begin
     Freeze {
         /// Entry id to freeze.
         id: String,
     },
     // sirno:witness:interfaces:end
-    /// Melt one public Markdown entry and make its file writable.
+    /// Melt one Sirno Lake Markdown entry and make its file writable.
     // sirno:witness:interfaces:begin
     #[command(visible_alias = "unfreeze")]
     Melt {
@@ -210,7 +210,7 @@ enum TopLevelEntryCommand {
     // sirno:witness:interfaces:begin
     Path(EntryPathArgs),
     // sirno:witness:interfaces:end
-    /// Query public Markdown entries.
+    /// Query Sirno Lake Markdown entries.
     // sirno:witness:interfaces:begin
     #[command(visible_alias = "q")]
     Query {
@@ -239,7 +239,7 @@ enum TopLevelEntryCommand {
         format: Option<QueryOutputFormat>,
     },
     // sirno:witness:interfaces:end
-    /// Run ripgrep in the configured public Markdown lake.
+    /// Run ripgrep in the configured Sirno Lake.
     // sirno:witness:interfaces:begin
     Rg {
         /// Include Sirno-owned generated-footer regions in the search.
@@ -271,16 +271,16 @@ enum TopLevelEntryCommand {
     // sirno:witness:interfaces:end
 }
 
-/// Supported public lake commands.
+/// Supported Sirno Lake commands.
 #[derive(Debug, Subcommand)]
 enum LakeCommand {
     /// Create a Sirno config and ordinary seed entries.
     // sirno:witness:interfaces:begin
     Init {
-        /// Public Markdown entry lake path written to Sirno.toml.
+        /// Lake path written to Sirno.toml.
         lake: Option<PathBuf>,
     },
-    /// Move the configured public Markdown entry lake.
+    /// Move the configured lake path.
     #[command(visible_alias = "mv")]
     Move(LakeMoveArgs),
     /// Run a top-level lake operation under `sirno lake`.
@@ -289,7 +289,7 @@ enum LakeCommand {
     // sirno:witness:interfaces:end
 }
 
-/// Supported top-level public lake commands.
+/// Supported top-level Sirno Lake commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelLakeCommand {
     /// Check current entry structure.
@@ -323,9 +323,9 @@ enum TopLevelLakeCommand {
 enum MoveCommand {
     /// Rename one entry id and its Sirno references.
     Entry(EntryRenameArgs),
-    /// Move the configured public Markdown entry lake.
+    /// Move the configured lake path.
     Lake(LakeMoveArgs),
-    /// Move the configured Sirno Frost path.
+    /// Move the configured frost path.
     Frost(FrostMoveArgs),
 }
 
@@ -338,17 +338,17 @@ struct EntryRenameArgs {
     new_id: String,
 }
 
-/// Arguments for moving the configured public Markdown entry lake.
+/// Arguments for moving the configured lake path.
 #[derive(Debug, Args)]
 struct LakeMoveArgs {
-    /// New public Markdown entry lake path written to Sirno.toml.
+    /// New lake path written to Sirno.toml.
     lake: PathBuf,
 }
 
-/// Arguments for moving the configured Sirno Frost path.
+/// Arguments for moving the configured frost path.
 #[derive(Debug, Args)]
 struct FrostMoveArgs {
-    /// New Sirno Frost path written to Sirno.toml.
+    /// New frost path written to Sirno.toml.
     frost: PathBuf,
 }
 // sirno:witness:interfaces:end
@@ -359,13 +359,13 @@ struct FrostMoveArgs {
 struct EntryPathArgs {
     /// Entry id whose paths should be shown.
     id: String,
-    /// Show the public Markdown entry file path.
+    /// Show the Sirno Lake Markdown entry file path.
     #[arg(long = "entry")]
     show_entry: bool,
-    /// Show public entry artifact paths.
+    /// Show lake entry artifact paths.
     #[arg(long = "artifact")]
     show_artifact: bool,
-    /// Show private Frost backend paths when Frost is configured.
+    /// Show private frost backend paths when frost is configured.
     #[arg(long = "frost")]
     show_frost: bool,
     /// Print absolute paths.
@@ -484,44 +484,44 @@ impl From<CheckModeArg> for CheckMode {
     }
 }
 
-/// Supported Sirno Frost commands.
+/// Supported frost commands.
 #[derive(Debug, Subcommand)]
 enum FrostCommand {
-    /// Configure Sirno Frost.
+    /// Configure frost.
     Init {
-        /// Sirno Frost path written to Sirno.toml.
+        /// Frost path written to Sirno.toml.
         frost: Option<PathBuf>,
     },
-    /// Move the configured Sirno Frost path.
+    /// Move the configured frost path.
     #[command(visible_alias = "mv")]
     Move(FrostMoveArgs),
-    /// Run a Frost snapshot operation.
+    /// Run a frost snapshot operation.
     #[command(flatten)]
     Snapshot(TopLevelFrostCommand),
 }
 
-/// Supported top-level Sirno Frost commands.
+/// Supported top-level frost commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelFrostCommand {
-    /// Freeze the current public Markdown lake.
+    /// Freeze the current lake.
     Commit {
         /// Bypass open tide workitems for this commit without recording resolutions.
         #[arg(long = "unsafe-resolve-all")]
         unsafe_resolve_all: bool,
     },
-    /// Check out the latest Frost version as the mutable current lake.
+    /// Check out the latest frost version as the mutable current lake.
     Defrost,
-    /// Check out Frost entries into the public Markdown lake.
+    /// Check out frost entries into the lake.
     Checkout(CheckoutArgs),
 }
 
-/// Arguments for checking out Frost entries into the public Markdown lake.
+/// Arguments for checking out frost entries into the lake.
 #[derive(Debug, Args)]
 struct CheckoutArgs {
-    /// Version coordinate to materialize in the current Frost generation.
+    /// Version coordinate to materialize in the current frost generation.
     #[arg(required_unless_present = "latest", conflicts_with = "latest")]
     version: Option<u64>,
-    /// Check out the latest Frost version as the mutable current lake.
+    /// Check out the latest frost version as the mutable current lake.
     #[arg(long, conflicts_with = "unsafe_mutable")]
     latest: bool,
     /// Leave an explicit version checkout writable.
@@ -924,13 +924,13 @@ fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
 
     if request.init_lake {
         request.init_lake =
-            prompt_yes_no(input, output, "Initialize the public lake?", PromptDefault::Yes, style)?;
+            prompt_yes_no(input, output, "Initialize the lake?", PromptDefault::Yes, style)?;
         if request.init_lake && request.lake.is_none() && lake_path.is_none() {
             request.lake = prompt_default_path(
                 input,
                 output,
-                "Use default public lake path",
-                "Public lake path",
+                "Use default lake path",
+                "lake path",
                 default_lake_path(config_path),
                 style,
             )?;
@@ -939,10 +939,10 @@ fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
 
     if request.init_frost {
         request.init_frost =
-            prompt_yes_no(input, output, "Initialize Sirno Frost?", PromptDefault::Yes, style)?;
+            prompt_yes_no(input, output, "Initialize frost?", PromptDefault::Yes, style)?;
         if request.init_frost && request.frost.is_none() {
             let (prompt, path) = configured_or_default_frost_path(config_path);
-            request.frost = prompt_default_path(input, output, prompt, "Frost path", path, style)?;
+            request.frost = prompt_default_path(input, output, prompt, "frost path", path, style)?;
         }
     }
 
@@ -1040,26 +1040,26 @@ fn print_init_plan<W: Write>(
     if request.init_lake {
         writeln!(
             output,
-            "  public lake: {} ({})",
+            "  lake: {} ({})",
             format_init_choice(true, style),
             planned_lake_path(request, config_path, lake_path).display()
         )
         .map_err(CommandError::InteractiveInit)?;
     } else {
-        writeln!(output, "  public lake: {}", format_init_choice(false, style))
+        writeln!(output, "  lake: {}", format_init_choice(false, style))
             .map_err(CommandError::InteractiveInit)?;
     }
 
     if request.init_frost {
         writeln!(
             output,
-            "  Sirno Frost: {} ({})",
+            "  frost: {} ({})",
             format_init_choice(true, style),
             planned_frost_path(request, config_path).display()
         )
         .map_err(CommandError::InteractiveInit)?;
     } else {
-        writeln!(output, "  Sirno Frost: {}", format_init_choice(false, style))
+        writeln!(output, "  frost: {}", format_init_choice(false, style))
             .map_err(CommandError::InteractiveInit)?;
     }
 
@@ -1093,9 +1093,9 @@ fn planned_frost_path(request: &TopLevelInitRequest, config_path: &Path) -> Path
 
 fn configured_or_default_frost_path(config_path: &Path) -> (&'static str, PathBuf) {
     if let Some(path) = configured_frost_path(config_path) {
-        ("Use configured Frost path", path)
+        ("Use configured frost path", path)
     } else {
-        ("Use default Frost path", default_frost_path(config_path))
+        ("Use default frost path", default_frost_path(config_path))
     }
 }
 

@@ -47,7 +47,7 @@ Changing a generated link by hand does not change the metadata.
 Changing the metadata and regenerating the footer is the correct path.
 The sentinels make that ownership boundary visible in the *entry* file itself.
 A *frost* commit removes the *generated footer* before writing the *entry* snapshot.
-Sirno Frost keeps canonical metadata and prose,
+The frost layer keeps canonical metadata and prose,
 not navigation projections.
 
 The `[structural]` edge policy controls which *structural fields* appear.

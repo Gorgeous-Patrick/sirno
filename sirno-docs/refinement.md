@@ -5,7 +5,7 @@ category:
   - concept
   - meta
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
   - concept
 ---
@@ -59,7 +59,7 @@ It should not bury an important design change at the bottom of the chain.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

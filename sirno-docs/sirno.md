@@ -62,6 +62,7 @@ Sirno keeps the polarity between those forms explicit.
   - [future-work](future-work.md)
   - [interfaces](interfaces.md)
   - [planning](planning.md)
+  - [project-config](project-config.md)
   - [project-self-application](project-self-application.md)
   - [sirno-witness](sirno-witness.md)
   - [storage](storage.md)

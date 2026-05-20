@@ -4,21 +4,21 @@ desc: Selection of Sirno entries through vague text and structural filters.
 category:
   - concept
 belongs:
-  - lake
+  - sirno-lake
 prerequisite:
   - interfaces
   - metadata
 ---
 
-Query selects parsed *entries* from the public *lake* or,
-when Sirno Frost is configured,
+Query selects parsed *entries* from the lake or,
+when frost is configured,
 from one *frost* version.
 
 It reads *entry* ids, metadata, and bodies.
 The *generated footers* are projections for navigation,
 not structural input to query.
 When no version is supplied,
-query reads the public *lake*.
+query reads the lake.
 
 The default query mode is vague text query.
 It matches an *entry*'s id, name, desc, and body.
@@ -58,7 +58,7 @@ query uses `human`.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

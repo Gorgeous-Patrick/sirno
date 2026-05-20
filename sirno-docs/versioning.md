@@ -9,14 +9,14 @@ prerequisite:
   - storage
 ---
 
-When Sirno Frost is configured,
-Sirno versions the `sirno` form by freezing the public Markdown *lake*
+When frost is configured,
+Sirno versions the `sirno` form by freezing the lake
 into a separate `eter` *frost* path.
 The versioned *lake* state includes flat Markdown *entries*
 and lake-owned *entry artifacts* under `.artifacts`.
 
 The versioning *entry* is the front door for *frost* behavior.
-Its local refinements define the private Sirno Frost and public lock file.
+Its local refinements define the private frost path and lock file.
 
 A Sirno version is an `eter` `SnapshotRef`:
 a GC generation plus an `Eterator` coordinate.
@@ -32,25 +32,25 @@ It is the reviewable difference made visible by comparing versions,
 checkout states,
 or other future *lake* snapshots.
 For the active *tide*,
-Sirno compares the latest frozen snapshot with the current public *lake*.
+Sirno compares the latest frozen snapshot with the current lake.
 
-The public *lake* is always the editable working form.
+The lake is always the editable working form.
 The *frost* path is private storage,
 conventionally `sirno-frost`.
 It is not read as part of the *entry lake*,
-and it must not be placed where *lake* discovery can treat it as *entries*.
+and it must not be placed where lake discovery can treat it as *entries*.
 `sirno frost move PATH` renames this path and updates `[frost].path`.
 `sirno frost mv PATH` is its short form.
-`Sirno.lock.toml` records the public *lake* state relative to that *frost* path.
+`Sirno.lock.toml` records the lake state relative to that *frost* path.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.
 
 `sirno frost init [PATH]` configures the *frost* path and records empty version `0`.
 The first *frost* commit creates the first frozen snapshot.
 If active *tide* policy is configured,
-that first commit may surface the whole public *lake* as a bootstrap review worklist
+that first commit may surface the whole lake as a bootstrap review worklist
 because the frostline is still empty.
-A *frost* commit imports the selected public *entry* set and attached artifacts.
+A *frost* commit imports the selected lake *entry* set and attached artifacts.
 It writes one `eter` transaction.
 The transaction contains changed *entries*,
 entries whose artifact manifests changed,
@@ -65,40 +65,40 @@ That manifest records artifact existence;
 missing paths are deletions at that version.
 Before writing the transaction,
 Sirno removes every guard-bounded generated-link region from the committed *entry* bodies.
-Generated links remain a public *lake* projection.
-Sirno Frost keeps metadata and prose without generated navigation regions.
-Frozen public *entries* and their artifact trees must match the current Frost snapshot
-after public-only state is removed.
+Generated links remain a lake projection.
+The frost layer keeps metadata and prose without generated navigation regions.
+Frozen lake *entries* and their artifact trees must match the current frost snapshot
+after lake-only state is removed.
 Before writing the transaction,
 Sirno also requires the active *tide* to be clear.
 A successful commit returns the new `SnapshotRef`.
-If the public *lake* matches the current frozen snapshot,
+If the lake matches the current frozen snapshot,
 the commit returns the current snapshot reference without writing a new snapshot.
-If an *entry* exists in the current frozen snapshot but is absent from the public *lake*,
+If an *entry* exists in the current frozen snapshot but is absent from the lake,
 the commit writes an `eter` lifecycle deletion marker for that *entry*.
 After a commit,
 `Sirno.lock.toml` records `status = "current"` and the committed snapshot reference.
 
-Direct edits to the public *lake* are working-state edits.
+Direct edits to the lake are working-state edits.
 They become frozen versions only after a *frost* commit.
-Reading interfaces without a version selector read the public *lake*.
+Reading interfaces without a version selector read the lake.
 A version selector pairs the requested coordinate with the current *frost* generation.
 It reads from the *frost* path and changes the observed *lake* state
 without changing query or check semantics.
 
-Checkout materializes one *frost* version into a public Markdown directory.
+Checkout materializes one *frost* version into a lake Markdown directory.
 It resolves live *entries* and artifacts at the selected `SnapshotRef`.
 It renders canonical *entry* files and writes the `.artifacts` tree.
 Checkout uses an explicit conflict policy.
 The conservative policy writes only into an absent or empty target directory.
-CLI checkout replaces managed Markdown files in the configured public *lake*
+CLI checkout replaces managed Markdown files in the configured lake
 while preserving ignored paths.
 `sirno frost checkout --latest` writes the current snapshot as a mutable current *lake*.
 After explicit version checkout,
 `Sirno.lock.toml` records `status = "checked-out"` and the selected snapshot reference.
 
 A normal checkout is immutable.
-Sirno applies local file protection to the public *lake* root,
+Sirno applies local file protection to the lake root,
 managed *entry* files,
 and managed artifact trees.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
@@ -113,11 +113,11 @@ Artifact manifests are versioned as fields on their owner *entry* rows.
 Artifact bytes are versioned as sparse files under matching entry-version directories.
 Sirno may expose *entry* history, diffs, and restore operations by reading fields at successive snapshots.
 It presents those results as changes to *entries* and *structural fields*.
-The public *entry* schema remains unchanged.
+The lake *entry* schema remains unchanged.
 
 Restoring a version is checkout followed by a later *frost* commit.
-Checkout writes a snapshot back to the public *lake*.
-Committing the restored public *lake* creates a new current frozen snapshot,
+Checkout writes a snapshot back to the lake.
+Committing the restored lake creates a new current frozen snapshot,
 so later work stays ordered and old snapshots remain immutable.
 Undo-tree branching belongs to git or another outer *repository* mechanism.
 Sirno's own version line is linear.

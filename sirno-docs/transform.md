@@ -6,7 +6,7 @@ category:
 belongs:
   - form
 prerequisite:
-  - lake
+  - sirno-lake
   - repo
 ---
 

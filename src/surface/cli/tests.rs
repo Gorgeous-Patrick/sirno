@@ -289,8 +289,8 @@ fn top_level_init_prompt_can_cancel_confirmed_plan() {
 
     let output = String::from_utf8(output).unwrap();
     assert!(output.contains("Init plan:"));
-    assert!(output.contains("public lake: yes"));
-    assert!(output.contains("Sirno Frost: yes"));
+    assert!(output.contains("lake: yes"));
+    assert!(output.contains("frost: yes"));
     assert!(output.contains("skill wrappers: yes"));
     assert!(output.contains("Claude skill links: no"));
     assert!(output.contains("init cancelled"));
@@ -325,7 +325,7 @@ fn top_level_init_prompt_colors_semantic_choices_when_forced() {
 
     let output = String::from_utf8(output).unwrap();
     assert!(output.contains("\u{1b}["));
-    assert!(output.contains("public lake:"));
+    assert!(output.contains("lake:"));
     assert!(output.contains("skill wrappers:"));
     assert!(output.contains("init cancelled"));
 }
@@ -628,11 +628,11 @@ fn util_config_check_reports_missing_comments_without_writing() {
     assert!(!result.ok);
     assert!(!result.changed);
     assert!(
-        result.missing_comments.contains(
-            &"Markdown entry lake path, resolved relative to this config file.".to_owned()
-        )
+        result
+            .missing_comments
+            .contains(&"Sirno Lake path, resolved relative to this config file.".to_owned())
     );
-    assert!(!fs::read_to_string(&config_path).unwrap().contains("# Markdown entry lake path"));
+    assert!(!fs::read_to_string(&config_path).unwrap().contains("# Sirno Lake path"));
 }
 
 #[test]
@@ -655,7 +655,7 @@ fn util_config_fix_writes_missing_comments() {
     assert!(fix.changed);
     assert!(check.ok);
     assert!(check.missing_comments.is_empty());
-    assert!(fs::read_to_string(&config_path).unwrap().contains("# Markdown entry lake path"));
+    assert!(fs::read_to_string(&config_path).unwrap().contains("# Sirno Lake path"));
 }
 
 #[test]
@@ -3219,7 +3219,7 @@ Body.
 }
 
 #[test]
-fn lake_path_override_targets_public_lake_commands() {
+fn lake_path_override_targets_sirno_lake_commands() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let configured_docs = temp.path().join("docs");
@@ -3671,10 +3671,10 @@ fn config_comment_report_prints_summary_last() {
         ok: false,
         changed: false,
         config_path: "Sirno.toml".to_owned(),
-        missing_comments: vec!["Markdown entry lake path.".to_owned()],
+        missing_comments: vec!["Sirno Lake path.".to_owned()],
         message: "1 config comments missing in Sirno.toml".to_owned(),
     });
 
-    assert_before(&output, "missing: Markdown entry lake path.", "1 config comments missing");
+    assert_before(&output, "missing: Sirno Lake path.", "1 config comments missing");
     assert!(output.ends_with("1 config comments missing in Sirno.toml\n"));
 }

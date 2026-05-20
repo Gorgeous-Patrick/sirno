@@ -67,6 +67,7 @@ do not create a lake entry.
 
 - belongs (to):
   - [agent-skills](agent-skills.md)
-- belongs (from): (none)
+- belongs (from):
+  - [interactive-narrative-session](interactive-narrative-session.md)
 
 > **Sirno generated links end.**

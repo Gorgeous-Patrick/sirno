@@ -1,11 +1,11 @@
 [lake]
-# Markdown entry lake path, resolved relative to this config file.
+# Sirno Lake path, resolved relative to this config file.
 path = "sirno-docs"
 # Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.
 ignore = [".obsidian"]
 
 [frost]
-# Sirno Frost path, kept outside the public lake.
+# frost path, kept outside the lake.
 path = "sirno-frost"
 
 [repo]

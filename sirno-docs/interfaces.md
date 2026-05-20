@@ -16,7 +16,7 @@ The CLI is the human-facing operational interface.
 Human interaction with Sirno should happen through the CLI.
 It can initialize *lakes*, create *entries*, query *entries*, check structure,
 move configured storage paths, maintain *generated footer* links,
-manage optional Frost snapshots, and manage the active *tide*.
+manage optional frost snapshots, and manage the active *tide*.
 The `sirno::surface` module is the shared command surface behind the CLI.
 The binary `main.rs` delegates process startup to that module.
 `sirno --version` prints the package version from `Cargo.toml` before command dispatch.
@@ -32,12 +32,12 @@ Human-facing usage and mechanism documents should spell Sirno operations as CLI 
 Agent-facing discipline entries, packaged skill resources, and MCP documentation
 should spell Sirno operations as MCP tools when the agent performs them.
 The global `-C, --config PATH` option selects the Sirno project config file.
-The global `-L, --lake-path PATH` option overrides the configured public *lake*
+The global `-L, --lake-path PATH` option overrides the configured lake
 for commands that read or write the active *lake*.
-The global `-F, --frost-path PATH` option selects a Frost path for direct Frost checks.
+The global `-F, --frost-path PATH` option selects a frost path for direct frost checks.
 Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
-and `defrost` for latest Frost checkout.
+and `defrost` for latest frost checkout.
 Entry-centric operations also live under `sirno entry`.
 Storage-wide lake operations also live under `sirno lake`.
 Entry artifact operations also have the top-level `sirno artifact` form.
@@ -48,14 +48,13 @@ For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 Likewise, `sirno status`, `sirno st`, `sirno lake status`, and `sirno lake st`
 select the same lake operation.
-`sirno init` prompts for public *lake*, private *frost* store,
-and packaged skill wrapper setup.
+`sirno init` prompts for lake, frost, and packaged skill wrapper setup.
 `sirno init --all` initializes those parts together without prompts.
 `sirno init --claude-skills` also links installed skill packages into `.claude/skills`.
-`sirno commit` and `sirno checkout` select the same Frost operations
+`sirno commit` and `sirno checkout` select the same frost operations
 as their grouped `sirno frost ...` forms.
-`sirno defrost` selects latest Frost checkout.
-Public lake setup and path moves also live under `sirno lake`.
+`sirno defrost` selects latest frost checkout.
+Lake setup and path moves also live under `sirno lake`.
 Top-level `sirno move` groups the three mutation moves:
 `sirno move entry OLD_ID NEW_ID`, `sirno move lake PATH`, and `sirno move frost PATH`.
 `sirno mv ...` is its short form.
@@ -74,24 +73,24 @@ It asks which setup parts to run, asks for default paths when no path flag suppl
 asks whether installed wrappers should be linked into Claude skills,
 shows the init plan, and applies it after confirmation.
 `sirno init --all` creates a Sirno config, ordinary seed entries,
-an empty Frost version `0`, and packaged skill wrappers without prompts.
+an empty frost version `0`, and packaged skill wrappers without prompts.
 By default, it names those paths from the directory that contains `Sirno.toml`:
-`<repo>-lake` for the public *lake* and `<repo>-frost` for the private *frost* path.
-`sirno init --lake PATH` chooses a non-default public *lake* path.
-`sirno init --frost PATH` chooses a non-default private *frost* path.
+`<repo>-lake` for the lake path and `<repo>-frost` for the frost path.
+`sirno init --lake PATH` chooses a non-default lake path.
+`sirno init --frost PATH` chooses a non-default frost path.
 `sirno init --no-lake`, `--no-frost`, and `--no-skills`
 skip their corresponding setup parts.
 `sirno init --claude-skills` creates `.claude/skills/sirno-*` links
 to the installed `.agents/skills/sirno-*` package directories.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
-`sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring Frost.
-`sirno lake move PATH` changes the configured public *lake* path
+`sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring frost.
+`sirno lake move PATH` changes the configured lake path
 and renames the current *lake* directory on the filesystem.
 `sirno lake mv PATH` is its short form.
 `sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
 
-`sirno frost init [PATH]` configures the private *frost* path
+`sirno frost init [PATH]` configures the frost path
 and records empty version `0`.
 `sirno frost move PATH` changes the configured *frost* path
 and renames the current *frost* path on the filesystem.
@@ -99,7 +98,7 @@ and renames the current *frost* path on the filesystem.
 `sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
-`sirno commit` freezes the current public *lake*
+`sirno commit` freezes the current lake
 and writes the resulting current snapshot reference to `Sirno.lock.toml`.
 `sirno frost commit` is its grouped form.
 It fails while open *tide* workitems remain.
@@ -107,9 +106,9 @@ When `[tutorial]` is present,
 this failure can include tutorial text controlled by `[tutorial].frost_commit_tide`
 and `[tutorial].frost_bootstrap_tide`.
 `sirno commit --unsafe-resolve-all` bypasses that gate for the current commit.
-`sirno checkout --latest` materializes the latest version as a mutable public *lake*.
+`sirno checkout --latest` materializes the latest version as a mutable lake.
 `sirno defrost` is shorthand for `sirno checkout --latest`.
-`sirno checkout VERSION` materializes one older version into the public *lake*.
+`sirno checkout VERSION` materializes one older version into the lake.
 The grouped checkout command is `sirno frost checkout`.
 The grouped latest shortcut is `sirno frost defrost`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
@@ -129,9 +128,9 @@ select the same entry rename.
 Authored prose outside *generated footer* regions remains user-owned.
 
 `sirno path ENTRY_ID` prints filesystem paths related to one *entry*.
-Its default output includes the public Markdown *entry* path,
-the public `.artifacts/<entry-id>/` tree,
-and the private Frost entry root when Frost is configured.
+Its default output includes the lake Markdown *entry* path,
+the lake `.artifacts/<entry-id>/` tree,
+and the private frost entry root when frost is configured.
 It excludes *repository witness* paths.
 The grouped form is `sirno entry path ENTRY_ID`.
 The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
@@ -150,10 +149,10 @@ the source file name becomes the owner-relative artifact path.
 The grouped forms live under `sirno entry artifact`.
 Artifact mutation commands refuse to change artifacts owned by a frozen *entry*.
 
-`sirno freeze ENTRY_ID` verifies that one public *entry* matches current Frost,
+`sirno freeze ENTRY_ID` verifies that one lake *entry* matches current frost,
 adds `frozen:`,
 and applies local file protection to that file and its artifact tree.
-`sirno melt ENTRY_ID` removes `frozen:` from one public *entry*
+`sirno melt ENTRY_ID` removes `frozen:` from one lake *entry*
 and clears local file protection from its file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.

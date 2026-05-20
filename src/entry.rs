@@ -1,6 +1,6 @@
 //! Sirno entry model and Markdown frontmatter syntax.
 //!
-//! An entry is the public unit of Sirno design storage.
+//! An entry is the Sirno Lake unit of Sirno design storage.
 //! The prose body carries design content.
 //! The metadata block carries structure that tools read exactly.
 
@@ -140,7 +140,7 @@ pub struct EntryMetadata {
     /// through other storage forms.
     pub structural: EntryStructuralFields,
     // sirno:witness:structural-field:end
-    /// Freeze marker declaring that this public entry file is read-only.
+    /// Freeze marker declaring that this Sirno Lake entry file is read-only.
     pub frozen: Option<FrozenMarker>,
 }
 
@@ -279,7 +279,7 @@ impl EntryMetadata {
 
 /// Marker for the canonical `frozen:` metadata field.
 ///
-/// A frozen entry is a public Markdown file protected against changes from the current Frost
+/// A frozen entry is a lake Markdown file protected against changes from the current frost
 /// snapshot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FrozenMarker {

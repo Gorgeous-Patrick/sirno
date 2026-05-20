@@ -4,17 +4,17 @@ desc: The Sirno.toml file that marks and configures a Sirno-managed repository.
 category:
   - concept
 belongs:
-  - lake
+  - sirno
 prerequisite:
   - storage
 ---
 
 `Sirno.toml` marks a *repository* as Sirno-managed.
 
-The file configures the public *entry lake*
+The file configures the lake
 and the operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
-and Sirno Frost.
+and frost.
 Generated config files include concise comments that describe how each written field is used.
 `sirno util config` opens an interactive terminal UI for config section and comment maintenance.
 It shows whether each top-level section is present
@@ -22,34 +22,34 @@ and whether that section's comments match Sirno's canonical renderer.
 `sirno util config --dry` runs the old non-interactive comment check without writing the file.
 `sirno util config --fix` runs the old non-interactive rewrite through that renderer.
 
-`[lake].path` names the Markdown *entry lake*.
-`[frost].path` optionally names the private Sirno Frost path.
+`[lake].path` names the lake path.
+`[frost].path` optionally names the frost path.
 `[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
 `[witness]` configures the delimiter regexes used to find *witness* blocks.
 `[tutorial]` optionally enables extra CLI tutorial text for recoverable command failures.
 Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
-The CLI `-F, --frost-path PATH` option selects a Frost path for one direct Frost check.
+The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
 
-A project can use Sirno without configured repo members or Sirno Frost.
-`sirno init` opens an interactive setup flow for the config, public *entry lake*,
-private Sirno Frost path, and packaged skill wrappers.
+A project can use Sirno without configured repo members or frost.
+`sirno init` opens an interactive setup flow for the config, lake,
+frost path, and packaged skill wrappers.
 `sirno init --all` runs the full setup without prompts.
 `sirno init --claude-skills` also links installed wrappers into `.claude/skills`.
 Its default paths are derived from the directory that contains `Sirno.toml`:
 `<repo>-lake` for `[lake].path` and `<repo>-frost` for `[frost].path`.
-`sirno init --lake PATH` chooses a non-default public *lake* path.
-`sirno init --frost PATH` chooses a non-default private *frost* path.
+`sirno init --lake PATH` chooses a non-default lake path.
+`sirno init --frost PATH` chooses a non-default frost path.
 `sirno init --no-lake`, `--no-frost`, and `--no-skills`
 skip their corresponding setup parts.
 `--claude-skills` is available only when packaged skill wrappers are selected.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
-`sirno lake init [PATH]` creates the config and public *entry lake* without configuring Frost.
-`sirno lake move PATH` changes `[lake].path` and renames the public *lake* directory.
+`sirno lake init [PATH]` creates the config and lake without configuring frost.
+`sirno lake move PATH` changes `[lake].path` and renames the lake directory.
 `sirno lake mv PATH` is its short form.
-`sirno frost init [PATH]` adds the Sirno Frost config and records empty version `0`.
-`sirno frost move PATH` changes `[frost].path` and renames the private *frost* path.
+`sirno frost init [PATH]` adds the frost config and records empty version `0`.
+`sirno frost move PATH` changes `[frost].path` and renames the frost path.
 `sirno frost mv PATH` is its short form.
 `sirno move lake PATH` and `sirno move frost PATH`
 select the same path moves from the top-level move group.
@@ -57,9 +57,9 @@ select the same path moves from the top-level move group.
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
 
-`Sirno.lock.toml` records the public *lake*'s *frost* state when Sirno Frost is configured.
+`Sirno.lock.toml` records the lake's *frost* state when frost is configured.
 It lives next to `Sirno.toml`.
-The lock says whether the *lake* is current
+The lock says whether the lake is current
 or checked out to a frozen version.
 
 `[lake].ignore` lists paths relative to the *lake* root.
@@ -99,7 +99,7 @@ the config UI can restore that flag's canonical comment.
 The table is absent by default.
 When the table is present,
 Sirno shows enabled tutorials after matching recoverable command failures.
-`[tutorial].frost_commit_tide` explains a Frost commit blocked by open *tide* workitems.
+`[tutorial].frost_commit_tide` explains a frost commit blocked by open *tide* workitems.
 `[tutorial].frost_bootstrap_tide` adds first-snapshot context to that tutorial.
 Removing the table silences all tutorial text.
 
@@ -127,16 +127,16 @@ Absent values are false.
 `render` controls generated footer output.
 `ripple.lake` and `ripple.frost` control which edge directions produce *tide* workitems.
 
-`Sirno.lock.toml` also records explicit *tide* resolutions when Sirno Frost is configured.
+`Sirno.lock.toml` also records explicit *tide* resolutions when frost is configured.
 Those resolutions are compared against the current ripple fingerprint.
-They are cleared after a successful Frost commit.
+They are cleared after a successful frost commit.
 
 ---
 
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [lake](lake.md)
+  - [sirno](sirno.md)
 - belongs (from):
   - [project-config-comments](project-config-comments.md)
 

@@ -49,6 +49,7 @@ The active field set is defined by `Sirno.toml`.
 - belongs (from):
   - [belongs](belongs.md)
   - [category](category.md)
+  - [generated-navigation](generated-navigation.md)
   - [prerequisite](prerequisite.md)
   - [refines](refines.md)
 

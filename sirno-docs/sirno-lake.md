@@ -30,7 +30,7 @@ and recreates the parent path before placing the moved *lake* at `PATH`.
 The *lake* is the human-readable intermediate representation:
 text first, structured enough for tools,
 and compact enough for humans and agents to inspect locally.
-When Sirno Frost is configured,
+When frost is configured,
 its frozen state is versioned through a separate `eter` *frost* path,
 so one version names one immutable set of *entries*.
 
@@ -44,7 +44,7 @@ and optics such as groups, routes, or views.
 
 The `.artifacts` directory is reserved for lake-owned *entry artifacts*.
 Artifacts live under `.artifacts/<entry-id>/...`.
-This keeps the public *entry* files flat while letting an *entry* own non-Markdown bytes.
+This keeps the Sirno Lake *entry* files flat while letting an *entry* own non-Markdown bytes.
 The owner directory must be an existing *entry* id.
 Artifact paths below that owner are relative UTF-8 paths with only normal components.
 
@@ -57,8 +57,8 @@ The graph is intentionally small:
 classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 The `frozen:` marker adds a file-level protection state,
-so one current Frost-backed public *entry* can be held read-only
-and checked with its artifact tree against the Frost snapshot before commit.
+so one current frost-backed lake *entry* can be held read-only
+and checked with its artifact tree against the frost snapshot before commit.
 
 The *lake* is also a collaboration boundary.
 A person can edit an *entry* directly.
@@ -68,7 +68,7 @@ An editor can use *generated footers* to expose navigation.
 All of those forms use the same filenames and metadata.
 
 The *lake* is a working form.
-Direct edits become frozen versions only when Sirno Frost is configured
+Direct edits become frozen versions only when frost is configured
 and Sirno freezes the *lake* into the *frost* path.
 
 Some files under a *lake* root may belong to adjacent tools.
@@ -95,7 +95,6 @@ and where implementation evidence should be found when that evidence exists.
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
   - [metadata](metadata.md)
-  - [project-config](project-config.md)
   - [query](query.md)
   - [refinement](refinement.md)
   - [sirno-tide](sirno-tide.md)

@@ -1,6 +1,6 @@
 ---
 name: Sirno Lock
-desc: The TOML file that records the frost state of the public lake.
+desc: The TOML file that records the frost state of the lake.
 category:
   - concept
 belongs:
@@ -9,13 +9,13 @@ prerequisite:
   - sirno-frost
 ---
 
-`Sirno.lock.toml` records the public *lake*'s state relative to the configured *frost* path.
+`Sirno.lock.toml` records the lake's state relative to the configured *frost* path.
 It is TOML and lives next to `Sirno.toml`.
-It is written only when Sirno Frost is configured.
+It is written only when frost is configured.
 
 The lock contains one `[frost]` table.
-`status = "current"` means the public *lake* represents the current editable *frost* version.
-`status = "checked-out"` means the public *lake* materializes a selected frozen version.
+`status = "current"` means the lake represents the current editable *frost* version.
+`status = "checked-out"` means the lake materializes a selected frozen version.
 `sirno checkout --latest` records `status = "current"` and leaves files writable.
 The `generation` and `version` fields store the `eter` `SnapshotRef` for that state.
 `version` is the raw `Eterator` coordinate inside the stored GC generation.
@@ -31,7 +31,7 @@ Sirno derives open workitems from the current waterline and frostline.
 The lock does not store a separate open worklist.
 
 A normal checkout is immutable.
-Sirno applies local file protection to the public *lake* root,
+Sirno applies local file protection to the lake root,
 managed *entry* files,
 and managed artifact trees.
 It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
