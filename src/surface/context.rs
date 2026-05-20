@@ -206,7 +206,7 @@ impl SurfaceContext {
         Ok(records)
     }
 
-    // sirno:witness:interfaces:begin
+    // sirno:witness:mcp-interface:begin
     /// Read one Sirno Lake Markdown entry and return its parsed body and stored source.
     pub fn entry_read(&self, id: EntryId) -> Result<EntryReadResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
@@ -226,7 +226,7 @@ impl SurfaceContext {
             message: format!("read entry {id} from {}", path.display()),
         })
     }
-    // sirno:witness:interfaces:end
+    // sirno:witness:mcp-interface:end
 
     /// Return tide statuses in structured form.
     pub fn tide_statuses(&self, mode: TideStatusMode) -> Result<Vec<TideStatus>, CommandError> {

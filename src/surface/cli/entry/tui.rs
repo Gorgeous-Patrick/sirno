@@ -22,7 +22,7 @@ const CATEGORY_FIELD: &str = "category";
 const BELONGS_FIELD: &str = "belongs";
 const PREREQUISITE_FIELD: &str = "prerequisite";
 
-// sirno:witness:interfaces:begin
+// sirno:witness:utility-commands:begin
 const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
     DefaultEntrySpec {
         id: "category",
@@ -97,7 +97,7 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
         body: "`prerequisite` records knowledge an entry expects the reader to understand first.\n",
     },
 ];
-// sirno:witness:interfaces:end
+// sirno:witness:utility-commands:end
 
 /// Run the interactive entry-default maintenance UI.
 pub(crate) fn run(config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
@@ -115,7 +115,7 @@ fn run_app(
             if key.kind != KeyEventKind::Press {
                 continue;
             }
-            // sirno:witness:interfaces:begin
+            // sirno:witness:utility-commands:begin
             match key.code {
                 | KeyCode::Char('q') | KeyCode::Esc => return Ok(ExitCode::SUCCESS),
                 | KeyCode::Char('j') | KeyCode::Down => app.next(),
@@ -124,7 +124,7 @@ fn run_app(
                 | KeyCode::Char('a') => app.insert_all_missing()?,
                 | _ => {}
             }
-            // sirno:witness:interfaces:end
+            // sirno:witness:utility-commands:end
         }
     }
 }

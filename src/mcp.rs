@@ -170,7 +170,7 @@ impl ServerHandler for SirnoMcpServer {
             .with_instructions("Sirno tools for the project resolved by the active config path.")
     }
 
-    // sirno:witness:interfaces:begin
+    // sirno:witness:mcp-interface:begin
     fn list_resources(
         &self, _request: Option<PaginatedRequestParams>, _context: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ListResourcesResult, McpError>> + MaybeSendFuture + '_ {
@@ -212,7 +212,7 @@ impl ServerHandler for SirnoMcpServer {
         };
         future::ready(result)
     }
-    // sirno:witness:interfaces:end
+    // sirno:witness:mcp-interface:end
 }
 
 #[tool_router(router = tool_router)]
@@ -411,6 +411,7 @@ impl SirnoMcpServer {
         result(self.context.frost_defrost())
     }
 
+    // sirno:witness:tide-commands:begin
     /// Show tide review status.
     #[tool(name = "sirno_tide_status")]
     fn tide_status(&self, Parameters(params): Parameters<TideStatusParams>) -> McpToolResult {
@@ -434,6 +435,7 @@ impl SirnoMcpServer {
     fn tide_reset(&self) -> McpToolResult {
         result(self.context.tide_reset())
     }
+    // sirno:witness:tide-commands:end
 }
 
 type McpToolResult = Result<CallToolResult, String>;
@@ -533,7 +535,7 @@ struct EntryPathParams {
     absolute: Option<bool>,
 }
 
-// sirno:witness:interfaces:begin
+// sirno:witness:mcp-interface:begin
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 #[serde(untagged)]
 enum McpStructuralFilters {
@@ -638,7 +640,7 @@ struct McpStructuralState {
     field: String,
     state: McpStructuralFieldState,
 }
-// sirno:witness:interfaces:end
+// sirno:witness:mcp-interface:end
 
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -880,7 +882,7 @@ mod tests {
         StructuralFieldSettings, StructuralRippleSettings, StructuralSettings,
     };
 
-    // sirno:witness:interfaces:begin
+    // sirno:witness:mcp-interface:begin
     const EXPECTED_TOOLS: &[&str] = &[
         "sirno_cwd",
         "sirno_entry_artifact_add",
@@ -912,7 +914,7 @@ mod tests {
         "sirno_tide_status",
         "sirno_tide_unresolve",
     ];
-    // sirno:witness:interfaces:end
+    // sirno:witness:mcp-interface:end
 
     fn write_project(root: &Path) -> PathBuf {
         let config_path = root.join(CONFIG_FILE_NAME);
@@ -1059,9 +1061,9 @@ Changed body.
             .collect::<Vec<_>>();
 
         assert_eq!(names, EXPECTED_TOOLS);
-        // sirno:witness:interfaces:begin
+        // sirno:witness:mcp-interface:begin
         assert!(names.iter().all(|name| !name.starts_with("sirno_util_")));
-        // sirno:witness:interfaces:end
+        // sirno:witness:mcp-interface:end
     }
 
     #[test]

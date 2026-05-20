@@ -27,7 +27,7 @@ pub(crate) fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<(), Command
     Ok(())
 }
 
-// sirno:witness:interfaces:begin
+// sirno:witness:cli-interface:begin
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum OutputStyle {
     Plain,
@@ -92,7 +92,7 @@ pub(crate) fn format_muted_text(value: &str, style: OutputStyle) -> String {
 pub(crate) fn format_warning_text(value: &str, style: OutputStyle) -> String {
     style_text(value, SemanticStyle::Warning, style)
 }
-// sirno:witness:interfaces:end
+// sirno:witness:cli-interface:end
 
 pub(crate) fn print_witness_records(records: &[WitnessRecord], full: bool) {
     print!("{}", format_witness_records(records, full));
@@ -387,7 +387,7 @@ fn format_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: Output
     output
 }
 
-// sirno:witness:interfaces:begin
+// sirno:witness:cli-interface:begin
 fn styled_diagnostic_severity(severity: &str, style: OutputStyle) -> String {
     match severity {
         | "error" => style_text(severity, SemanticStyle::Error, style),
@@ -403,7 +403,7 @@ fn style_text(value: &str, semantic: SemanticStyle, style: OutputStyle) -> Strin
     let text_style = semantic.text_style();
     format!("{text_style}{value}{text_style:#}")
 }
-// sirno:witness:interfaces:end
+// sirno:witness:cli-interface:end
 
 pub(crate) fn format_gen_link_report(
     root: &Path, entry_count: usize, changed_paths: &[PathBuf],
@@ -604,7 +604,7 @@ fn semantic_cell(header: &str, value: String, style: OutputStyle) -> Cell {
     }
 }
 
-// sirno:witness:interfaces:begin
+// sirno:witness:cli-interface:begin
 fn semantic_table_cell_style(header: &str, value: &str) -> Option<SemanticStyle> {
     match header {
         | "state" | "status" => semantic_status_style(value),
@@ -620,7 +620,7 @@ fn semantic_status_style(value: &str) -> Option<SemanticStyle> {
         | _ => None,
     }
 }
-// sirno:witness:interfaces:end
+// sirno:witness:cli-interface:end
 
 fn elide_human_table_columns(
     headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,

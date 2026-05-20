@@ -63,11 +63,11 @@ use crate::surface::rg::rg_args_include_preprocessor;
 
 /// Sirno command-line entry point.
 #[derive(Debug, Parser)]
-// sirno:witness:interfaces:begin
+// sirno:witness:cli-interface:begin
 #[command(name = "sirno")]
 #[command(about = "Manage Sirno design entries")]
 #[command(version)]
-// sirno:witness:interfaces:end
+// sirno:witness:cli-interface:end
 pub struct Cli {
     /// Sirno project config file.
     #[arg(short = 'C', long, global = true)]
@@ -140,7 +140,7 @@ enum Command {
         #[command(subcommand)]
         command: TideCommand,
     },
-    // sirno:witness:interfaces:begin
+    // sirno:witness:cli-interface:begin
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
     Status,
@@ -162,7 +162,7 @@ enum Command {
         #[command(subcommand)]
         command: UtilCommand,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:cli-interface:end
 }
 
 /// Supported Sirno Lake entry commands.
@@ -180,7 +180,7 @@ enum EntryCommand {
 #[derive(Debug, Subcommand)]
 enum TopLevelEntryCommand {
     /// Create one Markdown entry.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     New {
         /// Entry id and filename stem.
         id: String,
@@ -197,28 +197,28 @@ enum TopLevelEntryCommand {
         #[arg(short = 'b', long)]
         body: Option<String>,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Freeze one current frost entry and make its lake file read-only.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     Freeze {
         /// Entry id to freeze.
         id: String,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Melt one Sirno Lake Markdown entry and make its file writable.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     #[command(visible_alias = "unfreeze")]
     Melt {
         /// Entry id to melt.
         id: String,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Show filesystem paths related to one entry.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     Path(EntryPathArgs),
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Query Sirno Lake Markdown entries.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     #[command(visible_alias = "q")]
     Query {
         /// Vague text terms matched against entries and structural target summaries.
@@ -245,9 +245,9 @@ enum TopLevelEntryCommand {
         #[arg(short = 'o', long, value_enum)]
         format: Option<QueryOutputFormat>,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Run ripgrep in the configured Sirno Lake.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     Rg {
         /// Include Sirno-owned generated-footer regions in the search.
         #[arg(long = "with-generated-footer")]
@@ -256,17 +256,17 @@ enum TopLevelEntryCommand {
         #[arg(required = true, trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Manage entry-owned artifact files.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     Artifact {
         /// Artifact command.
         #[command(subcommand)]
         command: ArtifactCommand,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
     /// Show repository witness blocks for one entry id.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:entry-commands:begin
     #[command(visible_aliases = ["w", "wit"])]
     Witness {
         /// Entry id used as the witness query key.
@@ -275,14 +275,14 @@ enum TopLevelEntryCommand {
         #[arg(short = 'f', long)]
         full: bool,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:entry-commands:end
 }
 
 /// Supported Sirno Lake commands.
 #[derive(Debug, Subcommand)]
 enum LakeCommand {
     /// Create a Sirno config and ordinary seed entries.
-    // sirno:witness:interfaces:begin
+    // sirno:witness:project-commands:begin
     Init {
         /// Lake path written to Sirno.toml.
         lake: Option<PathBuf>,
@@ -293,7 +293,7 @@ enum LakeCommand {
     /// Run a top-level lake operation under `sirno lake`.
     #[command(flatten)]
     TopLevel(TopLevelLakeCommand),
-    // sirno:witness:interfaces:end
+    // sirno:witness:project-commands:end
 }
 
 /// Supported top-level Sirno Lake commands.
@@ -305,7 +305,7 @@ enum TopLevelLakeCommand {
         #[arg(short = 'm', long, value_enum)]
         mode: Option<CheckModeArg>,
     },
-    // sirno:witness:interfaces:begin
+    // sirno:witness:project-commands:begin
     /// Render Markdown links in entry footers.
     Render {
         /// Report rendered-footer changes without writing files.
@@ -318,11 +318,11 @@ enum TopLevelLakeCommand {
         #[command(subcommand)]
         command: Option<RenderCommand>,
     },
-    // sirno:witness:interfaces:end
+    // sirno:witness:project-commands:end
 }
 
 /// Supported top-level move wrappers.
-// sirno:witness:interfaces:begin
+// sirno:witness:cli-interface:begin
 #[derive(Debug, Subcommand)]
 enum MoveCommand {
     /// Rename one entry id and its Sirno references.
@@ -355,10 +355,10 @@ struct FrostMoveArgs {
     /// New frost path written to Sirno.toml.
     frost: PathBuf,
 }
-// sirno:witness:interfaces:end
+// sirno:witness:cli-interface:end
 
 /// Arguments for entry path lookup.
-// sirno:witness:interfaces:begin
+// sirno:witness:entry-commands:begin
 #[derive(Clone, Debug, Args)]
 struct EntryPathArgs {
     /// Entry id whose paths should be shown.
@@ -379,10 +379,10 @@ struct EntryPathArgs {
     #[arg(short = 'o', long, value_enum)]
     format: Option<PathOutputFormat>,
 }
-// sirno:witness:interfaces:end
+// sirno:witness:entry-commands:end
 
 /// CLI path lookup output renderer.
-// sirno:witness:interfaces:begin
+// sirno:witness:entry-commands:begin
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
 enum PathOutputFormat {
     /// Print a JSON array of path records.
@@ -393,7 +393,7 @@ enum PathOutputFormat {
     /// Print only paths, one per line.
     Paths,
 }
-// sirno:witness:interfaces:end
+// sirno:witness:entry-commands:end
 
 /// Structural metadata predicate parsed from `FIELD=ENTRY_ID`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -432,7 +432,7 @@ enum StructuralPredicateParseError {
 }
 
 /// Supported entry artifact commands.
-// sirno:witness:interfaces:begin
+// sirno:witness:entry-commands:begin
 #[derive(Debug, Subcommand)]
 enum ArtifactCommand {
     /// List artifacts owned by one entry.
@@ -468,7 +468,7 @@ enum ArtifactCommand {
         artifact_path: PathBuf,
     },
 }
-// sirno:witness:interfaces:end
+// sirno:witness:entry-commands:end
 
 /// CLI representation of check boundaries.
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -600,6 +600,7 @@ enum TideStatusGrouping {
 
 /// Supported tide review commands.
 #[derive(Debug, Subcommand)]
+// sirno:witness:tide-commands:begin
 enum TideReviewCommand {
     /// Resolve tide workitems.
     Resolve(ResolveArgs),
@@ -607,8 +608,10 @@ enum TideReviewCommand {
     #[command(visible_alias = "reopen")]
     Unresolve(UnresolveArgs),
 }
+// sirno:witness:tide-commands:end
 
 /// Arguments for resolving tide workitems.
+// sirno:witness:tide-commands:begin
 #[derive(Debug, Args)]
 struct ResolveArgs {
     /// Resolve workitems whose neighbor also appears in the current ripple set.
@@ -629,6 +632,7 @@ struct UnresolveArgs {
     #[arg(required = true)]
     items: Vec<TideItemSelector>,
 }
+// sirno:witness:tide-commands:end
 
 /// Supported rendered-footer commands.
 #[derive(Debug, Subcommand)]
@@ -668,35 +672,35 @@ impl From<CompletionShell> for Shell {
 /// Supported utility commands.
 #[derive(Debug, Subcommand)]
 enum UtilCommand {
-    // sirno:witness:interfaces:begin
+    // sirno:witness:utility-commands:begin
     /// Open the interactive Sirno.toml maintenance UI.
     Config(ConfigTuiArgs),
-    // sirno:witness:interfaces:end
-    // sirno:witness:interfaces:begin
+    // sirno:witness:utility-commands:end
+    // sirno:witness:utility-commands:begin
     /// Open the interactive entry default maintenance UI.
     Entry,
-    // sirno:witness:interfaces:end
+    // sirno:witness:utility-commands:end
     /// Generate a shell completion script.
     Completion {
         /// Shell whose completion script should be generated.
         #[arg(value_enum)]
         shell: CompletionShell,
     },
-    // sirno:witness:interfaces:begin
+    // sirno:witness:utility-commands:begin
     /// Manage packaged Sirno skill wrappers.
     Skills {
         /// Skill wrapper command.
         #[command(subcommand)]
         command: SkillCommand,
     },
-    // sirno:witness:interfaces:end
-    // sirno:witness:interfaces:begin
+    // sirno:witness:utility-commands:end
+    // sirno:witness:utility-commands:begin
     /// Run the Sirno MCP server over stdio.
     Mcp,
-    // sirno:witness:interfaces:end
+    // sirno:witness:utility-commands:end
 }
 
-// sirno:witness:interfaces:begin
+// sirno:witness:utility-commands:begin
 /// Arguments for interactive config maintenance.
 #[derive(Debug, Args)]
 struct ConfigTuiArgs {
@@ -707,10 +711,10 @@ struct ConfigTuiArgs {
     #[arg(long)]
     fix: bool,
 }
-// sirno:witness:interfaces:end
+// sirno:witness:utility-commands:end
 
 /// Supported skill wrapper utility commands.
-// sirno:witness:interfaces:begin
+// sirno:witness:utility-commands:begin
 #[derive(Debug, Subcommand)]
 enum SkillCommand {
     /// Install bundled wrappers into `.agents/skills/sirno-*`.
@@ -720,7 +724,7 @@ enum SkillCommand {
     /// List bundled wrappers and package targets.
     List(SkillCommandArgs),
 }
-// sirno:witness:interfaces:end
+// sirno:witness:utility-commands:end
 
 /// Options shared by skill wrapper utility commands.
 #[derive(Debug, Args)]
@@ -1330,7 +1334,7 @@ impl TopLevelLakeCommand {
             | TopLevelLakeCommand::Render { .. } if frost_path.is_some() => {
                 Err(CommandError::FrostPathRequiresCheck)
             }
-            // sirno:witness:interfaces:begin
+            // sirno:witness:project-commands:begin
             | TopLevelLakeCommand::Render { command, dry, override_json } => match command {
                 | None => {
                     let result = SurfaceContext::from_cli_paths(config_path, lake_path)
@@ -1351,7 +1355,7 @@ impl TopLevelLakeCommand {
                     Ok(ExitCode::SUCCESS)
                 }
             },
-            // sirno:witness:interfaces:end
+            // sirno:witness:project-commands:end
         }
     }
 }
@@ -1457,15 +1461,18 @@ impl TideCommand {
 }
 
 impl TideReviewCommand {
+    // sirno:witness:tide-commands:begin
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | Self::Resolve(args) => args.run(config_path, lake_path),
             | Self::Unresolve(args) => args.run(config_path, lake_path),
         }
     }
+    // sirno:witness:tide-commands:end
 }
 
 impl ResolveArgs {
+    // sirno:witness:tide-commands:begin
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let request = if self.infer {
             TideResolveRequest { infer: true, ..TideResolveRequest::default() }
@@ -1487,9 +1494,11 @@ impl ResolveArgs {
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
+    // sirno:witness:tide-commands:end
 }
 
 impl UnresolveArgs {
+    // sirno:witness:tide-commands:begin
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let request = tide_selection_from_items(self.items);
         let result =
@@ -1497,6 +1506,7 @@ impl UnresolveArgs {
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
+    // sirno:witness:tide-commands:end
 }
 
 #[derive(Debug, Deserialize)]
