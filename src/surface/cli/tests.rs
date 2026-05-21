@@ -816,17 +816,19 @@ fn util_skills_init_installs_bundled_wrappers() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let context = SurfaceContext::new(&config_path);
+    let expected = context.skill_wrappers_list().unwrap().records.len();
 
     let init = context.skill_wrappers_init().unwrap();
     let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
     let check = context.skill_wrappers_check().unwrap();
 
     assert!(init.ok);
-    assert_eq!(init.records.len(), 3);
-    assert_eq!(init.records[0].status, "wrote");
+    assert_eq!(init.records.len(), expected);
+    assert!(init.records.iter().all(|record| record.status == "wrote"));
     assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
     assert!(check.ok);
-    assert_eq!(check.records[0].status, "ok");
+    assert_eq!(check.records.len(), expected);
+    assert!(check.records.iter().all(|record| record.status == "ok"));
 }
 
 #[cfg(unix)]
@@ -835,6 +837,8 @@ fn util_skills_init_can_link_claude_skills() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let context = SurfaceContext::new(&config_path);
+    let expected_wrappers = context.skill_wrappers_list().unwrap().records.len();
+    let expected_records = expected_wrappers * 2;
 
     let init = context.skill_wrappers_init_with_claude(true).unwrap();
     let link = temp.path().join(".claude").join("skills").join("sirno-editor");
@@ -843,11 +847,11 @@ fn util_skills_init_can_link_claude_skills() {
     let expected = Path::new("..").join("..").join(".agents").join("skills").join("sirno-editor");
 
     assert!(init.ok);
-    assert_eq!(init.records.len(), 6);
+    assert_eq!(init.records.len(), expected_records);
     assert_eq!(fs::read_link(link).unwrap(), expected);
     assert!(check.ok);
-    assert_eq!(check.records.len(), 6);
-    assert_eq!(listed.records.len(), 6);
+    assert_eq!(check.records.len(), expected_records);
+    assert_eq!(listed.records.len(), expected_records);
     assert!(listed.records.iter().any(|record| {
         record.status == "link" && record.target_path == ".claude/skills/sirno-editor"
     }));
