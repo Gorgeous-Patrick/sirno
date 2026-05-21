@@ -1,14 +1,8 @@
 //! CLI grammar and terminal dispatch for the shared command surface.
 
-mod config {
-    pub(crate) mod tui;
-}
-mod entry {
-    pub(crate) mod tui;
-}
-mod skills {
-    pub(crate) mod tui;
-}
+mod config;
+mod entry;
+mod skills;
 mod tui;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -2095,7 +2089,7 @@ impl ConfigUtilityCommand {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let context = SurfaceContext::new(config_path.to_path_buf());
         match self {
-            | ConfigUtilityCommand::Tui => config::tui::run(config_path),
+            | ConfigUtilityCommand::Tui => config::run(config_path),
             | ConfigUtilityCommand::Check => {
                 let result = context.config_comments_check()?;
                 print_config_comment_result(&result);
@@ -2113,7 +2107,7 @@ impl ConfigUtilityCommand {
 impl EntryUtilityCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
-            | EntryUtilityCommand::Tui => entry::tui::run(config_path, lake_path),
+            | EntryUtilityCommand::Tui => entry::run(config_path, lake_path),
         }
     }
 }
@@ -2123,7 +2117,7 @@ impl SkillCommand {
         let context = SurfaceContext::new(config_path.to_path_buf());
         let result = match self {
             | SkillCommand::Tui(args) => {
-                return skills::tui::run(config_path, args.claude_skills);
+                return skills::run(config_path, args.claude_skills);
             }
             | SkillCommand::Init(args) => {
                 context.skill_wrappers_init_with_claude(args.claude_skills)?
