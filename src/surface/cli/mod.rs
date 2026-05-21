@@ -3,6 +3,7 @@
 mod config;
 mod entry;
 mod skills;
+mod tide;
 mod tui;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -581,6 +582,8 @@ enum TideCommand {
         #[arg(short = 'o', long, value_enum)]
         format: Option<TideOutputFormat>,
     },
+    /// Open the interactive tide resolution UI.
+    Tui,
     /// Run a tide review operation.
     #[command(flatten)]
     Review(TideReviewCommand),
@@ -1483,6 +1486,9 @@ impl TideCommand {
                     Ok(if statuses.is_empty() { ExitCode::SUCCESS } else { ExitCode::FAILURE })
                 }
             }
+            // sirno:witness:tide-commands:begin
+            | TideCommand::Tui => tide::run(config_path, lake_path),
+            // sirno:witness:tide-commands:end
             | TideCommand::Review(command) => command.run(config_path, lake_path),
             | TideCommand::Reset => {
                 let result = SurfaceContext::from_cli_paths(config_path, lake_path).tide_reset()?;

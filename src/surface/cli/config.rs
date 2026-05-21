@@ -156,9 +156,12 @@ impl TuiApp for ConfigTui {
                 Ok(TuiFlow::Continue)
             }
             // sirno:witness:utility-commands:end
-            | TuiKey::Quit | TuiKey::Next | TuiKey::Previous | TuiKey::Char(_) | TuiKey::Other => {
-                Ok(TuiFlow::Continue)
-            }
+            | TuiKey::Quit
+            | TuiKey::Next
+            | TuiKey::Prev
+            | TuiKey::Tab
+            | TuiKey::Char(_)
+            | TuiKey::Other => Ok(TuiFlow::Continue),
         }
     }
 }

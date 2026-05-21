@@ -16,7 +16,8 @@ use crate::surface::error::CommandError;
 pub(crate) enum TuiKey {
     Quit,
     Next,
-    Previous,
+    Prev,
+    Tab,
     Char(char),
     Other,
 }
@@ -27,7 +28,8 @@ impl TuiKey {
         match code {
             | KeyCode::Char('q') | KeyCode::Esc => Self::Quit,
             | KeyCode::Char('j') | KeyCode::Down => Self::Next,
-            | KeyCode::Char('k') | KeyCode::Up => Self::Previous,
+            | KeyCode::Char('k') | KeyCode::Up => Self::Prev,
+            | KeyCode::Tab => Self::Tab,
             | KeyCode::Char(ch) => Self::Char(ch),
             | _ => Self::Other,
         }
@@ -88,11 +90,11 @@ pub(crate) fn handle_table_key(
             selection.next(row_count);
             Some(TuiFlow::Continue)
         }
-        | TuiKey::Previous => {
+        | TuiKey::Prev => {
             selection.previous();
             Some(TuiFlow::Continue)
         }
-        | TuiKey::Char(_) | TuiKey::Other => None,
+        | TuiKey::Tab | TuiKey::Char(_) | TuiKey::Other => None,
     }
 }
 // sirno:witness:utility-commands:end
@@ -101,6 +103,14 @@ pub(crate) fn handle_table_key(
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct TuiAreas {
     pub(crate) table: Rect,
+    pub(crate) footer: Rect,
+}
+
+/// Main table, selected-row detail, and footer areas for utility TUIs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct TuiDetailAreas {
+    pub(crate) table: Rect,
+    pub(crate) detail: Rect,
     pub(crate) footer: Rect,
 }
 
@@ -147,6 +157,21 @@ pub(crate) fn table_footer_areas(frame: &Frame<'_>, footer_height: u16) -> TuiAr
     TuiAreas { table: chunks[0], footer: chunks[1] }
 }
 // sirno:witness:utility-commands:end
+
+/// Split a utility TUI into a main table, detail panel, and bottom key/message footer.
+pub(crate) fn table_detail_footer_areas(
+    frame: &Frame<'_>, detail_height: u16, footer_height: u16,
+) -> TuiDetailAreas {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(5),
+            Constraint::Length(detail_height),
+            Constraint::Length(footer_height),
+        ])
+        .split(frame.area());
+    TuiDetailAreas { table: chunks[0], detail: chunks[1], footer: chunks[2] }
+}
 
 /// Standard header style for utility TUI tables.
 pub(crate) fn header_style() -> Style {
@@ -199,8 +224,9 @@ mod tests {
         assert_eq!(TuiKey::from_code(KeyCode::Esc), TuiKey::Quit);
         assert_eq!(TuiKey::from_code(KeyCode::Char('j')), TuiKey::Next);
         assert_eq!(TuiKey::from_code(KeyCode::Down), TuiKey::Next);
-        assert_eq!(TuiKey::from_code(KeyCode::Char('k')), TuiKey::Previous);
-        assert_eq!(TuiKey::from_code(KeyCode::Up), TuiKey::Previous);
+        assert_eq!(TuiKey::from_code(KeyCode::Char('k')), TuiKey::Prev);
+        assert_eq!(TuiKey::from_code(KeyCode::Up), TuiKey::Prev);
+        assert_eq!(TuiKey::from_code(KeyCode::Tab), TuiKey::Tab);
         assert_eq!(TuiKey::from_code(KeyCode::Char('i')), TuiKey::Char('i'));
     }
 
@@ -226,7 +252,7 @@ mod tests {
 
         assert_eq!(handle_table_key(&mut selection, 3, TuiKey::Next), Some(TuiFlow::Continue));
         assert_eq!(selection.selected(), 1);
-        assert_eq!(handle_table_key(&mut selection, 3, TuiKey::Previous), Some(TuiFlow::Continue));
+        assert_eq!(handle_table_key(&mut selection, 3, TuiKey::Prev), Some(TuiFlow::Continue));
         assert_eq!(selection.selected(), 0);
         assert_eq!(
             handle_table_key(&mut selection, 3, TuiKey::Quit),

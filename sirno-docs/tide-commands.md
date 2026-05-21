@@ -23,6 +23,22 @@ in the same grouped table.
 `sirno tide status --by entry` selects the default review-entry grouping explicitly.
 `sirno tide status -o, --format` selects `human` or `json` output.
 
+`sirno tide tui` opens an interactive tide resolution UI.
+It shows a selectable tide table, a selected-row detail panel, and a key/message footer.
+The default view groups rows by review entry with open and resolved counts
+and the ripple entries that caused review.
+Tab toggles between review-entry and wave grouping.
+`f` toggles between summary rows and full workitem rows.
+`j`, `k`, Up, and Down move the selected row.
+Space resolves the selected row.
+`u` reopens the selected row.
+In review-entry summary mode, these keys apply to the selected review entry.
+In wave summary mode, they apply to exact workitems in the selected wave.
+In full mode, they apply to the selected exact workitem.
+`i` runs infer-resolution.
+`c` refreshes tide state.
+`q` and Esc exit.
+
 The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.
 The top-level forms `sirno resolve` and `sirno unresolve` select the same operations.
 

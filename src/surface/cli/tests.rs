@@ -1529,6 +1529,13 @@ fn tide_status_accepts_show_modes() {
 }
 
 #[test]
+fn tide_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "tide", "tui"]);
+
+    assert!(matches!(cli.command, Command::Tide { command: TideCommand::Tui }));
+}
+
+#[test]
 fn tide_status_accepts_grouping_modes() {
     let default = Cli::parse_from(["sirno", "tide", "status"]);
     let wave = Cli::parse_from(["sirno", "tide", "status", "--by", "wave"]);
