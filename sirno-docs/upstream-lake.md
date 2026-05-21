@@ -17,6 +17,8 @@ The current project names each upstream in `Sirno.toml`.
 The declaration chooses a Git source,
 one ref selector,
 and an entry-domain atom for the crystallized address prefix.
+That domain atom is always explicit.
+Sirno does not infer a local upstream name from the Git source.
 The source may be a remote Git URL or a local Git repository source accepted by Git.
 Local repository sources are read through committed Git objects;
 dirty worktree state is ignored.

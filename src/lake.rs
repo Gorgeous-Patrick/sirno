@@ -775,6 +775,8 @@ impl EntryDirectory {
             }
         }
 
+        self.ensure_crystallized_domain_replaceable(domain, settings)?;
+
         let mut changed_paths = Vec::new();
         changed_paths.extend(self.remove_crystallized_domain_entries(domain, settings)?);
         changed_paths.extend(self.remove_crystallized_domain_artifacts(domain)?);
@@ -795,6 +797,15 @@ impl EntryDirectory {
             domain: domain.clone(),
             changed_paths,
         })
+    }
+
+    /// Require all existing paths in an upstream domain to be crystallization-managed.
+    pub fn ensure_crystallized_domain_replaceable(
+        &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<(), EntryDirectoryError> {
+        self.ensure_crystallized_domain_entries_replaceable(domain, settings)?;
+        self.ensure_crystallized_domain_artifacts_replaceable(domain)?;
+        Ok(())
     }
 
     /// Mark this directory as read-only.
@@ -1261,6 +1272,51 @@ impl EntryDirectory {
         Ok(changed)
     }
 
+    fn ensure_crystallized_domain_entries_replaceable(
+        &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<(), EntryDirectoryError> {
+        let domain_root = self.root.join(domain.as_str());
+        if !domain_root.exists() {
+            return Ok(());
+        }
+        if !domain_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(domain_root));
+        }
+
+        for path in sorted_recursive_paths(&domain_root)? {
+            let metadata = fs::symlink_metadata(&path)?;
+            if metadata.file_type().is_dir() {
+                continue;
+            }
+            if settings.ignores(path.strip_prefix(&self.root).map_err(|source| {
+                EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                }
+            })?) {
+                continue;
+            }
+            if !metadata.file_type().is_file()
+                || path.extension().and_then(|extension| extension.to_str()) != Some("md")
+            {
+                return Err(EntryDirectoryError::CheckoutConflict(path));
+            }
+            let relative =
+                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                })?;
+            let id = EntryAddress::from_lake_relative_path(relative)?;
+            let entry = self.read_entry(&id)?;
+            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
+            }
+        }
+        Ok(())
+    }
+
     fn remove_crystallized_domain_artifacts(
         &self, domain: &EntryAtom,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
@@ -1295,6 +1351,38 @@ impl EntryDirectory {
             changed.push(owner_root);
         }
         Ok(changed)
+    }
+
+    fn ensure_crystallized_domain_artifacts_replaceable(
+        &self, domain: &EntryAtom,
+    ) -> Result<(), EntryDirectoryError> {
+        let artifact_root = self.artifact_root();
+        if !artifact_root.exists() {
+            return Ok(());
+        }
+        if !artifact_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(artifact_root));
+        }
+
+        for owner_root in sorted_directory_paths(&artifact_root)? {
+            let Some(owner_name) = owner_root.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            let Ok(owner) = EntryAddress::new(owner_name) else {
+                continue;
+            };
+            if !owner.starts_with_domain(domain) {
+                continue;
+            }
+            let owner_entry = self.entry_file_path(&owner);
+            if owner_entry.exists() {
+                let entry = self.read_entry(&owner)?;
+                if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                    return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
+                }
+            }
+        }
+        Ok(())
     }
 
     fn remove_managed_entry_files_in(

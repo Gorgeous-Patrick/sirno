@@ -25,6 +25,8 @@ Structural metadata targets inside the upstream are rebased through the upstream
 Generated footer regions are stripped during import
 and regenerated for the current lake view.
 Unknown leading-dot roots stay reserved and are not imported as entry domains.
+The target domain must be empty or already managed by crystallization.
+Unmanaged local sublake files block crystallization for the same domain.
 
 Crystallized entries carry the `managed` frozen reason.
 If the upstream entry already carried `reviewed`,

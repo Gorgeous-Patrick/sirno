@@ -22,6 +22,8 @@ The global view is what readers and tools navigate after resolution.
 A lake sheaf flattens sublakes to the top level before resolving dependency diamonds.
 Dependency domains then link back to the top-level resolved entries.
 This keeps one composed entry surface even when several dependency paths reach the same lake.
+Local sublakes and upstream lakes use the same entry-address resolution.
+Both are represented in frost by their flattened entry addresses.
 
 The sheaf model names composition, lookup, and consistency.
 It does not choose dependency versions.

@@ -492,6 +492,12 @@ impl SurfaceContext {
         let mut config = SirnoConfig::from_file(&self.config_path)?;
         config.upstreams.insert(request.domain.clone(), request.settings);
         config.validate_for_file(&self.config_path)?;
+        let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.witness = None;
+        EntryDirectory::new(lake_path)
+            .ensure_crystallized_domain_replaceable(&request.domain, &settings)?;
         config.write(&self.config_path)?;
         self.upstream_crystallize(UpstreamCrystallizeRequest {
             domains: vec![request.domain],

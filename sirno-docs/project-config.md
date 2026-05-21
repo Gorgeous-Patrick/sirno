@@ -36,12 +36,15 @@ The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost
 
 `[upstreams.DOMAIN]` declares an upstream lake crystallized under `DOMAIN`.
 `DOMAIN` is an *entry atom* and becomes the injected *entry address* prefix.
+It is an explicit local name with no default derived from `SOURCE`.
 Each upstream has `git = "SOURCE"` and exactly one of `branch`, `tag`, or `rev`.
 `SOURCE` is a remote Git URL or local Git repository source accepted by Git.
 `project` optionally names the directory inside the Git tree that contains `Sirno.toml`;
 it defaults to `.`.
 There is no non-Git path upstream.
 Every declared upstream is included by crystallization.
+The domain shares the top-level lake namespace with implicit local sublakes,
+so unmanaged files under `lake/DOMAIN/` block the declaration from being materialized.
 
 A project can use Sirno without configured repo members or frost.
 `sirno init` opens an interactive setup flow for the config, lake,

@@ -45,6 +45,11 @@ Several paths may resolve to the same *entry* in a composed lake.
 The leading-dot path form `.<id>` is reserved for Sirno built-in functionality.
 Project entries and dependency domains use ordinary `<id>` path segments.
 
+A *local sublake* is an implicit project-owned top-level folder in the *lake*.
+Creating `lake/core/design.md` creates the `core.` local sublake domain
+and the `core.design` entry address.
+No `Sirno.toml` table declares local sublakes.
+
 A *lake sheaf* is the resolved composition of multiple lakes.
 It flattens sublakes to the top level before dependency domains link back
 to the resolved top-level entries.
@@ -109,6 +114,7 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
+  - [local-sublake](local-sublake.md)
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)

@@ -638,8 +638,10 @@ mod tests {
     use std::process::Command;
 
     use super::*;
-    use crate::surface::{SurfaceContext, UpstreamCrystallizeRequest};
-    use crate::{LOCK_FILE_NAME, StructuralSettings, UpstreamSettingsMap};
+    use crate::surface::{
+        CommandError, SurfaceContext, UpstreamAddRequest, UpstreamCrystallizeRequest,
+    };
+    use crate::{EntryDirectoryError, LOCK_FILE_NAME, StructuralSettings, UpstreamSettingsMap};
 
     fn run_git(root: &Path, args: &[&str]) {
         let output = Command::new("git").current_dir(root).args(args).output().unwrap();
@@ -753,5 +755,47 @@ Body.
             .unwrap();
         assert_eq!(result.domains, ["core"]);
         assert_eq!(fs::read_dir(temp.path().join("store/git")).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn upstream_add_rejects_implicit_local_sublake_collision_before_config_write() {
+        let temp = tempfile::tempdir().unwrap();
+        let upstream_root = temp.path().join("upstream");
+        fs::create_dir(&upstream_root).unwrap();
+        write_upstream_repo(&upstream_root);
+        let project_root = temp.path().join("project");
+        fs::create_dir(&project_root).unwrap();
+        let config_path = project_root.join(CONFIG_FILE_NAME);
+        SirnoConfig::new("lake").write_new(&config_path).unwrap();
+        fs::create_dir_all(project_root.join("lake/core")).unwrap();
+        fs::write(
+            project_root.join("lake/core/local.md"),
+            "\
+---
+name: Local
+desc: Local sublake entry.
+---
+
+Body.
+",
+        )
+        .unwrap();
+        let domain = EntryAtom::new("core").unwrap();
+
+        let error = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_add(UpstreamAddRequest {
+                domain: domain.clone(),
+                settings: UpstreamSettings::branch(upstream_root.to_string_lossy(), "main"),
+            })
+            .unwrap_err();
+
+        assert!(
+            matches!(error, CommandError::EntryDirectory(EntryDirectoryError::UnmanagedCrystallizedPath(path)) if path.ends_with("lake/core/local.md"))
+        );
+        let config = SirnoConfig::from_file(&config_path).unwrap();
+        assert!(config.upstreams.is_empty());
+        assert!(!project_root.join(LOCK_FILE_NAME).exists());
+        assert!(project_root.join("lake/core/local.md").exists());
     }
 }

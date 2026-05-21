@@ -27,6 +27,9 @@ An *entry domain* is an address space, not the identity of one *entry*.
 A domain can contain entries and other domains.
 It lets a project group entries by origin, subject, module, or dependency boundary
 without making that grouping part of the entry's durable identity.
+An ordinary top-level domain folder is an implicit local sublake.
+An upstream declaration can claim the same top-level domain namespace,
+so Sirno rejects unmanaged local files before crystallizing an upstream into that folder.
 
 Use domain atoms as lowercase ASCII kebab-case by default.
 Keep them short and stable.

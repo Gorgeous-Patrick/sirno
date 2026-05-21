@@ -217,11 +217,7 @@ impl EntryAddress {
 
     /// Return true when this address begins with a domain atom.
     pub fn starts_with_domain(&self, domain: &EntryAtom) -> bool {
-        self.as_str() == domain.as_str()
-            || self
-                .as_str()
-                .strip_prefix(domain.as_str())
-                .is_some_and(|suffix| suffix.starts_with('.'))
+        self.as_str().strip_prefix(domain.as_str()).is_some_and(|suffix| suffix.starts_with('.'))
     }
 
     /// Convert this address into a lake-root-relative Markdown file path.
@@ -522,6 +518,15 @@ mod tests {
                 .as_str(),
             "core.design"
         );
+    }
+
+    #[test]
+    fn entry_address_domain_prefix_requires_dot_boundary() {
+        let domain = EntryAtom::new("core").unwrap();
+
+        assert!(EntryAddress::new("core.design").unwrap().starts_with_domain(&domain));
+        assert!(!EntryAddress::new("core").unwrap().starts_with_domain(&domain));
+        assert!(!EntryAddress::new("corelib.design").unwrap().starts_with_domain(&domain));
     }
 
     #[test]
