@@ -22,8 +22,10 @@ so a reviewer can confirm that the running code does what the design says it sho
 Reaching for a *witness* block to save information is the wrong tool.
 
 The *witness* entry is the front door for *repository* evidence.
-Its review neighborhood covers how blocks are marked, looked up,
-shaped into records and spans, kept honest, and renamed.
+Its review neighborhood covers how blocks are marked,
+how they are looked up and renamed,
+how resolved records are shaped,
+and how malformed blocks are reported.
 
 Sirno discovers *witness* status mechanically.
 It queries *witnesses* through `mosaika` by *entry* id.
@@ -39,8 +41,8 @@ A *repository witness* block opens with `sirno:witness:<entry-id>:begin`
 and closes with `sirno:witness:<entry-id>:end`.
 The opening and closing *entry* ids must match.
 The *witness delimiter* defines the configured marker shapes and capture rules,
-*witness lookup* defines the scan over `[repo].members`,
-and *witness rename* keeps the captured id correct across `sirno entry rename`.
+and *witness lookup* defines the scan over `[repo].members`
+and the rename rewrites that follow `sirno entry rename`.
 
 The *entry* body may explain how to find or interpret evidence as fallback guidance.
 The convention is the *entry* id plus the *repository witness* block.
@@ -66,7 +68,7 @@ If the evidence exists but is hard to interpret,
 the *entry* body can explain what a reviewer should look for.
 The *entry* id remains the query key.
 
-How Sirno represents resolved evidence is the *witness record* and *witness span*.
+How Sirno represents resolved evidence is the *witness record*.
 How malformed evidence is reported is *witness integrity*.
 This *entry* stays the front door;
 its neighborhood carries the precise mechanics.
@@ -79,11 +81,8 @@ its neighborhood carries the precise mechanics.
   - [sirno](sirno.md)
 - belongs (from):
   - [witness-delimiter](witness-delimiter.md)
-  - [witness-fixture-isolation](witness-fixture-isolation.md)
   - [witness-integrity](witness-integrity.md)
   - [witness-lookup](witness-lookup.md)
   - [witness-record](witness-record.md)
-  - [witness-rename](witness-rename.md)
-  - [witness-span](witness-span.md)
 
 > **Sirno generated links end.**

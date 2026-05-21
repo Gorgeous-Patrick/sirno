@@ -38,6 +38,21 @@ When `sirno entry rename` updates *witness* sentinels,
 Sirno builds `mosaika` text edits from the captured id spans in the opening and closing delimiters.
 Only the captured ids are rewritten.
 The *witness* body remains owned by the repository artifact.
+This makes an *entry* id a safe thing to change:
+the id is the single link between a claim and its evidence,
+so renaming the claim updates exactly that link without touching the witnessed code.
+
+Tests for *witness* lookup must avoid satisfying themselves through their own source literals.
+A fixture file that contains a literal opening or closing sentinel would be picked up by the scanner
+as a real *witness* block.
+Tests that need a real fixture assemble the delimiter text from smaller parts at runtime
+before writing temporary files.
+Tests that only format *witness* records use neutral comment text
+to verify range rendering, marker selection, body preservation, and record spacing
+without depending on *witness* syntax.
+The convention applies to fixture data the test writes for the scanner or formatter,
+not to *repository witness* comments inside test modules,
+which remain valid evidence.
 
 The lookup path keeps *witness* syntax out of *entry* prose.
 The *entries* remain design claims.

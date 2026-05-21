@@ -21,6 +21,14 @@ so a record always names a valid *entry*.
 The body is emitted by `mosaika` and stays owned by the repository artifact;
 Sirno reads it but never authors it.
 
+Spans are one-based line and column ranges.
+The region span covers the whole block.
+The delimiter spans cover only the sentinels and exclude leading indentation,
+so a sentinel written under indented code still resolves
+and its start column points at the comment marker rather than the line start.
+A span is positional, not semantic;
+a reviewer reading the spanned lines still judges whether the evidence is correct.
+
 Records are keyed by *entry* id in a *witness* index.
 One *entry* may have several records across files,
 because evidence for a claim can live in more than one place.
