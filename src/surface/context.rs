@@ -63,6 +63,14 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         target_path: ".agents/skills/sirno-skill-synthesizer/SKILL.md",
         content: include_str!("../../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.md"),
     },
+    SkillWrapperSpec {
+        name: "sirno-curator",
+        entry_id: "lake-curation-discipline",
+        wrapper_path: "sirno-docs/.artifacts/lake-curation-discipline/SKILL.md",
+        full_path: "sirno-docs/.artifacts/lake-curation-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-curator/SKILL.md",
+        content: include_str!("../../sirno-docs/.artifacts/lake-curation-discipline/SKILL.md"),
+    },
 ];
 // sirno:witness:agent-skills:end
 

@@ -76,6 +76,13 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         description: "Full Sirno skill-synthesizer text.",
         content: include_str!("../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
     },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-curator",
+        name: "sirno-curator",
+        title: "Sirno Curator",
+        description: "Full Sirno curator skill text.",
+        content: include_str!("../sirno-docs/.artifacts/lake-curation-discipline/SKILL.full.md"),
+    },
 ];
 // sirno:witness:agent-skills:end
 

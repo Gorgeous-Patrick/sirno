@@ -12,7 +12,7 @@ prerequisite:
 
 Sirno ships an agent skill set that renders the method into operational procedure.
 
-There are three packaged Sirno skills.
+There are four packaged Sirno skills.
 The editor skill is the default entry point for codebase changes.
 It starts in the configured lake,
 updates or creates the entries that govern the work,
@@ -23,6 +23,8 @@ and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
 from discipline entries,
 so the skill set stays a reproducible surface of the method rather than prose that can drift.
+The curator skill audits an existing lake for clarity, focus, accurate structure, and witness alignment,
+and acts on findings only with the user's approval.
 `src/surface/context.rs` bundles the packaged wrappers as compile-time constants
 from the lake-owned `SKILL.md` artifact files.
 Project initialization installs those bundled wrappers by default.
@@ -47,7 +49,7 @@ The durable procedure each skill encodes lives in its own discipline entry,
 so a skill can be rebuilt from the lake rather than only from its packaged wrapper.
 Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
 The discipline entries are `lake-first-maintenance-discipline`,
-`narrative-session-discipline`, and `skill-synthesis-discipline`.
+`narrative-session-discipline`, `skill-synthesis-discipline`, and `lake-curation-discipline`.
 
 Packaged skills are portable.
 They are installed into arbitrary user repositories,
@@ -71,7 +73,7 @@ and `METHODOLOGY` prose when those documents have their own roles and style.
 The `design-doc-writer-skill` entry documents the adjacent meta-management skill
 for design documents.
 It is documented in the Sirno source lake as a method input,
-not as part of the three packaged Sirno skills.
+not as part of the four packaged Sirno skills.
 `design-doc-writer-skill` contributes reusable design-document habits:
 read the whole design document,
 order sections by conceptual dependency and scope,
@@ -114,6 +116,7 @@ so installed skills stay small while the full method remains source-controlled.
   - [sirno](sirno.md)
 - belongs (from):
   - [design-doc-writer-skill](design-doc-writer-skill.md)
+  - [lake-curation-discipline](lake-curation-discipline.md)
   - [lake-first-maintenance-discipline](lake-first-maintenance-discipline.md)
   - [narrative-session-discipline](narrative-session-discipline.md)
   - [portable-agent-skill-language](portable-agent-skill-language.md)
