@@ -74,7 +74,7 @@ pub struct Cli {
     /// Sirno Lake path override.
     #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
-    /// Frost path override for commands that inspect frost directly.
+    /// Sirno Frost path override for commands that inspect frost directly.
     #[arg(short = 'F', long = "frost-path", global = true)]
     frost_path: Option<PathBuf>,
     #[command(subcommand)]
