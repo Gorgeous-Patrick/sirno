@@ -14,6 +14,10 @@ It prepares or repairs the environment around a Sirno project.
 Humans perform that operator work through the CLI.
 MCP does not expose utility commands.
 
+Utility terminal UIs share a main selectable table and a bottom key/message footer.
+`j`, `k`, Up, and Down move the selected row.
+`q` and Esc exit.
+
 `sirno util completion` emits shell completion scripts.
 Completion generation is a utility command,
 not a lake operation.
@@ -22,10 +26,8 @@ not a lake operation.
 for `Sirno.toml`.
 Each row is a top-level config section with its presence status
 and canonical-comment status.
-`j`, `k`, Up, and Down move the selected row.
 `i` inserts the selected section with canonical comments.
 `f` repairs comments for the selected non-empty section.
-`q` and Esc exit.
 
 `sirno util config check` runs the non-interactive comment check.
 It prints missing comments before the summary line,
@@ -39,10 +41,8 @@ Config utility commands reject `--lake-path` and `--frost-path`.
 for common entry defaults.
 Each row is a default entry id with its presence status
 and the structural fields that would be written under the current `Sirno.toml`.
-`j`, `k`, Up, and Down move the selected row.
 `i` inserts the selected missing entry.
 `a` inserts all missing defaults.
-`q` and Esc exit.
 
 The entry defaults include category vocabulary such as `category`, `meta`, `concept`,
 and `narrative`.
@@ -57,11 +57,9 @@ to their `.agents/skills/sirno-*` package targets.
 `sirno util skills` and `sirno util skills tui` open an interactive terminal UI
 for skill wrapper maintenance.
 It checks installed wrappers on entry and shows wrapper and link records in a table.
-`j`, `k`, Up, and Down move the selected row.
 `c` refreshes the check.
 `i` installs or repairs the displayed wrappers and links.
 `l` toggles `.claude/skills/sirno-*` link rows.
-`q` and Esc exit.
 The `--claude-skills` option includes `.claude/skills/sirno-*` links in `init`, `check`,
 `list`, and `tui` output.
 Non-interactive skill utility commands print wrapper records as a table,

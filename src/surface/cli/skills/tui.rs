@@ -3,45 +3,25 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::Frame;
+use ratatui::layout::Constraint;
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap};
-use ratatui::{DefaultTerminal, Frame};
+use ratatui::widgets::{Cell, Row, Table};
 
 use crate::surface::SurfaceContext;
-use crate::surface::cli::tui::run_terminal_ui;
+use crate::surface::cli::tui::{
+    TuiApp, TuiFlow, TuiKey, TuiSelection, handle_table_key, header_style, key_help, panel_block,
+    render_key_footer, render_selectable_table, run_terminal_ui, run_tui_app, table_footer_areas,
+};
 use crate::surface::dto::{SkillWrapperRecord, SkillWrapperResult};
 use crate::surface::error::CommandError;
 
 /// Run the interactive skill-wrapper maintenance UI.
 pub(crate) fn run(config_path: &Path, claude_skills: bool) -> Result<ExitCode, CommandError> {
-    run_terminal_ui(|terminal| run_app(terminal, config_path, claude_skills))
-}
-
-fn run_app(
-    terminal: &mut DefaultTerminal, config_path: &Path, claude_skills: bool,
-) -> Result<ExitCode, CommandError> {
-    let mut app = SkillManagerTui::load(config_path.to_path_buf(), claude_skills)?;
-    loop {
-        terminal.draw(|frame| app.render(frame)).map_err(CommandError::TerminalUi)?;
-        if let Event::Key(key) = event::read().map_err(CommandError::TerminalUi)? {
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            // sirno:witness:utility-commands:begin
-            match key.code {
-                | KeyCode::Char('q') | KeyCode::Esc => return Ok(ExitCode::SUCCESS),
-                | KeyCode::Char('j') | KeyCode::Down => app.next(),
-                | KeyCode::Char('k') | KeyCode::Up => app.previous(),
-                | KeyCode::Char('c') => app.check()?,
-                | KeyCode::Char('i') => app.install()?,
-                | KeyCode::Char('l') => app.toggle_claude_links()?,
-                | _ => {}
-            }
-            // sirno:witness:utility-commands:end
-        }
-    }
+    run_terminal_ui(|terminal| {
+        let mut app = SkillManagerTui::load(config_path.to_path_buf(), claude_skills)?;
+        run_tui_app(terminal, &mut app)
+    })
 }
 
 #[derive(Debug)]
@@ -49,7 +29,7 @@ struct SkillManagerTui {
     config_path: PathBuf,
     claude_skills: bool,
     rows: Vec<SkillWrapperRecord>,
-    selected: usize,
+    selection: TuiSelection,
     message: String,
 }
 
@@ -59,7 +39,7 @@ impl SkillManagerTui {
             config_path,
             claude_skills,
             rows: Vec::new(),
-            selected: 0,
+            selection: TuiSelection::default(),
             message: String::new(),
         };
         app.check()?;
@@ -91,31 +71,21 @@ impl SkillManagerTui {
     }
 
     fn apply_result(&mut self, result: SkillWrapperResult) {
-        let selected_target = self.rows.get(self.selected).map(|row| row.target_path.clone());
+        let selected_target =
+            self.rows.get(self.selection.selected()).map(|row| row.target_path.clone());
         self.rows = result.records;
-        self.selected = selected_target
+        let selected = selected_target
             .and_then(|target| self.rows.iter().position(|row| row.target_path == target))
             .unwrap_or(0)
             .min(self.rows.len().saturating_sub(1));
+        self.selection.set(selected);
         self.message = result.message;
     }
 
-    fn next(&mut self) {
-        self.selected = (self.selected + 1).min(self.rows.len().saturating_sub(1));
-    }
-
-    fn previous(&mut self) {
-        self.selected = self.selected.saturating_sub(1);
-    }
-
     fn render(&self, frame: &mut Frame<'_>) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(5), Constraint::Length(4)])
-            .split(frame.area());
+        let areas = table_footer_areas(frame, 4);
 
-        let header = Row::new(["Status", "Name", "Kind", "Target"])
-            .style(Style::default().add_modifier(Modifier::BOLD));
+        let header = Row::new(["Status", "Name", "Kind", "Target"]).style(header_style());
         let rows = self.rows.iter().map(|record| {
             Row::new([
                 Cell::from(record.status.as_str()),
@@ -135,16 +105,11 @@ impl SkillManagerTui {
             ],
         )
         .header(header)
-        .block(Block::default().title(self.title()).borders(Borders::ALL))
-        .row_highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ");
-        let mut state = TableState::default().with_selected(Some(self.selected));
-        frame.render_stateful_widget(table, chunks[0], &mut state);
+        .block(panel_block(self.title()));
+        render_selectable_table(frame, areas.table, table, self.selection);
 
-        let footer = Paragraph::new(self.footer_text())
-            .block(Block::default().title("Keys").borders(Borders::ALL))
-            .wrap(Wrap { trim: true });
-        frame.render_widget(footer, chunks[1]);
+        let footer_text = self.footer_text();
+        render_key_footer(frame, areas.footer, &footer_text, true);
     }
 
     fn title(&self) -> &'static str {
@@ -154,13 +119,42 @@ impl SkillManagerTui {
     fn footer_text(&self) -> String {
         let selected = self
             .rows
-            .get(self.selected)
+            .get(self.selection.selected())
             .map(|record| format!("selected: {} -> {}", record.name, record.target_path))
             .unwrap_or_else(|| "selected: none".to_owned());
-        format!(
-            "{}\nj/k or arrows move; c checks; i installs or repairs; l toggles Claude links; q quits\n{}",
-            self.message, selected
-        )
+        let keys = key_help(&["c checks", "i installs or repairs", "l toggles Claude links"]);
+        format!("{}\n{}\n{}", self.message, keys, selected)
+    }
+}
+
+impl TuiApp for SkillManagerTui {
+    fn render(&self, frame: &mut Frame<'_>) {
+        SkillManagerTui::render(self, frame);
+    }
+
+    fn handle_key(&mut self, key: TuiKey) -> Result<TuiFlow, CommandError> {
+        if let Some(flow) = handle_table_key(&mut self.selection, self.rows.len(), key) {
+            return Ok(flow);
+        }
+        match key {
+            // sirno:witness:utility-commands:begin
+            | TuiKey::Char('c') => {
+                self.check()?;
+                Ok(TuiFlow::Continue)
+            }
+            | TuiKey::Char('i') => {
+                self.install()?;
+                Ok(TuiFlow::Continue)
+            }
+            | TuiKey::Char('l') => {
+                self.toggle_claude_links()?;
+                Ok(TuiFlow::Continue)
+            }
+            // sirno:witness:utility-commands:end
+            | TuiKey::Quit | TuiKey::Next | TuiKey::Previous | TuiKey::Char(_) | TuiKey::Other => {
+                Ok(TuiFlow::Continue)
+            }
+        }
     }
 }
 
@@ -188,7 +182,7 @@ mod tests {
             config_path: PathBuf::from("Sirno.toml"),
             claude_skills: false,
             rows: vec![record("sirno-editor", ".agents/skills/sirno-editor/SKILL.md", "missing")],
-            selected: 0,
+            selection: TuiSelection::default(),
             message: String::new(),
         };
         let target = ".agents/skills/sirno-editor/SKILL.md";
@@ -206,8 +200,8 @@ mod tests {
             message: "all wrappers match".to_owned(),
         });
 
-        assert_eq!(app.selected, 1);
-        assert_eq!(app.rows[app.selected].target_path, target);
+        assert_eq!(app.selection.selected(), 1);
+        assert_eq!(app.rows[app.selection.selected()].target_path, target);
         assert_eq!(app.message, "all wrappers match");
     }
 

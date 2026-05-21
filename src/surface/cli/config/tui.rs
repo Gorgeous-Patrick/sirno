@@ -5,13 +5,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState};
-use ratatui::{DefaultTerminal, Frame};
+use ratatui::Frame;
+use ratatui::layout::Constraint;
+use ratatui::widgets::{Cell, Row, Table};
 
-use crate::surface::cli::tui::run_terminal_ui;
+use crate::surface::cli::tui::{
+    TuiApp, TuiFlow, TuiKey, TuiSelection, handle_table_key, header_style, key_help, panel_block,
+    render_key_footer, render_selectable_table, run_terminal_ui, run_tui_app, table_footer_areas,
+};
 use crate::surface::error::CommandError;
 use crate::{
     CheckSettings, ConfigError, FrostSettings, RepoSettings, SirnoConfig, TutorialSettings,
@@ -29,27 +30,10 @@ const SECTIONS: [ConfigSection; 7] = [
 
 /// Run the interactive config maintenance UI.
 pub(crate) fn run(config_path: &Path) -> Result<ExitCode, CommandError> {
-    run_terminal_ui(|terminal| run_app(terminal, config_path))
-}
-
-fn run_app(terminal: &mut DefaultTerminal, config_path: &Path) -> Result<ExitCode, CommandError> {
-    let mut app = ConfigTui::load(config_path.to_path_buf())?;
-    loop {
-        terminal.draw(|frame| app.render(frame)).map_err(CommandError::TerminalUi)?;
-        if let Event::Key(key) = event::read().map_err(CommandError::TerminalUi)? {
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            match key.code {
-                | KeyCode::Char('q') | KeyCode::Esc => return Ok(ExitCode::SUCCESS),
-                | KeyCode::Char('j') | KeyCode::Down => app.next(),
-                | KeyCode::Char('k') | KeyCode::Up => app.previous(),
-                | KeyCode::Char('i') => app.insert_selected()?,
-                | KeyCode::Char('f') => app.fix_selected()?,
-                | _ => {}
-            }
-        }
-    }
+    run_terminal_ui(|terminal| {
+        let mut app = ConfigTui::load(config_path.to_path_buf())?;
+        run_tui_app(terminal, &mut app)
+    })
 }
 
 #[derive(Debug)]
@@ -58,7 +42,7 @@ struct ConfigTui {
     source: String,
     config: SirnoConfig,
     rows: Vec<ConfigSectionRow>,
-    selected: usize,
+    selection: TuiSelection,
     message: String,
 }
 
@@ -72,9 +56,8 @@ impl ConfigTui {
             source,
             config,
             rows,
-            selected: 0,
-            message: "j/k or arrows move; i inserts a section; f fixes comments; q quits"
-                .to_owned(),
+            selection: TuiSelection::default(),
+            message: key_help(&["i inserts a section", "f fixes comments"]),
         })
     }
 
@@ -83,22 +66,14 @@ impl ConfigTui {
         self.source = read_config_source(&self.config_path)?;
         self.config = SirnoConfig::from_file(&self.config_path)?;
         self.rows = config_section_rows(&self.source, &self.config)?;
-        self.selected =
-            self.rows.iter().position(|row| row.section == selected_section).unwrap_or(0);
+        self.selection
+            .set(self.rows.iter().position(|row| row.section == selected_section).unwrap_or(0));
         self.message = message;
         Ok(())
     }
 
     fn selected_section(&self) -> ConfigSection {
-        self.rows[self.selected].section
-    }
-
-    fn next(&mut self) {
-        self.selected = (self.selected + 1).min(self.rows.len().saturating_sub(1));
-    }
-
-    fn previous(&mut self) {
-        self.selected = self.selected.saturating_sub(1);
+        self.rows[self.selection.selected()].section
     }
 
     fn insert_selected(&mut self) -> Result<(), CommandError> {
@@ -119,7 +94,7 @@ impl ConfigTui {
     }
 
     fn fix_selected(&mut self) -> Result<(), CommandError> {
-        let row = self.rows[self.selected].clone();
+        let row = self.rows[self.selection.selected()].clone();
         if !row.present {
             self.message = format!("{} is absent", row.section.label());
             return Ok(());
@@ -142,13 +117,9 @@ impl ConfigTui {
     }
 
     fn render(&self, frame: &mut Frame<'_>) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(5), Constraint::Length(3)])
-            .split(frame.area());
+        let areas = table_footer_areas(frame, 3);
 
-        let header = Row::new(["Section", "Present", "Comments"])
-            .style(Style::default().add_modifier(Modifier::BOLD));
+        let header = Row::new(["Section", "Present", "Comments"]).style(header_style());
         let rows = self.rows.iter().map(|row| {
             Row::new([
                 Cell::from(row.section.label()),
@@ -159,17 +130,36 @@ impl ConfigTui {
         let table =
             Table::new(rows, [Constraint::Length(18), Constraint::Length(10), Constraint::Min(16)])
                 .header(header)
-                .block(Block::default().title("Sirno.toml").borders(Borders::ALL))
-                .row_highlight_style(
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
-                )
-                .highlight_symbol("> ");
-        let mut state = TableState::default().with_selected(Some(self.selected));
-        frame.render_stateful_widget(table, chunks[0], &mut state);
+                .block(panel_block("Sirno.toml"));
+        render_selectable_table(frame, areas.table, table, self.selection);
+        render_key_footer(frame, areas.footer, self.message.as_str(), false);
+    }
+}
 
-        let footer = Paragraph::new(self.message.as_str())
-            .block(Block::default().title("Keys").borders(Borders::ALL));
-        frame.render_widget(footer, chunks[1]);
+impl TuiApp for ConfigTui {
+    fn render(&self, frame: &mut Frame<'_>) {
+        ConfigTui::render(self, frame);
+    }
+
+    fn handle_key(&mut self, key: TuiKey) -> Result<TuiFlow, CommandError> {
+        if let Some(flow) = handle_table_key(&mut self.selection, self.rows.len(), key) {
+            return Ok(flow);
+        }
+        match key {
+            // sirno:witness:utility-commands:begin
+            | TuiKey::Char('i') => {
+                self.insert_selected()?;
+                Ok(TuiFlow::Continue)
+            }
+            | TuiKey::Char('f') => {
+                self.fix_selected()?;
+                Ok(TuiFlow::Continue)
+            }
+            // sirno:witness:utility-commands:end
+            | TuiKey::Quit | TuiKey::Next | TuiKey::Previous | TuiKey::Char(_) | TuiKey::Other => {
+                Ok(TuiFlow::Continue)
+            }
+        }
     }
 }
 

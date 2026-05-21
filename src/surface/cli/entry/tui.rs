@@ -4,13 +4,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState};
-use ratatui::{DefaultTerminal, Frame};
+use ratatui::Frame;
+use ratatui::layout::Constraint;
+use ratatui::widgets::{Cell, Row, Table};
 
-use crate::surface::cli::tui::run_terminal_ui;
+use crate::surface::cli::tui::{
+    TuiApp, TuiFlow, TuiKey, TuiSelection, handle_table_key, header_style, key_help, panel_block,
+    render_key_footer, render_selectable_table, run_terminal_ui, run_tui_app, table_footer_areas,
+};
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
 use crate::{
@@ -101,32 +102,11 @@ const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
 
 /// Run the interactive entry-default maintenance UI.
 pub(crate) fn run(config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-    run_terminal_ui(|terminal| run_app(terminal, config_path, lake_path))
-}
-
-fn run_app(
-    terminal: &mut DefaultTerminal, config_path: &Path, lake_path: Option<&Path>,
-) -> Result<ExitCode, CommandError> {
-    let mut app =
-        EntryDefaultsTui::load(config_path.to_path_buf(), lake_path.map(Path::to_path_buf))?;
-    loop {
-        terminal.draw(|frame| app.render(frame)).map_err(CommandError::TerminalUi)?;
-        if let Event::Key(key) = event::read().map_err(CommandError::TerminalUi)? {
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            // sirno:witness:utility-commands:begin
-            match key.code {
-                | KeyCode::Char('q') | KeyCode::Esc => return Ok(ExitCode::SUCCESS),
-                | KeyCode::Char('j') | KeyCode::Down => app.next(),
-                | KeyCode::Char('k') | KeyCode::Up => app.previous(),
-                | KeyCode::Char('i') => app.insert_selected()?,
-                | KeyCode::Char('a') => app.insert_all_missing()?,
-                | _ => {}
-            }
-            // sirno:witness:utility-commands:end
-        }
-    }
+    run_terminal_ui(|terminal| {
+        let mut app =
+            EntryDefaultsTui::load(config_path.to_path_buf(), lake_path.map(Path::to_path_buf))?;
+        run_tui_app(terminal, &mut app)
+    })
 }
 
 #[derive(Debug)]
@@ -136,7 +116,7 @@ struct EntryDefaultsTui {
     lake_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
     rows: Vec<EntryDefaultRow>,
-    selected: usize,
+    selection: TuiSelection,
     message: String,
 }
 
@@ -148,41 +128,33 @@ impl EntryDefaultsTui {
             lake_path: PathBuf::new(),
             settings: EntryDirectoryCheckSettings::default(),
             rows: Vec::new(),
-            selected: 0,
+            selection: TuiSelection::default(),
             message: String::new(),
         };
-        app.reload(
-            "j/k or arrows move; i inserts selected; a inserts all missing; q quits".to_owned(),
-        )?;
+        app.reload(key_help(&["i inserts selected", "a inserts all missing"]))?;
         Ok(app)
     }
 
     fn reload(&mut self, action: String) -> Result<(), CommandError> {
-        let selected_id = self.rows.get(self.selected).map(|row| row.spec.id);
+        let selected_id = self.rows.get(self.selection.selected()).map(|row| row.spec.id);
         let (lake_path, settings) =
             resolve_lake_directory(self.lake_override.as_deref(), &self.config_path)?;
         let report =
             EntryDirectory::new(&lake_path).check_with_settings(CheckMode::Review, &settings)?;
         self.rows = default_entry_rows(report.entries(), &settings.structural);
-        self.selected = selected_id
-            .and_then(|id| self.rows.iter().position(|row| row.spec.id == id))
-            .unwrap_or(0);
+        self.selection.set(
+            selected_id
+                .and_then(|id| self.rows.iter().position(|row| row.spec.id == id))
+                .unwrap_or(0),
+        );
         self.lake_path = lake_path;
         self.settings = settings;
         self.message = format!("{action}; {}", review_check_summary(&report));
         Ok(())
     }
 
-    fn next(&mut self) {
-        self.selected = (self.selected + 1).min(self.rows.len().saturating_sub(1));
-    }
-
-    fn previous(&mut self) {
-        self.selected = self.selected.saturating_sub(1);
-    }
-
     fn insert_selected(&mut self) -> Result<(), CommandError> {
-        let row = self.rows[self.selected].clone();
+        let row = self.rows[self.selection.selected()].clone();
         match row.status {
             | EntryDefaultStatus::Missing => {
                 self.create_default(row.spec)?;
@@ -223,13 +195,10 @@ impl EntryDefaultsTui {
     }
 
     fn render(&self, frame: &mut Frame<'_>) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(5), Constraint::Length(3)])
-            .split(frame.area());
+        let areas = table_footer_areas(frame, 3);
 
-        let header = Row::new(["Entry", "Status", "Default Fields", "Description"])
-            .style(Style::default().add_modifier(Modifier::BOLD));
+        let header =
+            Row::new(["Entry", "Status", "Default Fields", "Description"]).style(header_style());
         let rows = self.rows.iter().map(|row| {
             Row::new([
                 Cell::from(row.spec.id),
@@ -248,15 +217,36 @@ impl EntryDefaultsTui {
             ],
         )
         .header(header)
-        .block(Block::default().title("Entry Defaults").borders(Borders::ALL))
-        .row_highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ");
-        let mut state = TableState::default().with_selected(Some(self.selected));
-        frame.render_stateful_widget(table, chunks[0], &mut state);
+        .block(panel_block("Entry Defaults"));
+        render_selectable_table(frame, areas.table, table, self.selection);
+        render_key_footer(frame, areas.footer, self.message.as_str(), false);
+    }
+}
 
-        let footer = Paragraph::new(self.message.as_str())
-            .block(Block::default().title("Keys").borders(Borders::ALL));
-        frame.render_widget(footer, chunks[1]);
+impl TuiApp for EntryDefaultsTui {
+    fn render(&self, frame: &mut Frame<'_>) {
+        EntryDefaultsTui::render(self, frame);
+    }
+
+    fn handle_key(&mut self, key: TuiKey) -> Result<TuiFlow, CommandError> {
+        if let Some(flow) = handle_table_key(&mut self.selection, self.rows.len(), key) {
+            return Ok(flow);
+        }
+        match key {
+            // sirno:witness:utility-commands:begin
+            | TuiKey::Char('i') => {
+                self.insert_selected()?;
+                Ok(TuiFlow::Continue)
+            }
+            | TuiKey::Char('a') => {
+                self.insert_all_missing()?;
+                Ok(TuiFlow::Continue)
+            }
+            // sirno:witness:utility-commands:end
+            | TuiKey::Quit | TuiKey::Next | TuiKey::Previous | TuiKey::Char(_) | TuiKey::Other => {
+                Ok(TuiFlow::Continue)
+            }
+        }
     }
 }
 
