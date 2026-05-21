@@ -750,6 +750,20 @@ fn util_skills_init_accepts_nested_command() {
 }
 
 #[test]
+fn util_skills_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "skills", "tui", "--claude-skills"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util {
+            command: UtilCommand::Skills {
+                command: SkillCommand::Tui(args)
+            }
+        } if args.claude_skills
+    ));
+}
+
+#[test]
 fn util_skills_commands_accept_claude_option() {
     let cli = Cli::parse_from(["sirno", "util", "skills", "check", "--claude-skills"]);
 

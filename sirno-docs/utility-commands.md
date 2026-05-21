@@ -53,9 +53,16 @@ The utility accepts `--lake-path` and rejects `--frost-path`.
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.
 `sirno util skills list` lists the bundled skill names and package targets.
+`sirno util skills tui` opens an interactive terminal UI for skill wrapper maintenance.
+It checks installed wrappers on entry and shows wrapper and link records in a table.
+`j`, `k`, Up, and Down move the selected row.
+`c` refreshes the check.
+`i` installs or repairs the displayed wrappers and links.
+`l` toggles `.claude/skills/sirno-*` link rows.
+`q` and Esc exit.
 The `--claude-skills` option includes `.claude/skills/sirno-*` links in `init`, `check`,
-and `list` output.
-Skill utility commands print wrapper records as a table,
+`list`, and `tui` output.
+Non-interactive skill utility commands print wrapper records as a table,
 followed by a summary line.
 Skill utility commands reject `--lake-path` and `--frost-path`.
 

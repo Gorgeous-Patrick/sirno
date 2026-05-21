@@ -6,6 +6,9 @@ mod config {
 mod entry {
     pub(crate) mod tui;
 }
+mod skills {
+    pub(crate) mod tui;
+}
 mod tui;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -721,6 +724,8 @@ struct ConfigTuiArgs {
 // sirno:witness:utility-commands:begin
 #[derive(Debug, Subcommand)]
 enum SkillCommand {
+    /// Open the interactive skill wrapper maintenance UI.
+    Tui(SkillCommandArgs),
     /// Install bundled wrappers into `.agents/skills/sirno-*`.
     Init(SkillCommandArgs),
     /// Check installed wrappers against bundled wrappers.
@@ -2079,6 +2084,9 @@ impl SkillCommand {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let context = SurfaceContext::new(config_path.to_path_buf());
         let result = match self {
+            | SkillCommand::Tui(args) => {
+                return skills::tui::run(config_path, args.claude_skills);
+            }
             | SkillCommand::Init(args) => {
                 context.skill_wrappers_init_with_claude(args.claude_skills)?
             }
