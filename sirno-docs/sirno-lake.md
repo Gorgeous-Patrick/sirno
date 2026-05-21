@@ -35,14 +35,24 @@ its frozen state is versioned through a separate `eter` *frost* path,
 so one version names one immutable set of *entries*.
 
 Each *entry* is an ordinary Markdown file with a YAML metadata block and prose body.
-The filename stem is the stable id used by *structural fields*, *generated footers*, and *witness* lookup.
+The filename stem is the local id used by *structural fields*, *generated footers*, and *witness* lookup.
 The id is filename-like by definition.
 Lowercase kebab-case is a convention for readable *lakes*, not a validation boundary.
-The `.` character is reserved in *entry* ids for future Sirno syntax,
-including possible scoping such as modules or namespaces,
-and optics such as groups, routes, or views.
+The `.` character separates *entry path* segments.
+An *entry path* joins *entry domains* and a local id into a lookup form.
+Domain segments map to folders in the *lake*.
+Several paths may resolve to the same *entry* in a composed lake.
+The leading-dot path form `.<id>` is reserved for Sirno built-in functionality.
+Project entries and dependency domains use ordinary `<id>` path segments.
+
+A *lake sheaf* is the resolved composition of multiple lakes.
+It flattens sublakes to the top level before dependency domains link back
+to the resolved top-level entries.
+That model resolves diamond dependencies without making dependency versioning part
+of the entry naming syntax.
 
 The `.artifacts` directory is reserved for lake-owned *entry artifacts*.
+It is a built-in `.<id>` path, not a project-defined *entry domain*.
 Artifacts live under `.artifacts/<entry-id>/...`.
 This keeps the Sirno Lake *entry* files flat while letting an *entry* own non-Markdown bytes.
 The owner directory must be an existing *entry* id.
@@ -94,6 +104,9 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
+  - [entry-domain](entry-domain.md)
+  - [entry-path](entry-path.md)
+  - [lake-sheaf](lake-sheaf.md)
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)

@@ -11,18 +11,21 @@ prerequisite:
 
 An *entry* is a Markdown file in the Sirno Lake.
 
-The filename stem is the *entry* id.
-The id is globally unique inside the *lake*,
+The filename stem is the local *entry* id.
+The local id is unique inside its *entry domain*,
 case-sensitive, and validated as a cross-platform filename stem.
-Write *entry* ids as lowercase ASCII kebab-case by default.
+In a flat *lake*, the root domain is the only domain,
+so local ids are lake-unique.
+Write local *entry* ids as lowercase ASCII kebab-case by default.
 That style is easy to type, quote, link, and compare across tools.
 It may use spaces, uppercase letters, selected punctuation, and Unicode
 when those characters are safe in common filesystems.
 It must not use path separators, control characters, Windows-reserved punctuation,
 reserved device names, a trailing space, or `.`.
-The `.` character is reserved for future Sirno id syntax.
-Possible uses include scoping, such as module or namespace,
-and optics, such as group, route, or view.
+The `.` character separates segments in an *entry path*.
+An *entry path* combines *entry domains* with a local id to find an entry.
+It is a lookup form,
+not necessarily a unique identity for the entry it resolves to.
 It can use at most 252 UTF-8 bytes,
 so the final `.md` filename stays inside common component limits.
 

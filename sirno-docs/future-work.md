@@ -22,6 +22,11 @@ and how review interfaces expose them.
 The *transform* names are now `actualize` and `internalize`.
 Future work may add command support for those names where the CLI still exposes older surfaces.
 
+Lake dependency management now has initial vocabulary:
+*entry domains*, *entry paths*, and *lake sheaves*.
+Future work should define resolution rules, symlink materialization,
+and version selection without making entry naming carry all dependency policy.
+
 Future work should remain explicit without becoming speculative architecture.
 The current design is useful because its core is small:
 *entries*, metadata, structural fields, generated footers, forms, *transforms*, checks, and *witnesses*.

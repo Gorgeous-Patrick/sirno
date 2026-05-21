@@ -14,6 +14,7 @@ prerequisite:
 An *entry artifact* is a lake-owned file attached to one *entry*.
 
 Entry artifacts live under `.artifacts/<entry-id>/...` inside the Sirno Lake.
+The `.artifacts` component uses the built-in `.<id>` path form.
 The *entry* Markdown files remain flat at the *lake* root as `<entry-id>.md`.
 The first component under `.artifacts` is the owner *entry* id.
 It must name an existing *entry*.
