@@ -54,6 +54,11 @@ and applies local file protection to that file and its artifact tree.
 and clears local file protection from its file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
+They accept the same direct-entry and TUI spellings.
+`sirno freeze`, `sirno melt`, `sirno freeze tui`, and `sirno melt tui`
+open one terminal UI for selected-entry freeze and melt work.
+`Space` applies the command's default operation.
+`f` freezes, `m` melts, `c` refreshes, and `Tab` switches the default operation.
 `sirno melt --unsafe-all` clears all Sirno local protection in the active lake
 without editing metadata or deleting files.
 It prints a danger warning and the selected paths.

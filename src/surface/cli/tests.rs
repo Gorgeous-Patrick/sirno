@@ -1759,6 +1759,39 @@ fn freeze_accepts_entry_id() {
 }
 
 #[test]
+fn freeze_accepts_tui_forms() {
+    let implicit = Cli::parse_from(["sirno", "freeze"]);
+    let explicit = Cli::parse_from(["sirno", "freeze", "tui"]);
+    let grouped = Cli::parse_from(["sirno", "entry", "freeze"]);
+    let grouped_explicit = Cli::parse_from(["sirno", "entry", "freeze", "tui"]);
+
+    assert!(matches!(
+        implicit.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Freeze {
+            id: None,
+            fix_all: false,
+            dry_run: false,
+        })
+    ));
+    assert!(matches!(
+        explicit.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Freeze { id: Some(id), .. }) if id == "tui"
+    ));
+    assert!(matches!(
+        grouped.command,
+        Command::Entry {
+            command: EntryCommand::TopLevel(TopLevelEntryCommand::Freeze { id: None, .. })
+        }
+    ));
+    assert!(matches!(
+        grouped_explicit.command,
+        Command::Entry {
+            command: EntryCommand::TopLevel(TopLevelEntryCommand::Freeze { id: Some(id), .. })
+        } if id == "tui"
+    ));
+}
+
+#[test]
 fn freeze_accepts_fix_all() {
     let cli = Cli::parse_from(["sirno", "freeze", "--fix-all", "--dry-run"]);
 
@@ -2911,6 +2944,44 @@ fn melt_accepts_entry_id_and_unfreeze_alias() {
     assert!(matches!(
         unfreeze.command,
         Command::TopLevelEntry(TopLevelEntryCommand::Melt { id: Some(id), .. }) if id == "alpha"
+    ));
+}
+
+#[test]
+fn melt_accepts_tui_forms() {
+    let implicit = Cli::parse_from(["sirno", "melt"]);
+    let explicit = Cli::parse_from(["sirno", "melt", "tui"]);
+    let unfreeze = Cli::parse_from(["sirno", "unfreeze", "tui"]);
+    let grouped = Cli::parse_from(["sirno", "entry", "melt"]);
+    let grouped_explicit = Cli::parse_from(["sirno", "entry", "melt", "tui"]);
+
+    assert!(matches!(
+        implicit.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt {
+            id: None,
+            unsafe_all: false,
+            dry_run: false,
+        })
+    ));
+    assert!(matches!(
+        explicit.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id: Some(id), .. }) if id == "tui"
+    ));
+    assert!(matches!(
+        unfreeze.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id: Some(id), .. }) if id == "tui"
+    ));
+    assert!(matches!(
+        grouped.command,
+        Command::Entry {
+            command: EntryCommand::TopLevel(TopLevelEntryCommand::Melt { id: None, .. })
+        }
+    ));
+    assert!(matches!(
+        grouped_explicit.command,
+        Command::Entry {
+            command: EntryCommand::TopLevel(TopLevelEntryCommand::Melt { id: Some(id), .. })
+        } if id == "tui"
     ));
 }
 

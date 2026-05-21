@@ -22,6 +22,15 @@ and applies local file protection to the *entry* file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The command pair is the supported way to change the state.
 
+`sirno freeze`, `sirno melt`, `sirno freeze tui`, and `sirno melt tui`
+open one terminal UI for entry freeze and melt work.
+The UI lists entries, their freeze state, and artifact counts.
+It applies freeze or melt to the selected entry only.
+`Space` applies the command's default operation.
+`f` freezes, `m` melts, `c` refreshes, and `Tab` switches the default operation.
+All-project protection repair stays on `sirno freeze --fix-all`.
+All-project unsafe clearing stays on `sirno melt --unsafe-all`.
+
 `sirno melt --unsafe-all` clears all Sirno local filesystem protection
 from the active lake.
 It does not remove `frozen:` markers, change lock state, or delete files.

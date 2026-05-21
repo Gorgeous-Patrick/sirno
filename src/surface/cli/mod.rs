@@ -2,6 +2,7 @@
 
 mod config;
 mod entry;
+mod freeze;
 mod skills;
 mod tide;
 mod tui;
@@ -201,8 +202,8 @@ enum TopLevelEntryCommand {
     /// Freeze one current frost entry and make its lake file read-only.
     // sirno:witness:entry-commands:begin
     Freeze {
-        /// Entry id to freeze.
-        #[arg(required_unless_present = "fix_all")]
+        /// Entry id to freeze. Omit this or pass `tui` to open the entry freeze/melt UI.
+        #[arg(conflicts_with = "fix_all")]
         id: Option<String>,
         /// Reapply local protection from frozen metadata and immutable checkout state.
         #[arg(long = "fix-all", conflicts_with = "id")]
@@ -216,8 +217,8 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:begin
     #[command(visible_alias = "unfreeze")]
     Melt {
-        /// Entry id to melt.
-        #[arg(required_unless_present = "unsafe_all")]
+        /// Entry id to melt. Omit this or pass `tui` to open the entry freeze/melt UI.
+        #[arg(conflicts_with = "unsafe_all")]
         id: Option<String>,
         /// Clear every Sirno local protection guard without editing metadata.
         #[arg(long = "unsafe-all", conflicts_with = "id")]
@@ -1270,7 +1271,21 @@ impl TopLevelEntryCommand {
                     );
                     return Ok(ExitCode::SUCCESS);
                 }
-                let id = EntryId::new(id.expect("clap requires id unless --fix-all is present"))?;
+                let Some(id) = id else {
+                    return freeze::run(
+                        config_path,
+                        lake_path,
+                        freeze::EntryFreezeTuiAction::Freeze,
+                    );
+                };
+                if id == "tui" {
+                    return freeze::run(
+                        config_path,
+                        lake_path,
+                        freeze::EntryFreezeTuiAction::Freeze,
+                    );
+                }
+                let id = EntryId::new(&id)?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
                 println!("{}", result.message);
@@ -1286,8 +1301,13 @@ impl TopLevelEntryCommand {
                     );
                     return Ok(ExitCode::SUCCESS);
                 }
-                let id =
-                    EntryId::new(id.expect("clap requires id unless --unsafe-all is present"))?;
+                let Some(id) = id else {
+                    return freeze::run(config_path, lake_path, freeze::EntryFreezeTuiAction::Melt);
+                };
+                if id == "tui" {
+                    return freeze::run(config_path, lake_path, freeze::EntryFreezeTuiAction::Melt);
+                }
+                let id = EntryId::new(&id)?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
                 println!("{}", result.message);
