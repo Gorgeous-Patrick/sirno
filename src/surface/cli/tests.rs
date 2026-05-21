@@ -1754,7 +1754,21 @@ fn freeze_accepts_entry_id() {
 
     assert!(matches!(
         cli.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Freeze { id, .. }) if id == "alpha"
+        Command::TopLevelEntry(TopLevelEntryCommand::Freeze { id: Some(id), .. }) if id == "alpha"
+    ));
+}
+
+#[test]
+fn freeze_accepts_fix_all() {
+    let cli = Cli::parse_from(["sirno", "freeze", "--fix-all", "--dry-run"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Freeze {
+            id: None,
+            fix_all: true,
+            dry_run: true,
+        })
     ));
 }
 
@@ -2115,7 +2129,7 @@ fn lake_path_is_global() {
     assert_eq!(cli.lake_path.as_deref(), Some(Path::new("scratch-docs")));
     assert!(matches!(
         cli.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Freeze { id }) if id == "alpha"
+        Command::TopLevelEntry(TopLevelEntryCommand::Freeze { id: Some(id), .. }) if id == "alpha"
     ));
 }
 
@@ -2892,11 +2906,25 @@ fn melt_accepts_entry_id_and_unfreeze_alias() {
 
     assert!(matches!(
         melt.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id, .. }) if id == "alpha"
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id: Some(id), .. }) if id == "alpha"
     ));
     assert!(matches!(
         unfreeze.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id, .. }) if id == "alpha"
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt { id: Some(id), .. }) if id == "alpha"
+    ));
+}
+
+#[test]
+fn melt_accepts_unsafe_all() {
+    let cli = Cli::parse_from(["sirno", "melt", "--unsafe-all", "--dry-run"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Melt {
+            id: None,
+            unsafe_all: true,
+            dry_run: true,
+        })
     ));
 }
 
@@ -3188,6 +3216,51 @@ Body.
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
     assert!(!source.contains("frozen:\n"));
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+}
+
+#[test]
+fn unsafe_all_melt_clears_permissions_without_removing_marker() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    SirnoConfig::new("docs").with_frost("sirno-frost").write_new(&config_path).unwrap();
+    fs::create_dir(&docs).unwrap();
+    fs::write(
+        docs.join("alpha.md"),
+        "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "commit"])
+        .run()
+        .unwrap();
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "alpha"])
+        .run()
+        .unwrap();
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "melt", "--unsafe-all"])
+        .run()
+        .unwrap();
+
+    let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
+    assert!(source.contains("frozen:\n"));
+    assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "--fix-all"])
+        .run()
+        .unwrap();
+    assert!(fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
+
+    Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "melt", "--unsafe-all"])
+        .run()
+        .unwrap();
 }
 
 #[test]

@@ -14,12 +14,12 @@ use crate::surface::dto::{
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
     EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
     FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult, LakeInitRequest,
-    LakeInitResult, MovePathResult, PathRecord, QueryRequest, QueryResponse, QueryResults,
-    QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult,
-    StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState, StatusFrost,
-    StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
+    LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord, QueryRequest, QueryResponse,
+    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
+    SkillWrapperResult, StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState,
+    StatusFrost, StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus,
+    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
     WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
@@ -366,6 +366,40 @@ impl SurfaceContext {
             path: display_path(&path),
             message: format!("melted entry {id} at {}", path.display()),
         })
+    }
+
+    /// Clear all Sirno local filesystem protection in the active lake.
+    pub fn entry_melt_unsafe_all(
+        &self, dry_run: bool,
+    ) -> Result<LocalProtectionResult, CommandError> {
+        let (lake, mut settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.render = false;
+        settings.witness = None;
+        let report = EntryDirectory::new(&lake).clear_local_protection(&settings, dry_run)?;
+        Ok(local_protection_result(report.root(), report.paths(), dry_run, "clear"))
+    }
+
+    /// Reapply Sirno local filesystem protection from frozen metadata and checkout state.
+    pub fn entry_freeze_fix_all(
+        &self, dry_run: bool,
+    ) -> Result<LocalProtectionResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.witness = None;
+        let lock_path = SirnoLock::path_for_config(&self.config_path);
+        let protect_checkout = config.resolve_frost(&self.config_path).is_some()
+            && SirnoLock::from_file_if_exists(lock_path)?.is_some_and(|lock| {
+                lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout()
+            });
+        let report = EntryDirectory::new(&lake).fix_local_protection(
+            &settings,
+            protect_checkout,
+            dry_run,
+        )?;
+        Ok(local_protection_result(report.root(), report.paths(), dry_run, "repair"))
     }
 
     /// Query entries and return an MCP-friendly JSON result.
@@ -1111,6 +1145,27 @@ fn move_configured_path_and_write_config(
         return Err(CommandError::Config(config_error));
     }
     Ok(move_result.moved())
+}
+
+fn local_protection_result(
+    root: &Path, paths: &[PathBuf], dry_run: bool, operation: &str,
+) -> LocalProtectionResult {
+    let action = match (operation, dry_run) {
+        | ("clear", true) => "would clear local protection from",
+        | ("clear", false) => "cleared local protection from",
+        | ("repair", true) => "would repair local protection on",
+        | ("repair", false) => "repaired local protection on",
+        | (_, true) => "would update local protection on",
+        | (_, false) => "updated local protection on",
+    };
+    let root = display_path(root);
+    LocalProtectionResult {
+        ok: true,
+        dry_run,
+        lake_path: root.clone(),
+        paths: display_paths(paths),
+        message: format!("{action} {} paths in {root}", paths.len()),
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

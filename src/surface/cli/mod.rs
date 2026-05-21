@@ -22,10 +22,10 @@ use crate::surface::SurfaceContext;
 use crate::surface::context::{default_config_path, default_frost_path, default_lake_path};
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathRecord, PathSelection,
-    QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
+    PathSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
+    SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -202,7 +202,14 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:begin
     Freeze {
         /// Entry id to freeze.
-        id: String,
+        #[arg(required_unless_present = "fix_all")]
+        id: Option<String>,
+        /// Reapply local protection from frozen metadata and immutable checkout state.
+        #[arg(long = "fix-all", conflicts_with = "id")]
+        fix_all: bool,
+        /// Report paths selected by `--fix-all` without changing permissions.
+        #[arg(long = "dry-run", requires = "fix_all")]
+        dry_run: bool,
     },
     // sirno:witness:entry-commands:end
     /// Melt one Sirno Lake Markdown entry and make its file writable.
@@ -210,7 +217,14 @@ enum TopLevelEntryCommand {
     #[command(visible_alias = "unfreeze")]
     Melt {
         /// Entry id to melt.
-        id: String,
+        #[arg(required_unless_present = "unsafe_all")]
+        id: Option<String>,
+        /// Clear every Sirno local protection guard without editing metadata.
+        #[arg(long = "unsafe-all", conflicts_with = "id")]
+        unsafe_all: bool,
+        /// Report paths selected by `--unsafe-all` without changing permissions.
+        #[arg(long = "dry-run", requires = "unsafe_all")]
+        dry_run: bool,
     },
     // sirno:witness:entry-commands:end
     /// Show filesystem paths related to one entry.
@@ -1224,6 +1238,14 @@ impl EntryRenameArgs {
     }
 }
 
+fn print_local_protection_result(result: &LocalProtectionResult, warning: &str) {
+    println!("{}", format_warning_text(warning, OutputStyle::Styled));
+    for path in &result.paths {
+        println!("{path}");
+    }
+    println!("{}", result.message);
+}
+
 impl TopLevelEntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
@@ -1238,15 +1260,34 @@ impl TopLevelEntryCommand {
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
-            | TopLevelEntryCommand::Freeze { id } => {
-                let id = EntryId::new(&id)?;
+            | TopLevelEntryCommand::Freeze { id, fix_all, dry_run } => {
+                if fix_all {
+                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+                        .entry_freeze_fix_all(dry_run)?;
+                    print_local_protection_result(
+                        &result,
+                        "WARNING: freeze --fix-all rewrites Sirno local filesystem protection.",
+                    );
+                    return Ok(ExitCode::SUCCESS);
+                }
+                let id = EntryId::new(id.expect("clap requires id unless --fix-all is present"))?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
-            | TopLevelEntryCommand::Melt { id } => {
-                let id = EntryId::new(&id)?;
+            | TopLevelEntryCommand::Melt { id, unsafe_all, dry_run } => {
+                if unsafe_all {
+                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+                        .entry_melt_unsafe_all(dry_run)?;
+                    print_local_protection_result(
+                        &result,
+                        "DANGER: melt --unsafe-all makes Sirno-protected paths writable and deletable.",
+                    );
+                    return Ok(ExitCode::SUCCESS);
+                }
+                let id =
+                    EntryId::new(id.expect("clap requires id unless --unsafe-all is present"))?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
                 println!("{}", result.message);

@@ -54,6 +54,12 @@ and applies local file protection to that file and its artifact tree.
 and clears local file protection from its file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
+`sirno melt --unsafe-all` clears all Sirno local protection in the active lake
+without editing metadata or deleting files.
+It prints a danger warning and the selected paths.
+`sirno freeze --fix-all` reapplies local protection from `frozen:` markers
+and immutable frost checkout state.
+`--dry-run` reports selected paths for either all-project operation.
 
 `sirno query` reads the configured Markdown lake.
 `sirno entry query` is its grouped form.

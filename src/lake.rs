@@ -185,6 +185,13 @@ pub struct EntryRenameReport {
     changed_paths: Vec<PathBuf>,
 }
 
+/// Result of clearing or repairing Sirno local filesystem protection.
+#[derive(Debug)]
+pub struct EntryProtectionReport {
+    root: PathBuf,
+    paths: Vec<PathBuf>,
+}
+
 impl EntryRenameReport {
     /// Entry id before the rename.
     pub fn old_id(&self) -> &EntryId {
@@ -199,6 +206,18 @@ impl EntryRenameReport {
     /// Entry files changed by the rename.
     pub fn changed_paths(&self) -> &[PathBuf] {
         &self.changed_paths
+    }
+}
+
+impl EntryProtectionReport {
+    /// Lake directory whose local protection was inspected.
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    /// Paths selected by the local protection operation.
+    pub fn paths(&self) -> &[PathBuf] {
+        &self.paths
     }
 }
 
@@ -732,6 +751,47 @@ impl EntryDirectory {
         self.set_writability(settings, true)
     }
 
+    /// Clear every Sirno local protection guard in this directory.
+    ///
+    /// Frozen metadata and checkout lock state remain unchanged.
+    /// Ignored paths are left untouched.
+    pub fn clear_local_protection(
+        &self, settings: &EntryDirectoryCheckSettings, dry_run: bool,
+    ) -> Result<EntryProtectionReport, EntryDirectoryError> {
+        self.require_existing_directory()?;
+        let paths = self.local_protection_paths(settings)?;
+        if !dry_run {
+            for path in &paths {
+                melt_path_best_effort(path)?;
+            }
+        }
+        Ok(EntryProtectionReport { root: self.root.clone(), paths })
+    }
+
+    /// Reapply local protection from frozen metadata and checkout state.
+    ///
+    /// `protect_checkout` selects the whole lake for an immutable frost checkout.
+    /// Otherwise, only entries carrying `frozen:` and their artifact trees are protected.
+    /// Ignored paths are left untouched.
+    pub fn fix_local_protection(
+        &self, settings: &EntryDirectoryCheckSettings, protect_checkout: bool, dry_run: bool,
+    ) -> Result<EntryProtectionReport, EntryDirectoryError> {
+        self.require_existing_directory()?;
+        let paths = if protect_checkout {
+            self.local_protection_paths(settings)?
+        } else {
+            self.frozen_entry_protection_paths(settings)?
+        };
+        if !dry_run {
+            if protect_checkout {
+                self.set_readonly(settings)?;
+            } else {
+                self.fix_frozen_entry_protection(settings)?;
+            }
+        }
+        Ok(EntryProtectionReport { root: self.root.clone(), paths })
+    }
+
     /// Add read-only checkout warnings to rendered entry files.
     ///
     /// The warning is written as a Markdown blockquote at the beginning of the body.
@@ -1102,15 +1162,96 @@ impl EntryDirectory {
             .unwrap_or(false))
     }
 
-    fn set_writability(
-        &self, settings: &EntryDirectoryCheckSettings, writable: bool,
-    ) -> Result<(), EntryDirectoryError> {
+    fn require_existing_directory(&self) -> Result<(), EntryDirectoryError> {
         if !self.root.exists() {
             return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
         }
         if !self.root.is_dir() {
             return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
         }
+        Ok(())
+    }
+
+    fn local_protection_paths(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        let mut paths = vec![self.root.clone()];
+        for path in sorted_recursive_paths(&self.root)? {
+            let relative_path =
+                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                })?;
+            if settings.ignores(relative_path) {
+                continue;
+            }
+            paths.push(path);
+        }
+        paths.sort();
+        paths.dedup();
+        Ok(paths)
+    }
+
+    fn frozen_entry_protection_paths(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        let checked = self.check_with_settings(CheckMode::Edit, settings)?;
+        if checked.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
+        }
+
+        let mut paths = Vec::new();
+        for entry in checked.entries().iter().filter(|entry| entry.metadata.frozen.is_some()) {
+            let path = checked
+                .entry_path(&entry.id)
+                .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
+            paths.push(path.to_path_buf());
+            self.push_entry_artifact_tree_paths(&entry.id, &mut paths)?;
+        }
+        paths.sort();
+        paths.dedup();
+        Ok(paths)
+    }
+
+    fn push_entry_artifact_tree_paths(
+        &self, id: &EntryId, paths: &mut Vec<PathBuf>,
+    ) -> Result<(), EntryDirectoryError> {
+        let owner_root = self.entry_artifact_directory(id);
+        if !owner_root.exists() {
+            return Ok(());
+        }
+        if !owner_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(owner_root));
+        }
+
+        paths.push(owner_root.clone());
+        paths.extend(sorted_recursive_paths(&owner_root)?);
+        Ok(())
+    }
+
+    fn fix_frozen_entry_protection(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<(), EntryDirectoryError> {
+        let checked = self.check_with_settings(CheckMode::Edit, settings)?;
+        if checked.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
+        }
+
+        for entry in checked.entries().iter().filter(|entry| entry.metadata.frozen.is_some()) {
+            let path = checked
+                .entry_path(&entry.id)
+                .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
+            freeze_path_best_effort(path)?;
+            self.set_entry_artifact_writability(&entry.id, false)?;
+        }
+        Ok(())
+    }
+
+    fn set_writability(
+        &self, settings: &EntryDirectoryCheckSettings, writable: bool,
+    ) -> Result<(), EntryDirectoryError> {
+        self.require_existing_directory()?;
 
         if writable {
             melt_path_best_effort(&self.root)?;
@@ -2783,6 +2924,80 @@ Body.
         if root_was_immutable {
             assert!(!FrozenPath::new(&root).is_frozen().unwrap());
         }
+    }
+
+    #[test]
+    fn clear_local_protection_keeps_frozen_marker() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "alpha.md",
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        );
+        let directory = entry_directory(temp.path());
+        let path = directory.freeze_entry(&EntryId::new("alpha").unwrap()).unwrap();
+
+        let report = directory
+            .clear_local_protection(&EntryDirectoryCheckSettings::default(), false)
+            .unwrap();
+        let source = fs::read_to_string(&path).unwrap();
+
+        assert!(source.contains("frozen:\n"));
+        assert_path_writable(&path);
+        assert!(report.paths().contains(&path));
+    }
+
+    #[test]
+    fn fix_local_protection_reapplies_frozen_entry_permissions() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "alpha.md",
+            "\
+---
+name: Alpha
+desc: Alpha entry.
+---
+
+Body.
+",
+        );
+        let directory = entry_directory(temp.path());
+        let id = EntryId::new("alpha").unwrap();
+        let path = directory.freeze_entry(&id).unwrap();
+        directory.clear_local_protection(&EntryDirectoryCheckSettings::default(), false).unwrap();
+
+        let report = directory
+            .fix_local_protection(&EntryDirectoryCheckSettings::default(), false, false)
+            .unwrap();
+
+        assert_path_readonly(&path);
+        assert!(report.paths().contains(&path));
+        directory.clear_local_protection(&EntryDirectoryCheckSettings::default(), false).unwrap();
+    }
+
+    #[test]
+    fn fix_local_protection_can_repair_readonly_checkout_state() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("docs");
+        entry_directory(&root).init().unwrap();
+        let settings = EntryDirectoryCheckSettings::default();
+        let entry_path = root.join("concept.md");
+
+        let report = entry_directory(&root).fix_local_protection(&settings, true, false).unwrap();
+
+        assert_path_readonly(&root);
+        assert_path_readonly(&entry_path);
+        assert!(report.paths().contains(&root));
+        assert!(report.paths().contains(&entry_path));
+        entry_directory(&root).clear_local_protection(&settings, false).unwrap();
     }
 
     #[test]

@@ -22,6 +22,15 @@ and applies local file protection to the *entry* file and artifact tree.
 `sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
 The command pair is the supported way to change the state.
 
+`sirno melt --unsafe-all` clears all Sirno local filesystem protection
+from the active lake.
+It does not remove `frozen:` markers, change lock state, or delete files.
+It prints a danger warning and the selected paths.
+Use it when protected files must become writable or deletable for external cleanup.
+`sirno freeze --fix-all` reapplies local protection from `frozen:` markers
+and immutable frost checkout state.
+`--dry-run` reports the selected paths without changing permissions.
+
 A frozen *entry* remains visible in the lake for reading, checking, and querying.
 The frost layer accepts a frozen *entry* only while its committed form still matches
 the current frost snapshot.

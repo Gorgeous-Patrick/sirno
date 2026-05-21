@@ -448,6 +448,21 @@ pub struct EntryPathResult {
     pub message: String,
 }
 
+/// Result of clearing or repairing local filesystem protection.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LocalProtectionResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Whether this run only reported selected paths.
+    pub dry_run: bool,
+    /// Sirno Lake directory inspected by the command.
+    pub lake_path: String,
+    /// Paths selected by the local protection operation.
+    pub paths: Vec<String>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// Result of reading one Sirno Lake Markdown entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryReadResult {
