@@ -16,6 +16,9 @@ that already matches the current frost snapshot.
 The metadata field is canonical `frozen:` with a non-empty list of reasons.
 `reviewed` is the reason written by manual frost-backed freeze.
 `managed` is the reason written by crystallization.
+Frost snapshots store these reasons as durable entry metadata.
+Committing or checking out a snapshot preserves whether an entry is frozen
+and preserves every frozen reason.
 
 `sirno freeze ENTRY_ADDRESS` verifies that the lake *entry* matches current frost,
 adds `reviewed`,
@@ -46,7 +49,9 @@ and immutable frost checkout state.
 A frozen *entry* remains visible in the lake for reading, checking, and querying.
 The frost layer accepts a frozen *entry* only while its committed form still matches
 the current frost snapshot.
-Generated-link regions and the `frozen:` field are ignored for this comparison.
+Generated-link regions are ignored for this comparison.
+The `reviewed` reason is projected out so `sirno freeze` can mark an unchanged entry.
+Other frozen reasons remain part of the committed form.
 If the frozen *entry* differs,
 the frost layer refuses the commit.
 Melt the *entry* before intentionally changing it.

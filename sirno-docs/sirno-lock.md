@@ -20,6 +20,7 @@ the lock contains one `[frost]` table.
 `sirno checkout --latest` records `status = "current"` and leaves files writable.
 The `generation` and `version` fields store the `eter` `SnapshotRef` for that state.
 `version` is the raw `Eterator` coordinate inside the stored GC generation.
+Frozen reasons are stored in frost snapshots, not in the lock.
 Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
 and renaming it into place.
 A failed write leaves the previous complete lock as the public state.

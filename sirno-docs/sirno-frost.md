@@ -32,6 +32,7 @@ and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
 Each *entry* is stored under its dot-joined entry address.
 The backend records `name`, `desc`, ordered structural metadata,
 an artifact manifest,
+frozen reasons,
 and Markdown body as typed fields.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer
@@ -75,8 +76,14 @@ Entries carrying the `reviewed` frozen reason are protected lake files
 that must still match the current frost snapshot with their artifact trees.
 The frost layer accepts unchanged reviewed entries and artifacts,
 and refuses a frozen entry bundle that differs from that snapshot.
+The reviewed comparison ignores only the `reviewed` reason itself,
+so freeze can mark an unchanged entry without making the entry appear changed.
+Other frozen reasons stay part of the committed entry.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are lake projections.
+Frost stores frozen reasons with the entry.
+Commit and checkout preserve whether an entry is frozen
+and preserve every reason recorded in `frozen:`.
 The commit writes one `eter` transaction and returns a `SnapshotRef`.
 The transaction contains changed *entries*,
 entries whose artifact manifests changed,
@@ -111,6 +118,7 @@ older snapshot references from the previous GC generation are stale.
 Artifact bytes no longer reachable from the kept snapshot are removed.
 
 Checkout materializes one frozen snapshot as Markdown files and `.artifacts` files.
+It writes the frozen reasons stored in that snapshot back to entry metadata.
 The conservative write policy writes only into an absent or empty target directory.
 CLI checkout replaces managed Markdown files in the configured lake
 and preserves ignored paths.

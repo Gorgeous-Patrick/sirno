@@ -293,7 +293,7 @@ impl EntryMetadata {
 /// Protection reasons stored in the canonical `frozen` metadata field.
 ///
 /// Invariant: the reason set is non-empty.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrozenMarker {
     reasons: BTreeSet<FrozenReason>,
 }
