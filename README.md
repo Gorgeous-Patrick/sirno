@@ -67,7 +67,15 @@ I am new to Sirno. Ask about my background and goals. Guide me through the entri
 cargo install sirno
 ```
 
-and then initialize it in your project,
+Setup completion if you like:
+
+```sh
+source <(sirno util completion zsh)   # or bash, fish, powershell
+# or if you want to guard it:
+# command -v sirno &>/dev/null && source <(sirno util completion zsh)
+```
+
+To use it, initialize it in your project:
 
 ```sh
 sirno init
