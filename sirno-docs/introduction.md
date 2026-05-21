@@ -3,6 +3,8 @@ name: Introduction
 desc: A first narrative route through Sirno's project model.
 category:
   - narrative
+belongs:
+  - narrative
 ---
 
 *Semantic Intermediate Representation of Nominal Objects*
@@ -92,7 +94,8 @@ so onboarding and the skills run the same method instead of drifting apart.
 
 > **Sirno generated links begin. Do not edit this section.**
 
-- belongs (to): (none)
+- belongs (to):
+  - [narrative](narrative.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
