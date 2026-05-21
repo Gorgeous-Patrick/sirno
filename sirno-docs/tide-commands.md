@@ -23,7 +23,7 @@ in the same grouped table.
 `sirno tide status --by entry` selects the default review-entry grouping explicitly.
 `sirno tide status -o, --format` selects `human` or `json` output.
 
-`sirno tide tui` opens an interactive tide resolution UI.
+`sirno tide` and `sirno tide tui` open an interactive tide resolution UI.
 It shows a selectable tide table, a selected-row detail panel, and a key/message footer.
 The default view groups rows by review entry with open and resolved counts
 and the ripple entries that caused review.

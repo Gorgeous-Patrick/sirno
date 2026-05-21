@@ -133,11 +133,13 @@ enum Command {
         command: FrostCommand,
     },
     /// Manage dependency review worklists for lake edits.
+    // sirno:witness:tide-commands:begin
     Tide {
         /// Tide command.
         #[command(subcommand)]
-        command: TideCommand,
+        command: Option<TideCommand>,
     },
+    // sirno:witness:tide-commands:end
     // sirno:witness:cli-interface:begin
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
@@ -833,7 +835,9 @@ impl Cli {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
-                command.run(&config_path, lake_path.as_deref())
+                // sirno:witness:tide-commands:begin
+                command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
+                // sirno:witness:tide-commands:end
             }
             | Command::Status => {
                 if frost_path.is_some() {

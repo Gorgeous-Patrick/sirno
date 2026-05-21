@@ -1516,15 +1516,15 @@ fn tide_status_accepts_show_modes() {
 
     assert!(matches!(
         review.command,
-        Command::Tide { command: TideCommand::Status { show: TideStatusMode::Review, .. } }
+        Command::Tide { command: Some(TideCommand::Status { show: TideStatusMode::Review, .. }) }
     ));
     assert!(matches!(
         full.command,
-        Command::Tide { command: TideCommand::Status { show: TideStatusMode::Full, .. } }
+        Command::Tide { command: Some(TideCommand::Status { show: TideStatusMode::Full, .. }) }
     ));
     assert!(matches!(
         all.command,
-        Command::Tide { command: TideCommand::Status { show: TideStatusMode::All, .. } }
+        Command::Tide { command: Some(TideCommand::Status { show: TideStatusMode::All, .. }) }
     ));
 }
 
@@ -1532,7 +1532,14 @@ fn tide_status_accepts_show_modes() {
 fn tide_accepts_tui_form() {
     let cli = Cli::parse_from(["sirno", "tide", "tui"]);
 
-    assert!(matches!(cli.command, Command::Tide { command: TideCommand::Tui }));
+    assert!(matches!(cli.command, Command::Tide { command: Some(TideCommand::Tui) }));
+}
+
+#[test]
+fn tide_accepts_default_tui_form() {
+    let cli = Cli::parse_from(["sirno", "tide"]);
+
+    assert!(matches!(cli.command, Command::Tide { command: None }));
 }
 
 #[test]
@@ -1545,24 +1552,24 @@ fn tide_status_accepts_grouping_modes() {
 
     assert!(matches!(
         default.command,
-        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Entry, .. } }
+        Command::Tide { command: Some(TideCommand::Status { by: TideStatusGrouping::Entry, .. }) }
     ));
     assert!(matches!(
         wave.command,
-        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Wave, .. } }
+        Command::Tide { command: Some(TideCommand::Status { by: TideStatusGrouping::Wave, .. }) }
     ));
     assert!(matches!(
         entry.command,
-        Command::Tide { command: TideCommand::Status { by: TideStatusGrouping::Entry, .. } }
+        Command::Tide { command: Some(TideCommand::Status { by: TideStatusGrouping::Entry, .. }) }
     ));
     assert!(matches!(
         full_entry.command,
         Command::Tide {
-            command: TideCommand::Status {
+            command: Some(TideCommand::Status {
                 show: TideStatusMode::Full,
                 by: TideStatusGrouping::Entry,
                 ..
-            }
+            })
         }
     ));
 }
@@ -1591,21 +1598,21 @@ fn tide_resolve_accepts_neighbor_and_tuple_selectors() {
     assert!(matches!(
         neighbor.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+            command: Some(TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                 items,
                 infer: false,
                 json: None
-            }))
+            })))
         } if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
     ));
     assert!(matches!(
         tuple.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+            command: Some(TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                 items,
                 infer: false,
                 json: None
-            }))
+            })))
         } if matches!(&items[..], [TideItemSelector::Workitem(workitem)]
             if workitem.to_string() == "alpha,belongs,to,beta")
     ));
@@ -1625,20 +1632,20 @@ fn tide_resolve_accepts_infer_and_json() {
     assert!(matches!(
         infer.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+            command: Some(TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                 infer: true,
                 ..
-            }))
+            })))
         }
     ));
     assert!(matches!(
         json.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
+            command: Some(TideCommand::Review(TideReviewCommand::Resolve(ResolveArgs {
                 json: Some(_),
                 infer: false,
                 ..
-            }))
+            })))
         }
     ));
 }
@@ -1720,14 +1727,14 @@ fn unresolve_accepts_top_level_grouped_and_reopen_alias() {
     assert!(matches!(
         grouped.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+            command: Some(TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items })))
         }
             if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
     ));
     assert!(matches!(
         alias.command,
         Command::Tide {
-            command: TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items }))
+            command: Some(TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items })))
         }
             if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
     ));
