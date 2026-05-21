@@ -7,6 +7,8 @@ belongs:
   - development-style
 prerequisite:
   - concept-driven-development
+refines:
+  - concept-driven-development
 ---
 
 Test-driven development starts from executable expectations.

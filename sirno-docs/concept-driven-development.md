@@ -7,6 +7,8 @@ belongs:
   - development-style
 prerequisite:
   - concept
+refines:
+  - documentation-driven-development
 ---
 
 Concept-driven development starts from compression.

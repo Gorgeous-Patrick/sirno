@@ -7,6 +7,8 @@ belongs:
   - development-style
 prerequisite:
   - concept-driven-development
+refines:
+  - concept-driven-development
 ---
 
 Intent-driven development starts from the reason for the change.

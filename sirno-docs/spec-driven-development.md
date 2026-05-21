@@ -7,6 +7,8 @@ belongs:
   - development-style
 prerequisite:
   - concept-driven-development
+refines:
+  - concept-driven-development
 ---
 
 Spec-driven development starts from explicit behavioral commitments.
