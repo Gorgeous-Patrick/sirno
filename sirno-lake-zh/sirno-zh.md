@@ -13,7 +13,7 @@ Sirno 是名义对象的语义中间表示（Semantic Intermediate Representatio
 视角很重要，因为本仓库也是一个 Sirno 管理的项目。
 通用声明将 Sirno 描述为工具和项目模型。
 `this repository` 命名 Sirno 的实现工作区。
-`this lake` 命名 `sirno-docs/`，
+`this lake` 命名 `sirno-lake/`，
 即描述 Sirno 的自托管 Sirno Lake。
 
 它在设计形式之间编译，服务于有设计意识编程工作。

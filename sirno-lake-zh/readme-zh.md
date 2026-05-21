@@ -41,7 +41,7 @@ README 应展示四个原则和思想。
   生长 Lake 的方法可以存在于 Lake 本身之中。
 - 最后，交互式叙事邀请读者进入一条任务形状的路线。
   它闭合原则序列，
-  并给出一个基于 `sirno-docs/introduction.md` 的 `$sirno-narrative-session` 提示。
+  并给出一个基于 `sirno-lake/introduction.md` 的 `$sirno-narrative-session` 提示。
 
 README 不应成为完整的设计文档。
 它应给读者动机，

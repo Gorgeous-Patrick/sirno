@@ -16,7 +16,7 @@ and treats the *repository* as the material surface those entries shape.
 This repository is a Sirno-managed project whose design subject is Sirno itself.
 General claims describe Sirno as the tool and project model.
 `this repository` names the implementation workspace for Sirno.
-`this lake` names `sirno-docs/`,
+`this lake` names `sirno-lake/`,
 the self-hosted Sirno Lake that describes Sirno.
 The `perspective-and-terms` *entry* states this convention directly.
 
@@ -76,7 +76,7 @@ The footer is guard-bounded and Sirno-owned.
 Metadata remains the source of structural truth.
 The footer only helps editors and documentation tools follow the graph.
 
-This repository now treats `sirno-docs/` as the design source.
+This repository now treats `sirno-lake/` as the design source.
 The introduction you are reading is the first route through this *lake*.
 The `methodology` *entry* is the compact working guide for acting inside this *lake*.
 The detailed design lives in the *entries* themselves:

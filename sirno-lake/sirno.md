@@ -12,7 +12,7 @@ This *lake* focuses on Sirno's general design as a tool and as a philosophical s
 Perspective matters because this repository is also a Sirno-managed project.
 General claims describe Sirno as the tool and project model.
 `this repository` names the implementation workspace for Sirno.
-`this lake` names `sirno-docs/`,
+`this lake` names `sirno-lake/`,
 the self-hosted Sirno Lake that describes Sirno.
 
 It compiles between design forms for design-aware programming work.

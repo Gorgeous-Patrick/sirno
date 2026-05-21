@@ -56,7 +56,7 @@ They are installed into arbitrary user repositories,
 so their user-facing procedure must speak from the active project perspective.
 Use the configured lake path from `Sirno.toml`,
 query and read the active project's entries,
-and avoid assuming this source repository's `sirno-docs/` path or self-hosted entry set.
+and avoid assuming this source repository's `sirno-lake/` path or self-hosted entry set.
 The `portable-agent-skill-language` entry carries this rule.
 
 The skills share one lake-first rule.

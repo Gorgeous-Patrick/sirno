@@ -28,7 +28,7 @@ Lake 使 Sirno 的设计在小条目中可寻址。
 `Sirno` 命名工具和项目模型。
 `a Sirno-managed project` 命名任何应用 Sirno 的项目。
 `this repository` 命名 Sirno 的实现工作区。
-`this lake` 命名 `sirno-docs/`，
+`this lake` 命名 `sirno-lake/`，
 即描述 Sirno 的自托管 Sirno Lake。
 
 介绍应保持为一条可读路线。

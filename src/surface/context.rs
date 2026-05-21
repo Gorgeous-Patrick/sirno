@@ -41,36 +41,36 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
     SkillWrapperSpec {
         name: "sirno-editor",
         entry_id: "lake-first-maintenance-discipline",
-        wrapper_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md",
-        full_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md",
+        wrapper_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
         content: include_str!(
-            "../../sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md"
+            "../../sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md"
         ),
     },
     SkillWrapperSpec {
         name: "sirno-narrative-session",
         entry_id: "narrative-session-discipline",
-        wrapper_path: "sirno-docs/.artifacts/narrative-session-discipline/SKILL.md",
-        full_path: "sirno-docs/.artifacts/narrative-session-discipline/SKILL.full.md",
+        wrapper_path: "sirno-lake/.artifacts/narrative-session-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/narrative-session-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-narrative-session/SKILL.md",
-        content: include_str!("../../sirno-docs/.artifacts/narrative-session-discipline/SKILL.md"),
+        content: include_str!("../../sirno-lake/.artifacts/narrative-session-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-skill-synthesizer",
         entry_id: "skill-synthesis-discipline",
-        wrapper_path: "sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.md",
-        full_path: "sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md",
+        wrapper_path: "sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-skill-synthesizer/SKILL.md",
-        content: include_str!("../../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.md"),
+        content: include_str!("../../sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-curator",
         entry_id: "lake-curation-discipline",
-        wrapper_path: "sirno-docs/.artifacts/lake-curation-discipline/SKILL.md",
-        full_path: "sirno-docs/.artifacts/lake-curation-discipline/SKILL.full.md",
+        wrapper_path: "sirno-lake/.artifacts/lake-curation-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/lake-curation-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-curator/SKILL.md",
-        content: include_str!("../../sirno-docs/.artifacts/lake-curation-discipline/SKILL.md"),
+        content: include_str!("../../sirno-lake/.artifacts/lake-curation-discipline/SKILL.md"),
     },
 ];
 // sirno:witness:agent-skills:end

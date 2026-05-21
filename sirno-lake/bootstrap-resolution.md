@@ -25,7 +25,7 @@ The *lake* now names four speaking positions:
 A reader can tell whether a passage is about the general tool,
 any project that applies it,
 the implementation workspace,
-or the self-hosted Sirno Lake in `sirno-docs/`.
+or the self-hosted Sirno Lake in `sirno-lake/`.
 
 The second answer was vocabulary.
 Sirno terms become proper names when they appear with Sirno:

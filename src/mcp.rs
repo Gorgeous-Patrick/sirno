@@ -46,7 +46,7 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
     name: "design-doc-writer",
     title: "Design Doc Writer",
     description: "Full design-doc-writer skill text.",
-    content: include_str!("../sirno-docs/.artifacts/design-doc-writer-skill/SKILL.full.md"),
+    content: include_str!("../sirno-lake/.artifacts/design-doc-writer-skill/SKILL.full.md"),
 };
 // sirno:witness:design-doc-writer-skill:end
 
@@ -59,7 +59,7 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         title: "Sirno Editor",
         description: "Full Sirno editor skill text.",
         content: include_str!(
-            "../sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+            "../sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
         ),
     },
     SkillResourceSpec {
@@ -68,7 +68,7 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         title: "Sirno Narrative Session",
         description: "Full Sirno narrative-session skill text.",
         content: include_str!(
-            "../sirno-docs/.artifacts/narrative-session-discipline/SKILL.full.md"
+            "../sirno-lake/.artifacts/narrative-session-discipline/SKILL.full.md"
         ),
     },
     SkillResourceSpec {
@@ -76,14 +76,14 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-skill-synthesizer",
         title: "Sirno Skill Synthesizer",
         description: "Full Sirno skill-synthesizer text.",
-        content: include_str!("../sirno-docs/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
+        content: include_str!("../sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-curator",
         name: "sirno-curator",
         title: "Sirno Curator",
         description: "Full Sirno curator skill text.",
-        content: include_str!("../sirno-docs/.artifacts/lake-curation-discipline/SKILL.full.md"),
+        content: include_str!("../sirno-lake/.artifacts/lake-curation-discipline/SKILL.full.md"),
     },
 ];
 // sirno:witness:agent-skills:end

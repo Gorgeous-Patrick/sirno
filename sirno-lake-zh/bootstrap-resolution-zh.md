@@ -25,7 +25,7 @@ Lake 现在命名了四个说话立场：
 读者可以分辨一段话是关于通用工具、
 任何应用它的项目、
 实现工作区，
-还是 `sirno-docs/` 中的自托管 Sirno Lake。
+还是 `sirno-lake/` 中的自托管 Sirno Lake。
 
 第二个答案是词汇。
 Sirno 术语在与 Sirno 一起出现时成为专有名称：

@@ -59,7 +59,7 @@ The invitation tells a reader to try the idea directly on Sirno, in two prompts 
 The first prompt runs `$sirno-bootstrap` to install Sirno revertably and register the MCP server.
 The reader then restarts the agent so the freshly registered `sirno` MCP server loads.
 The second prompt, in the fresh conversation, runs `$sirno-narrative-session`
-grounded in `sirno-docs/introduction.md`.
+grounded in `sirno-lake/introduction.md`.
 The restart is part of the claim:
 the MCP server only appears after the agent reloads its connections.
 Designing Sirno on Sirno is the strongest demonstration the README can offer,
@@ -106,7 +106,7 @@ It demonstrates four principles, each its own witnessed block:
 - Sirno lets a project define its own documentation paradigm through `meta` *entries*;
   the method for growing the *lake* can live inside the *lake*.
 - Interactive narrative invites the reader into a task-shaped route;
-  it closes the sequence with a `$sirno-narrative-session` prompt grounded in `sirno-docs/introduction.md`.
+  it closes the sequence with a `$sirno-narrative-session` prompt grounded in `sirno-lake/introduction.md`.
 
 ## Status and Boundary
 

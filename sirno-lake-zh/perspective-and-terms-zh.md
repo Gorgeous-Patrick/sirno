@@ -23,7 +23,7 @@ Sirno 在此用自身模型描述自身。
 用 `Sirno` 指代工具和项目模型。
 用 `a Sirno-managed project` 指代任何应用 Sirno 的项目。
 用 `this repository` 指代 Sirno 的实现工作区。
-用 `this lake` 指代 `sirno-docs/`，
+用 `this lake` 指代 `sirno-lake/`，
 即描述 Sirno 的自托管 Sirno Lake。
 
 Sirno 特定术语在作为 Sirno 专有名称一部分出现时大写，
@@ -40,7 +40,7 @@ Sirno 特定术语在作为 Sirno 专有名称一部分出现时大写，
 当它说"the *lake*"时，
 读者进入了 Sirno 的模型。
 当它说"this *lake*"时，
-读者正在看 Sirno 在 `sirno-docs/` 中的自应用。
+读者正在看 Sirno 在 `sirno-lake/` 中的自应用。
 
 本仓库现在在主要路线中应用该约定。
 介绍在要求读者跟随条目之前先命名本仓库和此 Lake。

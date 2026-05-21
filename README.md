@@ -51,7 +51,7 @@ Then restart your agent so the `sirno` MCP server loads,
 and start the introduction session in the fresh conversation:
 
 ```text
-Start an introduction session with $sirno-narrative-session based on sirno-docs/introduction.md:
+Start an introduction session with $sirno-narrative-session based on sirno-lake/introduction.md:
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
 <!-- sirno:witness:readme:end -->
@@ -164,7 +164,7 @@ sirno resolve <entry-id>                     # mark a workitem reviewed
 sirno reset                                  # clear all tide resolutions
 ```
 
-Explore an existing lake; this repository keeps its current design source in `sirno-docs/`:
+Explore an existing lake; this repository keeps its current design source in `sirno-lake/`:
 
 ```sh
 sirno status                                 # project, tide, and commit readiness
@@ -242,7 +242,7 @@ and when to stop and assess learning retention.
 Try it with our repository-local narrative-session skill:
 
 ```text
-Use $sirno-narrative-session for an introduction session based on sirno-docs/introduction.md.
+Use $sirno-narrative-session for an introduction session based on sirno-lake/introduction.md.
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
 <!-- sirno:witness:readme:end -->

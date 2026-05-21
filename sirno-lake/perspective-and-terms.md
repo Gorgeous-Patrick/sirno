@@ -23,7 +23,7 @@ This *lake* resolves the ambiguity through stable perspective labels.
 Use `Sirno` for the tool and project model.
 Use `a Sirno-managed project` for any project that applies Sirno.
 Use `this repository` for the implementation workspace for Sirno.
-Use `this lake` for `sirno-docs/`,
+Use `this lake` for `sirno-lake/`,
 the self-hosted Sirno Lake that describes Sirno.
 
 Sirno-specific terms are capitalized when they appear as part of a Sirno proper name,
@@ -49,7 +49,7 @@ it can mean documentation in a normal repository.
 When it says "the *lake*",
 the reader is inside Sirno's model.
 When it says "this *lake*",
-the reader is looking at Sirno's self-application in `sirno-docs/`.
+the reader is looking at Sirno's self-application in `sirno-lake/`.
 
 This repository now applies that convention in the main route.
 The introduction names this repository and this *lake* before it asks the reader to follow *entries*.

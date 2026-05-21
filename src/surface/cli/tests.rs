@@ -397,14 +397,14 @@ fn top_level_init_rejects_path_flags_for_disabled_parts() {
 fn lake_init_uses_global_lake_path() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
-    let docs = temp.path().join("sirno-docs");
+    let docs = temp.path().join("sirno-lake");
 
     Cli::parse_from([
         "sirno",
         "--config",
         config_path.to_str().unwrap(),
         "--lake-path",
-        "sirno-docs",
+        "sirno-lake",
         "lake",
         "init",
     ])
@@ -412,7 +412,7 @@ fn lake_init_uses_global_lake_path() {
     .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
-    assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
+    assert_eq!(config.lake.path, PathBuf::from("sirno-lake"));
     assert!(docs.join("concept.md").exists());
 }
 
@@ -888,8 +888,8 @@ fn skill_wrapper_output_uses_table() {
     let table = format_skill_wrapper_table(&[SkillWrapperRecord {
         entry_id: "lake-first-maintenance-discipline".to_owned(),
         name: "sirno-editor".to_owned(),
-        wrapper_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.md".to_owned(),
-        full_path: "sirno-docs/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+        wrapper_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md".to_owned(),
+        full_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
             .to_owned(),
         target_path: ".agents/skills/sirno-editor/SKILL.md".to_owned(),
         status: "ok".to_owned(),
@@ -1377,7 +1377,7 @@ fn open_tide_tutorial_knobs_control_message_parts() {
 #[test]
 fn move_accepts_entry_lake_and_frost_subcommands() {
     let entry = Cli::parse_from(["sirno", "move", "entry", "old-entry", "new-entry"]);
-    let lake = Cli::parse_from(["sirno", "move", "lake", "sirno-docs"]);
+    let lake = Cli::parse_from(["sirno", "move", "lake", "sirno-lake"]);
     let frost = Cli::parse_from(["sirno", "move", "frost", "sirno-frost-2"]);
 
     assert!(matches!(
@@ -1390,7 +1390,7 @@ fn move_accepts_entry_lake_and_frost_subcommands() {
     assert!(matches!(
         lake.command,
         Command::Move { command: MoveCommand::Lake(LakeMoveArgs { lake }) }
-            if lake == Path::new("sirno-docs")
+            if lake == Path::new("sirno-lake")
     ));
     assert!(matches!(
         frost.command,
@@ -1414,12 +1414,12 @@ fn mv_alias_accepts_move_subcommands() {
 
 #[test]
 fn lake_move_accepts_mv_alias() {
-    let cli = Cli::parse_from(["sirno", "lake", "mv", "sirno-docs"]);
+    let cli = Cli::parse_from(["sirno", "lake", "mv", "sirno-lake"]);
 
     assert!(matches!(
         cli.command,
         Command::Lake { command: LakeCommand::Move(LakeMoveArgs { lake }) }
-            if lake == Path::new("sirno-docs")
+            if lake == Path::new("sirno-lake")
     ));
 }
 
@@ -2476,7 +2476,7 @@ fn human_table_elides_columns_when_width_is_too_small() {
         vec![vec![
             "a".to_owned(),
             "Beta".to_owned(),
-            "sirno-docs/a.md".to_owned(),
+            "sirno-lake/a.md".to_owned(),
             "A compact entry.".to_owned(),
         ]],
         Some(19),
@@ -3008,7 +3008,7 @@ fn lake_move_moves_lake_and_rewrites_config() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let old_lake = temp.path().join("docs");
-    let new_lake = temp.path().join("sirno-docs");
+    let new_lake = temp.path().join("sirno-lake");
     let config = SirnoConfig {
         structural: StructuralSettings::from_fields([
             ("zeta", StructuralFieldSettings::default()),
@@ -3026,14 +3026,14 @@ fn lake_move_moves_lake_and_rewrites_config() {
         config_path.to_str().unwrap(),
         "lake",
         "move",
-        "sirno-docs",
+        "sirno-lake",
     ])
     .run()
     .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
     let source = fs::read_to_string(&config_path).unwrap();
-    assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
+    assert_eq!(config.lake.path, PathBuf::from("sirno-lake"));
     assert_before(&source, "[structural.zeta]", "[structural.area]");
     assert!(!old_lake.exists());
     assert!(new_lake.join("entry.md").exists());
@@ -3099,7 +3099,7 @@ fn lake_move_refuses_existing_destination() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let old_lake = temp.path().join("docs");
-    let new_lake = temp.path().join("sirno-docs");
+    let new_lake = temp.path().join("sirno-lake");
     SirnoConfig::new("docs").write_new(&config_path).unwrap();
     fs::create_dir(&old_lake).unwrap();
     fs::create_dir(&new_lake).unwrap();
@@ -3110,7 +3110,7 @@ fn lake_move_refuses_existing_destination() {
         config_path.to_str().unwrap(),
         "lake",
         "move",
-        "sirno-docs",
+        "sirno-lake",
     ])
     .run()
     .unwrap_err();
@@ -3213,7 +3213,7 @@ fn move_lake_wrapper_moves_lake_and_rewrites_config() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let old_lake = temp.path().join("docs");
-    let new_lake = temp.path().join("sirno-docs");
+    let new_lake = temp.path().join("sirno-lake");
     SirnoConfig::new("docs").write_new(&config_path).unwrap();
     fs::create_dir(&old_lake).unwrap();
     fs::write(old_lake.join("entry.md"), "entry").unwrap();
@@ -3224,13 +3224,13 @@ fn move_lake_wrapper_moves_lake_and_rewrites_config() {
         config_path.to_str().unwrap(),
         "move",
         "lake",
-        "sirno-docs",
+        "sirno-lake",
     ])
     .run()
     .unwrap();
 
     let config = SirnoConfig::from_file(&config_path).unwrap();
-    assert_eq!(config.lake.path, PathBuf::from("sirno-docs"));
+    assert_eq!(config.lake.path, PathBuf::from("sirno-lake"));
     assert!(!old_lake.exists());
     assert!(new_lake.join("entry.md").exists());
 }
@@ -4022,55 +4022,55 @@ Body.
 #[test]
 fn format_gen_link_report_lists_changed_paths() {
     let report = format_gen_link_report(
-        Path::new("sirno-docs"),
+        Path::new("sirno-lake"),
         31,
-        &[PathBuf::from("sirno-docs/concept.md"), PathBuf::from("sirno-docs/entry.md")],
+        &[PathBuf::from("sirno-lake/concept.md"), PathBuf::from("sirno-lake/entry.md")],
     );
 
     assert_eq!(
         report,
-        "- sirno-docs/concept.md\n- sirno-docs/entry.md\nTotal changes: 2/31 in sirno-docs"
+        "- sirno-lake/concept.md\n- sirno-lake/entry.md\nTotal changes: 2/31 in sirno-lake"
     );
 }
 
 #[test]
 fn format_gen_link_report_summarizes_no_changes() {
-    let report = format_gen_link_report(Path::new("sirno-docs"), 31, &[]);
+    let report = format_gen_link_report(Path::new("sirno-lake"), 31, &[]);
 
-    assert_eq!(report, "No changes in sirno-docs");
+    assert_eq!(report, "No changes in sirno-lake");
 }
 
 #[test]
 fn diagnostic_renderers_print_summary_last() {
     let diagnostic = DiagnosticRecord {
         severity: "error".to_owned(),
-        path: Some("sirno-docs/entry.md".to_owned()),
+        path: Some("sirno-lake/entry.md".to_owned()),
         message: "dangling reference".to_owned(),
     };
     let check = format_lake_check_result(&LakeCheckResult {
         ok: false,
-        root: "sirno-docs".to_owned(),
+        root: "sirno-lake".to_owned(),
         has_errors: true,
         diagnostics: vec![diagnostic.clone()],
     });
     let render = format_render_result(&RenderResult {
         ok: false,
         dry: false,
-        root: "sirno-docs".to_owned(),
+        root: "sirno-lake".to_owned(),
         entry_count: 31,
         changed_paths: Vec::new(),
         diagnostics: vec![diagnostic],
-        message: "render blocked by check errors in sirno-docs".to_owned(),
+        message: "render blocked by check errors in sirno-lake".to_owned(),
     });
 
-    assert_before(&check, "error: sirno-docs/entry.md", "check: failed in sirno-docs");
-    assert!(check.ends_with("check: failed in sirno-docs\n"));
+    assert_before(&check, "error: sirno-lake/entry.md", "check: failed in sirno-lake");
+    assert!(check.ends_with("check: failed in sirno-lake\n"));
     assert_before(
         &render,
-        "error: sirno-docs/entry.md",
-        "render blocked by check errors in sirno-docs",
+        "error: sirno-lake/entry.md",
+        "render blocked by check errors in sirno-lake",
     );
-    assert!(render.ends_with("render blocked by check errors in sirno-docs\n"));
+    assert!(render.ends_with("render blocked by check errors in sirno-lake\n"));
 }
 
 #[test]

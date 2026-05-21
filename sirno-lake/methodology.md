@@ -19,7 +19,7 @@ Choose perspective before writing.
 Use `Sirno` for the tool and project model.
 Use `a Sirno-managed project` for any project that applies Sirno.
 Use `this repository` for the implementation workspace for Sirno.
-Use `this lake` for `sirno-docs/`,
+Use `this lake` for `sirno-lake/`,
 the self-hosted Sirno Lake that describes Sirno.
 
 The method is disciplined bookkeeping.
@@ -29,7 +29,7 @@ It does not prove that code satisfies an *entry*.
 It makes the relevant objects easier to name, connect, revise, and witness.
 
 Start from the *lake*.
-This repository keeps its design source in `sirno-docs/`.
+This repository keeps its design source in `sirno-lake/`.
 Read `introduction` first when you need the first route through the project.
 Then follow categories, `belongs`, `prerequisite`, `refines`, and *witnesses*
 to the local design.

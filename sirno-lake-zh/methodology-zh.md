@@ -18,7 +18,7 @@ Sirno 是一种让设计和实现保持对话的方法。
 用 `Sirno` 指代工具和项目模型。
 用 `a Sirno-managed project` 指代任何应用 Sirno 的项目。
 用 `this repository` 指代 Sirno 的实现工作区。
-用 `this lake` 指代 `sirno-docs/`，
+用 `this lake` 指代 `sirno-lake/`，
 即描述 Sirno 的自托管 Sirno Lake。
 
 方法是纪律性的簿记。
@@ -28,7 +28,7 @@ Sirno 是一种让设计和实现保持对话的方法。
 它使相关对象更易于命名、连接、修订和见证。
 
 从 Lake 开始。
-本仓库将其设计源保存在 `sirno-docs/` 中。
+本仓库将其设计源保存在 `sirno-lake/` 中。
 当你需要穿越项目的第一条路线时先读 `introduction`。
 然后跟随类别、`belongs`、`refines` 和见证到局部设计。
 

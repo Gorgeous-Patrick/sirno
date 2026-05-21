@@ -26,9 +26,9 @@ Prefer direct definitions over defensive framing.
 
 ### Sirno Lake
 
-The authoritative project design lives in `sirno-docs/`.
-The split Chinese translation snapshot lives in `sirno-docs-zh/`.
-Do not update `sirno-docs-zh/` during normal agent workflow or lake maintenance.
+The authoritative project design lives in `sirno-lake/`.
+The split Chinese translation snapshot lives in `sirno-lake-zh/`.
+Do not update `sirno-lake-zh/` during normal agent workflow or lake maintenance.
 Whenever anything changes about the project design, keep the Sirno Lake in sync.
 Use `sirno-editor` when editing, moving, or reorganizing lake knowledge.
 Use `sirno-explorer` before design-sensitive repository exploration.
@@ -36,8 +36,8 @@ Use `sirno-witness` when adding or refining repository witness blocks.
 Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
 After lake metadata changes, run `sirno_lake_render`,
 then `sirno_lake_check` in edit and review modes.
-Use `sirno-docs/introduction.md` as the first narrative route.
-Use `sirno-docs/methodology.md` as the working guide.
+Use `sirno-lake/introduction.md` as the first narrative route.
+Use `sirno-lake/methodology.md` as the working guide.
 
 ### Rust
 

@@ -13,7 +13,7 @@ Packaged Sirno skills are portable instructions for any active Sirno-managed rep
 
 A skill should speak from the active project perspective.
 Use `the active repository`, `the configured lake`, and `the current project` for runtime work.
-Do not assume this source repository, its `sirno-docs/` path, or its self-hosted entries exist
+Do not assume this source repository, its `sirno-lake/` path, or its self-hosted entries exist
 in the user's project.
 
 Skill examples should use configured paths, placeholders, or discovered entry addresses.
