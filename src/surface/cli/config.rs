@@ -417,6 +417,7 @@ mod tests {
         SirnoConfig {
             lake: LakeSettings::new("docs"),
             frost: None,
+            upstreams: Default::default(),
             repo: None,
             witness: WitnessSettings { delimiters: Vec::new() },
             check: CheckSettings::default(),

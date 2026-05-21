@@ -4,6 +4,8 @@
 //! The prose body carries design content.
 //! The metadata block carries structure that tools read exactly.
 
+use std::collections::BTreeSet;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
@@ -144,7 +146,7 @@ pub struct EntryMetadata {
     /// through other storage forms.
     pub structural: EntryStructuralFields,
     // sirno:witness:structural:end
-    /// Freeze marker declaring that this Sirno Lake entry file is read-only.
+    /// Freeze reasons declaring that this Sirno Lake entry file is protected.
     pub frozen: Option<FrozenMarker>,
 }
 
@@ -163,7 +165,6 @@ impl EntryMetadata {
     /// Parse metadata from YAML source without surrounding `---` sentinels.
     // sirno:witness:metadata:begin
     pub fn from_yaml_source(source: &str) -> Result<Self, EntryParseError> {
-        let canonical_frozen = has_canonical_marker(source, FROZEN_FIELD);
         let value: Value = serde_yaml::from_str(source).map_err(EntryParseError::Yaml)?;
         let mut mapping = match value {
             | Value::Mapping(mapping) => mapping,
@@ -175,7 +176,7 @@ impl EntryMetadata {
         validate_plain_string(NAME_FIELD, &name)?;
         validate_plain_string(DESC_FIELD, &desc)?;
 
-        let frozen = take_frozen_marker(&mut mapping, canonical_frozen)?;
+        let frozen = take_frozen_marker(&mut mapping)?;
         let structural = take_structural_fields(mapping)?;
 
         Ok(Self { name, desc, structural, frozen })
@@ -192,8 +193,8 @@ impl EntryMetadata {
         out.push_str(&format!("name: {}\n", render_yaml_scalar(&self.name)?));
         out.push_str(&format!("desc: {}\n", render_yaml_scalar(&self.desc)?));
         render_structural_fields(&mut out, &self.structural)?;
-        if self.frozen.is_some() {
-            out.push_str("frozen:\n");
+        if let Some(frozen) = &self.frozen {
+            render_frozen_marker(&mut out, frozen);
         }
         Ok(out)
     }
@@ -289,14 +290,75 @@ impl EntryMetadata {
     }
 }
 
-/// Marker for the canonical `frozen:` metadata field.
+/// Protection reasons stored in the canonical `frozen` metadata field.
 ///
-/// A frozen entry is a lake Markdown file protected against changes from the current frost
-/// snapshot.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum FrozenMarker {
-    /// The entry is frozen and should be read-only on disk.
-    Present,
+/// Invariant: the reason set is non-empty.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FrozenMarker {
+    reasons: BTreeSet<FrozenReason>,
+}
+
+impl FrozenMarker {
+    /// Construct a marker for a reviewed entry.
+    pub fn reviewed() -> Self {
+        Self::from_reason(FrozenReason::Reviewed)
+    }
+
+    /// Construct a marker for a managed entry.
+    pub fn managed() -> Self {
+        Self::from_reason(FrozenReason::Managed)
+    }
+
+    /// Return whether this marker includes `reviewed`.
+    pub fn is_reviewed(&self) -> bool {
+        self.reasons.contains(&FrozenReason::Reviewed)
+    }
+
+    /// Return whether this marker includes `managed`.
+    pub fn is_managed(&self) -> bool {
+        self.reasons.contains(&FrozenReason::Managed)
+    }
+
+    /// Add `reviewed` to this marker.
+    pub fn insert_reviewed(&mut self) {
+        self.reasons.insert(FrozenReason::Reviewed);
+    }
+
+    /// Add `managed` to this marker.
+    pub fn insert_managed(&mut self) {
+        self.reasons.insert(FrozenReason::Managed);
+    }
+
+    /// Remove `reviewed` from this marker.
+    ///
+    /// Returns true when at least one protection reason remains.
+    pub fn remove_reviewed(&mut self) -> bool {
+        self.reasons.remove(&FrozenReason::Reviewed);
+        !self.reasons.is_empty()
+    }
+
+    /// Iterate over reasons in canonical render order.
+    pub fn reasons(&self) -> impl Iterator<Item = FrozenReason> + '_ {
+        [FrozenReason::Reviewed, FrozenReason::Managed]
+            .into_iter()
+            .filter(|reason| self.reasons.contains(reason))
+    }
+
+    fn from_reason(reason: FrozenReason) -> Self {
+        let mut reasons = BTreeSet::new();
+        reasons.insert(reason);
+        Self { reasons }
+    }
+}
+
+/// One reason why a Sirno entry is protected.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FrozenReason {
+    /// The entry matches the current frost snapshot.
+    Reviewed,
+    /// The entry is owned by crystallization.
+    Managed,
 }
 
 fn seed_id(raw: &str) -> EntryAddress {
@@ -465,23 +527,32 @@ fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, Entry
         .collect()
 }
 
-fn take_frozen_marker(
-    mapping: &mut Mapping, canonical_frozen: bool,
-) -> Result<Option<FrozenMarker>, EntryParseError> {
+fn take_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>, EntryParseError> {
     let Some(value) = mapping.shift_remove(Value::String(FROZEN_FIELD.to_owned())) else {
         return Ok(None);
     };
-    if value != Value::Null || !canonical_frozen {
+    let Value::Sequence(values) = value else {
+        return Err(EntryParseError::InvalidFrozenMarker);
+    };
+    if values.is_empty() {
         return Err(EntryParseError::InvalidFrozenMarker);
     }
-    Ok(Some(FrozenMarker::Present))
-}
 
-fn has_canonical_marker(source: &str, field: &'static str) -> bool {
-    source.lines().any(|line| {
-        let line = line.trim_end();
-        line.strip_suffix(':').is_some_and(|prefix| prefix == field)
-    })
+    let mut reasons = BTreeSet::new();
+    for value in values {
+        let Value::String(raw) = value else {
+            return Err(EntryParseError::InvalidFrozenMarker);
+        };
+        let reason = match raw.as_str() {
+            | "reviewed" => FrozenReason::Reviewed,
+            | "managed" => FrozenReason::Managed,
+            | _ => return Err(EntryParseError::InvalidFrozenMarker),
+        };
+        if !reasons.insert(reason) {
+            return Err(EntryParseError::InvalidFrozenMarker);
+        }
+    }
+    Ok(Some(FrozenMarker { reasons }))
 }
 
 fn validate_plain_string(field: &'static str, value: &str) -> Result<(), EntryParseError> {
@@ -516,6 +587,18 @@ fn render_structural_fields(
         render_id_list(out, field, values)?;
     }
     Ok(())
+}
+
+fn render_frozen_marker(out: &mut String, marker: &FrozenMarker) {
+    out.push_str("frozen:\n");
+    for reason in marker.reasons() {
+        out.push_str("  - ");
+        out.push_str(match reason {
+            | FrozenReason::Reviewed => "reviewed",
+            | FrozenReason::Managed => "managed",
+        });
+        out.push('\n');
+    }
 }
 
 fn render_yaml_scalar(value: &str) -> Result<String, EntryRenderError> {
@@ -570,8 +653,8 @@ pub enum EntryParseError {
         #[source]
         source: EntryAddressError,
     },
-    /// The frozen field is present with a value or noncanonical spelling.
-    #[error("metadata field `frozen` must be written as canonical marker `frozen:`")]
+    /// The frozen field is present with invalid protection reasons.
+    #[error("metadata field `frozen` must be a non-empty list of reviewed or managed reasons")]
     InvalidFrozenMarker,
 }
 
@@ -779,6 +862,7 @@ Body.
 name: Frozen
 desc: A protected entry.
 frozen:
+  - reviewed
 ---
 
 Body.
@@ -786,7 +870,8 @@ Body.
 
         let entry = Entry::from_markdown(entry_id(), source).unwrap();
 
-        assert_eq!(entry.metadata.frozen, Some(FrozenMarker::Present));
+        assert_eq!(entry.metadata.frozen, Some(FrozenMarker::reviewed()));
+        assert!(entry.metadata.frozen.as_ref().unwrap().is_reviewed());
     }
 
     #[test]
@@ -820,14 +905,35 @@ frozen: null
     }
 
     #[test]
+    fn parses_managed_frozen_reason() {
+        let source = "\
+---
+name: Managed
+desc: A managed entry.
+frozen:
+  - reviewed
+  - managed
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let frozen = entry.metadata.frozen.as_ref().unwrap();
+
+        assert!(frozen.is_reviewed());
+        assert!(frozen.is_managed());
+    }
+
+    #[test]
     fn renders_canonical_frozen_marker() {
         let mut metadata = EntryMetadata::new("Frozen", "Protected entry.").unwrap();
-        metadata.frozen = Some(FrozenMarker::Present);
+        metadata.frozen = Some(FrozenMarker::reviewed());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
 
-        assert!(rendered.contains("frozen:\n"));
+        assert!(rendered.contains("frozen:\n  - reviewed\n"));
         assert!(!rendered.contains("frozen: null"));
         assert!(!rendered.contains("frozen: true"));
     }

@@ -14,7 +14,8 @@ prerequisite:
 The file configures the lake
 and the operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
-and frost.
+frost,
+and *upstream lakes*.
 Generated config files include concise comments that describe how each written field is used.
 `sirno util config` and `sirno util config tui` open an interactive terminal UI
 for config section and comment maintenance.
@@ -25,12 +26,22 @@ and whether that section's comments match Sirno's canonical renderer.
 
 `[lake].path` names the lake path.
 `[frost].path` optionally names the frost path.
+`[upstreams.DOMAIN]` optionally declares one Git-backed upstream lake.
 `[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
 `[witness]` configures the delimiter regexes used to find *witness* blocks.
 `[tutorial]` optionally enables extra CLI tutorial text for recoverable command failures.
 Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
+
+`[upstreams.DOMAIN]` declares an upstream lake crystallized under `DOMAIN`.
+`DOMAIN` is an *entry atom* and becomes the injected *entry address* prefix.
+Each upstream has `git = "SOURCE"` and exactly one of `branch`, `tag`, or `rev`.
+`SOURCE` is a remote Git URL or local Git repository source accepted by Git.
+`project` optionally names the directory inside the Git tree that contains `Sirno.toml`;
+it defaults to `.`.
+There is no non-Git path upstream.
+Every declared upstream is included by crystallization.
 
 A project can use Sirno without configured repo members or frost.
 `sirno init` opens an interactive setup flow for the config, lake,
@@ -58,10 +69,12 @@ select the same path moves from the top-level move group.
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
 
-`Sirno.lock.toml` records the lake's *frost* state when frost is configured.
+`Sirno.lock.toml` records the lake's *frost* state when frost is configured
+and the resolved upstream state when upstream lakes are configured.
 It lives next to `Sirno.toml`.
 The lock says whether the lake is current
 or checked out to a frozen version.
+It also pins each upstream to the exact Git commit crystallized into the lake.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,

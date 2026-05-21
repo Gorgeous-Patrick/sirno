@@ -133,14 +133,16 @@ and are removed before comparison with frost.
 An aligned entry can still be writable.
 Editing it moves it back to working state until the next successful frost commit.
 
-`frozen` means the waterline file carries `frozen:`
-and its committed form matches the frostline.
+`frozen` means the waterline file carries a `frozen:` reason.
+For frost-backed manual freeze,
+that reason is `reviewed` and the committed form matches the frostline.
 `sirno freeze ENTRY_ADDRESS` enters this state.
 The command verifies current frost first,
-then adds the marker and applies local file protection.
-`sirno melt ENTRY_ADDRESS` removes the marker,
-clears local file protection,
+then adds `reviewed` and applies local file protection.
+`sirno melt ENTRY_ADDRESS` removes `reviewed`,
+clears local file protection when no other reason remains,
 and returns the entry to the aligned state if the content still matches frost.
+Crystallization can also enter this state by writing `managed`.
 
 `drifted` means a frozen waterline entry no longer matches the frostline.
 This is an error state.

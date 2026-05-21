@@ -202,7 +202,7 @@ impl SirnoFrost {
         trace!("sirno put_entry begin: id={}", entry.id);
         let current = self.current_snapshot()?;
         let entry_to_write = Self::entry_without_frozen_marker(entry);
-        if entry.metadata.frozen.is_some() {
+        if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed()) {
             self.ensure_entry_matches_snapshot(current, &entry_to_write)?;
             trace!("sirno put_entry end: version={}", current.version());
             return Ok(current);
@@ -296,7 +296,7 @@ impl SirnoFrost {
 
     /// Require a lake entry to match the current frost snapshot.
     ///
-    /// Generated-link regions and the `frozen:` marker are lake state.
+    /// Generated-link regions and the `frozen:` field are lake state.
     /// They are removed before comparing to frost storage.
     pub fn ensure_entry_current(&self, entry: &Entry) -> Result<(), FrostError> {
         let entries = Self::entries_without_generated_links(std::slice::from_ref(entry))?;
@@ -409,12 +409,12 @@ impl SirnoFrost {
             .iter()
             .map(|entry| {
                 let entry_to_commit = Self::entry_without_frozen_marker(entry);
-                if entry.metadata.frozen.is_some()
+                if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed())
                     && previous_entries.get(&entry.id) != Some(&entry_to_commit)
                 {
                     return Err(FrostError::FrozenEntryChanged(entry.id.clone()));
                 }
-                if entry.metadata.frozen.is_some()
+                if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed())
                     && previous_artifacts_by_owner
                         .get(&entry.id)
                         .map(Vec::as_slice)
@@ -1281,7 +1281,7 @@ mod tests {
             .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let mut frozen_alpha = alpha.clone();
-        frozen_alpha.metadata.frozen = Some(FrozenMarker::Present);
+        frozen_alpha.metadata.frozen = Some(FrozenMarker::reviewed());
         let mut changed_beta = beta.clone();
         changed_beta.body = "Beta changed body.\n".to_owned();
         write_lake_entry(lake.path(), &frozen_alpha);
@@ -1306,7 +1306,7 @@ mod tests {
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
         frost.commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default()).unwrap();
         let mut changed_entry = entry.clone();
-        changed_entry.metadata.frozen = Some(FrozenMarker::Present);
+        changed_entry.metadata.frozen = Some(FrozenMarker::reviewed());
         changed_entry.body = "Changed body.\n".to_owned();
         write_lake_entry(lake.path(), &changed_entry);
 
@@ -1322,7 +1322,7 @@ mod tests {
         let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        entry.metadata.frozen = Some(FrozenMarker::Present);
+        entry.metadata.frozen = Some(FrozenMarker::reviewed());
         write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
@@ -1341,7 +1341,7 @@ mod tests {
 
         let first = frost.put_entry(&entry).unwrap();
         let mut frozen_entry = entry.clone();
-        frozen_entry.metadata.frozen = Some(FrozenMarker::Present);
+        frozen_entry.metadata.frozen = Some(FrozenMarker::reviewed());
         let second = frost.put_entry(&frozen_entry).unwrap();
 
         assert_eq!(first, second);
@@ -1355,7 +1355,7 @@ mod tests {
         let entry = test_entry("alpha", "Alpha");
         frost.put_entry(&entry).unwrap();
         let mut changed_entry = entry.clone();
-        changed_entry.metadata.frozen = Some(FrozenMarker::Present);
+        changed_entry.metadata.frozen = Some(FrozenMarker::reviewed());
         changed_entry.body = "Changed body.\n".to_owned();
 
         let error = frost.put_entry(&changed_entry).unwrap_err();

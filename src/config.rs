@@ -13,7 +13,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
 
+use indexmap::IndexMap;
+
 use crate::entry::{DESC_FIELD, FROZEN_FIELD, NAME_FIELD};
+use crate::identifier::EntryAtom;
 use crate::structural::{StructuralEdgeSettings, StructuralSettings};
 
 /// Canonical Sirno project config filename.
@@ -165,6 +168,135 @@ impl FrostSettings {
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self { path: path.into() }
     }
+}
+
+/// Ordered upstream lake declarations keyed by their crystallized domain.
+pub type UpstreamSettingsMap = IndexMap<EntryAtom, UpstreamSettings>;
+
+/// Configured upstream Git lake source.
+///
+/// Invariant: exactly one requested ref selector is present.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpstreamSettings {
+    /// Git URI or local repository source accepted by Git.
+    pub git: String,
+    /// Branch name to resolve.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    /// Tag name to resolve.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    /// Commit-ish to resolve.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+    /// Directory inside the Git tree that contains `Sirno.toml`.
+    #[serde(default = "default_upstream_project", skip_serializing_if = "is_default_project")]
+    pub project: PathBuf,
+}
+
+impl UpstreamSettings {
+    /// Construct branch-pinned upstream settings.
+    pub fn branch(git: impl Into<String>, branch: impl Into<String>) -> Self {
+        Self {
+            git: git.into(),
+            branch: Some(branch.into()),
+            tag: None,
+            rev: None,
+            project: default_upstream_project(),
+        }
+    }
+
+    /// Construct tag-pinned upstream settings.
+    pub fn tag(git: impl Into<String>, tag: impl Into<String>) -> Self {
+        Self {
+            git: git.into(),
+            branch: None,
+            tag: Some(tag.into()),
+            rev: None,
+            project: default_upstream_project(),
+        }
+    }
+
+    /// Construct commit-pinned upstream settings.
+    pub fn rev(git: impl Into<String>, rev: impl Into<String>) -> Self {
+        Self {
+            git: git.into(),
+            branch: None,
+            tag: None,
+            rev: Some(rev.into()),
+            project: default_upstream_project(),
+        }
+    }
+
+    /// Return the requested ref selector.
+    pub fn selector(&self) -> UpstreamRef<'_> {
+        if let Some(branch) = &self.branch {
+            UpstreamRef::Branch(branch)
+        } else if let Some(tag) = &self.tag {
+            UpstreamRef::Tag(tag)
+        } else if let Some(rev) = &self.rev {
+            UpstreamRef::Rev(rev)
+        } else {
+            panic!("validated upstream settings always have one selector")
+        }
+    }
+
+    fn validate(&self, domain: &EntryAtom) -> Result<(), ConfigError> {
+        if self.git.trim().is_empty() {
+            return Err(ConfigError::UpstreamGitSource(domain.clone()));
+        }
+        let ref_count = [self.branch.as_ref(), self.tag.as_ref(), self.rev.as_ref()]
+            .into_iter()
+            .flatten()
+            .count();
+        if ref_count != 1 {
+            return Err(ConfigError::UpstreamRefSelector(domain.clone()));
+        }
+        for selector in
+            [self.branch.as_ref(), self.tag.as_ref(), self.rev.as_ref()].into_iter().flatten()
+        {
+            if selector.trim().is_empty() {
+                return Err(ConfigError::UpstreamRefSelector(domain.clone()));
+            }
+        }
+        validate_upstream_project_path(domain, &self.project)?;
+        Ok(())
+    }
+}
+
+/// Requested upstream Git ref selector.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UpstreamRef<'a> {
+    /// Branch name.
+    Branch(&'a str),
+    /// Tag name.
+    Tag(&'a str),
+    /// Commit-ish.
+    Rev(&'a str),
+}
+
+fn default_upstream_project() -> PathBuf {
+    PathBuf::from(".")
+}
+
+fn is_default_project(path: &PathBuf) -> bool {
+    path == &default_upstream_project()
+}
+
+fn validate_upstream_project_path(domain: &EntryAtom, path: &Path) -> Result<(), ConfigError> {
+    if path.as_os_str().is_empty() || path.is_absolute() {
+        return Err(ConfigError::UpstreamProjectPath { domain: domain.clone(), path: path.into() });
+    }
+    for component in path.components() {
+        if matches!(component, Component::ParentDir | Component::RootDir | Component::Prefix(_)) {
+            return Err(ConfigError::UpstreamProjectPath {
+                domain: domain.clone(),
+                path: path.into(),
+            });
+        }
+    }
+    Ok(())
 }
 
 /// One repository member that Sirno scans through `mosaika`.
@@ -337,6 +469,9 @@ pub struct SirnoConfig {
     /// Configured frost settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frost: Option<FrostSettings>,
+    /// Configured upstream lakes.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub upstreams: UpstreamSettingsMap,
     /// Configured repository artifact members.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub repo: Option<RepoSettings>,
@@ -361,6 +496,7 @@ impl SirnoConfig {
         Self {
             lake: LakeSettings::new(lake),
             frost: None,
+            upstreams: UpstreamSettingsMap::new(),
             repo: None,
             witness: WitnessSettings::standard(),
             check: CheckSettings::default(),
@@ -388,6 +524,17 @@ impl SirnoConfig {
         self
     }
 
+    /// Return this config with one upstream declaration set.
+    pub fn with_upstream(mut self, domain: EntryAtom, settings: UpstreamSettings) -> Self {
+        self.upstreams.insert(domain, settings);
+        self
+    }
+
+    /// Remove one upstream declaration.
+    pub fn remove_upstream(&mut self, domain: &EntryAtom) -> Option<UpstreamSettings> {
+        self.upstreams.shift_remove(domain)
+    }
+
     /// Default config for a new Sirno-managed repository.
     pub fn default_project() -> Self {
         Self::new("docs")
@@ -400,10 +547,17 @@ impl SirnoConfig {
         trace!("sirno config load begin: path={}", path.display());
         let source = fs::read_to_string(path)
             .map_err(|source| ConfigError::Read { path: path.to_path_buf(), source })?;
-        let config: Self = toml::from_str(&source)
+        let config = Self::from_source(path, &source)?;
+        trace!("sirno config load end");
+        Ok(config)
+    }
+
+    /// Load a config from source text and the path it represents.
+    pub fn from_source(path: impl AsRef<Path>, source: &str) -> Result<Self, ConfigError> {
+        let path = path.as_ref();
+        let config: Self = toml::from_str(source)
             .map_err(|source| ConfigError::Parse { path: path.to_path_buf(), source })?;
         config.validate_for_file(path)?;
-        trace!("sirno config load end");
         Ok(config)
     }
     // sirno:witness:project-config:end
@@ -496,6 +650,9 @@ impl SirnoConfig {
         if let Some(repo) = &self.repo {
             repo.validate()?;
         }
+        for (domain, upstream) in &self.upstreams {
+            upstream.validate(domain)?;
+        }
         self.validate_structural_fields()?;
         self.witness.validate()?;
         if self.frost.is_some() {
@@ -571,6 +728,11 @@ impl ConfigRenderer {
             // sirno:witness:project-config-comments:begin
             self.push_field("path", &frost.path, "frost path, kept outside the lake.")?;
             // sirno:witness:project-config-comments:end
+        }
+
+        if !config.upstreams.is_empty() {
+            self.out.push('\n');
+            self.push_upstreams(&config.upstreams)?;
         }
 
         if let Some(repo) = &config.repo {
@@ -742,6 +904,33 @@ impl ConfigRenderer {
         self.out.push_str("]]\n");
     }
 
+    fn push_upstreams(&mut self, upstreams: &UpstreamSettingsMap) -> Result<(), toml::ser::Error> {
+        for (index, (domain, upstream)) in upstreams.iter().enumerate() {
+            if index > 0 {
+                self.out.push('\n');
+            }
+            self.push_table(&format!("upstreams.{domain}"));
+            if index == 0 {
+                self.out
+                    .push_str("# Git-backed upstream lake crystallized under this entry domain.\n");
+            }
+            self.push_bare_field("git", &upstream.git)?;
+            if let Some(branch) = &upstream.branch {
+                self.push_bare_field("branch", branch)?;
+            }
+            if let Some(tag) = &upstream.tag {
+                self.push_bare_field("tag", tag)?;
+            }
+            if let Some(rev) = &upstream.rev {
+                self.push_bare_field("rev", rev)?;
+            }
+            if !is_default_project(&upstream.project) {
+                self.push_bare_field("project", &upstream.project)?;
+            }
+        }
+        Ok(())
+    }
+
     fn toml_value<T: Serialize + ?Sized>(value: &T) -> Result<String, toml::ser::Error> {
         Ok(toml::Value::try_from(value)?.to_string())
     }
@@ -826,6 +1015,20 @@ pub enum ConfigError {
         /// Resolved frost path.
         frost: PathBuf,
     },
+    /// An upstream Git source is empty.
+    #[error("upstream `{0}` git source must not be empty")]
+    UpstreamGitSource(EntryAtom),
+    /// An upstream must have exactly one ref selector.
+    #[error("upstream `{0}` must configure exactly one of branch, tag, or rev")]
+    UpstreamRefSelector(EntryAtom),
+    /// An upstream project path is not a normal Git-tree-relative path.
+    #[error("upstream `{domain}` project path must be relative within the Git tree: {path}")]
+    UpstreamProjectPath {
+        /// Upstream domain.
+        domain: EntryAtom,
+        /// Invalid project path.
+        path: PathBuf,
+    },
     /// The config file could not be created.
     #[error("failed to create config file {path}")]
     Create {
@@ -889,6 +1092,7 @@ path = "docs"
 
         assert_eq!(config.lake.path, PathBuf::from("docs"));
         assert_eq!(config.frost, None);
+        assert!(config.upstreams.is_empty());
         assert!(config.lake.ignore.is_empty());
         assert_eq!(config.repo, None);
         assert_eq!(config.witness, test_witness_syntax());
@@ -912,6 +1116,40 @@ path = "sirno-frost"
         );
 
         assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("sirno-frost") }));
+    }
+
+    #[test]
+    fn parses_upstream_settings() {
+        let config = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[upstreams.core]
+git = "https://example.invalid/core.git"
+branch = "main"
+project = "packages/core"
+
+[upstreams.std]
+git = "../std.git"
+tag = "stable"
+"#,
+        );
+
+        assert_eq!(
+            config.upstreams.get(&EntryAtom::new("core").unwrap()),
+            Some(&UpstreamSettings {
+                git: "https://example.invalid/core.git".to_owned(),
+                branch: Some("main".to_owned()),
+                tag: None,
+                rev: None,
+                project: PathBuf::from("packages/core"),
+            })
+        );
+        assert_eq!(
+            config.upstreams.get(&EntryAtom::new("std").unwrap()),
+            Some(&UpstreamSettings::tag("../std.git", "stable"))
+        );
     }
 
     #[test]
@@ -1279,6 +1517,53 @@ members = ["../outside"]
     }
 
     #[test]
+    fn rejects_invalid_upstream_ref_selectors_and_project_paths() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join(CONFIG_FILE_NAME);
+        fs::write(
+            &path,
+            config_source(
+                r#"
+[lake]
+path = "docs"
+
+[upstreams.core]
+git = "../core.git"
+branch = "main"
+tag = "stable"
+"#,
+            ),
+        )
+        .unwrap();
+
+        let error = SirnoConfig::from_file(&path).unwrap_err();
+        assert!(
+            matches!(error, ConfigError::UpstreamRefSelector(domain) if domain.as_str() == "core")
+        );
+
+        fs::write(
+            &path,
+            config_source(
+                r#"
+[lake]
+path = "docs"
+
+[upstreams.core]
+git = "../core.git"
+branch = "main"
+project = "../core"
+"#,
+            ),
+        )
+        .unwrap();
+
+        let error = SirnoConfig::from_file(&path).unwrap_err();
+        assert!(
+            matches!(error, ConfigError::UpstreamProjectPath { domain, .. } if domain.as_str() == "core")
+        );
+    }
+
+    #[test]
     fn rejects_empty_witness_regex() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
@@ -1473,12 +1758,16 @@ delimiters = []
 
     #[test]
     fn rendered_config_keeps_selected_comments_and_structural_link_order() {
+        let mut upstream = UpstreamSettings::branch("https://example.invalid/core.git", "main");
+        upstream.project = PathBuf::from("packages/core");
+        let upstreams = UpstreamSettingsMap::from([(EntryAtom::new("core").unwrap(), upstream)]);
         let config = SirnoConfig {
             lake: LakeSettings {
                 path: PathBuf::from("docs"),
                 ignore: vec![PathBuf::from(".obsidian")],
             },
             frost: Some(FrostSettings::new("sirno-frost")),
+            upstreams,
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
             check: CheckSettings { render: Some(false), structural_inhabitance: Some(false) },
@@ -1510,6 +1799,13 @@ delimiters = []
         assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Paths in lake that Sirno skips"));
         assert!(source.contains("# frost path"));
+        assert!(source.contains("[upstreams.core]"));
+        assert!(
+            source.contains("# Git-backed upstream lake crystallized under this entry domain.")
+        );
+        assert!(source.contains("git = \"https://example.invalid/core.git\""));
+        assert!(source.contains("branch = \"main\""));
+        assert!(source.contains("project = \"packages/core\""));
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(
@@ -1559,6 +1855,8 @@ delimiters = []
             "# ripple.lake and ripple.frost add tide workitems from the waterline and frostline."
         ));
         assert!(source.contains("# Omitted render and ripple values are false."));
+        assert_before(&source, "[frost]", "[upstreams.core]");
+        assert_before(&source, "[upstreams.core]", "[repo]");
         assert_before(&source, "[tutorial]", "[structural]");
         assert_eq!(source.matches("# Structural metadata fields.").count(), 1);
         assert_before(&source, "# Structural metadata fields", "[structural.kind]");

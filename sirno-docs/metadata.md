@@ -23,10 +23,12 @@ An empty list is a present empty field.
 Their field order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 
-`frozen:` declares that the lake *entry* is protected
-because it matches the current frost snapshot.
-The frost layer accepts it only while its committed form still matches that snapshot.
-It is written without a value.
+`frozen:` declares that the lake *entry* is protected.
+It is a non-empty list of protection reasons.
+`reviewed` means the entry matches the current frost snapshot.
+The frost layer accepts reviewed entries only while their committed form still matches that snapshot.
+`managed` means crystallization owns the entry content.
+An entry may carry both reasons.
 
 Operational structure is formed only from metadata.
 Prose links may help readers and external tools,
@@ -54,6 +56,8 @@ name: Concept
 desc: A named idea that compresses project knowledge.
 category:
   - concept
+frozen:
+  - reviewed
 ---
 ```
 

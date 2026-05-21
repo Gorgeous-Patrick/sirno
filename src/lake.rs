@@ -23,6 +23,7 @@ use crate::entry::{
     Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
 };
 use crate::freeze::FrozenPath;
+use crate::identifier::EntryAtom;
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{StructuralEdgeIndex, StructuralSettings};
@@ -192,6 +193,14 @@ pub struct EntryProtectionReport {
     paths: Vec<PathBuf>,
 }
 
+/// Result of replacing one crystallized upstream domain.
+#[derive(Debug)]
+pub struct CrystallizeDomainReport {
+    root: PathBuf,
+    domain: EntryAtom,
+    changed_paths: Vec<PathBuf>,
+}
+
 impl EntryRenameReport {
     /// Entry address before the rename.
     pub fn old_id(&self) -> &EntryAddress {
@@ -218,6 +227,23 @@ impl EntryProtectionReport {
     /// Paths selected by the local protection operation.
     pub fn paths(&self) -> &[PathBuf] {
         &self.paths
+    }
+}
+
+impl CrystallizeDomainReport {
+    /// Lake directory that was updated.
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    /// Upstream domain that was crystallized.
+    pub fn domain(&self) -> &EntryAtom {
+        &self.domain
+    }
+
+    /// Paths written or removed by crystallization.
+    pub fn changed_paths(&self) -> &[PathBuf] {
+        &self.changed_paths
     }
 }
 
@@ -524,15 +550,15 @@ impl EntryDirectory {
 
     /// Mark one Sirno Lake Markdown entry as frozen and read-only.
     ///
-    /// The entry metadata gains the canonical `frozen:` marker.
-    /// Local file protection is applied after the marker is written.
+    /// The entry metadata gains the canonical `reviewed` frozen reason.
+    /// Local file protection is applied after the reason is written.
     pub fn freeze_entry(&self, id: &EntryAddress) -> Result<PathBuf, EntryDirectoryError> {
         self.set_entry_frozen(id, true)
     }
 
     /// Mark one Sirno Lake Markdown entry as melted and writable.
     ///
-    /// The canonical `frozen:` marker is removed from entry metadata.
+    /// The canonical `reviewed` frozen reason is removed from entry metadata.
     /// The file is left writable so normal editing can resume.
     pub fn melt_entry(&self, id: &EntryAddress) -> Result<PathBuf, EntryDirectoryError> {
         self.set_entry_frozen(id, false)
@@ -728,6 +754,49 @@ impl EntryDirectory {
     }
     // sirno:witness:sirno-lake:end
 
+    /// Replace one crystallized upstream domain.
+    ///
+    /// Existing files under the domain must already be managed by crystallization.
+    pub fn replace_crystallized_domain(
+        &self, domain: &EntryAtom, entries: &[Entry], artifacts: &[EntryArtifact],
+        settings: &EntryDirectoryCheckSettings,
+    ) -> Result<CrystallizeDomainReport, EntryDirectoryError> {
+        trace!("replace_crystallized_domain begin: root={} domain={}", self.root.display(), domain);
+        fs::create_dir_all(&self.root)?;
+        for entry in entries {
+            if !entry.id.starts_with_domain(domain) {
+                return Err(EntryDirectoryError::CrystallizedEntryOutsideDomain {
+                    domain: domain.clone(),
+                    id: entry.id.clone(),
+                });
+            }
+            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                return Err(EntryDirectoryError::CrystallizedEntryNotManaged(entry.id.clone()));
+            }
+        }
+
+        let mut changed_paths = Vec::new();
+        changed_paths.extend(self.remove_crystallized_domain_entries(domain, settings)?);
+        changed_paths.extend(self.remove_crystallized_domain_artifacts(domain)?);
+        for entry in entries {
+            changed_paths.push(self.write_new_entry_file(entry)?);
+        }
+        changed_paths.extend(self.write_entry_artifacts(entries, artifacts)?);
+
+        changed_paths.sort();
+        changed_paths.dedup();
+        trace!(
+            "replace_crystallized_domain end: domain={} changed={}",
+            domain,
+            changed_paths.len()
+        );
+        Ok(CrystallizeDomainReport {
+            root: self.root.clone(),
+            domain: domain.clone(),
+            changed_paths,
+        })
+    }
+
     /// Mark this directory as read-only.
     ///
     /// Sirno removes ordinary write permission from managed paths.
@@ -769,7 +838,7 @@ impl EntryDirectory {
     /// Reapply local protection from frozen metadata and checkout state.
     ///
     /// `protect_checkout` selects the whole lake for an immutable frost checkout.
-    /// Otherwise, only entries carrying `frozen:` and their artifact trees are protected.
+    /// Otherwise, only entries carrying `frozen` reasons and their artifact trees are protected.
     /// Ignored paths are left untouched.
     pub fn fix_local_protection(
         &self, settings: &EntryDirectoryCheckSettings, protect_checkout: bool, dry_run: bool,
@@ -845,6 +914,18 @@ impl EntryDirectory {
         )
     }
 
+    /// Generate Markdown link footers while allowing managed crystallized entries to change.
+    pub fn generate_links_for_crystallization(
+        &self, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
+        self.process_generated_links(
+            &settings.structural,
+            settings.ignore.clone(),
+            settings.structural_inhabitance,
+            GenLinkOperation::WriteManaged,
+        )
+    }
+
     /// Check which generated Markdown link footers would change with ignored paths.
     ///
     /// Ignored paths are relative to the entry directory root.
@@ -902,7 +983,7 @@ impl EntryDirectory {
             let rendered = Entry::replace_markdown_body(&source, &body)?;
             if rendered != source {
                 if operation.writes() {
-                    if entry.metadata.frozen.is_some() {
+                    if !operation.allows_entry_write(entry) {
                         return Err(EntryDirectoryError::FrozenEntryProtected(entry.id.clone()));
                     }
                     fs::write(path, rendered).map_err(|source| EntryDirectoryError::WriteFile {
@@ -1052,7 +1133,17 @@ impl EntryDirectory {
         let path = self.entry_file_path(id);
         let source = fs::read_to_string(&path)?;
         let mut entry = Entry::from_markdown(id.clone(), &source)?;
-        entry.metadata.frozen = frozen.then_some(FrozenMarker::Present);
+        if frozen {
+            match &mut entry.metadata.frozen {
+                | Some(marker) => marker.insert_reviewed(),
+                | None => entry.metadata.frozen = Some(FrozenMarker::reviewed()),
+            }
+        } else if let Some(marker) = &mut entry.metadata.frozen
+            && !marker.remove_reviewed()
+        {
+            entry.metadata.frozen = None;
+        }
+        let still_frozen = entry.metadata.frozen.is_some();
         let rendered = entry.to_markdown()?;
         if !frozen {
             melt_path_best_effort(&path)?;
@@ -1063,7 +1154,7 @@ impl EntryDirectory {
                 .map_err(|source| EntryDirectoryError::WriteFile { path: path.clone(), source })?;
         }
 
-        if frozen {
+        if frozen || still_frozen {
             freeze_path_best_effort(&path)?;
             self.set_entry_artifact_writability(id, false)?;
         } else {
@@ -1111,6 +1202,99 @@ impl EntryDirectory {
         &self, settings: &EntryDirectoryCheckSettings,
     ) -> Result<(), EntryDirectoryError> {
         self.remove_managed_entry_files_in(&self.root, settings)
+    }
+
+    fn remove_crystallized_domain_entries(
+        &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        let domain_root = self.root.join(domain.as_str());
+        if !domain_root.exists() {
+            return Ok(Vec::new());
+        }
+        if !domain_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(domain_root));
+        }
+
+        let mut changed = Vec::new();
+        for path in sorted_recursive_paths(&domain_root)?.into_iter().rev() {
+            let metadata = fs::symlink_metadata(&path)?;
+            if metadata.file_type().is_dir() {
+                if fs::read_dir(&path)?.next().is_none() {
+                    fs::remove_dir(&path)?;
+                    changed.push(path);
+                }
+                continue;
+            }
+            if settings.ignores(path.strip_prefix(&self.root).map_err(|source| {
+                EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                }
+            })?) {
+                continue;
+            }
+            if !metadata.file_type().is_file()
+                || path.extension().and_then(|extension| extension.to_str()) != Some("md")
+            {
+                return Err(EntryDirectoryError::CheckoutConflict(path));
+            }
+            let relative =
+                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                })?;
+            let id = EntryAddress::from_lake_relative_path(relative)?;
+            let entry = self.read_entry(&id)?;
+            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
+            }
+            melt_path_best_effort(&path)?;
+            fs::remove_file(&path)?;
+            changed.push(path);
+        }
+        if fs::read_dir(&domain_root)?.next().is_none() {
+            fs::remove_dir(&domain_root)?;
+            changed.push(domain_root);
+        }
+        Ok(changed)
+    }
+
+    fn remove_crystallized_domain_artifacts(
+        &self, domain: &EntryAtom,
+    ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
+        let artifact_root = self.artifact_root();
+        if !artifact_root.exists() {
+            return Ok(Vec::new());
+        }
+        if !artifact_root.is_dir() {
+            return Err(EntryDirectoryError::CheckoutConflict(artifact_root));
+        }
+
+        let mut changed = Vec::new();
+        for owner_root in sorted_directory_paths(&artifact_root)? {
+            let Some(owner_name) = owner_root.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            let Ok(owner) = EntryAddress::new(owner_name) else {
+                continue;
+            };
+            if !owner.starts_with_domain(domain) {
+                continue;
+            }
+            let owner_entry = self.entry_file_path(&owner);
+            if owner_entry.exists() {
+                let entry = self.read_entry(&owner)?;
+                if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                    return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
+                }
+            }
+            melt_tree_best_effort(&owner_root)?;
+            fs::remove_dir_all(&owner_root)?;
+            changed.push(owner_root);
+        }
+        Ok(changed)
     }
 
     fn remove_managed_entry_files_in(
@@ -1422,6 +1606,7 @@ impl EntryDirectory {
 enum GenLinkOperation {
     Check,
     Write,
+    WriteManaged,
 }
 
 impl GenLinkOperation {
@@ -1429,11 +1614,19 @@ impl GenLinkOperation {
         match self {
             | Self::Check => "check",
             | Self::Write => "write",
+            | Self::WriteManaged => "write-managed",
         }
     }
 
     fn writes(self) -> bool {
-        matches!(self, Self::Write)
+        matches!(self, Self::Write | Self::WriteManaged)
+    }
+
+    fn allows_entry_write(self, entry: &Entry) -> bool {
+        match &entry.metadata.frozen {
+            | None => true,
+            | Some(marker) => self == Self::WriteManaged && marker.is_managed(),
+        }
     }
 }
 
@@ -1948,6 +2141,20 @@ pub enum EntryDirectoryError {
     /// A command attempted to change an entry marked as frozen.
     #[error("entry `{0}` is frozen; run `sirno melt {0}` before changing it")]
     FrozenEntryProtected(EntryAddress),
+    /// Crystallization tried to write an entry outside the selected domain.
+    #[error("crystallized entry `{id}` is outside upstream domain `{domain}`")]
+    CrystallizedEntryOutsideDomain {
+        /// Selected upstream domain.
+        domain: EntryAtom,
+        /// Entry address outside the domain.
+        id: EntryAddress,
+    },
+    /// Crystallization tried to write an entry without managed protection.
+    #[error("crystallized entry `{0}` must carry frozen reason `managed`")]
+    CrystallizedEntryNotManaged(EntryAddress),
+    /// A path inside a crystallized domain is not managed by crystallization.
+    #[error("crystallized upstream domain contains unmanaged path: {0}")]
+    UnmanagedCrystallizedPath(PathBuf),
     /// A parsed entry had no file path in the directory report.
     #[error("entry `{0}` has no source file path")]
     MissingEntryFilePath(EntryAddress),
@@ -2103,6 +2310,82 @@ Body.
         format!("{opening}\nbody\n{closing}\n")
     }
     // sirno:witness:witness-lookup:end
+
+    #[test]
+    fn replaces_only_managed_crystallized_domain_entries() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = entry_directory(temp.path());
+        let domain = EntryAtom::new("core").unwrap();
+        let mut metadata = EntryMetadata::new("Design", "Managed upstream entry.").unwrap();
+        metadata.frozen = Some(FrozenMarker::managed());
+        let entry = Entry::new(EntryAddress::new("core.design").unwrap(), metadata, "Body.\n");
+        let artifact = EntryArtifact::new(
+            EntryAddress::new("core.design").unwrap(),
+            EntryArtifactPath::new(Path::new("logo.bin")).unwrap(),
+            b"logo".to_vec(),
+        );
+
+        let report = directory
+            .replace_crystallized_domain(
+                &domain,
+                &[entry],
+                &[artifact],
+                &EntryDirectoryCheckSettings::default(),
+            )
+            .unwrap();
+
+        assert!(report.changed_paths().iter().any(|path| path.ends_with("core/design.md")));
+        assert!(temp.path().join("core/design.md").exists());
+        assert!(temp.path().join(".artifacts/core.design/logo.bin").exists());
+
+        write_entry(
+            temp.path(),
+            "core/local.md",
+            "\
+---
+name: Local
+desc: Unmanaged local entry.
+---
+
+Body.
+",
+        );
+        let error = directory
+            .replace_crystallized_domain(&domain, &[], &[], &EntryDirectoryCheckSettings::default())
+            .unwrap_err();
+
+        assert!(
+            matches!(error, EntryDirectoryError::UnmanagedCrystallizedPath(path) if path.ends_with("core/local.md"))
+        );
+    }
+
+    #[test]
+    fn melt_preserves_managed_frozen_reason() {
+        let temp = tempfile::tempdir().unwrap();
+        write_entry(
+            temp.path(),
+            "core/design.md",
+            "\
+---
+name: Design
+desc: Managed upstream entry.
+frozen:
+  - reviewed
+  - managed
+---
+
+Body.
+",
+        );
+        let directory = entry_directory(temp.path());
+        directory.melt_entry(&EntryAddress::new("core.design").unwrap()).unwrap();
+
+        let source = fs::read_to_string(temp.path().join("core/design.md")).unwrap();
+        assert!(!source.contains("reviewed"));
+        assert!(source.contains("  - managed"));
+        let entry = directory.read_entry(&EntryAddress::new("core.design").unwrap()).unwrap();
+        assert!(entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()));
+    }
 
     #[test]
     fn checks_clean_markdown_entry_directory() {
@@ -2965,7 +3248,7 @@ Body.
             .unwrap();
         let source = fs::read_to_string(&path).unwrap();
 
-        assert!(source.contains("frozen:\n"));
+        assert!(source.contains("frozen:\n  - reviewed\n"));
         assert_path_readonly(&path);
     }
 
@@ -3005,6 +3288,7 @@ Body.
 name: Alpha
 desc: Alpha entry.
 frozen:
+  - reviewed
 ---
 
 Body.
@@ -3032,6 +3316,7 @@ Body.
 name: Alpha
 desc: Alpha entry.
 frozen:
+  - reviewed
 kind:
   - beta
 ---
@@ -3187,7 +3472,7 @@ Body.
             .unwrap();
         let source = fs::read_to_string(&path).unwrap();
 
-        assert!(source.contains("frozen:\n"));
+        assert!(source.contains("frozen:\n  - reviewed\n"));
         assert_path_writable(&path);
         assert!(report.paths().contains(&path));
     }

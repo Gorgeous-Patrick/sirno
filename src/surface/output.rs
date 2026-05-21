@@ -15,7 +15,10 @@ use crate::surface::dto::{
     StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
 };
 use crate::surface::error::CommandError;
-use crate::{Entry, EntryDirectoryError, EntryDirectoryReport, WitnessRecord};
+use crate::{
+    Entry, EntryDirectoryError, EntryDirectoryReport, UpstreamCrystallizeReport,
+    UpstreamStatusReport, UpstreamStatusState, WitnessRecord,
+};
 
 /// Render any serializable value as pretty JSON.
 pub fn format_json<T: Serialize + ?Sized>(value: &T) -> Result<String, CommandError> {
@@ -174,6 +177,58 @@ pub(crate) fn diagnostics_from_entry_report(
 
 pub(crate) fn print_status_result(result: &StatusResult) {
     anstream::print!("{}", format_status_result_with_style(result, OutputStyle::Styled));
+}
+
+pub(crate) fn print_upstream_crystallize_report(result: &UpstreamCrystallizeReport) {
+    anstream::println!("{}", result.message);
+    for path in &result.changed_paths {
+        anstream::println!("{path}");
+    }
+}
+
+pub(crate) fn print_upstream_status_report(result: &UpstreamStatusReport) {
+    anstream::print!("{}", format_upstream_status_report_with_style(result, OutputStyle::Styled));
+}
+
+fn format_upstream_status_report_with_style(
+    result: &UpstreamStatusReport, style: OutputStyle,
+) -> String {
+    if result.upstreams.is_empty() {
+        return format!("{}\n", result.message);
+    }
+
+    let rows = result
+        .upstreams
+        .iter()
+        .map(|upstream| {
+            vec![
+                upstream.domain.clone(),
+                upstream_status_state_label(upstream.state).to_owned(),
+                upstream.commit.clone().unwrap_or_default(),
+                upstream.git.clone(),
+            ]
+        })
+        .collect::<Vec<_>>();
+    let mut output = format_human_table_with_width_and_style(
+        vec!["domain".to_owned(), "state".to_owned(), "commit".to_owned(), "git".to_owned()],
+        rows,
+        None,
+        style,
+    );
+    output.push_str(&result.message);
+    output.push('\n');
+    output
+}
+
+fn upstream_status_state_label(state: UpstreamStatusState) -> &'static str {
+    match state {
+        | UpstreamStatusState::Ok => "ok",
+        | UpstreamStatusState::MissingLock => "missing-lock",
+        | UpstreamStatusState::StaleLock => "stale-lock",
+        | UpstreamStatusState::MissingCache => "missing-cache",
+        | UpstreamStatusState::MissingCrystallization => "missing-crystallization",
+        | UpstreamStatusState::MaterializationDrift => "materialization-drift",
+    }
 }
 
 #[cfg(test)]
@@ -617,7 +672,14 @@ fn semantic_table_cell_style(header: &str, value: &str) -> Option<SemanticStyle>
 fn semantic_status_style(value: &str) -> Option<SemanticStyle> {
     match value {
         | "ok" | "resolved" | "unchanged" => Some(SemanticStyle::Success),
-        | "drifted" | "missing" | "open" => Some(SemanticStyle::Warning),
+        | "drifted"
+        | "materialization-drift"
+        | "missing"
+        | "missing-cache"
+        | "missing-crystallization"
+        | "missing-lock"
+        | "open"
+        | "stale-lock" => Some(SemanticStyle::Warning),
         | "linked" | "wrote" => Some(SemanticStyle::Changed),
         | _ => None,
     }

@@ -1,6 +1,6 @@
 ---
 name: Sirno Lock
-desc: The TOML file that records the frost state of the lake.
+desc: The TOML file that records generated project state.
 category:
   - concept
 belongs:
@@ -9,11 +9,12 @@ prerequisite:
   - sirno-frost
 ---
 
-`Sirno.lock.toml` records the lake's state relative to the configured *frost* path.
+`Sirno.lock.toml` records generated project state.
 It is TOML and lives next to `Sirno.toml`.
-It is written only when frost is configured.
+It is written when frost or upstream lakes are configured.
 
-The lock contains one `[frost]` table.
+When frost is configured,
+the lock contains one `[frost]` table.
 `status = "current"` means the lake represents the current editable *frost* version.
 `status = "checked-out"` means the lake materializes a selected frozen version.
 `sirno checkout --latest` records `status = "current"` and leaves files writable.
@@ -22,6 +23,14 @@ The `generation` and `version` fields store the `eter` `SnapshotRef` for that st
 Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
 and renaming it into place.
 A failed write leaves the previous complete lock as the public state.
+
+When upstream lakes are configured,
+the lock contains `[upstreams.DOMAIN]` tables.
+Each table copies the upstream request fields from `Sirno.toml`,
+stores the upstream project path and configured lake path,
+and records `commit` as the exact Git object crystallized into the current lake.
+Branch and tag upstreams stay pinned to that commit until explicit update.
+Commit-pinned upstreams already name their resolved commit.
 
 When a *tide* is active,
 the lock may also contain explicit tide resolutions.
@@ -42,7 +51,8 @@ and records `mutable = true`.
 Committing a mutable *lake* writes a new current *frost* version
 and rewrites the lock to `status = "current"`.
 Sirno refuses to commit an immutable checkout.
-Successful commits clear tide resolutions.
+Successful commits clear tide resolutions
+and preserve upstream lock records.
 
 ---
 

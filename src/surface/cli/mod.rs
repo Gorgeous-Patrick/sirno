@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
 
-use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
+use clap::{ArgGroup, Args, CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::{Shell, generate};
 use serde::Deserialize;
 use thiserror::Error;
@@ -26,7 +26,8 @@ use crate::surface::dto::{
     EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
     PathSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
     SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    UpstreamCrystallizeRequest,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -34,14 +35,15 @@ use crate::surface::output::{
     format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
     print_check_diagnostic, print_check_summary, print_cli_error, print_config_comment_result,
     print_entry_directory_report, print_json, print_lake_check_result, print_ok_path,
-    print_query_results, print_render_result, print_status_result, print_witness_records,
+    print_query_results, print_render_result, print_status_result,
+    print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
-    CheckMode, EntryAddress, EntryAddressError, SirnoConfig, SirnoFrost, TideSource, TideStatus,
-    TideWorkitem, TideWorkitemParseError,
+    CheckMode, EntryAddress, EntryAddressError, EntryAtom, SirnoConfig, SirnoFrost, TideSource,
+    TideStatus, TideWorkitem, TideWorkitemParseError, UpstreamSettings,
 };
 
 #[cfg(test)]
@@ -132,6 +134,12 @@ enum Command {
         /// Frost command.
         #[command(subcommand)]
         command: FrostCommand,
+    },
+    /// Manage Git-backed upstream lakes.
+    Upstream {
+        /// Upstream command.
+        #[command(subcommand)]
+        command: UpstreamCommand,
     },
     /// Manage dependency review worklists for lake edits.
     // sirno:witness:tide-commands:begin
@@ -528,6 +536,79 @@ enum FrostCommand {
     Snapshot(TopLevelFrostCommand),
 }
 
+/// Supported upstream lake commands.
+#[derive(Debug, Subcommand)]
+enum UpstreamCommand {
+    /// Add or replace one Git-backed upstream and crystallize it.
+    Add(UpstreamAddArgs),
+    /// Remove one upstream declaration and its crystallized content.
+    Remove {
+        /// Upstream domain.
+        #[arg(value_name = "DOMAIN")]
+        domain: String,
+    },
+    /// Crystallize configured upstream lakes into the current lake.
+    Crystallize {
+        /// Upstream domain. Omit to crystallize every upstream.
+        #[arg(value_name = "DOMAIN")]
+        domain: Option<String>,
+        /// Use only existing lock records and cache mirrors.
+        #[arg(long)]
+        locked: bool,
+    },
+    /// Refresh upstream locks and crystallized content.
+    Update {
+        /// Upstream domain. Omit to update every upstream.
+        #[arg(value_name = "DOMAIN")]
+        domain: Option<String>,
+    },
+    /// Show upstream lock and cache status.
+    Status {
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<UpstreamOutputFormat>,
+    },
+}
+
+/// Arguments for adding or replacing one upstream lake declaration.
+#[derive(Debug, Args)]
+#[command(group(
+    ArgGroup::new("selector")
+        .required(true)
+        .multiple(false)
+        .args(["branch", "tag", "rev"])
+))]
+struct UpstreamAddArgs {
+    /// Upstream domain used as the crystallized entry-address prefix.
+    #[arg(value_name = "DOMAIN")]
+    domain: String,
+    /// Git URI or local Git repository source accepted by Git.
+    #[arg(long = "git", value_name = "SOURCE")]
+    git: String,
+    /// Branch name to resolve.
+    #[arg(long)]
+    branch: Option<String>,
+    /// Tag name to resolve.
+    #[arg(long)]
+    tag: Option<String>,
+    /// Commit-ish to resolve.
+    #[arg(long)]
+    rev: Option<String>,
+    /// Directory inside the Git tree containing `Sirno.toml`.
+    #[arg(long)]
+    project: Option<PathBuf>,
+}
+
+/// CLI upstream output renderer.
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
+enum UpstreamOutputFormat {
+    /// Print JSON for machine-oriented callers.
+    Json,
+    /// Print terminal-oriented human text.
+    #[default]
+    Human,
+}
+
 /// Supported top-level frost commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelFrostCommand {
@@ -850,6 +931,12 @@ impl Cli {
                 command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
             }
             | Command::Frost { command } => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                command.run(&config_path, lake_path.as_deref())
+            }
+            | Command::Upstream { command } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
@@ -1536,6 +1623,73 @@ impl FrostMoveArgs {
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
+}
+
+impl UpstreamCommand {
+    fn run(
+        self, config_path: &std::path::Path, lake_path: Option<&Path>,
+    ) -> Result<ExitCode, CommandError> {
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
+        match self {
+            | Self::Add(args) => {
+                let result = context.upstream_add(args.into_request()?)?;
+                print_upstream_crystallize_report(&result);
+                Ok(ExitCode::SUCCESS)
+            }
+            | Self::Remove { domain } => {
+                let result = context.upstream_remove(entry_atom(&domain)?)?;
+                print_upstream_crystallize_report(&result);
+                Ok(ExitCode::SUCCESS)
+            }
+            | Self::Crystallize { domain, locked } => {
+                let result = context.upstream_crystallize(UpstreamCrystallizeRequest {
+                    domains: upstream_domains(domain)?,
+                    locked,
+                })?;
+                print_upstream_crystallize_report(&result);
+                Ok(ExitCode::SUCCESS)
+            }
+            | Self::Update { domain } => {
+                let result = context.upstream_update(upstream_domains(domain)?)?;
+                print_upstream_crystallize_report(&result);
+                Ok(ExitCode::SUCCESS)
+            }
+            | Self::Status { format } => {
+                let result = context.upstream_status()?;
+                match format.unwrap_or_default() {
+                    | UpstreamOutputFormat::Json => print_json(&result)?,
+                    | UpstreamOutputFormat::Human => print_upstream_status_report(&result),
+                }
+                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+            }
+        }
+    }
+}
+
+impl UpstreamAddArgs {
+    fn into_request(self) -> Result<UpstreamAddRequest, CommandError> {
+        let mut settings = if let Some(branch) = self.branch {
+            UpstreamSettings::branch(self.git, branch)
+        } else if let Some(tag) = self.tag {
+            UpstreamSettings::tag(self.git, tag)
+        } else if let Some(rev) = self.rev {
+            UpstreamSettings::rev(self.git, rev)
+        } else {
+            unreachable!("clap requires one upstream selector")
+        };
+        if let Some(project) = self.project {
+            settings.project = project;
+        }
+        Ok(UpstreamAddRequest { domain: entry_atom(&self.domain)?, settings })
+    }
+}
+
+fn upstream_domains(domain: Option<String>) -> Result<Vec<EntryAtom>, CommandError> {
+    domain.map(|domain| entry_atom(&domain)).transpose().map(|domain| domain.into_iter().collect())
+}
+
+fn entry_atom(raw: &str) -> Result<EntryAtom, CommandError> {
+    Ok(EntryAtom::new(raw)?)
 }
 
 impl TideCommand {

@@ -72,6 +72,17 @@ unreachable from the latest frost snapshot.
 It updates the stored GC generation
 and requires the lake to be the current mutable frostline.
 
+`sirno upstream add DOMAIN --git SOURCE (--branch NAME | --tag NAME | --rev COMMIT)`
+declares a Git-backed upstream lake and crystallizes it.
+`--project PATH` selects a directory inside the Git tree that contains `Sirno.toml`.
+`sirno upstream remove DOMAIN` removes the declaration and managed crystallized content.
+`sirno upstream crystallize [DOMAIN] [--locked]` materializes upstreams into the lake.
+`--locked` uses only existing lock records and cache mirrors.
+`sirno upstream update [DOMAIN]` refreshes upstream locks and materialized content.
+`sirno upstream status` reports missing locks, stale locks, cache misses,
+missing crystallization,
+and materialization drift.
+
 `sirno check` checks the active lake.
 The `-m, --mode` option selects the check boundary.
 

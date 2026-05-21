@@ -4,7 +4,7 @@ desc: One dot-free segment in an entry address.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - entry-address-resolution
 prerequisite:
   - entry
 ---
@@ -28,7 +28,7 @@ That style is easy to type, quote, link, and compare across tools.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [entry-address-resolution](entry-address-resolution.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

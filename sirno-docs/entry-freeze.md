@@ -13,12 +13,15 @@ prerequisite:
 
 An *entry freeze* is an explicit protection state for one lake Markdown *entry*
 that already matches the current frost snapshot.
-The metadata marker is canonical `frozen:` with no value.
+The metadata field is canonical `frozen:` with a non-empty list of reasons.
+`reviewed` is the reason written by manual frost-backed freeze.
+`managed` is the reason written by crystallization.
 
 `sirno freeze ENTRY_ADDRESS` verifies that the lake *entry* matches current frost,
-adds the marker,
+adds `reviewed`,
 and applies local file protection to the *entry* file and artifact tree.
-`sirno melt ENTRY_ADDRESS` removes the marker and clears that local protection.
+`sirno melt ENTRY_ADDRESS` removes `reviewed`.
+It clears local protection only when no other frozen reason remains.
 `sirno unfreeze ENTRY_ADDRESS` is an alias for `sirno melt ENTRY_ADDRESS`.
 The command pair is the supported way to change the state.
 
@@ -36,14 +39,14 @@ from the active lake.
 It does not remove `frozen:` markers, change lock state, or delete files.
 It prints a danger warning and the selected paths.
 Use it when protected files must become writable or deletable for external cleanup.
-`sirno freeze --fix-all` reapplies local protection from `frozen:` markers
+`sirno freeze --fix-all` reapplies local protection from `frozen:` reasons
 and immutable frost checkout state.
 `--dry-run` reports the selected paths without changing permissions.
 
 A frozen *entry* remains visible in the lake for reading, checking, and querying.
 The frost layer accepts a frozen *entry* only while its committed form still matches
 the current frost snapshot.
-Generated-link regions and the `frozen:` marker are ignored for this comparison.
+Generated-link regions and the `frozen:` field are ignored for this comparison.
 If the frozen *entry* differs,
 the frost layer refuses the commit.
 Melt the *entry* before intentionally changing it.
@@ -53,6 +56,11 @@ Sirno always removes ordinary write permission from protected files and director
 When the platform and process allow it,
 Sirno also applies the stronger immutable file guard.
 The frost comparison remains the authoritative protection against committing drift.
+
+Crystallized entries are frozen because they carry `managed`.
+They may also carry `reviewed` when the upstream entry was reviewed.
+Normal melt removes only `reviewed`;
+crystallization owns adding and removing `managed`.
 
 ---
 

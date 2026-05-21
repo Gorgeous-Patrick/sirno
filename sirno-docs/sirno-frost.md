@@ -71,9 +71,9 @@ It runs only while the lake is the current mutable frostline.
 A *frost* commit imports the selected lake *entry* set and its lake-owned artifacts.
 The lake directory must pass review-mode checks before any snapshot is written.
 The active *tide* must also be clear before any snapshot is written.
-Entries carrying `frozen:` are protected lake files
+Entries carrying the `reviewed` frozen reason are protected lake files
 that must still match the current frost snapshot with their artifact trees.
-The frost layer accepts unchanged frozen entries and artifacts,
+The frost layer accepts unchanged reviewed entries and artifacts,
 and refuses a frozen entry bundle that differs from that snapshot.
 Sirno strips generated-link regions from committed bodies,
 because *generated footers* are lake projections.
@@ -136,7 +136,8 @@ flowchart LR
 
 ## Lock State
 
-`Sirno.lock.toml` records the lake state relative to *frost*.
+`Sirno.lock.toml` records the lake state relative to *frost*
+and may also record upstream crystallization state.
 `status = "current"` means the lake is the editable current version.
 `status = "checked-out"` means the lake materializes a selected frozen version.
 The lock stores the snapshot generation and version,

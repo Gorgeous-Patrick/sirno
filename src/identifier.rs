@@ -209,6 +209,21 @@ impl EntryAddress {
             .expect("entry address segment is valid")
     }
 
+    /// Return this address under a domain prefix.
+    pub fn under_domain(&self, domain: &EntryAtom) -> Self {
+        Self::new(format!("{}.{}", domain.as_str(), self.as_str()))
+            .expect("domain and entry address compose into a valid entry address")
+    }
+
+    /// Return true when this address begins with a domain atom.
+    pub fn starts_with_domain(&self, domain: &EntryAtom) -> bool {
+        self.as_str() == domain.as_str()
+            || self
+                .as_str()
+                .strip_prefix(domain.as_str())
+                .is_some_and(|suffix| suffix.starts_with('.'))
+    }
+
     /// Convert this address into a lake-root-relative Markdown file path.
     pub fn to_lake_relative_path(&self) -> PathBuf {
         let mut path = PathBuf::new();

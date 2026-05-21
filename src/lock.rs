@@ -1,7 +1,7 @@
-//! Project-local lock state for frost.
+//! Project-local lock state for frost, upstream lakes, and tide.
 //!
 //! `Sirno.toml` configures paths and policy.
-//! `Sirno.lock.toml` records the frost snapshot reference represented by the lake.
+//! `Sirno.lock.toml` records generated project state represented by the lake.
 
 use std::ffi::{OsStr, OsString};
 use std::fs::{self, OpenOptions};
@@ -10,10 +10,13 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use eter::{Eterator, GcGeneration, SnapshotRef};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
 
+use crate::config::UpstreamSettings;
+use crate::identifier::EntryAtom;
 use crate::tide::TideResolution;
 
 /// Canonical Sirno project lock filename.
@@ -25,34 +28,49 @@ const LOCK_FILE_HEADER: &str = "\
 
 ";
 
-/// Project-local frost state.
+/// Project-local generated state.
 ///
-/// Invariant: `frost.generation` and `frost.version` name the `eter` snapshot represented
-/// by the lake.
+/// Invariant: when `frost` is present,
+/// `frost.generation` and `frost.version` name the `eter` snapshot represented by the lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:sirno-lock:begin
 pub struct SirnoLock {
     /// Current lake state relative to frost.
-    pub frost: FrostLock,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub frost: Option<FrostLock>,
+    /// Resolved upstream lake commits.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub upstreams: UpstreamLockMap,
     /// Explicit dependency review resolutions for the current lake edit session.
     #[serde(default, skip_serializing_if = "TideLock::is_empty")]
     pub tide: TideLock,
 }
 // sirno:witness:sirno-lock:end
 
+/// Ordered upstream lock records keyed by upstream domain.
+pub type UpstreamLockMap = IndexMap<EntryAtom, UpstreamLock>;
+
 impl SirnoLock {
     /// Construct a lock for the current editable lake.
     // sirno:witness:sirno-lock:begin
     pub fn current(snapshot: SnapshotRef) -> Self {
-        Self { frost: FrostLock::current(snapshot), tide: TideLock::default() }
+        Self {
+            frost: Some(FrostLock::current(snapshot)),
+            upstreams: UpstreamLockMap::new(),
+            tide: TideLock::default(),
+        }
     }
     // sirno:witness:sirno-lock:end
 
     /// Construct a lock for a checked-out frost snapshot.
     // sirno:witness:sirno-lock:begin
     pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
-        Self { frost: FrostLock::checked_out(snapshot, mutable), tide: TideLock::default() }
+        Self {
+            frost: Some(FrostLock::checked_out(snapshot, mutable)),
+            upstreams: UpstreamLockMap::new(),
+            tide: TideLock::default(),
+        }
     }
     // sirno:witness:sirno-lock:end
 
@@ -123,7 +141,16 @@ impl SirnoLock {
 
     // sirno:witness:sirno-lock:begin
     fn validate(&self) -> Result<(), LockError> {
-        self.frost.validate()
+        if let Some(frost) = &self.frost {
+            frost.validate()?;
+        }
+        if self.frost.is_none() && !self.tide.is_empty() {
+            return Err(LockError::TideWithoutFrost);
+        }
+        for (domain, upstream) in &self.upstreams {
+            upstream.validate(domain)?;
+        }
+        Ok(())
     }
 
     fn to_toml(&self) -> Result<String, LockError> {
@@ -146,6 +173,78 @@ impl SirnoLock {
         parent.join(temporary_name)
     }
     // sirno:witness:sirno-lock:end
+}
+
+impl Default for SirnoLock {
+    fn default() -> Self {
+        Self { frost: None, upstreams: UpstreamLockMap::new(), tide: TideLock::default() }
+    }
+}
+
+/// Resolved upstream state recorded in `Sirno.lock.toml`.
+///
+/// Invariant: `commit` is a non-empty Git commit id.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpstreamLock {
+    /// Git source copied from `Sirno.toml`.
+    pub git: String,
+    /// Branch copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    /// Tag copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    /// Commit-ish copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+    /// Directory inside the Git tree containing `Sirno.toml`.
+    pub project: PathBuf,
+    /// Lake path read from the upstream project's `Sirno.toml`.
+    pub lake: PathBuf,
+    /// Exact Git commit crystallized into the lake.
+    pub commit: String,
+}
+
+impl UpstreamLock {
+    /// Construct a lock record from config and a resolved commit.
+    pub fn new(settings: &UpstreamSettings, lake: PathBuf, commit: impl Into<String>) -> Self {
+        Self {
+            git: settings.git.clone(),
+            branch: settings.branch.clone(),
+            tag: settings.tag.clone(),
+            rev: settings.rev.clone(),
+            project: settings.project.clone(),
+            lake,
+            commit: commit.into(),
+        }
+    }
+
+    /// Return whether this lock still corresponds to a config declaration.
+    pub fn matches_settings(&self, settings: &UpstreamSettings) -> bool {
+        self.git == settings.git
+            && self.branch == settings.branch
+            && self.tag == settings.tag
+            && self.rev == settings.rev
+            && self.project == settings.project
+    }
+
+    fn validate(&self, domain: &EntryAtom) -> Result<(), LockError> {
+        if self.git.trim().is_empty() {
+            return Err(LockError::UpstreamGitSource(domain.clone()));
+        }
+        if self.commit.trim().is_empty() {
+            return Err(LockError::UpstreamCommit(domain.clone()));
+        }
+        let ref_count = [self.branch.as_ref(), self.tag.as_ref(), self.rev.as_ref()]
+            .into_iter()
+            .flatten()
+            .count();
+        if ref_count != 1 {
+            return Err(LockError::UpstreamRefSelector(domain.clone()));
+        }
+        Ok(())
+    }
 }
 
 /// Tide state recorded in `Sirno.lock.toml`.
@@ -292,6 +391,18 @@ pub enum LockError {
     /// Current lake state must be editable.
     #[error("current frost state cannot be marked mutable")]
     CurrentMutable,
+    /// Tide state requires frost state.
+    #[error("tide lock state requires frost state")]
+    TideWithoutFrost,
+    /// An upstream Git source is empty.
+    #[error("locked upstream `{0}` git source must not be empty")]
+    UpstreamGitSource(EntryAtom),
+    /// An upstream must have exactly one ref selector.
+    #[error("locked upstream `{0}` must configure exactly one of branch, tag, or rev")]
+    UpstreamRefSelector(EntryAtom),
+    /// An upstream commit is empty.
+    #[error("locked upstream `{0}` commit must not be empty")]
+    UpstreamCommit(EntryAtom),
     /// The temporary lock file could not be created.
     #[error("failed to create temporary lock file {path}")]
     CreateTemporary {
@@ -371,6 +482,28 @@ version = 3
 mutable = true
 "
         );
+    }
+
+    #[test]
+    fn renders_upstream_lock_without_frost() {
+        let settings = UpstreamSettings::branch("../core.git", "main");
+        let lock = SirnoLock {
+            frost: None,
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "0123456789abcdef"),
+            )]),
+            tide: TideLock::default(),
+        };
+        let rendered = lock.to_toml().unwrap();
+        let read: SirnoLock = toml::from_str(&rendered).unwrap();
+
+        assert_eq!(read, lock);
+        assert!(rendered.contains("[upstreams.core]"));
+        assert!(rendered.contains("git = \"../core.git\""));
+        assert!(rendered.contains("branch = \"main\""));
+        assert!(rendered.contains("lake = \"docs\""));
+        assert!(rendered.contains("commit = \"0123456789abcdef\""));
     }
 
     #[test]

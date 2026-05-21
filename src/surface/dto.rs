@@ -14,8 +14,9 @@ use crate::surface::output::{
     format_query_json, query_result_records,
 };
 use crate::{
-    CheckMode, EntryAddress, EntryAddressError, EntryDirectoryReport, EntryStructuralMatcher,
-    GenLinkDirectoryReport, StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, WitnessRecord,
+    CheckMode, EntryAddress, EntryAddressError, EntryAtom, EntryDirectoryReport,
+    EntryStructuralMatcher, GenLinkDirectoryReport, StructuralEdgeSettings, Tide, TideStatus,
+    TideWorkitem, UpstreamSettings, WitnessRecord,
 };
 
 /// Shared human-or-JSON output renderer.
@@ -80,6 +81,24 @@ pub struct ConfigCommentResult {
     pub missing_comments: Vec<String>,
     /// Human-readable summary.
     pub message: String,
+}
+
+/// Request to add or replace one upstream declaration.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpstreamAddRequest {
+    /// Upstream domain.
+    pub domain: EntryAtom,
+    /// Upstream settings to write.
+    pub settings: UpstreamSettings,
+}
+
+/// Request to crystallize or update upstream domains.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct UpstreamCrystallizeRequest {
+    /// Selected domains. Empty means every upstream.
+    pub domains: Vec<EntryAtom>,
+    /// Use only the existing lock state and cache.
+    pub locked: bool,
 }
 
 /// Query output column list.

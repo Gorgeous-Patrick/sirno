@@ -77,9 +77,9 @@ Body.
 fn assert_mutable_current_frost_lake(root: &Path, docs: &Path) {
     let lock = SirnoLock::from_file(root.join(LOCK_FILE_NAME)).unwrap();
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert_eq!(lock.frost.status, FrostLockStatus::Current);
-    assert_eq!(lock.frost.version, 1);
-    assert!(!lock.frost.mutable);
+    assert_eq!(lock.frost.as_ref().unwrap().status, FrostLockStatus::Current);
+    assert_eq!(lock.frost.as_ref().unwrap().version, 1);
+    assert!(!lock.frost.as_ref().unwrap().mutable);
     assert!(!source.contains("read-only Sirno Frost checkout"));
     assert!(!fs::metadata(docs).unwrap().permissions().readonly());
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
@@ -103,8 +103,8 @@ fn top_level_init_initializes_lake_and_frost() {
     assert!(repo.join("alpha-project-lake").join("concept.md").exists());
     assert!(repo.join("alpha-project-frost").join("Eter.lock.toml").exists());
     assert!(repo.join(".agents").join("skills").join("sirno-editor").join("SKILL.md").exists());
-    assert_eq!(lock.frost.status, FrostLockStatus::Current);
-    assert_eq!(lock.frost.version, Eterator::EMPTY.version());
+    assert_eq!(lock.frost.as_ref().unwrap().status, FrostLockStatus::Current);
+    assert_eq!(lock.frost.as_ref().unwrap().version, Eterator::EMPTY.version());
 }
 
 #[test]
@@ -964,8 +964,8 @@ Body.
     frost_paths.sort();
 
     assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("frost-project-frost") }));
-    assert_eq!(lock.frost.status, FrostLockStatus::Current);
-    assert_eq!(lock.frost.version, Eterator::EMPTY.version());
+    assert_eq!(lock.frost.as_ref().unwrap().status, FrostLockStatus::Current);
+    assert_eq!(lock.frost.as_ref().unwrap().version, Eterator::EMPTY.version());
     assert_eq!(frost.current_version().unwrap(), Eterator::EMPTY);
     assert!(frost.read_all_entries().unwrap().is_empty());
     assert_eq!(frost_paths, [OsString::from("Eter.lock.toml")]);
@@ -1026,9 +1026,9 @@ Changed body.
 
     assert!(after.generation > before.generation);
     assert_eq!(after.version(), 2);
-    assert_eq!(lock.frost.status, FrostLockStatus::Current);
-    assert_eq!(lock.frost.generation, after.generation.number());
-    assert_eq!(lock.frost.version, after.version());
+    assert_eq!(lock.frost.as_ref().unwrap().status, FrostLockStatus::Current);
+    assert_eq!(lock.frost.as_ref().unwrap().generation, after.generation.number());
+    assert_eq!(lock.frost.as_ref().unwrap().version, after.version());
     assert_eq!(read.body, "Changed body.\n");
 }
 
@@ -1157,7 +1157,7 @@ Changed body.
         .unwrap();
     let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
     assert!(lock.tide.resolved.is_empty());
-    assert_eq!(lock.frost.version, 2);
+    assert_eq!(lock.frost.as_ref().unwrap().version, 2);
 }
 
 #[test]
@@ -3282,14 +3282,14 @@ Body.
         .run()
         .unwrap();
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(source.contains("frozen:\n"));
+    assert!(source.contains("frozen:\n  - reviewed\n"));
     assert!(fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 
     Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "melt", "alpha"])
         .run()
         .unwrap();
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(!source.contains("frozen:\n"));
+    assert!(!source.contains("frozen:\n  - reviewed\n"));
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 }
 
@@ -3325,7 +3325,7 @@ Body.
         .unwrap();
 
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(source.contains("frozen:\n"));
+    assert!(source.contains("frozen:\n  - reviewed\n"));
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 
     Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "--fix-all"])

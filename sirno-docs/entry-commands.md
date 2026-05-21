@@ -49,10 +49,10 @@ The grouped forms live under `sirno entry artifact`.
 Artifact mutation commands refuse to change artifacts owned by a frozen entry.
 
 `sirno freeze ENTRY_ADDRESS` verifies that one lake entry matches current frost,
-adds `frozen:`,
+adds the `reviewed` frozen reason,
 and applies local file protection to that file and its artifact tree.
-`sirno melt ENTRY_ADDRESS` removes `frozen:` from one lake entry
-and clears local file protection from its file and artifact tree.
+`sirno melt ENTRY_ADDRESS` removes the `reviewed` frozen reason.
+It clears local file protection only when no other frozen reason remains.
 `sirno unfreeze ENTRY_ADDRESS` is an alias for `sirno melt ENTRY_ADDRESS`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
 They accept the same direct-entry and TUI spellings.
@@ -63,7 +63,7 @@ open one terminal UI for selected-entry freeze and melt work.
 `sirno melt --unsafe-all` clears all Sirno local protection in the active lake
 without editing metadata or deleting files.
 It prints a danger warning and the selected paths.
-`sirno freeze --fix-all` reapplies local protection from `frozen:` markers
+`sirno freeze --fix-all` reapplies local protection from `frozen:` reasons
 and immutable frost checkout state.
 `--dry-run` reports selected paths for either all-project operation.
 

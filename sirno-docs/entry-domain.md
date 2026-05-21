@@ -4,7 +4,7 @@ desc: An entry atom prefix that maps to a lake folder.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - entry-address-resolution
 prerequisite:
   - entry-atom
   - sirno-lake
@@ -39,7 +39,7 @@ or making a composed lake easier to navigate.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [entry-address-resolution](entry-address-resolution.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

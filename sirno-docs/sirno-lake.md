@@ -51,6 +51,11 @@ to the resolved top-level entries.
 That model resolves diamond dependencies without making dependency versioning part
 of the entry naming syntax.
 
+*Sirno Upstream* is the subsystem for declaring *upstream lakes*
+and crystallizing them into the current lake as managed frozen content.
+A *lake system* is the current project plus its declared *upstream lakes*.
+The *lake sheaf* remains the resolved composition model for the addressable view.
+
 The `.artifacts` directory is reserved for lake-owned *entry artifacts*.
 It is a built-in `.<id>` path, not a project-defined *entry domain*.
 Artifacts live under `.artifacts/<entry-address>/...`.
@@ -65,9 +70,10 @@ but it also participates in a larger graph through metadata.
 The graph is intentionally small:
 classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
-The `frozen:` marker adds a file-level protection state,
-so one current frost-backed lake *entry* can be held read-only
-and checked with its artifact tree against the frost snapshot before commit.
+The `frozen:` field stores protection reasons.
+`reviewed` protects a current frost-backed lake *entry*
+and checks it with its artifact tree against the frost snapshot before commit.
+`managed` protects content owned by crystallization.
 
 The *lake* is also a collaboration boundary.
 A person can edit an *entry* directly.
@@ -103,14 +109,11 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
-  - [entry-address](entry-address.md)
-  - [entry-atom](entry-atom.md)
-  - [entry-domain](entry-domain.md)
-  - [lake-sheaf](lake-sheaf.md)
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)
   - [sirno-tide](sirno-tide.md)
+  - [sirno-upstream](sirno-upstream.md)
   - [structural-check](structural-check.md)
 
 > **Sirno generated links end.**

@@ -4,7 +4,7 @@ desc: A dot-separated lookup form that resolves to an entry.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - entry-address-resolution
 prerequisite:
   - entry
   - entry-atom
@@ -38,7 +38,7 @@ while leaving room for nested domains and external dependency domains.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [entry-address-resolution](entry-address-resolution.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

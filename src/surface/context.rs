@@ -20,7 +20,8 @@ use crate::surface::dto::{
     StatusCommitState, StatusFrost, StatusFrostState, StatusResult, StatusTide,
     StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
     StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    TideStatusResult, WitnessRecordResult, WitnessResult,
+    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
+    WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
@@ -31,8 +32,8 @@ use crate::{
     CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath, EntryDirectory,
     EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryMetadata,
     EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig, SirnoFrost, SirnoLock,
-    StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery, WitnessCheckSettings,
-    WitnessRecord,
+    StructuralSettings, Tide, TideStatus, TutorialSettings, UpstreamCrystallizeReport,
+    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -81,17 +82,24 @@ const CLAUDE_SKILL_ROOT: &str = ".claude/skills";
 pub struct SurfaceContext {
     config_path: PathBuf,
     lake_path: Option<PathBuf>,
+    upstream_store_path: Option<PathBuf>,
 }
 
 impl SurfaceContext {
     /// Create a context rooted at one Sirno config path.
     pub fn new(config_path: impl Into<PathBuf>) -> Self {
-        Self { config_path: config_path.into(), lake_path: None }
+        Self { config_path: config_path.into(), lake_path: None, upstream_store_path: None }
     }
 
     /// Override the Sirno Lake path used by lake-backed operations.
     pub fn with_lake_path(mut self, lake_path: impl Into<PathBuf>) -> Self {
         self.lake_path = Some(lake_path.into());
+        self
+    }
+
+    /// Override the upstream Git cache root.
+    pub fn with_upstream_store_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.upstream_store_path = Some(path.into());
         self
     }
 
@@ -400,7 +408,9 @@ impl SurfaceContext {
         let lock_path = SirnoLock::path_for_config(&self.config_path);
         let protect_checkout = config.resolve_frost(&self.config_path).is_some()
             && SirnoLock::from_file_if_exists(lock_path)?.is_some_and(|lock| {
-                lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout()
+                lock.frost.as_ref().is_some_and(|frost| {
+                    frost.is_checked_out() && !frost.is_unsafe_mutable_checkout()
+                })
             });
         let report = EntryDirectory::new(&lake).fix_local_protection(
             &settings,
@@ -473,6 +483,111 @@ impl SurfaceContext {
                 format!("found {} witness records for {id}", records.len())
             },
         })
+    }
+
+    /// Add or replace one upstream and crystallize it.
+    pub fn upstream_add(
+        &self, request: UpstreamAddRequest,
+    ) -> Result<UpstreamCrystallizeReport, CommandError> {
+        let mut config = SirnoConfig::from_file(&self.config_path)?;
+        config.upstreams.insert(request.domain.clone(), request.settings);
+        config.validate_for_file(&self.config_path)?;
+        config.write(&self.config_path)?;
+        self.upstream_crystallize(UpstreamCrystallizeRequest {
+            domains: vec![request.domain],
+            locked: false,
+        })
+    }
+
+    /// Remove one upstream declaration and its crystallized domain.
+    pub fn upstream_remove(
+        &self, domain: crate::EntryAtom,
+    ) -> Result<UpstreamCrystallizeReport, CommandError> {
+        let mut config = SirnoConfig::from_file(&self.config_path)?;
+        if config.remove_upstream(&domain).is_none() {
+            return Err(crate::UpstreamError::UnknownDomain(domain).into());
+        }
+        config.write(&self.config_path)?;
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.witness = None;
+        let lake = EntryDirectory::new(resolve_lake_path(
+            self.lake_path.as_deref(),
+            &self.config_path,
+            &config,
+        ));
+        let report = lake.replace_crystallized_domain(&domain, &[], &[], &settings)?;
+        let mut lock =
+            SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?
+                .unwrap_or_default();
+        lock.upstreams.shift_remove(&domain);
+        lock.write(SirnoLock::path_for_config(&self.config_path))?;
+        Ok(UpstreamCrystallizeReport {
+            ok: true,
+            domains: vec![domain.to_string()],
+            changed_paths: display_paths(report.changed_paths()),
+            message: format!("removed upstream {domain}"),
+        })
+    }
+
+    /// Crystallize configured upstream lakes.
+    pub fn upstream_crystallize(
+        &self, request: UpstreamCrystallizeRequest,
+    ) -> Result<UpstreamCrystallizeReport, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.witness = None;
+        let lock_path = SirnoLock::path_for_config(&self.config_path);
+        let mut lock = SirnoLock::from_file_if_exists(&lock_path)?.unwrap_or_default();
+        let cache = self.upstream_cache()?;
+        let directory = EntryDirectory::new(&lake_path);
+        let (mut report, _) =
+            crate::upstream::crystallize_upstreams(crate::upstream::CrystallizeUpstreams {
+                config_path: &self.config_path,
+                config: &config,
+                lock: &mut lock,
+                lake: &directory,
+                settings: &settings,
+                cache: &cache,
+                domains: &request.domains,
+                locked: request.locked,
+            })?;
+        lock.write(&lock_path)?;
+        let render = directory.generate_links_for_crystallization(&settings)?;
+        report.changed_paths.extend(display_paths(render.changed_paths()));
+        let protection = directory.fix_local_protection(&settings, false, false)?;
+        report.changed_paths.extend(display_paths(protection.paths()));
+        report.changed_paths.sort();
+        report.changed_paths.dedup();
+        Ok(report)
+    }
+
+    /// Update upstream locks and crystallized domains.
+    pub fn upstream_update(
+        &self, domains: Vec<crate::EntryAtom>,
+    ) -> Result<UpstreamCrystallizeReport, CommandError> {
+        self.upstream_crystallize(UpstreamCrystallizeRequest { domains, locked: false })
+    }
+
+    /// Return upstream status.
+    pub fn upstream_status(&self) -> Result<UpstreamStatusReport, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lock = SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?;
+        let cache = self.upstream_cache()?;
+        let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.witness = None;
+        let lake = EntryDirectory::new(lake_path);
+        Ok(crate::upstream::upstream_status(
+            &self.config_path,
+            &config,
+            lock.as_ref(),
+            &cache,
+            Some((&lake, &settings)),
+        )?)
     }
 
     // sirno:witness:project-config-comments:begin
@@ -737,6 +852,13 @@ impl SurfaceContext {
     }
     // sirno:witness:agent-skills:end
 
+    fn upstream_cache(&self) -> Result<UpstreamGitCache, CommandError> {
+        Ok(match &self.upstream_store_path {
+            | Some(path) => UpstreamGitCache::new(path),
+            | None => UpstreamGitCache::default_global()?,
+        })
+    }
+
     /// Move the configured Sirno Lake.
     pub fn lake_move(&self, lake: PathBuf) -> Result<MovePathResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
@@ -813,7 +935,11 @@ impl SurfaceContext {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let frost = config.resolve_frost(&self.config_path);
         let lock_path = SirnoLock::path_for_config(&self.config_path);
-        let lock = if frost.is_some() { SirnoLock::from_file_if_exists(&lock_path)? } else { None };
+        let lock = if frost.is_some() || !config.upstreams.is_empty() {
+            SirnoLock::from_file_if_exists(&lock_path)?
+        } else {
+            None
+        };
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report =
@@ -824,7 +950,9 @@ impl SurfaceContext {
             blockers.push(StatusCommitBlocker::LakeCheck);
         }
         if lock.as_ref().is_some_and(|lock| {
-            lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout()
+            lock.frost
+                .as_ref()
+                .is_some_and(|frost| frost.is_checked_out() && !frost.is_unsafe_mutable_checkout())
         }) {
             blockers.push(StatusCommitBlocker::ImmutableCheckout);
         }
@@ -955,7 +1083,9 @@ impl SurfaceContext {
                     count: tide.open_statuses().count(),
                     tutorial: OpenTideTutorial::new(
                         context.tutorial,
-                        lock.frost.version == Eterator::EMPTY.version(),
+                        lock.frost
+                            .as_ref()
+                            .is_some_and(|frost| frost.version == Eterator::EMPTY.version()),
                     ),
                 });
             }
@@ -963,7 +1093,8 @@ impl SurfaceContext {
         let mut frost = SirnoFrost::open(&context.frost_path)?;
         let version = frost.commit_entry_directory(&context.lake_path, &context.settings)?;
         context.lake().set_writable(&context.settings)?;
-        let mut lock = SirnoLock::current(version);
+        let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
+        lock.frost = Some(FrostLock::current(version));
         lock.tide.clear();
         lock.write(&context.lock_path)?;
         Ok(FrostCommitResult {
@@ -986,7 +1117,7 @@ impl SurfaceContext {
         let report = frost.gc_current_snapshot()?;
         let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?
             .unwrap_or_else(|| SirnoLock::current(report.before));
-        lock.frost = FrostLock::current(report.after);
+        lock.frost = Some(FrostLock::current(report.after));
         lock.write(&context.lock_path)?;
         let message = if report.collected() {
             format!(
@@ -1048,9 +1179,13 @@ impl SurfaceContext {
             context.lake().set_readonly(&context.settings)?;
         }
         if request.latest {
-            SirnoLock::current(snapshot).write(&context.lock_path)?;
+            let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
+            lock.frost = Some(FrostLock::current(snapshot));
+            lock.write(&context.lock_path)?;
         } else {
-            SirnoLock::checked_out(snapshot, request.unsafe_mutable).write(&context.lock_path)?;
+            let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
+            lock.frost = Some(FrostLock::checked_out(snapshot, request.unsafe_mutable));
+            lock.write(&context.lock_path)?;
         }
         let state = if request.latest {
             "mutable"
@@ -1409,8 +1544,11 @@ impl FrostContext {
         let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
             return Ok(());
         };
-        if lock.frost.is_checked_out() && !lock.frost.is_unsafe_mutable_checkout() {
-            return Err(CommandError::ImmutableFrostCheckout(lock.frost.version));
+        if let Some(frost) = &lock.frost
+            && frost.is_checked_out()
+            && !frost.is_unsafe_mutable_checkout()
+        {
+            return Err(CommandError::ImmutableFrostCheckout(frost.version));
         }
         Ok(())
     }
@@ -1419,8 +1557,10 @@ impl FrostContext {
         let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
             return Ok(());
         };
-        if lock.frost.is_checked_out() {
-            return Err(CommandError::FrostGcRequiresCurrentLake(lock.frost.version));
+        if let Some(frost) = &lock.frost
+            && frost.is_checked_out()
+        {
+            return Err(CommandError::FrostGcRequiresCurrentLake(frost.version));
         }
         Ok(())
     }
@@ -1692,7 +1832,7 @@ fn entry_directory_check_settings(
 }
 
 fn status_frost_from_lock(path: String, lock: Option<&SirnoLock>) -> StatusFrost {
-    let Some(lock) = lock else {
+    let Some(frost) = lock.and_then(|lock| lock.frost.as_ref()) else {
         return StatusFrost {
             path,
             state: StatusFrostState::Unlocked,
@@ -1701,18 +1841,17 @@ fn status_frost_from_lock(path: String, lock: Option<&SirnoLock>) -> StatusFrost
             mutable: None,
         };
     };
-    let state = if lock.frost.is_checked_out() {
+    let state = if frost.is_checked_out() {
         StatusFrostState::CheckedOut
     } else {
         StatusFrostState::Current
     };
-    let mutable =
-        if lock.frost.is_checked_out() { lock.frost.is_unsafe_mutable_checkout() } else { true };
+    let mutable = if frost.is_checked_out() { frost.is_unsafe_mutable_checkout() } else { true };
     StatusFrost {
         path,
         state,
-        version: Some(lock.frost.version),
-        generation: Some(lock.frost.generation),
+        version: Some(frost.version),
+        generation: Some(frost.generation),
         mutable: Some(mutable),
     }
 }

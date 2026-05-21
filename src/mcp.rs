@@ -29,9 +29,11 @@ use crate::surface::{
     EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
     QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
     StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
-    TideSelectionRequest, TideStatusMode,
+    TideSelectionRequest, TideStatusMode, UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
-use crate::{CheckMode, EntryAddress, StructuralEdgeDirection, TideWorkitem};
+use crate::{
+    CheckMode, EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings,
+};
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
 const ENTRY_RESOURCE_MIME_TYPE: &str = "text/markdown";
@@ -371,6 +373,42 @@ impl SirnoMcpServer {
         result(self.context.status())
     }
 
+    /// Add or replace one Git-backed upstream and crystallize it.
+    #[tool(name = "sirno_upstream_add")]
+    fn upstream_add(&self, Parameters(params): Parameters<UpstreamAddParams>) -> McpToolResult {
+        result(self.context.upstream_add(params.into_request()?))
+    }
+
+    /// Remove one upstream declaration and its crystallized content.
+    #[tool(name = "sirno_upstream_remove")]
+    fn upstream_remove(
+        &self, Parameters(params): Parameters<EntryAtomOnlyParams>,
+    ) -> McpToolResult {
+        result(self.context.upstream_remove(entry_atom(params.domain)?))
+    }
+
+    /// Crystallize configured upstream lakes into the current lake.
+    #[tool(name = "sirno_upstream_crystallize")]
+    fn upstream_crystallize(
+        &self, Parameters(params): Parameters<UpstreamCrystallizeParams>,
+    ) -> McpToolResult {
+        result(self.context.upstream_crystallize(params.into_request()?))
+    }
+
+    /// Refresh upstream locks and crystallized content.
+    #[tool(name = "sirno_upstream_update")]
+    fn upstream_update(
+        &self, Parameters(params): Parameters<UpstreamDomainsParams>,
+    ) -> McpToolResult {
+        result(self.context.upstream_update(entry_atoms(params.domains)?))
+    }
+
+    /// Show upstream lock and cache status.
+    #[tool(name = "sirno_upstream_status")]
+    fn upstream_status(&self) -> McpToolResult {
+        result(self.context.upstream_status())
+    }
+
     /// Configure frost.
     #[tool(name = "sirno_frost_init")]
     fn frost_init(&self, Parameters(params): Parameters<FrostInitParams>) -> McpToolResult {
@@ -450,6 +488,14 @@ fn entry_address(raw: String) -> Result<EntryAddress, String> {
     EntryAddress::new(raw).map_err(|error| error.to_string())
 }
 
+fn entry_atom(raw: String) -> Result<EntryAtom, String> {
+    EntryAtom::new(raw).map_err(|error| error.to_string())
+}
+
+fn entry_atoms(raw: Vec<String>) -> Result<Vec<EntryAtom>, String> {
+    raw.into_iter().map(entry_atom).collect()
+}
+
 fn path_selection(
     entry: Option<bool>, artifact: Option<bool>, frost: Option<bool>,
 ) -> PathSelection {
@@ -482,6 +528,12 @@ struct CwdParams {
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryAddressOnlyParams {
     id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+struct EntryAtomOnlyParams {
+    /// Upstream domain.
+    domain: String,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
@@ -768,6 +820,70 @@ struct FrostCheckoutParams {
     unsafe_mutable: bool,
 }
 
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+struct UpstreamAddParams {
+    /// Upstream domain used as the crystallized entry-address prefix.
+    domain: String,
+    /// Git URI or local Git repository source accepted by Git.
+    git: String,
+    /// Branch name to resolve.
+    branch: Option<String>,
+    /// Tag name to resolve.
+    tag: Option<String>,
+    /// Commit-ish to resolve.
+    rev: Option<String>,
+    /// Directory inside the Git tree containing `Sirno.toml`.
+    project: Option<PathBuf>,
+}
+
+impl UpstreamAddParams {
+    fn into_request(self) -> Result<UpstreamAddRequest, String> {
+        let ref_count = [self.branch.as_ref(), self.tag.as_ref(), self.rev.as_ref()]
+            .into_iter()
+            .flatten()
+            .count();
+        if ref_count != 1 {
+            return Err("upstream add requires exactly one of branch, tag, or rev".to_owned());
+        }
+        let mut settings = if let Some(branch) = self.branch {
+            UpstreamSettings::branch(self.git, branch)
+        } else if let Some(tag) = self.tag {
+            UpstreamSettings::tag(self.git, tag)
+        } else if let Some(rev) = self.rev {
+            UpstreamSettings::rev(self.git, rev)
+        } else {
+            unreachable!("checked upstream selector count")
+        };
+        if let Some(project) = self.project {
+            settings.project = project;
+        }
+        Ok(UpstreamAddRequest { domain: entry_atom(self.domain)?, settings })
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+struct UpstreamDomainsParams {
+    /// Selected upstream domains. Empty means every upstream.
+    #[serde(default)]
+    domains: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+struct UpstreamCrystallizeParams {
+    /// Selected upstream domains. Empty means every upstream.
+    #[serde(default)]
+    domains: Vec<String>,
+    /// Use only existing lock records and cache mirrors.
+    #[serde(default)]
+    locked: bool,
+}
+
+impl UpstreamCrystallizeParams {
+    fn into_request(self) -> Result<UpstreamCrystallizeRequest, String> {
+        Ok(UpstreamCrystallizeRequest { domains: entry_atoms(self.domains)?, locked: self.locked })
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideStatusParams {
     /// Select review entries, full open workitems, or all workitems.
@@ -919,6 +1035,11 @@ mod tests {
         "sirno_tide_resolve",
         "sirno_tide_status",
         "sirno_tide_unresolve",
+        "sirno_upstream_add",
+        "sirno_upstream_crystallize",
+        "sirno_upstream_remove",
+        "sirno_upstream_status",
+        "sirno_upstream_update",
     ];
     // sirno:witness:mcp-interface:end
 

@@ -7,9 +7,9 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::{
-    ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError, EntryDirectoryError,
-    EntryParseError, FrostError, GeneratedLinkError, LockError, TideError, TutorialSettings,
-    WitnessError,
+    ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError, EntryAtomError,
+    EntryDirectoryError, EntryParseError, FrostError, GeneratedLinkError, LockError, TideError,
+    TutorialSettings, UpstreamError, WitnessError,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -331,6 +331,9 @@ pub enum CommandError {
     /// Entry address parsing failed.
     #[error(transparent)]
     EntryAddress(#[from] EntryAddressError),
+    /// Entry atom parsing failed.
+    #[error(transparent)]
+    EntryAtom(#[from] EntryAtomError),
     /// Entry artifact path parsing failed.
     #[error(transparent)]
     ArtifactPath(#[from] EntryArtifactPathError),
@@ -343,6 +346,9 @@ pub enum CommandError {
     /// Tide operation failed.
     #[error(transparent)]
     Tide(#[from] TideError),
+    /// Upstream operation failed.
+    #[error(transparent)]
+    Upstream(#[from] UpstreamError),
     /// Ripgrep could not be started.
     #[error("failed to run rg")]
     RunRg(#[source] std::io::Error),
