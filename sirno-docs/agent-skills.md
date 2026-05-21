@@ -95,7 +95,7 @@ Utility commands copy exact bundled wrapper constants;
 they do not ask a model to rewrite the skill text.
 When an agent discovers that utility maintenance is needed,
 it should report the needed human CLI action instead of treating it as an MCP operation.
-The editor skill may call CLI `sirno util config --fix`
+The editor skill may call CLI `sirno util config fix`
 to canonicalize `Sirno.toml` comments.
 That exception belongs to lake-first maintenance and does not add utility commands to MCP.
 

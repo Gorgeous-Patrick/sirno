@@ -22,20 +22,21 @@ use crate::{
 };
 
 use super::{
-    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, EntryCommand,
-    EntryNewRequest, EntryPathArgs, EntryRenameArgs, FrostCommand, FrostMoveArgs, LakeCommand,
-    LakeInitRequest, LakeMoveArgs, MoveCommand, OutputStyle, PathOutputFormat, QueryColumn,
-    QueryColumns, QueryOutputFormat, ResolveArgs, SkillCommand, StructuralFieldState,
-    StructuralFilter, StructuralPredicate, StructuralStateFilter, SurfaceContext, TideCommand,
-    TideItemSelector, TideOutputFormat, TideReviewCommand, TideStatusGrouping, TideStatusMode,
-    TopLevelEntryCommand, TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand,
-    UnresolveArgs, UtilCommand, entry_path_records, entry_query_from_filters,
-    format_config_comment_result, format_gen_link_report, format_human_table_semantic_with_width,
-    format_human_table_with_width, format_json, format_lake_check_result, format_path_table,
-    format_query_json, format_query_table, format_render_result, format_skill_wrapper_table,
-    format_status_result, format_tide_review_entries, format_tide_review_waves,
-    format_tide_statuses, format_tide_statuses_by_entry, format_witness_record,
-    format_witness_records, rg_args_include_preprocessor, run_prompted_top_level_init,
+    ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, ConfigUtilityCommand,
+    EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, EntryUtilityCommand,
+    FrostCommand, FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand,
+    OutputStyle, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
+    SkillCommand, StructuralFieldState, StructuralFilter, StructuralPredicate,
+    StructuralStateFilter, SurfaceContext, TideCommand, TideItemSelector, TideOutputFormat,
+    TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
+    TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand, UnresolveArgs, UtilCommand,
+    entry_path_records, entry_query_from_filters, format_config_comment_result,
+    format_gen_link_report, format_human_table_semantic_with_width, format_human_table_with_width,
+    format_json, format_lake_check_result, format_path_table, format_query_json,
+    format_query_table, format_render_result, format_skill_wrapper_table, format_status_result,
+    format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
+    format_tide_statuses_by_entry, format_witness_record, format_witness_records,
+    rg_args_include_preprocessor, run_prompted_top_level_init,
     run_prompted_top_level_init_with_style,
 };
 
@@ -567,26 +568,44 @@ fn util_mcp_accepts_config_launch_form() {
 
 #[test]
 fn util_config_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "config", "tui"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util { command: UtilCommand::Config { command: Some(ConfigUtilityCommand::Tui) } }
+    ));
+}
+
+#[test]
+fn util_config_accepts_default_tui_form() {
     let cli = Cli::parse_from(["sirno", "util", "config"]);
 
     assert!(matches!(
         cli.command,
-        Command::Util {
-            command: UtilCommand::Config(super::ConfigTuiArgs { dry: false, fix: false })
-        }
+        Command::Util { command: UtilCommand::Config { command: None } }
     ));
 }
 
 #[test]
 fn util_entry_accepts_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "entry", "tui"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util { command: UtilCommand::Entry { command: Some(EntryUtilityCommand::Tui) } }
+    ));
+}
+
+#[test]
+fn util_entry_accepts_default_tui_form() {
     let cli = Cli::parse_from(["sirno", "util", "entry"]);
 
-    assert!(matches!(cli.command, Command::Util { command: UtilCommand::Entry }));
+    assert!(matches!(cli.command, Command::Util { command: UtilCommand::Entry { command: None } }));
 }
 
 #[test]
 fn util_entry_rejects_global_frost_path() {
-    let error = Cli::parse_from(["sirno", "--frost-path", "sirno-frost", "util", "entry"])
+    let error = Cli::parse_from(["sirno", "--frost-path", "sirno-frost", "util", "entry", "tui"])
         .run()
         .unwrap_err();
 
@@ -594,34 +613,36 @@ fn util_entry_rejects_global_frost_path() {
 }
 
 #[test]
-fn util_config_accepts_dry_check_form() {
-    let cli = Cli::parse_from(["sirno", "util", "config", "--dry"]);
+fn util_config_default_rejects_global_lake_and_frost_path_overrides() {
+    let lake_error =
+        Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config"]).run().unwrap_err();
+    let frost_error =
+        Cli::parse_from(["sirno", "--frost-path", "frost", "util", "config"]).run().unwrap_err();
+
+    assert!(matches!(lake_error, CommandError::ConfigRejectsLakePath));
+    assert!(matches!(frost_error, CommandError::ConfigRejectsFrostPath));
+}
+
+#[test]
+fn util_config_accepts_check_form() {
+    let cli = Cli::parse_from(["sirno", "util", "config", "check"]);
 
     assert!(matches!(
         cli.command,
         Command::Util {
-            command: UtilCommand::Config(super::ConfigTuiArgs { dry: true, fix: false })
+            command: UtilCommand::Config { command: Some(ConfigUtilityCommand::Check) }
         }
     ));
 }
 
 #[test]
 fn util_config_accepts_fix_form() {
-    let cli = Cli::parse_from(["sirno", "util", "config", "--fix"]);
+    let cli = Cli::parse_from(["sirno", "util", "config", "fix"]);
 
     assert!(matches!(
         cli.command,
-        Command::Util {
-            command: UtilCommand::Config(super::ConfigTuiArgs { dry: false, fix: true })
-        }
+        Command::Util { command: UtilCommand::Config { command: Some(ConfigUtilityCommand::Fix) } }
     ));
-}
-
-#[test]
-fn util_config_rejects_dry_and_fix_together() {
-    let error = Cli::try_parse_from(["sirno", "util", "config", "--dry", "--fix"]).unwrap_err();
-
-    assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
 }
 
 #[test]
@@ -730,10 +751,13 @@ structural-inhabitance = false
 
 #[test]
 fn util_config_rejects_lake_and_frost_path_overrides() {
-    let lake_error =
-        Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config"]).run().unwrap_err();
+    let lake_error = Cli::parse_from(["sirno", "--lake-path", "docs", "util", "config", "check"])
+        .run()
+        .unwrap_err();
     let frost_error =
-        Cli::parse_from(["sirno", "--frost-path", "frost", "util", "config"]).run().unwrap_err();
+        Cli::parse_from(["sirno", "--frost-path", "frost", "util", "config", "check"])
+            .run()
+            .unwrap_err();
 
     assert!(matches!(lake_error, CommandError::ConfigRejectsLakePath));
     assert!(matches!(frost_error, CommandError::ConfigRejectsFrostPath));
@@ -745,7 +769,7 @@ fn util_skills_init_accepts_nested_command() {
 
     assert!(matches!(
         cli.command,
-        Command::Util { command: UtilCommand::Skills { command: SkillCommand::Init(_) } }
+        Command::Util { command: UtilCommand::Skills { command: Some(SkillCommand::Init(_)) } }
     ));
 }
 
@@ -757,9 +781,19 @@ fn util_skills_accepts_tui_form() {
         cli.command,
         Command::Util {
             command: UtilCommand::Skills {
-                command: SkillCommand::Tui(args)
+                command: Some(SkillCommand::Tui(args))
             }
         } if args.claude_skills
+    ));
+}
+
+#[test]
+fn util_skills_accepts_default_tui_form() {
+    let cli = Cli::parse_from(["sirno", "util", "skills"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::Util { command: UtilCommand::Skills { command: None } }
     ));
 }
 
@@ -771,7 +805,7 @@ fn util_skills_commands_accept_claude_option() {
         cli.command,
         Command::Util {
             command: UtilCommand::Skills {
-                command: SkillCommand::Check(args)
+                command: Some(SkillCommand::Check(args))
             }
         } if args.claude_skills
     ));

@@ -16,11 +16,12 @@ and the operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
 and frost.
 Generated config files include concise comments that describe how each written field is used.
-`sirno util config` opens an interactive terminal UI for config section and comment maintenance.
+`sirno util config` and `sirno util config tui` open an interactive terminal UI
+for config section and comment maintenance.
 It shows whether each top-level section is present
 and whether that section's comments match Sirno's canonical renderer.
-`sirno util config --dry` runs the old non-interactive comment check without writing the file.
-`sirno util config --fix` runs the old non-interactive rewrite through that renderer.
+`sirno util config check` runs the non-interactive comment check without writing the file.
+`sirno util config fix` runs the non-interactive rewrite through that renderer.
 
 `[lake].path` names the lake path.
 `[frost].path` optionally names the frost path.
@@ -92,8 +93,8 @@ because malformed sentinels make Sirno ownership ambiguous.
 to name an existing *entry*.
 When a check flag is present,
 the config UI can restore that flag's canonical comment.
-`sirno util config --dry` reports when the comment is missing.
-`sirno util config --fix` writes the comment.
+`sirno util config check` reports when the comment is missing.
+`sirno util config fix` writes the comment.
 
 `[tutorial]` controls optional instructional CLI output.
 The table is absent by default.

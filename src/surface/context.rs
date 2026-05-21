@@ -461,7 +461,7 @@ impl SurfaceContext {
                 self.config_path.display()
             ),
             | (_, false) => format!(
-                "config comments missing in {} ({missing_count} missing); run `sirno util config --fix`",
+                "config comments missing in {} ({missing_count} missing); run `sirno util config fix`",
                 self.config_path.display()
             ),
         };

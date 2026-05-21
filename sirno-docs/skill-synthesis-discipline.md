@@ -84,7 +84,7 @@ The utility command family remains human CLI operator maintenance;
 do not make it part of agent skill procedure or MCP workflow.
 When utility maintenance is needed,
 report the human CLI action rather than turning it into an agent step.
-The editor skill may call CLI `sirno util config --fix`
+The editor skill may call CLI `sirno util config fix`
 for deterministic `Sirno.toml` comment repair.
 
 Inspect the current Sirno MCP tools before writing tool names into a skill.

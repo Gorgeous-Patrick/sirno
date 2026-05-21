@@ -18,7 +18,8 @@ MCP does not expose utility commands.
 Completion generation is a utility command,
 not a lake operation.
 
-`sirno util config` opens an interactive terminal UI for `Sirno.toml`.
+`sirno util config` and `sirno util config tui` open an interactive terminal UI
+for `Sirno.toml`.
 Each row is a top-level config section with its presence status
 and canonical-comment status.
 `j`, `k`, Up, and Down move the selected row.
@@ -26,16 +27,16 @@ and canonical-comment status.
 `f` repairs comments for the selected non-empty section.
 `q` and Esc exit.
 
-`sirno util config --dry` keeps the non-interactive comment check.
+`sirno util config check` runs the non-interactive comment check.
 It prints missing comments before the summary line,
 does not write `Sirno.toml`,
 and exits with failure when comments are missing.
-`sirno util config --fix` keeps the non-interactive comment repair.
+`sirno util config fix` runs the non-interactive comment repair.
 It rewrites `Sirno.toml` through the canonical config renderer when comments are missing.
-`--dry` and `--fix` are mutually exclusive.
 Config utility commands reject `--lake-path` and `--frost-path`.
 
-`sirno util entry` opens an interactive terminal UI for common entry defaults.
+`sirno util entry` and `sirno util entry tui` open an interactive terminal UI
+for common entry defaults.
 Each row is a default entry id with its presence status
 and the structural fields that would be written under the current `Sirno.toml`.
 `j`, `k`, Up, and Down move the selected row.
@@ -47,13 +48,14 @@ The entry defaults include category vocabulary such as `category`, `meta`, `conc
 and `narrative`.
 They also include structural vocabulary such as `structural`, `belongs`, `refines`,
 and `prerequisite`.
-The utility accepts `--lake-path` and rejects `--frost-path`.
+The entry utility accepts `--lake-path` and rejects `--frost-path`.
 
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.
 `sirno util skills list` lists the bundled skill names and package targets.
-`sirno util skills tui` opens an interactive terminal UI for skill wrapper maintenance.
+`sirno util skills` and `sirno util skills tui` open an interactive terminal UI
+for skill wrapper maintenance.
 It checks installed wrappers on entry and shows wrapper and link records in a table.
 `j`, `k`, Up, and Down move the selected row.
 `c` refreshes the check.

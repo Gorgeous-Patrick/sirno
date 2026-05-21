@@ -680,12 +680,20 @@ impl From<CompletionShell> for Shell {
 #[derive(Debug, Subcommand)]
 enum UtilCommand {
     // sirno:witness:utility-commands:begin
-    /// Open the interactive Sirno.toml maintenance UI.
-    Config(ConfigTuiArgs),
+    /// Maintain Sirno.toml comments and sections.
+    Config {
+        /// Config utility command.
+        #[command(subcommand)]
+        command: Option<ConfigUtilityCommand>,
+    },
     // sirno:witness:utility-commands:end
     // sirno:witness:utility-commands:begin
-    /// Open the interactive entry default maintenance UI.
-    Entry,
+    /// Maintain common entry defaults.
+    Entry {
+        /// Entry utility command.
+        #[command(subcommand)]
+        command: Option<EntryUtilityCommand>,
+    },
     // sirno:witness:utility-commands:end
     /// Generate a shell completion script.
     Completion {
@@ -698,7 +706,7 @@ enum UtilCommand {
     Skills {
         /// Skill wrapper command.
         #[command(subcommand)]
-        command: SkillCommand,
+        command: Option<SkillCommand>,
     },
     // sirno:witness:utility-commands:end
     // sirno:witness:utility-commands:begin
@@ -708,15 +716,24 @@ enum UtilCommand {
 }
 
 // sirno:witness:utility-commands:begin
-/// Arguments for interactive config maintenance.
-#[derive(Debug, Args)]
-struct ConfigTuiArgs {
-    /// Print missing canonical comments without opening the TUI or writing the file.
-    #[arg(long, conflicts_with = "fix")]
-    dry: bool,
-    /// Rewrite Sirno.toml with canonical comments without opening the TUI.
-    #[arg(long)]
-    fix: bool,
+/// Supported config utility commands.
+#[derive(Debug, Subcommand)]
+enum ConfigUtilityCommand {
+    /// Open the interactive Sirno.toml maintenance UI.
+    Tui,
+    /// Print missing canonical comments without writing the file.
+    Check,
+    /// Rewrite Sirno.toml with canonical comments when comments are missing.
+    Fix,
+}
+// sirno:witness:utility-commands:end
+
+/// Supported entry-default utility commands.
+// sirno:witness:utility-commands:begin
+#[derive(Debug, Subcommand)]
+enum EntryUtilityCommand {
+    /// Open the interactive entry default maintenance UI.
+    Tui,
 }
 // sirno:witness:utility-commands:end
 
@@ -734,6 +751,12 @@ enum SkillCommand {
     List(SkillCommandArgs),
 }
 // sirno:witness:utility-commands:end
+
+impl Default for SkillCommand {
+    fn default() -> Self {
+        Self::Tui(SkillCommandArgs { claude_skills: false })
+    }
+}
 
 /// Options shared by skill wrapper utility commands.
 #[derive(Debug, Args)]
@@ -2014,32 +2037,20 @@ impl UtilCommand {
         self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
     ) -> Result<ExitCode, CommandError> {
         match self {
-            | UtilCommand::Config(args) => {
+            | UtilCommand::Config { command } => {
                 if lake_path.is_some() {
                     return Err(CommandError::ConfigRejectsLakePath);
                 }
                 if frost_path.is_some() {
                     return Err(CommandError::ConfigRejectsFrostPath);
                 }
-                if args.dry {
-                    let result =
-                        SurfaceContext::new(config_path.to_path_buf()).config_comments_check()?;
-                    print_config_comment_result(&result);
-                    return if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) };
-                }
-                if args.fix {
-                    let result =
-                        SurfaceContext::new(config_path.to_path_buf()).config_comments_fix()?;
-                    print_config_comment_result(&result);
-                    return Ok(ExitCode::SUCCESS);
-                }
-                config::tui::run(config_path)
+                command.unwrap_or(ConfigUtilityCommand::Tui).run(config_path)
             }
-            | UtilCommand::Entry => {
+            | UtilCommand::Entry { command } => {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
-                entry::tui::run(config_path, lake_path)
+                command.unwrap_or(EntryUtilityCommand::Tui).run(config_path, lake_path)
             }
             | UtilCommand::Completion { shell } => {
                 if frost_path.is_some() {
@@ -2058,7 +2069,7 @@ impl UtilCommand {
                 if frost_path.is_some() {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
-                command.run(config_path)
+                command.unwrap_or_default().run(config_path)
             }
             | UtilCommand::Mcp => {
                 if lake_path.is_some() {
@@ -2076,6 +2087,33 @@ impl UtilCommand {
                     .map_err(|error| CommandError::McpServer(error.to_string()))?;
                 Ok(ExitCode::SUCCESS)
             }
+        }
+    }
+}
+
+impl ConfigUtilityCommand {
+    fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
+        let context = SurfaceContext::new(config_path.to_path_buf());
+        match self {
+            | ConfigUtilityCommand::Tui => config::tui::run(config_path),
+            | ConfigUtilityCommand::Check => {
+                let result = context.config_comments_check()?;
+                print_config_comment_result(&result);
+                if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+            }
+            | ConfigUtilityCommand::Fix => {
+                let result = context.config_comments_fix()?;
+                print_config_comment_result(&result);
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+    }
+}
+
+impl EntryUtilityCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        match self {
+            | EntryUtilityCommand::Tui => entry::tui::run(config_path, lake_path),
         }
     }
 }

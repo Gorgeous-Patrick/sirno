@@ -16,17 +16,18 @@ Optional table comments appear only when the optional table is written.
 Check flag comments appear only when the corresponding check flag is written.
 Parsing still ignores comments through ordinary TOML rules.
 
-`sirno util config` opens an interactive terminal UI for comment maintenance.
+`sirno util config` and `sirno util config tui` open an interactive terminal UI
+for comment maintenance.
 Each row is a top-level config section.
 It reports whether the section is present
 and whether the section's comments match the canonical renderer.
 The UI can insert a selected section with comments
 or repair comments for a selected non-empty section.
-`sirno util config --dry` keeps the old non-interactive behavior:
+`sirno util config check` runs the non-interactive behavior:
 it compares the active config file with the canonical comment set,
 reports missing comments,
 and does not write the file.
-`sirno util config --fix` keeps the old non-interactive rewrite behavior:
+`sirno util config fix` runs the non-interactive rewrite behavior:
 it rewrites `Sirno.toml` through the canonical renderer when comments are missing.
 
 The generated comments are:
