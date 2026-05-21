@@ -16,21 +16,7 @@ Optional table comments appear only when the optional table is written.
 Check flag comments appear only when the corresponding check flag is written.
 Parsing still ignores comments through ordinary TOML rules.
 
-`sirno util config` and `sirno util config tui` open an interactive terminal UI
-for comment maintenance.
-Each row is a top-level config section.
-It reports whether the section is present
-and whether the section's comments match the canonical renderer.
-The UI can insert a selected section with comments
-or repair comments for a selected non-empty section.
-`sirno util config check` runs the non-interactive behavior:
-it compares the active config file with the canonical comment set,
-reports missing comments,
-and does not write the file.
-`sirno util config fix` runs the non-interactive rewrite behavior:
-it rewrites `Sirno.toml` through the canonical renderer when comments are missing.
-
-The generated comments are:
+The canonical comments are:
 
 - `Sirno Lake path, resolved relative to this config file.`
 - `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
@@ -54,6 +40,12 @@ The generated comments are:
 - `render = true writes generated footer links.`
 - `ripple.lake and ripple.frost add tide workitems from the waterline and frostline.`
 - `Omitted render and ripple values are false.`
+
+This list is the canonical source for the strings.
+The Rust config renderer materializes it,
+and `sirno util config check` and `sirno util config fix` keep an active `Sirno.toml` aligned.
+A *witness* block on the renderer should bind the implementation back to this *entry*
+so the lake and the renderer stay in sync.
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.
