@@ -12,6 +12,15 @@ prerequisite:
 
 A *witness* is *repository* evidence for an *entry* claim.
 
+A *witness* is a validation link, but NOT a storage mechanism.
+The *entry* holds the readable form of the design:
+prose, code, diagrams, configuration, or fixtures, whichever reads clearest.
+Including code or configuration inside an *entry* is always acceptable.
+The *witness* block names a *repository* region whose behavior should be inspectable
+against the *entry*'s claim,
+so a reviewer can confirm that the running code does what the design says it should.
+Reaching for a *witness* block to save information is the wrong tool.
+
 The *witness* entry is the front door for *repository* evidence.
 Its review neighborhood covers how blocks are marked, looked up,
 shaped into records and spans, kept honest, and renamed.
