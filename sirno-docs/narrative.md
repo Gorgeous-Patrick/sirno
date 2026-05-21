@@ -63,6 +63,7 @@ a phrase or handle the reader keeps after the prose is gone.
   - [category](category.md)
 - belongs (from):
   - [bootstrap-resolution](bootstrap-resolution.md)
+  - [documentation-driven-development](documentation-driven-development.md)
   - [methodology](methodology.md)
   - [perspective-and-terms](perspective-and-terms.md)
   - [readme](readme.md)

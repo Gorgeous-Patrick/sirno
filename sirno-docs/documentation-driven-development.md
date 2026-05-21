@@ -5,7 +5,7 @@ category:
   - meta
   - narrative
 belongs:
-  - development-style
+  - narrative
 prerequisite:
   - introduction
   - methodology
@@ -69,7 +69,7 @@ and complexity stays managable as the project grows.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [development-style](development-style.md)
+  - [narrative](narrative.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

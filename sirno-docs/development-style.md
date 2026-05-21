@@ -32,7 +32,6 @@ This neighborhood is the separate horizontal view:
   - [methodology](methodology.md)
 - belongs (from):
   - [concept-driven-development](concept-driven-development.md)
-  - [documentation-driven-development](documentation-driven-development.md)
   - [intent-driven-development](intent-driven-development.md)
   - [spec-driven-development](spec-driven-development.md)
   - [test-driven-development](test-driven-development.md)
