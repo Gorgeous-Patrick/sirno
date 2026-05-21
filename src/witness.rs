@@ -853,7 +853,7 @@ mod tests {
     use super::*;
     use crate::config::WitnessDelimiterSettings;
 
-    // sirno:witness:witness-fixture-isolation:begin
+    // sirno:witness:witness-lookup:begin
     const WITNESS_COMMENT_PREFIX: &str = "// sirno";
     const WITNESS_SENTINEL_PREFIX: &str = ":witness:";
     const WITNESS_BEGIN_SUFFIX: &str = ":begin";
@@ -874,7 +874,7 @@ mod tests {
     fn witness_block(id: &str) -> String {
         witness_block_with_end(id, id)
     }
-    // sirno:witness:witness-fixture-isolation:end
+    // sirno:witness:witness-lookup:end
 
     fn markdown_witness_block(id: &str) -> String {
         format!("<!-- sirno:witness:{id}:begin -->\nbody\n<!-- sirno:witness:{id}:end -->\n")

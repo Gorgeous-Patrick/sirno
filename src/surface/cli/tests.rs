@@ -3745,7 +3745,7 @@ fn witness_rejects_missing_entry_before_repo_scan() {
     );
 }
 
-// sirno:witness:witness-fixture-isolation:begin
+// sirno:witness:witness-lookup:begin
 #[test]
 fn format_witness_record_prints_range_and_preserves_body() {
     let record = WitnessRecord {
@@ -3801,7 +3801,7 @@ fn format_witness_records_adds_full_region_spacing() {
         "src/lib.rs:20:5-33 :: 24:5-25\n",
     )));
 }
-// sirno:witness:witness-fixture-isolation:end
+// sirno:witness:witness-lookup:end
 
 fn witness_span(
     start_line: usize, start_column: usize, end_line: usize, end_column: usize,

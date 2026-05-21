@@ -2029,7 +2029,7 @@ Body.
         StructuralFieldSettings::render_only(to, from, clique)
     }
 
-    // sirno:witness:witness-fixture-isolation:begin
+    // sirno:witness:witness-lookup:begin
     fn witness_begin(id: &str) -> String {
         format!("{}{}{}{}", "// sirno", ":witness:", id, ":begin")
     }
@@ -2043,7 +2043,7 @@ Body.
         let closing = witness_end(id);
         format!("{opening}\nbody\n{closing}\n")
     }
-    // sirno:witness:witness-fixture-isolation:end
+    // sirno:witness:witness-lookup:end
 
     #[test]
     fn checks_clean_markdown_entry_directory() {
