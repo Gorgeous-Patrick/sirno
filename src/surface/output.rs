@@ -572,6 +572,8 @@ fn format_human_table_with_width_and_style(
         table.set_width(width);
     }
     #[cfg(test)]
+    table.force_no_tty();
+    #[cfg(test)]
     if style == OutputStyle::Forced {
         table.enforce_styling();
     }
