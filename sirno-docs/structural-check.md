@@ -78,7 +78,7 @@ because it points to the default vocabulary entry rather than one authored edge.
 
 Semantic review remains human and agent work.
 The checker can say that a *witness* block is shaped correctly.
-It can report configured *witness* blocks that refer to missing *entry* ids.
+It can report configured *witness* blocks that refer to missing *entry addresses*.
 It can report an opening or closing *witness* delimiter that has no matching delimiter.
 It cannot say that the witnessed *repository* artifact is a good implementation of the claim.
 That distinction keeps Sirno useful without pretending to solve judgment.

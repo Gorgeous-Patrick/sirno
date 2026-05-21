@@ -47,7 +47,7 @@ Use `prerequisite` for knowledge dependencies.
 Use `refines` for semantic narrowing.
 Use *repository witness* blocks when the *repository* contains evidence for the *entry* claim.
 Leave a *structural field* out when it does not improve navigation, review, or accountability.
-Run `sirno witness ENTRY_ID --full`
+Run `sirno witness ENTRY_ADDRESS --full`
 and read the *entry* prose for what the evidence should mean.
 
 Use `meta` for the project's principles, vocabulary, and Sirno-facing documentation method.
@@ -78,7 +78,7 @@ and their published form should be actualized from the maintained *lake*.
 
 Witness important claims.
 The *witness* may be source code, tests, configuration, generated files, or assets.
-Sirno queries *witnesses* by *entry* id through `mosaika`.
+Sirno queries *witnesses* by *entry address* through `mosaika`.
 The *entry* states the design claim.
 The *witness* block identifies the *repository* region to inspect.
 The *entry* prose should briefly say what that *repository* region is expected to demonstrate.

@@ -16,7 +16,7 @@ Use `the active repository`, `the configured lake`, and `the current project` fo
 Do not assume this source repository, its `sirno-docs/` path, or its self-hosted entries exist
 in the user's project.
 
-Skill examples should use configured paths, placeholders, or discovered entry ids.
+Skill examples should use configured paths, placeholders, or discovered entry addresses.
 A resource may name Sirno source files only when it describes how the Sirno source repository
 bundles and serves the skill itself.
 The procedure the user follows should remain useful in a fresh repository with a different lake path,

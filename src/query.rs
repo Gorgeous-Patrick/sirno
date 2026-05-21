@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use tracing::trace;
 
 use crate::entry::Entry;
-use crate::id::EntryId;
+use crate::identifier::EntryAddress;
 
 /// Case-insensitive text term for an entry query.
 ///
@@ -44,7 +44,7 @@ impl EntryTextTerm {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EntryStructuralMatcher {
     /// The field has any listed target.
-    Targets(Vec<EntryId>),
+    Targets(Vec<EntryAddress>),
     /// The field is present with any target count.
     Present,
     /// The field is present with no targets.
@@ -54,7 +54,7 @@ pub enum EntryStructuralMatcher {
 }
 
 impl EntryStructuralMatcher {
-    fn matches(&self, entry_targets: Option<&[EntryId]>) -> bool {
+    fn matches(&self, entry_targets: Option<&[EntryAddress]>) -> bool {
         match self {
             | Self::Targets(query_targets) => entry_targets.is_some_and(|entry_targets| {
                 query_targets.iter().any(|target| entry_targets.contains(target))
@@ -94,7 +94,7 @@ impl EntryQuery {
 
     /// Add a target matcher for one structural field.
     pub fn with_structural_targets(
-        mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryId>,
+        mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryAddress>,
     ) -> Self {
         let targets = targets.into_iter().collect::<Vec<_>>();
         if !targets.is_empty() {
@@ -175,7 +175,7 @@ impl VagueEntryQuery {
     /// Returns true when this query selects the entry.
     // sirno:witness:query:begin
     pub fn matches<'a>(
-        &self, entry: &'a Entry, entries_by_id: &BTreeMap<&'a EntryId, &'a Entry>,
+        &self, entry: &'a Entry, entries_by_id: &BTreeMap<&'a EntryAddress, &'a Entry>,
     ) -> bool {
         if self.text_terms.is_empty() {
             return true;
@@ -206,7 +206,7 @@ impl Entry {
             .to_lowercase()
     }
 
-    fn vague_query_text(&self, entries_by_id: &BTreeMap<&EntryId, &Entry>) -> String {
+    fn vague_query_text(&self, entries_by_id: &BTreeMap<&EntryAddress, &Entry>) -> String {
         let mut text = self.query_text();
         for target in self.metadata.structural_targets().map(|(_, target)| target) {
             text.push('\n');
@@ -230,8 +230,8 @@ mod tests {
     const FIELD_KIND: &str = "kind";
     const FIELD_AREA: &str = "area";
 
-    fn id(raw: &str) -> EntryId {
-        EntryId::new(raw).unwrap()
+    fn id(raw: &str) -> EntryAddress {
+        EntryAddress::new(raw).unwrap()
     }
 
     fn entry(raw_id: &str, name: &str, desc: &str, body: &str) -> Entry {

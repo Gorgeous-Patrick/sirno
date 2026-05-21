@@ -22,7 +22,7 @@ Read `Sirno.toml` for the lake path,
 then query or read the active project's narrative, introduction, methodology,
 or other route-front-door entries when they exist.
 Also read any entries the user named or the task implies.
-Do not assume any standard entry id exists.
+Do not assume any standard entry address exists.
 If a source entry is missing,
 state the gap and continue only with the route that can be grounded in existing entries.
 Switch to the editor skill if a session discovers a necessary repository,
@@ -37,7 +37,7 @@ the ordered entry route,
 user feedback and corrections,
 deferred detail,
 the aftertaste phrase or handle,
-and the intended narrative entry id when materializing.
+and the intended narrative entry address when materializing.
 
 Loop in short segments.
 Explain the next concept or route choice,
@@ -58,7 +58,7 @@ and leave an aftertaste the reader can reuse.
 Materialize when the route should guide future onboarding or review.
 The artifact is a narrative entry built by the serializer contract; see `narrative-serializer`.
 After materializing, run `sirno_lake_render` and `sirno_lake_check` in edit mode.
-Finish by naming the artifact, the entry path, and the main sequencing choice,
+Finish by naming the artifact, the entry address, and the main sequencing choice,
 and confirm the route preserves pull, a clean first bite, and an aftertaste.
 If the serializer script is unavailable or its input contract does not fit the session,
 draft the entry manually from the same recorded route state and report that fallback.

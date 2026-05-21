@@ -26,12 +26,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
+    EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
     QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
     StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
     TideSelectionRequest, TideStatusMode,
 };
-use crate::{CheckMode, EntryId, StructuralEdgeDirection, TideWorkitem};
+use crate::{CheckMode, EntryAddress, StructuralEdgeDirection, TideWorkitem};
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
 const ENTRY_RESOURCE_MIME_TYPE: &str = "text/markdown";
@@ -175,7 +175,7 @@ impl ServerHandler for SirnoMcpServer {
         let result = if let Some(resource) = SkillResourceSpec::for_uri(&request.uri) {
             Ok(ReadResourceResult::new(vec![resource.as_resource_contents()]))
         } else if let Some(raw_id) = request.uri.strip_prefix(ENTRY_RESOURCE_URI_PREFIX) {
-            entry_id(raw_id.to_owned())
+            entry_address(raw_id.to_owned())
                 .map_err(|error| McpError::invalid_params(error, None))
                 .and_then(|id| {
                     self.context
@@ -208,7 +208,7 @@ impl SirnoMcpServer {
     #[tool(name = "sirno_entry_new")]
     fn entry_new(&self, Parameters(params): Parameters<EntryNewParams>) -> McpToolResult {
         let request = EntryNewRequest {
-            id: entry_id(params.id)?,
+            id: entry_address(params.id)?,
             name: params.name,
             desc: params.desc,
             structural: params.structural.into_targets()?,
@@ -217,30 +217,34 @@ impl SirnoMcpServer {
         result(self.context.entry_new(request))
     }
 
-    /// Rename one entry id and its Sirno references.
+    /// Rename one entry address and its Sirno references.
     #[tool(name = "sirno_entry_rename")]
     fn entry_rename(&self, Parameters(params): Parameters<EntryRenameParams>) -> McpToolResult {
-        result(self.context.entry_rename(entry_id(params.old_id)?, entry_id(params.new_id)?))
+        result(
+            self.context.entry_rename(entry_address(params.old_id)?, entry_address(params.new_id)?),
+        )
     }
 
     /// Freeze one current frost entry and make its lake file read-only.
     #[tool(name = "sirno_entry_freeze")]
-    fn entry_freeze(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
-        result(self.context.entry_freeze(entry_id(params.id)?))
+    fn entry_freeze(
+        &self, Parameters(params): Parameters<EntryAddressOnlyParams>,
+    ) -> McpToolResult {
+        result(self.context.entry_freeze(entry_address(params.id)?))
     }
 
     /// Melt one Sirno Lake Markdown entry and make its file writable.
     #[tool(name = "sirno_entry_melt")]
-    fn entry_melt(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
-        result(self.context.entry_melt(entry_id(params.id)?))
+    fn entry_melt(&self, Parameters(params): Parameters<EntryAddressOnlyParams>) -> McpToolResult {
+        result(self.context.entry_melt(entry_address(params.id)?))
     }
 
     /// Show filesystem paths related to one entry.
     #[tool(name = "sirno_entry_path")]
-    fn entry_path(&self, Parameters(params): Parameters<EntryPathParams>) -> McpToolResult {
+    fn entry_paths(&self, Parameters(params): Parameters<EntryPathsParams>) -> McpToolResult {
         let selection = path_selection(params.entry, params.artifact, params.frost);
-        let request = EntryPathRequest::new(
-            entry_id(params.id)?,
+        let request = EntryPathsRequest::new(
+            entry_address(params.id)?,
             selection,
             params.absolute.unwrap_or(false),
         );
@@ -249,8 +253,8 @@ impl SirnoMcpServer {
 
     /// Read one Sirno Lake Markdown entry.
     #[tool(name = "sirno_entry_read")]
-    fn entry_read(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
-        result(self.context.entry_read(entry_id(params.id)?))
+    fn entry_read(&self, Parameters(params): Parameters<EntryAddressOnlyParams>) -> McpToolResult {
+        result(self.context.entry_read(entry_address(params.id)?))
     }
 
     /// Query Sirno Lake Markdown entries.
@@ -278,13 +282,15 @@ impl SirnoMcpServer {
     /// Return repository witness blocks for one entry.
     #[tool(name = "sirno_entry_witness")]
     fn entry_witness(&self, Parameters(params): Parameters<EntryWitnessParams>) -> McpToolResult {
-        result(self.context.entry_witness(entry_id(params.id)?, params.verbose))
+        result(self.context.entry_witness(entry_address(params.id)?, params.verbose))
     }
 
     /// List artifacts owned by one entry.
     #[tool(name = "sirno_entry_artifact_list")]
-    fn entry_artifact_list(&self, Parameters(params): Parameters<EntryIdParams>) -> McpToolResult {
-        result(self.context.entry_artifact_list(entry_id(params.id)?))
+    fn entry_artifact_list(
+        &self, Parameters(params): Parameters<EntryAddressOnlyParams>,
+    ) -> McpToolResult {
+        result(self.context.entry_artifact_list(entry_address(params.id)?))
     }
 
     /// Copy a file into one entry's artifact tree.
@@ -293,7 +299,7 @@ impl SirnoMcpServer {
         &self, Parameters(params): Parameters<ArtifactAddParams>,
     ) -> McpToolResult {
         result(self.context.entry_artifact_add(ArtifactAddRequest {
-            id: entry_id(params.id)?,
+            id: entry_address(params.id)?,
             source: params.source,
             artifact_path: params.artifact_path,
         }))
@@ -305,7 +311,7 @@ impl SirnoMcpServer {
         &self, Parameters(params): Parameters<ArtifactRenameParams>,
     ) -> McpToolResult {
         result(self.context.entry_artifact_rename(ArtifactRenameRequest {
-            id: entry_id(params.id)?,
+            id: entry_address(params.id)?,
             old_path: params.old_path,
             new_path: params.new_path,
         }))
@@ -317,7 +323,7 @@ impl SirnoMcpServer {
         &self, Parameters(params): Parameters<ArtifactRemoveParams>,
     ) -> McpToolResult {
         result(self.context.entry_artifact_remove(ArtifactRemoveRequest {
-            id: entry_id(params.id)?,
+            id: entry_address(params.id)?,
             artifact_path: params.artifact_path,
         }))
     }
@@ -433,8 +439,8 @@ fn structured_result<T: Serialize>(value: T) -> McpToolResult {
     Ok(result)
 }
 
-fn entry_id(raw: String) -> Result<EntryId, String> {
-    EntryId::new(raw).map_err(|error| error.to_string())
+fn entry_address(raw: String) -> Result<EntryAddress, String> {
+    EntryAddress::new(raw).map_err(|error| error.to_string())
 }
 
 fn path_selection(
@@ -467,7 +473,7 @@ struct CwdParams {
 }
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct EntryIdParams {
+struct EntryAddressOnlyParams {
     id: String,
 }
 
@@ -479,7 +485,7 @@ impl McpStructuralTargets {
         self.0
             .into_iter()
             .map(|target| {
-                Ok(StructuralTarget { field: target.field, target: entry_id(target.target)? })
+                Ok(StructuralTarget { field: target.field, target: entry_address(target.target)? })
             })
             .collect()
     }
@@ -508,7 +514,7 @@ struct EntryRenameParams {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct EntryPathParams {
+struct EntryPathsParams {
     id: String,
     entry: Option<bool>,
     artifact: Option<bool>,
@@ -555,7 +561,11 @@ impl McpStructuralFilterInput {
         match self {
             | Self::Object(filter) => Ok(StructuralFilter {
                 field: filter.field,
-                targets: filter.targets.into_iter().map(entry_id).collect::<Result<Vec<_>, _>>()?,
+                targets: filter
+                    .targets
+                    .into_iter()
+                    .map(entry_address)
+                    .collect::<Result<Vec<_>, _>>()?,
             }),
             | Self::Compact(raw) => {
                 StructuralFilter::from_str(&raw).map_err(|error| error.to_string())
@@ -761,7 +771,7 @@ struct TideStatusParams {
 #[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 enum McpTideStatusMode {
-    /// Return only entry ids that need review.
+    /// Return only entry addresses that need review.
     #[default]
     Review,
     /// Include full open workitem statuses.
@@ -791,7 +801,11 @@ struct TideSelectionParams {
 impl TideSelectionParams {
     fn into_request(self) -> Result<TideSelectionRequest, String> {
         Ok(TideSelectionRequest {
-            neighbors: self.neighbors.into_iter().map(entry_id).collect::<Result<Vec<_>, _>>()?,
+            neighbors: self
+                .neighbors
+                .into_iter()
+                .map(entry_address)
+                .collect::<Result<Vec<_>, _>>()?,
             workitems: self
                 .workitems
                 .into_iter()
@@ -815,7 +829,11 @@ impl TideResolveParams {
     fn into_request(self) -> Result<TideResolveRequest, String> {
         Ok(TideResolveRequest {
             infer: self.infer,
-            neighbors: self.neighbors.into_iter().map(entry_id).collect::<Result<Vec<_>, _>>()?,
+            neighbors: self
+                .neighbors
+                .into_iter()
+                .map(entry_address)
+                .collect::<Result<Vec<_>, _>>()?,
             workitems: self
                 .workitems
                 .into_iter()
@@ -838,11 +856,11 @@ impl TryFrom<McpTideWorkitem> for TideWorkitem {
 
     fn try_from(value: McpTideWorkitem) -> Result<Self, Self::Error> {
         TideWorkitem::new(
-            entry_id(value.ripple)?,
+            entry_address(value.ripple)?,
             value.field,
             StructuralEdgeDirection::from_str(&value.direction)
                 .map_err(|error| error.to_string())?,
-            entry_id(value.neighbor)?,
+            entry_address(value.neighbor)?,
         )
         .map_err(|error| error.to_string())
     }
@@ -1066,7 +1084,9 @@ Changed body.
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
-        let read = server.entry_read(Parameters(EntryIdParams { id: "alpha".to_owned() })).unwrap();
+        let read = server
+            .entry_read(Parameters(EntryAddressOnlyParams { id: "alpha".to_owned() }))
+            .unwrap();
         let text = entry
             .content
             .first()

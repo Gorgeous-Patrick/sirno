@@ -6,7 +6,7 @@ category:
 belongs:
   - sirno-lake
 prerequisite:
-  - entry-path
+  - entry-address
   - sirno-lake
 refines:
   - future-work
@@ -16,7 +16,7 @@ A *lake sheaf* is the resolved view of a top-level *lake* and its dependency lak
 
 The name describes the design model.
 Local lake data can be glued into one global view
-when compatible *entry paths* resolve to consistent entries.
+when compatible *entry addresses* resolve to consistent entries.
 The global view is what readers and tools navigate after resolution.
 
 A lake sheaf flattens sublakes to the top level before resolving dependency diamonds.

@@ -5,11 +5,12 @@
 
 use std::collections::BTreeSet;
 use std::fmt::Write;
+use std::path::{Component, Path, PathBuf};
 
 use thiserror::Error;
 
 use crate::entry::Entry;
-use crate::id::EntryId;
+use crate::identifier::EntryAddress;
 use crate::structural::{StructuralEdgeDirection, StructuralEdgeIndex, StructuralSettings};
 
 /// Borrowed Markdown body whose generated-link footer can be inspected or changed.
@@ -168,6 +169,7 @@ impl StructuralEdgeIndex {
                 if field_settings.edge(direction).render {
                     sections.push(GeneratedLinkSection::new(
                         section_title(field, direction),
+                        entry.id.clone(),
                         self.edge_targets(field, direction, entry),
                     ));
                 }
@@ -198,12 +200,13 @@ fn section_title(field: &str, direction: StructuralEdgeDirection) -> String {
 #[derive(Debug)]
 struct GeneratedLinkSection {
     title: String,
-    targets: BTreeSet<EntryId>,
+    source: EntryAddress,
+    targets: BTreeSet<EntryAddress>,
 }
 
 impl GeneratedLinkSection {
-    fn new(title: String, targets: BTreeSet<EntryId>) -> Self {
-        Self { title, targets }
+    fn new(title: String, source: EntryAddress, targets: BTreeSet<EntryAddress>) -> Self {
+        Self { title, source, targets }
     }
 
     // sirno:witness:generated-footer:begin
@@ -220,19 +223,49 @@ impl GeneratedLinkSection {
         out.push('\n');
         for id in &self.targets {
             out.push_str("  - ");
-            out.push_str(&render_markdown_entry_link(id));
+            out.push_str(&render_markdown_entry_link(&self.source, id));
             out.push('\n');
         }
     }
     // sirno:witness:generated-footer:end
 }
 
-fn render_markdown_entry_link(id: &EntryId) -> String {
+fn render_markdown_entry_link(source: &EntryAddress, target: &EntryAddress) -> String {
     format!(
-        "[{}]({}.md)",
-        escape_markdown_link_label(id.as_str()),
-        percent_encode_path_segment(id.as_str())
+        "[{}]({})",
+        escape_markdown_link_label(target.as_str()),
+        percent_encode_relative_path(&relative_entry_link(source, target))
     )
+}
+
+fn relative_entry_link(source: &EntryAddress, target: &EntryAddress) -> PathBuf {
+    let source_path = source.to_lake_relative_path();
+    let target_path = target.to_lake_relative_path();
+    let source_parent = source_path.parent().unwrap_or_else(|| Path::new(""));
+    relative_path(source_parent, &target_path)
+}
+
+fn relative_path(from_directory: &Path, target: &Path) -> PathBuf {
+    let from = normal_components(from_directory);
+    let target = normal_components(target);
+    let common = from.iter().zip(&target).take_while(|(left, right)| left == right).count();
+    let mut relative = PathBuf::new();
+    for _ in &from[common..] {
+        relative.push("..");
+    }
+    for segment in &target[common..] {
+        relative.push(segment);
+    }
+    relative
+}
+
+fn normal_components(path: &Path) -> Vec<String> {
+    path.components()
+        .filter_map(|component| match component {
+            | Component::Normal(value) => value.to_str().map(ToOwned::to_owned),
+            | _ => None,
+        })
+        .collect()
 }
 
 fn escape_markdown_link_label(value: &str) -> String {
@@ -256,6 +289,18 @@ fn percent_encode_path_segment(value: &str) -> String {
         }
     }
     out
+}
+
+fn percent_encode_relative_path(path: &Path) -> String {
+    path.components()
+        .filter_map(|component| match component {
+            | Component::Normal(segment) => segment.to_str().map(percent_encode_path_segment),
+            | Component::ParentDir => Some("..".to_owned()),
+            | Component::CurDir => Some(".".to_owned()),
+            | Component::RootDir | Component::Prefix(_) => None,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Opening guard for Sirno-owned generated links.
@@ -344,14 +389,14 @@ pub enum GeneratedLinkError {
 mod tests {
     use super::*;
     use crate::structural::{StructuralFieldSettings, StructuralSettings};
-    use crate::{Entry, EntryId, EntryMetadata};
+    use crate::{Entry, EntryAddress, EntryMetadata};
 
     const FIELD_KIND: &str = "kind";
     const FIELD_AREA: &str = "area";
     const FIELD_PARENT: &str = "parent";
 
-    fn id(raw: &str) -> EntryId {
-        EntryId::new(raw).unwrap()
+    fn id(raw: &str) -> EntryAddress {
+        EntryAddress::new(raw).unwrap()
     }
 
     fn entry() -> Entry {
@@ -433,6 +478,25 @@ mod tests {
     }
 
     #[test]
+    fn renders_relative_links_between_root_and_domain_entries() {
+        let settings = structural_settings([(FIELD_AREA, render_settings(true, false, false))]);
+        let mut root_metadata = EntryMetadata::new("Concept", "A root entry.").unwrap();
+        root_metadata.push_structural_target(FIELD_AREA, id("core.design"));
+        let root = Entry::new(id("concept"), root_metadata, "Body.\n");
+        let mut domain_metadata = EntryMetadata::new("Design", "A domain entry.").unwrap();
+        domain_metadata.push_structural_target(FIELD_AREA, id("concept"));
+        let domain = Entry::new(id("core.design"), domain_metadata, "Body.\n");
+        let entries = vec![root.clone(), domain.clone()];
+        let index = StructuralEdgeIndex::from_entries(&entries);
+
+        let root_footer = index.render_entry(&root, &settings);
+        let domain_footer = index.render_entry(&domain, &settings);
+
+        assert!(root_footer.contains("  - [core.design](core/design.md)"));
+        assert!(domain_footer.contains("  - [concept](../concept.md)"));
+    }
+
+    #[test]
     fn repeated_targets_render_once() {
         let mut entry = entry();
         entry.metadata.push_structural_target(FIELD_KIND, id("meta"));
@@ -444,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn generated_links_escape_filename_like_entry_ids() {
+    fn generated_links_escape_filename_like_entry_addresses() {
         let target = id("Spec [A] #1");
         let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
         metadata.push_structural_target(FIELD_AREA, target);
@@ -590,7 +654,7 @@ mod tests {
     #[test]
     fn renders_empty_enabled_sections_when_entry_has_no_structural_targets() {
         let metadata = EntryMetadata::new("Meta", "A kind.").unwrap();
-        let entry = Entry::new(EntryId::new("meta").unwrap(), metadata, "Body.\n");
+        let entry = Entry::new(EntryAddress::new("meta").unwrap(), metadata, "Body.\n");
 
         let footer = render_entry(&entry, &area_settings());
 
@@ -603,7 +667,7 @@ mod tests {
     #[test]
     fn renders_region_none_when_no_sections_are_enabled() {
         let metadata = EntryMetadata::new("Meta", "A kind.").unwrap();
-        let entry = Entry::new(EntryId::new("meta").unwrap(), metadata, "Body.\n");
+        let entry = Entry::new(EntryAddress::new("meta").unwrap(), metadata, "Body.\n");
         let settings = StructuralSettings::from_fields([
             (FIELD_KIND, StructuralFieldSettings::default()),
             (FIELD_AREA, StructuralFieldSettings::default()),

@@ -18,7 +18,7 @@ both plain strings.
 Configured structural fields are optional.
 This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
 They are always lists when present,
-and their values are *entry* ids.
+and their values are *entry addresses*.
 An empty list is a present empty field.
 Their field order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
@@ -35,7 +35,7 @@ but they do not define Sirno structure.
 The metadata block should be small and stable.
 It is the part of an *entry* that tools must read without interpretation.
 That is why required fields are plain strings,
-and structural fields are lists of ids.
+and structural fields are lists of entry addresses.
 
 The body can explain nuance,
 but the metadata must not require prose parsing.
@@ -44,7 +44,7 @@ the configured structural metadata must say so.
 If an agent needs to inspect *repository* evidence for an *entry*,
 it should use the agent-facing MCP tool.
 If a human needs the same evidence,
-run `sirno witness ENTRY_ID --full`.
+run `sirno witness ENTRY_ADDRESS --full`.
 
 A canonical *entry* shape looks like this:
 

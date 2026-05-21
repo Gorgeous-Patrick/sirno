@@ -15,7 +15,7 @@ use crate::surface::cli::tui::{
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
 use crate::{
-    CheckMode, Entry, EntryDirectory, EntryDirectoryCheckSettings, EntryId, EntryMetadata,
+    CheckMode, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings, EntryMetadata,
     StructuralSettings,
 };
 
@@ -294,7 +294,7 @@ impl DefaultEntrySpec {
         self.set_targets(&mut metadata, structural, CATEGORY_FIELD, self.category);
         self.set_targets(&mut metadata, structural, BELONGS_FIELD, self.belongs);
         self.set_targets(&mut metadata, structural, PREREQUISITE_FIELD, self.prerequisite);
-        Ok(Entry::new(entry_id(self.id), metadata, self.body))
+        Ok(Entry::new(entry_address(self.id), metadata, self.body))
     }
 
     fn set_targets(
@@ -304,7 +304,7 @@ impl DefaultEntrySpec {
         if targets.is_empty() || !structural.contains_field(field) {
             return;
         }
-        metadata.set_structural_targets(field, targets.iter().map(|target| entry_id(target)));
+        metadata.set_structural_targets(field, targets.iter().map(|target| entry_address(target)));
     }
 }
 
@@ -319,7 +319,7 @@ fn default_entry_rows(entries: &[Entry], structural: &StructuralSettings) -> Vec
     DEFAULT_ENTRIES
         .iter()
         .map(|spec| {
-            let id = entry_id(spec.id);
+            let id = entry_address(spec.id);
             let status = match entries_by_id.get(&id) {
                 | None => EntryDefaultStatus::Missing,
                 | Some(entry) if category_targets.contains(&id) && !has_category_marker(entry) => {
@@ -353,12 +353,13 @@ impl DefaultEntrySpec {
 }
 
 fn has_category_marker(entry: &Entry) -> bool {
-    let category_id = entry_id(CATEGORY_FIELD);
+    let category_id = entry_address(CATEGORY_FIELD);
     entry.metadata.structural_targets_for(CATEGORY_FIELD).iter().any(|id| id == &category_id)
 }
 
-fn entry_id(raw: &str) -> EntryId {
-    EntryId::new(raw).unwrap_or_else(|error| panic!("invalid built-in entry id `{raw}`: {error}"))
+fn entry_address(raw: &str) -> EntryAddress {
+    EntryAddress::new(raw)
+        .unwrap_or_else(|error| panic!("invalid built-in entry address `{raw}`: {error}"))
 }
 
 fn review_check_summary(report: &crate::EntryDirectoryReport) -> String {
@@ -398,7 +399,7 @@ mod tests {
             full.metadata
                 .structural_targets_for(CATEGORY_FIELD)
                 .iter()
-                .map(EntryId::as_str)
+                .map(EntryAddress::as_str)
                 .collect::<Vec<_>>(),
             ["concept"]
         );
@@ -406,7 +407,7 @@ mod tests {
             full.metadata
                 .structural_targets_for(BELONGS_FIELD)
                 .iter()
-                .map(EntryId::as_str)
+                .map(EntryAddress::as_str)
                 .collect::<Vec<_>>(),
             ["structural"]
         );
@@ -415,9 +416,10 @@ mod tests {
     #[test]
     fn rows_report_missing_and_category_marker_status() {
         let mut concept_metadata = EntryMetadata::new("Concept", "A concept.").unwrap();
-        concept_metadata.push_structural_target(CATEGORY_FIELD, entry_id("meta"));
-        let concept = Entry::new(entry_id("concept"), concept_metadata, "");
-        let meta = Entry::new(entry_id("meta"), EntryMetadata::new("Meta", "Meta.").unwrap(), "");
+        concept_metadata.push_structural_target(CATEGORY_FIELD, entry_address("meta"));
+        let concept = Entry::new(entry_address("concept"), concept_metadata, "");
+        let meta =
+            Entry::new(entry_address("meta"), EntryMetadata::new("Meta", "Meta.").unwrap(), "");
 
         let rows = default_entry_rows(&[concept, meta], &StructuralSettings::default());
 

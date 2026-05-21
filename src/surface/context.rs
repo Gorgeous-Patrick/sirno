@@ -11,16 +11,16 @@ use indexmap::IndexMap;
 
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
-    ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryNewRequest, EntryPathRequest,
-    EntryPathResult, EntryReadResult, EntryRenameResult, FrostCheckoutRequest, FrostCheckoutResult,
-    FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult, LakeInitRequest,
-    LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord, QueryRequest, QueryResponse,
-    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
-    SkillWrapperResult, StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState,
-    StatusFrost, StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus,
-    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
-    WitnessRecordResult, WitnessResult,
+    ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryFileResult, EntryNewRequest,
+    EntryPathsRequest, EntryReadResult, EntryRenameResult, FrostCheckoutRequest,
+    FrostCheckoutResult, FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult,
+    LakeInitRequest, LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord,
+    QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult,
+    SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy, StatusCommit, StatusCommitBlocker,
+    StatusCommitState, StatusFrost, StatusFrostState, StatusResult, StatusTide,
+    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
+    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    TideStatusResult, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
@@ -28,11 +28,11 @@ use crate::surface::output::{
 };
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
-    CONFIG_FILE_NAME, CheckMode, Entry, EntryArtifactPath, EntryDirectory,
-    EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryId,
-    EntryMetadata, EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig,
-    SirnoFrost, SirnoLock, StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery,
-    WitnessCheckSettings, WitnessRecord,
+    CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath, EntryDirectory,
+    EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryMetadata,
+    EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig, SirnoFrost, SirnoLock,
+    StructuralSettings, Tide, TideStatus, TutorialSettings, VagueEntryQuery, WitnessCheckSettings,
+    WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -141,7 +141,7 @@ impl SurfaceContext {
     }
 
     /// Return filesystem paths related to one entry.
-    pub fn entry_paths(&self, request: EntryPathRequest) -> Result<Vec<PathRecord>, CommandError> {
+    pub fn entry_paths(&self, request: EntryPathsRequest) -> Result<Vec<PathRecord>, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
         let directory = EntryDirectory::new(&lake);
@@ -152,7 +152,7 @@ impl SurfaceContext {
         if request.selection.entry {
             records.push(PathRecord::new(
                 "entry",
-                output_path(directory.entry_path(&request.id), request.absolute)?,
+                output_path(directory.entry_file_path(&request.id), request.absolute)?,
             ));
         }
         if request.selection.artifact {
@@ -187,11 +187,11 @@ impl SurfaceContext {
 
     // sirno:witness:mcp-interface:begin
     /// Read one Sirno Lake Markdown entry and return its parsed body and stored source.
-    pub fn entry_read(&self, id: EntryId) -> Result<EntryReadResult, CommandError> {
+    pub fn entry_read(&self, id: EntryAddress) -> Result<EntryReadResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
         let directory = EntryDirectory::new(&lake);
-        let path = directory.entry_path(&id);
+        let path = directory.entry_file_path(&id);
         let source = directory.read_entry_source(&id)?;
         let entry = Entry::from_markdown(id.clone(), &source)?;
         Ok(EntryReadResult {
@@ -215,8 +215,8 @@ impl SurfaceContext {
         Ok(tide_statuses_for_output(&tide, mode.includes_resolved()))
     }
 
-    /// Return entry ids that still need tide review.
-    pub fn tide_review_entries(&self) -> Result<Vec<EntryId>, CommandError> {
+    /// Return entry addresses that still need tide review.
+    pub fn tide_review_entries(&self) -> Result<Vec<EntryAddress>, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let lock = context.load_lock_or_current()?;
         let tide = context.tide(&lock)?;
@@ -238,7 +238,7 @@ impl SurfaceContext {
     }
 
     /// Return repository witness records for one entry.
-    pub fn witness_records(&self, id: &EntryId) -> Result<Vec<WitnessRecord>, CommandError> {
+    pub fn witness_records(&self, id: &EntryAddress) -> Result<Vec<WitnessRecord>, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
         if !EntryDirectory::new(&lake).entry_exists(id)? {
@@ -277,7 +277,7 @@ impl SurfaceContext {
     }
 
     /// Create one Markdown entry.
-    pub fn entry_new(&self, request: EntryNewRequest) -> Result<EntryPathResult, CommandError> {
+    pub fn entry_new(&self, request: EntryNewRequest) -> Result<EntryFileResult, CommandError> {
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let mut metadata = EntryMetadata::new(
@@ -292,7 +292,7 @@ impl SurfaceContext {
 
         let entry = Entry::new(request.id.clone(), metadata, request.body.unwrap_or_default());
         let path = EntryDirectory::new(&lake).create_entry(&entry)?;
-        Ok(EntryPathResult {
+        Ok(EntryFileResult {
             ok: true,
             id: request.id.to_string(),
             path: display_path(&path),
@@ -300,9 +300,9 @@ impl SurfaceContext {
         })
     }
 
-    /// Rename one entry id and its Sirno references.
+    /// Rename one entry address and its Sirno references.
     pub fn entry_rename(
-        &self, old_id: EntryId, new_id: EntryId,
+        &self, old_id: EntryAddress, new_id: EntryAddress,
     ) -> Result<EntryRenameResult, CommandError> {
         let renamed_config = if self.config_path.exists() {
             let mut config = SirnoConfig::from_file(&self.config_path)?;
@@ -339,7 +339,7 @@ impl SurfaceContext {
     }
 
     /// Freeze one current frost entry and make its lake file read-only.
-    pub fn entry_freeze(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
+    pub fn entry_freeze(&self, id: EntryAddress) -> Result<EntryFileResult, CommandError> {
         let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
         context.reject_immutable_checkout()?;
         let directory = context.lake();
@@ -348,7 +348,7 @@ impl SurfaceContext {
         let frost = SirnoFrost::open(&context.frost_path)?;
         frost.ensure_entry_bundle_current(&entry, &artifacts)?;
         let path = directory.freeze_entry(&id)?;
-        Ok(EntryPathResult {
+        Ok(EntryFileResult {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
@@ -357,10 +357,10 @@ impl SurfaceContext {
     }
 
     /// Melt one Sirno Lake Markdown entry and make its file writable.
-    pub fn entry_melt(&self, id: EntryId) -> Result<EntryPathResult, CommandError> {
+    pub fn entry_melt(&self, id: EntryAddress) -> Result<EntryFileResult, CommandError> {
         let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let path = EntryDirectory::new(&lake).melt_entry(&id)?;
-        Ok(EntryPathResult {
+        Ok(EntryFileResult {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
@@ -448,7 +448,9 @@ impl SurfaceContext {
     }
 
     /// Return repository witness blocks for one entry as a JSON-first command result.
-    pub fn entry_witness(&self, id: EntryId, verbose: bool) -> Result<WitnessResult, CommandError> {
+    pub fn entry_witness(
+        &self, id: EntryAddress, verbose: bool,
+    ) -> Result<WitnessResult, CommandError> {
         let records = self.witness_records(&id)?;
         Ok(WitnessResult {
             ok: !records.is_empty(),
@@ -511,7 +513,9 @@ impl SurfaceContext {
     // sirno:witness:project-config-comments:end
 
     /// List artifacts owned by one entry.
-    pub fn entry_artifact_list(&self, id: EntryId) -> Result<ArtifactListResult, CommandError> {
+    pub fn entry_artifact_list(
+        &self, id: EntryAddress,
+    ) -> Result<ArtifactListResult, CommandError> {
         let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let directory = EntryDirectory::new(&lake);
         directory.read_entry(&id)?;
@@ -1773,8 +1777,8 @@ fn structural_matchers_by_field(
 
 fn structural_targets_by_target(
     targets: Vec<StructuralTarget>, structural: &StructuralSettings,
-) -> Result<IndexMap<String, Vec<EntryId>>, CommandError> {
-    let mut targets_by_field = IndexMap::<String, Vec<EntryId>>::new();
+) -> Result<IndexMap<String, Vec<EntryAddress>>, CommandError> {
+    let mut targets_by_field = IndexMap::<String, Vec<EntryAddress>>::new();
     for target in targets {
         if !structural.contains_field(&target.field) {
             return Err(CommandError::UnconfiguredStructuralField(target.field));
@@ -1794,8 +1798,10 @@ fn tide_selection_request_matches(request: &TideSelectionRequest, status: &TideS
         || request.workitems.iter().any(|workitem| &status.workitem == workitem)
 }
 
-fn title_name_from_id(id: &EntryId) -> String {
-    id.as_str()
+fn title_name_from_id(id: &EntryAddress) -> String {
+    let local_atom = id.local_atom();
+    local_atom
+        .as_str()
         .split('-')
         .map(|segment| {
             let mut chars = segment.chars();

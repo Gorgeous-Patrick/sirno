@@ -11,22 +11,22 @@ prerequisite:
 
 An *entry* is a Markdown file in the Sirno Lake.
 
-The filename stem is the local *entry* id.
-The local id is unique inside its *entry domain*,
+The filename stem is the local *entry atom*.
+The local atom is unique inside its *entry domain*,
 case-sensitive, and validated as a cross-platform filename stem.
 In a flat *lake*, the root domain is the only domain,
-so local ids are lake-unique.
-Write local *entry* ids as lowercase ASCII kebab-case by default.
+so local atoms are lake-unique.
+Write local *entry atoms* as lowercase ASCII kebab-case by default.
 That style is easy to type, quote, link, and compare across tools.
 It may use spaces, uppercase letters, selected punctuation, and Unicode
 when those characters are safe in common filesystems.
 It must not use path separators, control characters, Windows-reserved punctuation,
 reserved device names, a trailing space, or `.`.
-The `.` character separates segments in an *entry path*.
-An *entry path* combines *entry domains* with a local id to find an entry.
+The `.` character separates segments in an *entry address*.
+An *entry address* combines *entry domains* with a local atom to find an entry.
 It is a lookup form,
 not necessarily a unique identity for the entry it resolves to.
-It can use at most 252 UTF-8 bytes,
+Each atom can use at most 252 UTF-8 bytes,
 so the final `.md` filename stays inside common component limits.
 
 Each *entry* has a YAML metadata block and a prose body.
@@ -34,7 +34,7 @@ The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The active structural field set is configured in `Sirno.toml`.
 The `frozen:` field marks a current frost-backed *entry* as read-only
-through `sirno freeze ENTRY_ID`.
+through `sirno freeze ENTRY_ADDRESS`.
 An *entry* file may use LF or CRLF line endings.
 Use one line-ending style per file so byte-preserving tools can keep the file predictable.
 
@@ -53,7 +53,8 @@ the body should explain the durable design fact rather than narrating the most r
 The metadata block carries structure that tools must read exactly.
 The body carries judgment, examples, and explanation.
 This split lets Sirno stay simple.
-It can validate ids and *structural fields* without pretending to understand the full meaning of the prose.
+It can validate addresses and *structural fields*
+without pretending to understand the full meaning of the prose.
 
 Good *entries* are compact but not cryptic.
 They avoid repeating every repository artifact,

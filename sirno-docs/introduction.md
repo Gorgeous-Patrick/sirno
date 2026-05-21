@@ -41,7 +41,7 @@ Sirno keeps its metadata vocabulary small.
 `refines` connects a local *entry* back to the broader *entry* it makes concrete.
 These recommended fields form this repository's structural graph.
 Other Sirno projects may configure a different structural field set.
-Repository *witness* status is discovered through `sirno witness ENTRY_ID --full`.
+Repository *witness* status is discovered through `sirno witness ENTRY_ADDRESS --full`.
 The *structural fields* are explicit metadata,
 so tools can query them without pretending to understand the whole design semantically.
 
@@ -64,9 +64,9 @@ They make the relevant design objects easier to name and inspect.
 
 Repository *witnesses* close the loop with implementation.
 A *witness* block lives in a configured *repository* member,
-opens with `sirno:witness:<entry-id>:begin`,
-and closes with `sirno:witness:<entry-id>:end`.
-Sirno asks `mosaika` to locate those regions by *entry* id.
+opens with `sirno:witness:<entry-address>:begin`,
+and closes with `sirno:witness:<entry-address>:end`.
+Sirno asks `mosaika` to locate those regions by *entry address*.
 The *entry* states the claim.
 The *repository* region shows where that claim can be inspected.
 

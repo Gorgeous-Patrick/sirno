@@ -3,7 +3,7 @@
 //! Sirno keeps design as named Markdown entries with exact metadata.
 //! The public model follows the repository design:
 //! entries are nominal objects, structural fields are explicit,
-//! and repository witnesses are discovered by entry id.
+//! and repository witnesses are discovered by entry address.
 
 pub mod artifact;
 pub mod check;
@@ -12,7 +12,7 @@ pub mod surface;
 pub mod entry;
 pub mod freeze;
 pub mod frost;
-pub mod id;
+pub mod identifier;
 pub mod lake;
 pub mod lock;
 pub mod mcp;
@@ -40,7 +40,7 @@ pub use crate::entry::{
 };
 pub use crate::freeze::{FreezeError, FrozenPath};
 pub use crate::frost::{FrostError, FrostGcReport, SirnoFrost};
-pub use crate::id::{EntryId, EntryIdError};
+pub use crate::identifier::{EntryAddress, EntryAddressError, EntryAtom, EntryAtomError};
 pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
     EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,

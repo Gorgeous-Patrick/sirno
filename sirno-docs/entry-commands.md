@@ -14,45 +14,46 @@ Entry commands operate on Markdown entries and their owner-relative artifact tre
 `sirno new` creates one Markdown entry from typed command-line metadata.
 `sirno entry new` is its grouped form.
 The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.
-The `--structural FIELD=ENTRY_ID` option adds configured structural metadata targets.
+The `--structural FIELD=ENTRY_ADDRESS` option adds configured structural metadata targets.
 It refuses to overwrite an existing entry file.
 
-`sirno entry rename OLD_ID NEW_ID` renames one entry id.
+`sirno entry rename OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS` renames one entry address.
 It updates structural metadata targets, existing generated footer regions,
-and configured witness sentinels that reference `OLD_ID`.
+and configured witness sentinels that reference `OLD_ENTRY_ADDRESS`.
 `sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
-`sirno move entry OLD_ID NEW_ID` and `sirno mv entry OLD_ID NEW_ID`
+`sirno move entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`
+and `sirno mv entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`
 select the same entry rename.
 Authored prose outside generated footer regions remains user-owned.
 
-`sirno path ENTRY_ID` prints filesystem paths related to one entry.
-Its default output includes the lake Markdown entry path,
-the lake `.artifacts/<entry-id>/` tree,
+`sirno path ENTRY_ADDRESS` prints filesystem paths related to one entry.
+Its default output includes the lake Markdown entry file path,
+the lake `.artifacts/<entry-address>/` tree,
 and the private frost entry root when frost is configured.
 It excludes repository witness paths.
-The grouped form is `sirno entry path ENTRY_ID`.
+The grouped form is `sirno entry path ENTRY_ADDRESS`.
 The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
 The `--absolute` flag prints absolute paths.
 The `-o, --format` option selects `human`, `json`, or `paths`.
 
-`sirno artifact list ENTRY_ID` lists owner-relative artifact paths for one entry.
-`sirno artifact add ENTRY_ID SOURCE [ARTIFACT_PATH]`
-copies a file into `.artifacts/<entry-id>/...`.
+`sirno artifact list ENTRY_ADDRESS` lists owner-relative artifact paths for one entry.
+`sirno artifact add ENTRY_ADDRESS SOURCE [ARTIFACT_PATH]`
+copies a file into `.artifacts/<entry-address>/...`.
 When `ARTIFACT_PATH` is omitted,
 the source file name becomes the owner-relative artifact path.
-`sirno artifact rename ENTRY_ID OLD_PATH NEW_PATH` renames one artifact path.
+`sirno artifact rename ENTRY_ADDRESS OLD_PATH NEW_PATH` renames one artifact path.
 `sirno artifact mv` and `sirno artifact move` are aliases for `rename`.
-`sirno artifact remove ENTRY_ID ARTIFACT_PATH` removes one artifact.
+`sirno artifact remove ENTRY_ADDRESS ARTIFACT_PATH` removes one artifact.
 `sirno artifact rm` and `sirno artifact delete` are aliases for `remove`.
 The grouped forms live under `sirno entry artifact`.
 Artifact mutation commands refuse to change artifacts owned by a frozen entry.
 
-`sirno freeze ENTRY_ID` verifies that one lake entry matches current frost,
+`sirno freeze ENTRY_ADDRESS` verifies that one lake entry matches current frost,
 adds `frozen:`,
 and applies local file protection to that file and its artifact tree.
-`sirno melt ENTRY_ID` removes `frozen:` from one lake entry
+`sirno melt ENTRY_ADDRESS` removes `frozen:` from one lake entry
 and clears local file protection from its file and artifact tree.
-`sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
+`sirno unfreeze ENTRY_ADDRESS` is an alias for `sirno melt ENTRY_ADDRESS`.
 The grouped forms are `sirno entry freeze`, `sirno entry melt`, and `sirno entry unfreeze`.
 They accept the same direct-entry and TUI spellings.
 `sirno freeze`, `sirno melt`, `sirno freeze tui`, and `sirno melt tui`
@@ -69,7 +70,7 @@ and immutable frost checkout state.
 `sirno query` reads the configured Markdown lake.
 `sirno entry query` is its grouped form.
 Its default mode is vague text query.
-Structural filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Structural filters use `--has FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 Distinct fields narrow results.
 Same-field target filters and state filters are alternatives.
@@ -88,12 +89,12 @@ The mask preserves paths, line breaks, and byte offsets outside those regions.
 With `--with-generated-footer`,
 it searches the full Markdown files including generated links.
 
-`sirno witness ENTRY_ID` scans configured repo members through `mosaika`
-and reports repository witness blocks for the selected entry id.
-`sirno entry witness ENTRY_ID` is its grouped form.
-It first resolves `ENTRY_ID` in the active lake.
+`sirno witness ENTRY_ADDRESS` scans configured repo members through `mosaika`
+and reports repository witness blocks for the selected entry address.
+`sirno entry witness ENTRY_ADDRESS` is its grouped form.
+It first resolves `ENTRY_ADDRESS` in the active lake.
 Missing entries fail before repo members are scanned.
-`sirno witness ENTRY_ID -f, --full` also prints the full matched repository regions.
+`sirno witness ENTRY_ADDRESS -f, --full` also prints the full matched repository regions.
 The witness output reports the opening and closing delimiter ranges.
 Delimiter ranges start at the sentinel text and exclude leading indentation.
 In full mode, the summary line contains only the range.

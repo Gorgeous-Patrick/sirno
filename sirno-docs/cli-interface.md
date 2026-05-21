@@ -46,7 +46,9 @@ For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 
 Top-level `sirno move` groups the three mutation moves:
-`sirno move entry OLD_ID NEW_ID`, `sirno move lake PATH`, and `sirno move frost PATH`.
+`sirno move entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`,
+`sirno move lake PATH`,
+and `sirno move frost PATH`.
 `sirno mv ...` is its short form.
 Each wrapper delegates to the corresponding grouped move command.
 

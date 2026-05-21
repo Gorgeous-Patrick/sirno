@@ -58,7 +58,7 @@ on every project tool call.
 
 `sirno_entry_read` returns parsed metadata, body text, and the full stored Markdown source.
 Structural filters may use `{ field, targets }` objects
-or compact `FIELD=ENTRY_ID[,ENTRY_ID]` strings.
+or compact `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]` strings.
 Structural states may use `{ field, state }` objects
 or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 `sirno_status` returns typed frost, check-policy, structural-edge,

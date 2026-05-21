@@ -14,7 +14,7 @@ use crate::surface::output::{
     format_query_json, query_result_records,
 };
 use crate::{
-    CheckMode, EntryDirectoryReport, EntryId, EntryIdError, EntryStructuralMatcher,
+    CheckMode, EntryAddress, EntryAddressError, EntryDirectoryReport, EntryStructuralMatcher,
     GenLinkDirectoryReport, StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, WitnessRecord,
 };
 
@@ -35,7 +35,7 @@ pub(crate) type TideOutputFormat = StructuredOutputFormat;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum TideStatusMode {
-    /// Show only entry ids that need review.
+    /// Show only entry addresses that need review.
     #[default]
     Review,
     /// Show full open workitem statuses.
@@ -135,7 +135,7 @@ impl FromStr for QueryColumns {
 /// One column printable by `sirno query`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum QueryColumn {
-    /// Entry id.
+    /// Entry address.
     Id,
     /// Human-readable entry name.
     Name,
@@ -185,13 +185,13 @@ pub enum QueryColumnsParseError {
     UnknownColumn(String),
 }
 
-/// Structural query filter parsed from `FIELD=ENTRY_ID[,ENTRY_ID]`.
+/// Structural query filter parsed from `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StructuralFilter {
     /// Structural field name.
     pub field: String,
-    /// Accepted target entry ids for this field.
-    pub targets: Vec<EntryId>,
+    /// Accepted target entry addresses for this field.
+    pub targets: Vec<EntryAddress>,
 }
 
 impl FromStr for StructuralFilter {
@@ -210,14 +210,16 @@ impl FromStr for StructuralFilter {
     }
 }
 
-fn parse_structural_filter_targets(raw: &str) -> Result<Vec<EntryId>, StructuralFilterParseError> {
+fn parse_structural_filter_targets(
+    raw: &str,
+) -> Result<Vec<EntryAddress>, StructuralFilterParseError> {
     let mut targets = Vec::new();
     for raw_target in raw.split(',') {
         let target = raw_target.trim();
         if target.is_empty() {
             return Err(StructuralFilterParseError::EmptyTarget);
         }
-        targets.push(EntryId::new(target)?);
+        targets.push(EntryAddress::new(target)?);
     }
     Ok(targets)
 }
@@ -226,17 +228,17 @@ fn parse_structural_filter_targets(raw: &str) -> Result<Vec<EntryId>, Structural
 #[derive(Debug, Error)]
 pub enum StructuralFilterParseError {
     /// The argument does not contain the field-target separator.
-    #[error("expected FIELD=ENTRY_ID[,ENTRY_ID]")]
+    #[error("expected FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]")]
     MissingEquals,
     /// The structural field name is empty.
     #[error("structural field name must not be empty")]
     EmptyField,
-    /// The target entry id list contains a separator without a target.
+    /// The target entry address list contains a separator without a target.
     #[error("structural filter contains an empty target")]
     EmptyTarget,
-    /// A target entry id is invalid.
+    /// A target entry address is invalid.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
 }
 
 /// Structural query state filter parsed from `FIELD=STATE`.
@@ -370,20 +372,20 @@ impl QueryResults {
     }
 }
 
-/// Entry path lookup request shared by CLI and tool callers.
+/// Entry address lookup request shared by CLI and tool callers.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct EntryPathRequest {
-    /// Entry id whose paths should be returned.
-    pub id: EntryId,
+pub struct EntryPathsRequest {
+    /// Entry address whose paths should be returned.
+    pub id: EntryAddress,
     /// Selected path classes.
     pub selection: PathSelection,
     /// Whether returned paths should be absolute.
     pub absolute: bool,
 }
 
-impl EntryPathRequest {
+impl EntryPathsRequest {
     /// Build a path lookup request from explicit typed fields.
-    pub fn new(id: EntryId, selection: PathSelection, absolute: bool) -> Self {
+    pub fn new(id: EntryAddress, selection: PathSelection, absolute: bool) -> Self {
         Self { id, selection, absolute }
     }
 }
@@ -415,15 +417,15 @@ pub struct LakeInitResult {
 pub struct StructuralTarget {
     /// Structural field name.
     pub field: String,
-    /// Target entry id.
-    pub target: EntryId,
+    /// Target entry address.
+    pub target: EntryAddress,
 }
 
 /// Entry creation request shared by the CLI and tool callers.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryNewRequest {
-    /// Entry id and filename stem.
-    pub id: EntryId,
+    /// Entry address.
+    pub id: EntryAddress,
     /// Human-readable entry name.
     pub name: Option<String>,
     /// Short entry description.
@@ -437,12 +439,12 @@ pub struct EntryNewRequest {
 
 /// Result that points at one entry file.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct EntryPathResult {
+pub struct EntryFileResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Entry id affected by the command.
+    /// Entry address affected by the command.
     pub id: String,
-    /// Sirno Lake entry path affected by the command.
+    /// Sirno Lake entry file path affected by the command.
     pub path: String,
     /// Concise human-readable summary.
     pub message: String,
@@ -468,7 +470,7 @@ pub struct LocalProtectionResult {
 pub struct EntryReadResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Entry id that was read.
+    /// Entry address that was read.
     pub id: String,
     /// Sirno Lake entry file path.
     pub path: String,
@@ -484,14 +486,14 @@ pub struct EntryReadResult {
     pub message: String,
 }
 
-/// Result of renaming one entry id.
+/// Result of renaming one entry address.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryRenameResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Entry id before the rename.
+    /// Entry address before the rename.
     pub old_id: String,
-    /// Entry id after the rename.
+    /// Entry address after the rename.
     pub new_id: String,
     /// Paths updated by the rename.
     pub updated_paths: Vec<String>,
@@ -551,7 +553,7 @@ pub struct WitnessSpanResult {
 /// One JSON-ready witness record.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WitnessRecordResult {
-    /// Entry id captured by the witness block.
+    /// Entry address captured by the witness block.
     pub entry: String,
     /// Repository file path containing the witness.
     pub path: String,
@@ -596,7 +598,7 @@ impl From<crate::witness::WitnessSpan> for WitnessSpanResult {
 pub struct WitnessResult {
     /// Whether any witness block was found.
     pub ok: bool,
-    /// Entry id used for lookup.
+    /// Entry address used for lookup.
     pub id: String,
     /// Matching witness records.
     pub records: Vec<WitnessRecordResult>,
@@ -609,7 +611,7 @@ pub struct WitnessResult {
 pub struct ArtifactListResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Entry id whose artifacts were listed.
+    /// Entry address whose artifacts were listed.
     pub id: String,
     /// Owner-relative artifact paths.
     pub artifacts: Vec<String>,
@@ -618,8 +620,8 @@ pub struct ArtifactListResult {
 /// Artifact add request.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ArtifactAddRequest {
-    /// Entry id that will own the artifact.
-    pub id: EntryId,
+    /// Entry address that will own the artifact.
+    pub id: EntryAddress,
     /// Source file to copy.
     pub source: PathBuf,
     /// Owner-relative artifact path.
@@ -629,8 +631,8 @@ pub struct ArtifactAddRequest {
 /// Artifact rename request.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ArtifactRenameRequest {
-    /// Entry id that owns the artifact.
-    pub id: EntryId,
+    /// Entry address that owns the artifact.
+    pub id: EntryAddress,
     /// Existing owner-relative artifact path.
     pub old_path: PathBuf,
     /// New owner-relative artifact path.
@@ -640,8 +642,8 @@ pub struct ArtifactRenameRequest {
 /// Artifact removal request.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ArtifactRemoveRequest {
-    /// Entry id that owns the artifact.
-    pub id: EntryId,
+    /// Entry address that owns the artifact.
+    pub id: EntryAddress,
     /// Owner-relative artifact path to remove.
     pub artifact_path: PathBuf,
 }
@@ -651,7 +653,7 @@ pub struct ArtifactRemoveRequest {
 pub struct ArtifactChangeResult {
     /// Whether the command completed successfully.
     pub ok: bool,
-    /// Entry id that owns the artifact.
+    /// Entry address that owns the artifact.
     pub id: String,
     /// Owner-relative artifact path.
     pub artifact_path: String,
@@ -1042,9 +1044,9 @@ pub struct FrostCheckoutResult {
 /// Tide workitem selection by exact workitems or neighbor ids.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TideSelectionRequest {
-    /// Select all workitems whose neighbor matches one of these ids.
+    /// Select all workitems whose neighbor matches one of these entry addresses.
     #[serde(default)]
-    pub neighbors: Vec<EntryId>,
+    pub neighbors: Vec<EntryAddress>,
     /// Select exact workitem objects.
     #[serde(default)]
     pub workitems: Vec<TideWorkitem>,
@@ -1056,9 +1058,9 @@ pub struct TideResolveRequest {
     /// Resolve workitems whose neighbor appears in the current ripple set.
     #[serde(default)]
     pub infer: bool,
-    /// Select all workitems whose neighbor matches one of these ids.
+    /// Select all workitems whose neighbor matches one of these entry addresses.
     #[serde(default)]
-    pub neighbors: Vec<EntryId>,
+    pub neighbors: Vec<EntryAddress>,
     /// Select exact workitem objects.
     #[serde(default)]
     pub workitems: Vec<TideWorkitem>,
@@ -1080,14 +1082,14 @@ pub struct TideChangeResult {
 pub struct TideStatusResult {
     /// Whether no entry still needs review.
     pub ok: bool,
-    /// Entry ids that still need review.
-    pub review_entries: Vec<EntryId>,
+    /// Entry addresses that still need review.
+    pub review_entries: Vec<EntryAddress>,
     /// Full workitem statuses when requested.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub statuses: Vec<TideStatus>,
 }
 
-/// Selected path classes for an entry path lookup.
+/// Selected path classes for an entry address lookup.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PathSelection {
     pub(crate) entry: bool,
@@ -1107,7 +1109,7 @@ impl PathSelection {
     }
 }
 
-/// One filesystem path returned by an entry path lookup.
+/// One filesystem path returned by an entry address lookup.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct PathRecord {
     /// Path class.

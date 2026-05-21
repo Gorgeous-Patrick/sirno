@@ -14,21 +14,21 @@ Query selects parsed *entries* from the lake or,
 when frost is configured,
 from one *frost* version.
 
-It reads *entry* ids, metadata, and bodies.
+It reads *entry* paths, metadata, and bodies.
 The *generated footers* are projections for navigation,
 not structural input to query.
 When no version is supplied,
 query reads the lake.
 
 The default query mode is vague text query.
-It matches an *entry*'s id, name, desc, and body.
-It also matches the ids, names, and `desc` values of *entries* named by structural fields.
+It matches an *entry*'s address, local atom, name, desc, and body.
+It also matches the paths, names, and `desc` values of *entries* named by structural fields.
 
 Vague query is for recall.
 A user can search for nearby language without choosing the exact *structural field* first.
 Each text term must match somewhere in the expanded *entry* text.
 
-Target filters use `--has FIELD=ENTRY_ID[,ENTRY_ID]`.
+Target filters use `--has FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 `empty` means the field is present with no targets.
 `missing` means the field is absent.

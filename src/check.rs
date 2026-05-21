@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::entry::Entry;
-use crate::id::EntryId;
+use crate::identifier::EntryAddress;
 use crate::structural::StructuralSettings;
 
 const CATEGORY_FIELD: &str = "category";
@@ -35,8 +35,8 @@ impl CheckMode {
     // sirno:witness:structural-check:begin
     /// Check structural metadata targets for a set of entries.
     ///
-    /// Parsing already enforces required fields, accepted field shapes, and valid id syntax.
-    /// This pass checks configured structural field entries and entry ids named by those fields.
+    /// Parsing already enforces required fields, accepted field shapes, and valid path syntax.
+    /// This pass checks configured structural field entries and entry addresses named by those fields.
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
     ) -> CheckReport {
@@ -99,11 +99,11 @@ impl CheckMode {
     }
 
     fn check_category_targets(
-        self, entries_by_id: &BTreeMap<EntryId, &Entry>, structural: &StructuralSettings,
+        self, entries_by_id: &BTreeMap<EntryAddress, &Entry>, structural: &StructuralSettings,
         report: &mut CheckReport,
     ) {
         let category_id =
-            EntryId::new(CATEGORY_FIELD).expect("built-in category entry id is valid");
+            EntryAddress::new(CATEGORY_FIELD).expect("built-in category entry address is valid");
         let category_targets = entries_by_id
             .values()
             .flat_map(|entry| entry.metadata.structural_targets_for(CATEGORY_FIELD))
@@ -186,11 +186,11 @@ pub struct CheckDiagnostic {
     /// Structural problem detected by the check.
     pub kind: CheckDiagnosticKind,
     /// Entry whose metadata produced the diagnostic.
-    pub entry: Option<EntryId>,
+    pub entry: Option<EntryAddress>,
     /// Metadata field that produced the diagnostic.
     pub field: String,
-    /// Referenced id that produced the diagnostic.
-    pub target: Option<EntryId>,
+    /// Referenced path that produced the diagnostic.
+    pub target: Option<EntryAddress>,
 }
 
 impl CheckDiagnostic {
@@ -268,7 +268,7 @@ mod tests {
     const FIELD_CATEGORY: &str = "category";
 
     fn entry(id: &str) -> Entry {
-        Entry::new(EntryId::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
+        Entry::new(EntryAddress::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
     }
 
     fn structural_settings() -> StructuralSettings {
@@ -282,9 +282,9 @@ mod tests {
     #[test]
     fn clean_entries_produce_clean_report() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let mut meta = entry("meta");
-        meta.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        meta.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = entry(FIELD_TOPIC);
 
         let report =
@@ -295,7 +295,7 @@ mod tests {
     #[test]
     fn edit_mode_reports_dangling_reference_as_warning() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = entry(FIELD_TOPIC);
 
         let report = CheckMode::Edit.check_entries([&concept, &topic], &structural_settings());
@@ -307,7 +307,7 @@ mod tests {
     #[test]
     fn review_mode_reports_dangling_reference_as_error() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = entry(FIELD_TOPIC);
 
         let report = CheckMode::Review.check_entries([&concept, &topic], &structural_settings());
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn unconfigured_structural_fields_warn() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_TOPIC, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
 
         let report = CheckMode::Review.check_entries([&concept], &StructuralSettings::default());
 
@@ -367,9 +367,10 @@ mod tests {
     #[test]
     fn category_metadata_warns_when_category_entry_is_missing() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryAddress::new("meta").unwrap());
         let mut meta = entry("meta");
-        meta.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+        meta.metadata
+            .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
         let report = CheckMode::Review.check_entries([&concept, &meta], &category_settings());
 
@@ -385,10 +386,12 @@ mod tests {
     #[test]
     fn review_mode_reports_category_target_without_category_marker_as_error() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryAddress::new("meta").unwrap());
         let meta = entry("meta");
         let mut category = entry("category");
-        category.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+        category
+            .metadata
+            .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
         let report =
             CheckMode::Review.check_entries([&concept, &meta, &category], &category_settings());
@@ -408,10 +411,12 @@ mod tests {
     #[test]
     fn edit_mode_reports_category_target_without_category_marker_as_warning() {
         let mut concept = entry("concept");
-        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("meta").unwrap());
+        concept.metadata.push_structural_target(FIELD_CATEGORY, EntryAddress::new("meta").unwrap());
         let meta = entry("meta");
         let mut category = entry("category");
-        category.metadata.push_structural_target(FIELD_CATEGORY, EntryId::new("category").unwrap());
+        category
+            .metadata
+            .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
         let report =
             CheckMode::Edit.check_entries([&concept, &meta, &category], &category_settings());

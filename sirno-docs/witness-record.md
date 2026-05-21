@@ -11,12 +11,12 @@ prerequisite:
 
 A *witness record* is one resolved *repository witness* block.
 It is what `mosaika` produces after it finds a delimited region
-and Sirno parses the captured *entry* id.
+and Sirno parses the captured *entry address*.
 
-A record carries the *entry* id, the repository file path,
+A record carries the *entry address*, the repository file path,
 the full block region, the opening and closing delimiter *spans*,
 the matched opening delimiter text, and the full block body.
-The id is parsed from the opening delimiter,
+The address is parsed from the opening delimiter,
 so a record always names a valid *entry*.
 The body is emitted by `mosaika` and stays owned by the repository artifact;
 Sirno reads it but never authors it.
@@ -29,16 +29,16 @@ and its start column points at the comment marker rather than the line start.
 A span is positional, not semantic;
 a reviewer reading the spanned lines still judges whether the evidence is correct.
 
-Records are keyed by *entry* id in a *witness* index.
+Records are keyed by *entry address* in a *witness* index.
 One *entry* may have several records across files,
 because evidence for a claim can live in more than one place.
-`sirno witness ENTRY_ID --full` prints the records for that id,
+`sirno witness ENTRY_ADDRESS --full` prints the records for that address,
 showing every line the block spans and preserving the matched text.
 
 The record is the unit that connects a design claim to its evidence.
 The *entry* states the claim in project language.
 The record points at the exact region a reviewer should read.
-The id is the only link between them.
+The address is the only link between them.
 
 ---
 

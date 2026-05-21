@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize, de};
 use thiserror::Error;
 
 use crate::entry::{Entry, EntryRenderError};
-use crate::id::{EntryId, EntryIdError};
+use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{
     StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
@@ -35,20 +35,20 @@ pub enum TideSource {
 // sirno:witness:tide-workitem:begin
 pub struct TideWorkitem {
     /// Changed entry that produced the obligation.
-    pub ripple: EntryId,
+    pub ripple: EntryAddress,
     /// Structural field that produced the obligation.
     pub field: String,
     /// Structural edge direction that produced the obligation.
     pub direction: StructuralEdgeDirection,
     /// Entry that must be reviewed.
-    pub neighbor: EntryId,
+    pub neighbor: EntryAddress,
 }
 
 impl TideWorkitem {
     /// Construct a validated workitem tuple.
     pub fn new(
-        ripple: EntryId, field: impl Into<String>, direction: StructuralEdgeDirection,
-        neighbor: EntryId,
+        ripple: EntryAddress, field: impl Into<String>, direction: StructuralEdgeDirection,
+        neighbor: EntryAddress,
     ) -> Result<Self, TideWorkitemParseError> {
         let field = field.into();
         validate_field(&field)?;
@@ -70,10 +70,10 @@ impl<'de> Deserialize<'de> for TideWorkitem {
     {
         #[derive(Deserialize)]
         struct RawWorkitem {
-            ripple: EntryId,
+            ripple: EntryAddress,
             field: String,
             direction: StructuralEdgeDirection,
-            neighbor: EntryId,
+            neighbor: EntryAddress,
         }
 
         let raw = RawWorkitem::deserialize(deserializer)?;
@@ -91,10 +91,10 @@ impl FromStr for TideWorkitem {
             return Err(TideWorkitemParseError::TupleShape);
         }
         Self::new(
-            EntryId::new(parts[0])?,
+            EntryAddress::new(parts[0])?,
             parts[1].to_owned(),
             parts[2].parse()?,
-            EntryId::new(parts[3])?,
+            EntryAddress::new(parts[3])?,
         )
     }
 }
@@ -104,13 +104,13 @@ impl FromStr for TideWorkitem {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub struct TideResolution {
     /// Changed entry that produced the obligation.
-    pub ripple: EntryId,
+    pub ripple: EntryAddress,
     /// Structural field that produced the obligation.
     pub field: String,
     /// Structural edge direction that produced the obligation.
     pub direction: StructuralEdgeDirection,
     /// Entry that was reviewed.
-    pub neighbor: EntryId,
+    pub neighbor: EntryAddress,
     /// Fingerprint of the ripple delta that was reviewed.
     pub fingerprint: String,
 }
@@ -134,10 +134,10 @@ impl<'de> Deserialize<'de> for TideResolution {
     {
         #[derive(Deserialize)]
         struct RawResolution {
-            ripple: EntryId,
+            ripple: EntryAddress,
             field: String,
             direction: StructuralEdgeDirection,
-            neighbor: EntryId,
+            neighbor: EntryAddress,
             fingerprint: String,
         }
 
@@ -170,7 +170,7 @@ pub struct TideStatus {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Tide {
     statuses: Vec<TideStatus>,
-    ripple_ids: BTreeSet<EntryId>,
+    ripple_ids: BTreeSet<EntryAddress>,
 }
 
 impl Tide {
@@ -194,7 +194,7 @@ impl Tide {
         let frost_index = StructuralEdgeIndex::from_entries(&frostline);
         let water_index = StructuralEdgeIndex::from_entries(&waterline);
         let mut sources_by_workitem = BTreeMap::<TideWorkitem, BTreeSet<TideSource>>::new();
-        let mut fingerprint_by_ripple = BTreeMap::<EntryId, String>::new();
+        let mut fingerprint_by_ripple = BTreeMap::<EntryAddress, String>::new();
 
         // sirno:witness:wave:begin
         for ripple in &ripple_ids {
@@ -255,8 +255,8 @@ impl Tide {
         &self.statuses
     }
 
-    /// Current ripple entry ids.
-    pub fn ripple_ids(&self) -> &BTreeSet<EntryId> {
+    /// Current ripple entry addresses.
+    pub fn ripple_ids(&self) -> &BTreeSet<EntryAddress> {
         &self.ripple_ids
     }
 
@@ -265,8 +265,8 @@ impl Tide {
         self.statuses.iter().filter(|status| !status.resolved)
     }
 
-    /// Entry ids that still need dependency review.
-    pub fn review_entries(&self) -> Vec<EntryId> {
+    /// Entry addresses that still need dependency review.
+    pub fn review_entries(&self) -> Vec<EntryAddress> {
         self.open_statuses()
             .map(|status| status.workitem.neighbor.clone())
             .collect::<BTreeSet<_>>()
@@ -346,14 +346,14 @@ fn strip_trailing_generated_link_divider(body: &str) -> String {
         .unwrap_or_else(|| body.to_owned())
 }
 
-fn entries_by_id(entries: &[Entry]) -> BTreeMap<EntryId, &Entry> {
+fn entries_by_id(entries: &[Entry]) -> BTreeMap<EntryAddress, &Entry> {
     entries.iter().map(|entry| (entry.id.clone(), entry)).collect()
 }
 
 fn insert_workitems(
-    sources_by_workitem: &mut BTreeMap<TideWorkitem, BTreeSet<TideSource>>, ripple: &EntryId,
+    sources_by_workitem: &mut BTreeMap<TideWorkitem, BTreeSet<TideSource>>, ripple: &EntryAddress,
     field: &str, direction: StructuralEdgeDirection, source: TideSource,
-    neighbors: BTreeSet<EntryId>,
+    neighbors: BTreeSet<EntryAddress>,
 ) -> Result<(), TideError> {
     for neighbor in neighbors {
         let workitem = TideWorkitem::new(ripple.clone(), field.to_owned(), direction, neighbor)?;
@@ -412,9 +412,9 @@ pub enum TideWorkitemParseError {
     /// A structural field cannot be used in a workitem tuple.
     #[error("structural field must be non-empty and cannot contain comma or line breaks: {0}")]
     InvalidField(String),
-    /// Entry id parsing failed.
+    /// Entry address parsing failed.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
     /// Direction parsing failed.
     #[error(transparent)]
     Direction(#[from] StructuralEdgeDirectionParseError),
@@ -441,8 +441,8 @@ mod tests {
         EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
     };
 
-    fn id(raw: &str) -> EntryId {
-        EntryId::new(raw).unwrap()
+    fn id(raw: &str) -> EntryAddress {
+        EntryAddress::new(raw).unwrap()
     }
 
     fn entry(raw_id: &str) -> Entry {

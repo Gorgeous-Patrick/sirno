@@ -17,7 +17,7 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::dto::{TideResolveRequest, TideSelectionRequest, TideStatusMode};
 use crate::surface::error::CommandError;
-use crate::{EntryId, TideSource, TideStatus, TideWorkitem};
+use crate::{EntryAddress, TideSource, TideStatus, TideWorkitem};
 
 /// Run the interactive tide resolution UI.
 pub(crate) fn run(config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
@@ -340,14 +340,14 @@ impl TideTuiRow {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum TideRowIdentity {
-    Entry(EntryId),
-    Wave(EntryId),
+    Entry(EntryAddress),
+    Wave(EntryAddress),
     Workitem(TideWorkitem),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum TideRowTarget {
-    Neighbor(EntryId),
+    Neighbor(EntryAddress),
     Workitems { resolve: Vec<TideWorkitem>, unresolve: Vec<TideWorkitem> },
     Exact(TideWorkitem),
 }
@@ -356,8 +356,8 @@ enum TideRowTarget {
 struct TideSummary {
     open: usize,
     resolved: usize,
-    reasons: BTreeSet<EntryId>,
-    entries: BTreeSet<EntryId>,
+    reasons: BTreeSet<EntryAddress>,
+    entries: BTreeSet<EntryAddress>,
     open_workitems: Vec<TideWorkitem>,
     resolved_workitems: Vec<TideWorkitem>,
 }
@@ -373,7 +373,7 @@ fn tide_rows(
 }
 
 fn entry_summary_rows(statuses: &[TideStatus]) -> Vec<TideTuiRow> {
-    let mut summaries = BTreeMap::<EntryId, TideSummary>::new();
+    let mut summaries = BTreeMap::<EntryAddress, TideSummary>::new();
     for status in statuses {
         let summary = summaries.entry(status.workitem.neighbor.clone()).or_default();
         summary.reasons.insert(status.workitem.ripple.clone());
@@ -404,7 +404,7 @@ fn entry_summary_rows(statuses: &[TideStatus]) -> Vec<TideTuiRow> {
 }
 
 fn wave_summary_rows(statuses: &[TideStatus]) -> Vec<TideTuiRow> {
-    let mut summaries = BTreeMap::<EntryId, TideSummary>::new();
+    let mut summaries = BTreeMap::<EntryAddress, TideSummary>::new();
     for status in statuses {
         let summary = summaries.entry(status.workitem.ripple.clone()).or_default();
         summary.entries.insert(status.workitem.neighbor.clone());
@@ -559,7 +559,7 @@ fn tide_sources_label(status: &TideStatus) -> String {
         .join(",")
 }
 
-fn ids_label(ids: &BTreeSet<EntryId>) -> String {
+fn ids_label(ids: &BTreeSet<EntryAddress>) -> String {
     if ids.is_empty() {
         "-".to_owned()
     } else {
@@ -774,7 +774,7 @@ mod tests {
         .unwrap()
     }
 
-    fn entry_id(raw: &str) -> EntryId {
-        EntryId::new(raw).unwrap()
+    fn entry_id(raw: &str) -> EntryAddress {
+        EntryAddress::new(raw).unwrap()
     }
 }

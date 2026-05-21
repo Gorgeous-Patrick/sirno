@@ -24,7 +24,7 @@ use tracing::trace;
 
 use crate::config::RepoMember;
 use crate::config::WitnessSettings;
-use crate::id::{EntryId, EntryIdError};
+use crate::identifier::{EntryAddress, EntryAddressError};
 
 const WITNESS_TRANSFORM: &str = "sirno-witness";
 
@@ -81,9 +81,9 @@ impl WitnessCheckSettings {
     }
     // sirno:witness:witness-lookup:end
 
-    /// Rename configured witness sentinel ids that reference one entry.
+    /// Rename configured witness sentinel paths that reference one entry.
     pub fn rename_entry_references(
-        &self, old_id: &EntryId, new_id: &EntryId,
+        &self, old_id: &EntryAddress, new_id: &EntryAddress,
     ) -> Result<Vec<PathBuf>, WitnessError> {
         if old_id == new_id || self.is_empty() {
             return Ok(Vec::new());
@@ -93,7 +93,7 @@ impl WitnessCheckSettings {
         let analysis = self.run_mosaika_analysis(&files)?;
         let mut edits = TextEditSet::new();
         for record in analysis.match_records() {
-            if &entry_id_from_match(record)? != old_id {
+            if &entry_address_from_match(record)? != old_id {
                 continue;
             }
             add_witness_capture_edit(&mut edits, record, 0, new_id)?;
@@ -221,10 +221,10 @@ impl WitnessCheckSettings {
     // sirno:witness:witness-lookup:end
 }
 
-/// Repository locations grouped by witnessed entry id.
+/// Repository locations grouped by witnessed entry address.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WitnessIndex {
-    records_by_entry: BTreeMap<EntryId, Vec<WitnessRecord>>,
+    records_by_entry: BTreeMap<EntryAddress, Vec<WitnessRecord>>,
     orphan_delimiters: Vec<WitnessDelimiterToken>,
 }
 
@@ -239,18 +239,18 @@ impl WitnessIndex {
         self.records_by_entry.entry(record.entry.clone()).or_default().push(record);
     }
 
-    /// Return every record for one entry id.
-    pub fn records_for(&self, id: &EntryId) -> &[WitnessRecord] {
+    /// Return every record for one entry address.
+    pub fn records_for(&self, id: &EntryAddress) -> &[WitnessRecord] {
         self.records_by_entry.get(id).map(Vec::as_slice).unwrap_or(&[])
     }
 
     /// Returns true when the index contains at least one record for the entry.
-    pub fn contains_entry(&self, id: &EntryId) -> bool {
+    pub fn contains_entry(&self, id: &EntryAddress) -> bool {
         self.records_by_entry.contains_key(id)
     }
 
-    /// Iterate over entry ids with at least one witness block.
-    pub fn entry_ids(&self) -> impl Iterator<Item = &EntryId> {
+    /// Iterate over entry addresses with at least one witness block.
+    pub fn entry_addresses(&self) -> impl Iterator<Item = &EntryAddress> {
         self.records_by_entry.keys()
     }
 
@@ -290,7 +290,7 @@ impl WitnessIndex {
         let mut index = Self::new();
         for record in records {
             let (marker, closing) = witness_delimiters(record)?;
-            let entry = entry_id_from_match(record)?;
+            let entry = entry_address_from_match(record)?;
             index.push(WitnessRecord {
                 entry,
                 path: record.source_path.clone(),
@@ -308,14 +308,14 @@ impl WitnessIndex {
 
 /// One repository witness block resolved by `mosaika`.
 ///
-/// Invariant: `entry` is the parsed id captured from the opening delimiter.
+/// Invariant: `entry` is the parsed path captured from the opening delimiter.
 /// `region` identifies the matched block.
 /// `opening` and `closing` identify the delimiter spans.
 #[derive(Clone, Debug, PartialEq, Eq)]
 // sirno:witness:sirno-witness:begin
 pub struct WitnessRecord {
-    /// Entry id captured from `sirno:witness:<entry-id>:begin`.
-    pub entry: EntryId,
+    /// Entry address captured from `sirno:witness:<entry-address>:begin`.
+    pub entry: EntryAddress,
     /// Repository file that contains the witness block.
     pub path: PathBuf,
     /// Full matched block region.
@@ -358,7 +358,7 @@ pub(crate) struct WitnessDelimiterToken {
     path: PathBuf,
     kind: WitnessDelimiterKind,
     span: WitnessSpan,
-    entry: EntryId,
+    entry: EntryAddress,
 }
 
 impl WitnessDelimiterToken {
@@ -438,18 +438,18 @@ impl From<&SourceSpan> for WitnessSpan {
     }
 }
 
-fn entry_id_from_match(record: &MatchRecord) -> Result<EntryId, WitnessError> {
+fn entry_address_from_match(record: &MatchRecord) -> Result<EntryAddress, WitnessError> {
     let (marker, closing) = witness_delimiters(record)?;
     let raw_entry = witness_capture(record, marker)?.text.as_str();
     let raw_closing_entry = witness_capture(record, closing)?.text.as_str();
     if raw_entry != raw_closing_entry {
-        return Err(WitnessError::MismatchedEntryId {
+        return Err(WitnessError::MismatchedEntryAddress {
             path: record.source_path.clone(),
             opening: raw_entry.to_owned(),
             closing: raw_closing_entry.to_owned(),
         });
     }
-    EntryId::new(raw_entry).map_err(|source| WitnessError::InvalidEntryId {
+    EntryAddress::new(raw_entry).map_err(|source| WitnessError::InvalidEntryAddress {
         path: record.source_path.clone(),
         marker: raw_entry.to_owned(),
         source,
@@ -481,7 +481,7 @@ fn witness_capture<'a>(
 }
 
 fn add_witness_capture_edit(
-    edits: &mut TextEditSet, record: &MatchRecord, delimiter_index: usize, new_id: &EntryId,
+    edits: &mut TextEditSet, record: &MatchRecord, delimiter_index: usize, new_id: &EntryAddress,
 ) -> Result<(), WitnessError> {
     let edit = record
         .edit_for_scope(
@@ -652,12 +652,13 @@ fn scan_witness_delimiter_regex(
             delimiter_index: index,
             kind: kind.label(),
         })?;
-        let entry =
-            EntryId::new(raw_entry.as_str()).map_err(|source| WitnessError::InvalidEntryId {
+        let entry = EntryAddress::new(raw_entry.as_str()).map_err(|source| {
+            WitnessError::InvalidEntryAddress {
                 path: path.to_path_buf(),
                 marker: raw_entry.as_str().to_owned(),
                 source,
-            })?;
+            }
+        })?;
         let mut span = locator.span(marker.start(), marker.end());
         span.start_column += leading_whitespace_len(marker.as_str());
         tokens.push(WitnessDelimiterToken { path: path.to_path_buf(), kind, span, entry });
@@ -759,8 +760,8 @@ pub enum WitnessError {
         #[source]
         source: regex::Error,
     },
-    /// A witness delimiter regex does not capture an entry id.
-    #[error("{field} at index {index} must capture the entry id")]
+    /// A witness delimiter regex does not capture an entry address.
+    #[error("{field} at index {index} must capture the entry address")]
     DelimiterCapture {
         /// Config field that did not declare a capture group.
         field: &'static str,
@@ -816,7 +817,9 @@ pub enum WitnessError {
         capture_index: usize,
     },
     /// A configured witness delimiter matched without the required capture.
-    #[error("witness {kind} delimiter {delimiter_index} in {path} did not capture an entry id")]
+    #[error(
+        "witness {kind} delimiter {delimiter_index} in {path} did not capture an entry address"
+    )]
     MissingTokenCapture {
         /// Repository path containing the delimiter.
         path: PathBuf,
@@ -825,26 +828,26 @@ pub enum WitnessError {
         /// Delimiter kind that matched.
         kind: &'static str,
     },
-    /// A witness block opened and closed with different entry ids.
+    /// A witness block opened and closed with different entry addresses.
     #[error("witness block in {path} opens for `{opening}` but closes for `{closing}`")]
-    MismatchedEntryId {
+    MismatchedEntryAddress {
         /// Repository path containing the block.
         path: PathBuf,
-        /// Entry id captured from the opening delimiter.
+        /// Entry address captured from the opening delimiter.
         opening: String,
-        /// Entry id captured from the closing delimiter.
+        /// Entry address captured from the closing delimiter.
         closing: String,
     },
-    /// A witness block captured an invalid Sirno entry id.
-    #[error("witness block `{marker}` in {path} is not a valid Sirno entry id")]
-    InvalidEntryId {
+    /// A witness block captured an invalid Sirno entry address.
+    #[error("witness block `{marker}` in {path} is not a valid Sirno entry address")]
+    InvalidEntryAddress {
         /// Repository path containing the marker.
         path: PathBuf,
         /// Captured marker payload.
         marker: String,
-        /// Underlying id parse error.
+        /// Underlying path parse error.
         #[source]
-        source: EntryIdError,
+        source: EntryAddressError,
     },
 }
 
@@ -901,9 +904,9 @@ mod tests {
         );
 
         let index = settings.scan().unwrap();
-        let records = index.records_for(&EntryId::new("witness-lookup").unwrap());
+        let records = index.records_for(&EntryAddress::new("witness-lookup").unwrap());
 
-        assert!(index.contains_entry(&EntryId::new("witness-lookup").unwrap()));
+        assert!(index.contains_entry(&EntryAddress::new("witness-lookup").unwrap()));
         assert_eq!(records[0].body, witness_block("witness-lookup").trim_end());
         assert_eq!(
             records[0].region,
@@ -933,7 +936,7 @@ mod tests {
 
         let index = settings.scan().unwrap();
 
-        assert!(index.contains_entry(&EntryId::new("repo-member").unwrap()));
+        assert!(index.contains_entry(&EntryAddress::new("repo-member").unwrap()));
     }
 
     #[test]
@@ -947,9 +950,9 @@ mod tests {
         );
 
         let index = settings.scan().unwrap();
-        let records = index.records_for(&EntryId::new("readme").unwrap());
+        let records = index.records_for(&EntryAddress::new("readme").unwrap());
 
-        assert!(index.contains_entry(&EntryId::new("readme").unwrap()));
+        assert!(index.contains_entry(&EntryAddress::new("readme").unwrap()));
         assert_eq!(records[0].body, markdown_witness_block("readme").trim_end());
         assert_eq!(
             records[0].opening,
@@ -984,8 +987,8 @@ mod tests {
 
         let paths = settings
             .rename_entry_references(
-                &EntryId::new("old-entry").unwrap(),
-                &EntryId::new("new-entry").unwrap(),
+                &EntryAddress::new("old-entry").unwrap(),
+                &EntryAddress::new("new-entry").unwrap(),
             )
             .unwrap();
         let rust_source = std::fs::read_to_string(src.join("lib.rs")).unwrap();
@@ -1001,9 +1004,9 @@ mod tests {
     }
 
     #[test]
-    fn scans_standard_witness_blocks_for_filename_like_entry_ids() {
+    fn scans_standard_witness_blocks_for_filename_like_entry_addresses() {
         let temp = tempfile::tempdir().unwrap();
-        let id = EntryId::new("Design Note_v2+1").unwrap();
+        let id = EntryAddress::new("Design Note_v2+1").unwrap();
         std::fs::write(temp.path().join("README.md"), markdown_witness_block(id.as_str())).unwrap();
         let settings = WitnessCheckSettings::new(
             temp.path(),
@@ -1014,6 +1017,24 @@ mod tests {
         let index = settings.scan().unwrap();
 
         assert!(index.contains_entry(&id));
+    }
+
+    #[test]
+    fn scans_standard_witness_blocks_for_dotted_entry_addresses() {
+        let temp = tempfile::tempdir().unwrap();
+        let id = EntryAddress::new("core.design").unwrap();
+        std::fs::write(temp.path().join("README.md"), markdown_witness_block(id.as_str())).unwrap();
+        let settings = WitnessCheckSettings::new(
+            temp.path(),
+            [RepoMember::new("README.md").unwrap()],
+            WitnessSettings::standard(),
+        );
+
+        let index = settings.scan().unwrap();
+        let records = index.records_for(&id);
+
+        assert!(index.contains_entry(&id));
+        assert_eq!(records[0].entry, id);
     }
 
     #[test]
@@ -1032,9 +1053,9 @@ mod tests {
         );
 
         let index = settings.scan().unwrap();
-        let records = index.records_for(&EntryId::new("custom").unwrap());
+        let records = index.records_for(&EntryAddress::new("custom").unwrap());
 
-        assert!(index.contains_entry(&EntryId::new("custom").unwrap()));
+        assert!(index.contains_entry(&EntryAddress::new("custom").unwrap()));
         assert_eq!(records[0].body, custom_witness_block("custom").trim_end());
     }
 
@@ -1053,8 +1074,8 @@ mod tests {
         let index = settings.scan().unwrap();
 
         assert!(settings.is_empty());
-        assert!(!index.contains_entry(&EntryId::new("witness-lookup").unwrap()));
-        assert!(index.entry_ids().next().is_none());
+        assert!(!index.contains_entry(&EntryAddress::new("witness-lookup").unwrap()));
+        assert!(index.entry_addresses().next().is_none());
         assert!(index.orphan_delimiters().is_empty());
     }
 
@@ -1071,7 +1092,7 @@ mod tests {
         );
 
         let index = settings.scan().unwrap();
-        let records = index.records_for(&EntryId::new("witness-lookup").unwrap());
+        let records = index.records_for(&EntryAddress::new("witness-lookup").unwrap());
 
         assert_eq!(
             records[0].opening,
@@ -1084,7 +1105,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_mismatched_witness_sentinel_ids() {
+    fn rejects_mismatched_witness_sentinel_paths() {
         let temp = tempfile::tempdir().unwrap();
         let src = temp.path().join("src");
         std::fs::create_dir_all(&src).unwrap();
@@ -1100,7 +1121,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            WitnessError::MismatchedEntryId { opening, closing, .. }
+            WitnessError::MismatchedEntryAddress { opening, closing, .. }
                 if opening == "witness-lookup" && closing == "query"
         ));
     }

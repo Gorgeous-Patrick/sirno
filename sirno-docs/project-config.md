@@ -75,14 +75,14 @@ Glob members may match files or directories.
 
 `[[witness.delimiters]]` configures one *witness* delimiter syntax.
 Each delimiter table has `begin` and `end` regex fields.
-Each regex should capture the *entry* id as its first capture group.
+Each regex should capture the *entry address* as its first capture group.
 Sirno rejects empty, invalid, captureless, or empty-matching delimiter regexes.
 An empty delimiter list disables repository witness lookup.
 Generated configs write the standard syntax,
 which accepts `//` line comments and hidden Markdown HTML comments.
-The standard regexes use one canonical capture for filename-like *entry* ids.
+The standard regexes use one canonical capture for valid *entry addresses*.
 Configured regexes may be narrower,
-but they should include every *entry* id allowed by the active project policy.
+but they should include every *entry address* allowed by the active project policy.
 
 `[check]` is optional.
 Omitting the table or an individual check flag leaves that check enabled.
@@ -107,7 +107,7 @@ Removing the table silences all tutorial text.
 `[structural]` controls which metadata fields are treated as structural.
 Each structural field is written as a `[structural.FIELD]` subtable.
 The field name should also name the *entry* that documents that structural field
-and follow normal *entry* id rules.
+and follow normal *entry atom* rules.
 When `[check].structural-inhabitance` is enabled,
 checks report configured structural fields without matching *entries*.
 It must be a non-empty single-line metadata key,

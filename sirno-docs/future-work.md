@@ -23,7 +23,7 @@ The *transform* names are now `actualize` and `internalize`.
 Future work may add command support for those names where the CLI still exposes older surfaces.
 
 Lake dependency management now has initial vocabulary:
-*entry domains*, *entry paths*, and *lake sheaves*.
+*entry domains*, *entry addresses*, and *lake sheaves*.
 Future work should define resolution rules, symlink materialization,
 and version selection without making entry naming carry all dependency policy.
 

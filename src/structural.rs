@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::entry::Entry;
-use crate::id::EntryId;
+use crate::identifier::EntryAddress;
 
 fn is_false(value: &bool) -> bool {
     !*value
@@ -235,7 +235,7 @@ impl StructuralSettings {
     /// Rename one configured structural field.
     ///
     /// The field stays in its original order position.
-    pub fn rename_field(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+    pub fn rename_field(&mut self, old_id: &EntryAddress, new_id: &EntryAddress) -> bool {
         let old_field = old_id.as_str();
         if !self.fields.contains_key(old_field) {
             return false;
@@ -260,8 +260,8 @@ impl StructuralSettings {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:generated-footer:begin
 pub struct StructuralEdgeIndex {
-    sources_by_field_target: BTreeMap<String, BTreeMap<EntryId, BTreeSet<EntryId>>>,
-    cliques_by_field_target: BTreeMap<String, BTreeMap<EntryId, BTreeSet<EntryId>>>,
+    sources_by_field_target: BTreeMap<String, BTreeMap<EntryAddress, BTreeSet<EntryAddress>>>,
+    cliques_by_field_target: BTreeMap<String, BTreeMap<EntryAddress, BTreeSet<EntryAddress>>>,
 }
 // sirno:witness:generated-footer:end
 
@@ -270,9 +270,9 @@ impl StructuralEdgeIndex {
     // sirno:witness:generated-footer:begin
     pub fn from_entries(entries: &[Entry]) -> Self {
         let mut sources_by_field_target =
-            BTreeMap::<String, BTreeMap<EntryId, BTreeSet<EntryId>>>::new();
+            BTreeMap::<String, BTreeMap<EntryAddress, BTreeSet<EntryAddress>>>::new();
         let mut cliques_by_field_target =
-            BTreeMap::<String, BTreeMap<EntryId, BTreeSet<EntryId>>>::new();
+            BTreeMap::<String, BTreeMap<EntryAddress, BTreeSet<EntryAddress>>>::new();
         for entry in entries {
             for (field, targets) in entry.metadata.structural_fields() {
                 Self::insert_sources(
@@ -294,8 +294,8 @@ impl StructuralEdgeIndex {
     // sirno:witness:generated-footer:end
 
     fn insert_sources(
-        sources_by_target: &mut BTreeMap<EntryId, BTreeSet<EntryId>>, source: &EntryId,
-        targets: &[EntryId],
+        sources_by_target: &mut BTreeMap<EntryAddress, BTreeSet<EntryAddress>>,
+        source: &EntryAddress, targets: &[EntryAddress],
     ) {
         for target in targets {
             sources_by_target.entry(target.clone()).or_default().insert(source.clone());
@@ -303,8 +303,8 @@ impl StructuralEdgeIndex {
     }
 
     fn insert_cliques(
-        cliques_by_target: &mut BTreeMap<EntryId, BTreeSet<EntryId>>, source: &EntryId,
-        targets: &[EntryId],
+        cliques_by_target: &mut BTreeMap<EntryAddress, BTreeSet<EntryAddress>>,
+        source: &EntryAddress, targets: &[EntryAddress],
     ) {
         for target in targets {
             let clique = cliques_by_target.entry(target.clone()).or_default();
@@ -316,7 +316,7 @@ impl StructuralEdgeIndex {
     /// Return target entries for one structural edge direction.
     pub fn edge_targets(
         &self, field: &str, direction: StructuralEdgeDirection, entry: &Entry,
-    ) -> BTreeSet<EntryId> {
+    ) -> BTreeSet<EntryAddress> {
         match direction {
             | StructuralEdgeDirection::To => {
                 entry.metadata.structural_targets_for(field).iter().cloned().collect()
@@ -326,7 +326,7 @@ impl StructuralEdgeIndex {
         }
     }
 
-    fn incoming_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryId> {
+    fn incoming_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryAddress> {
         self.sources_by_field_target
             .get(field)
             .and_then(|sources_by_target| sources_by_target.get(&entry.id))
@@ -335,7 +335,7 @@ impl StructuralEdgeIndex {
     }
 
     // sirno:witness:structural-edge-policy:begin
-    fn clique_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryId> {
+    fn clique_targets(&self, field: &str, entry: &Entry) -> BTreeSet<EntryAddress> {
         let mut targets = BTreeSet::new();
         let Some(cliques_by_target) = self.cliques_by_field_target.get(field) else {
             return targets;
@@ -366,8 +366,8 @@ mod tests {
         ]);
 
         assert!(settings.rename_field(
-            &EntryId::new("refines").unwrap(),
-            &EntryId::new("prerequisite").unwrap()
+            &EntryAddress::new("refines").unwrap(),
+            &EntryAddress::new("prerequisite").unwrap()
         ));
 
         let fields = settings.fields().map(|(field, _)| field).collect::<Vec<_>>();

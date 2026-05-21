@@ -20,36 +20,39 @@ use crate::structural::{StructuralEdgeSettings, StructuralSettings};
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
 
 // sirno:witness:project-config:begin
-macro_rules! witness_entry_id_capture_regex {
+macro_rules! witness_entry_address_capture_regex {
     () => {
-        r#"([^\x00-\x1F\x7F<>:"/\\|?*.,\r\n]+)"#
+        r#"([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)"#
     };
 }
 
-/// Canonical witness delimiter capture for every legal entry id.
+/// Canonical witness delimiter capture for every legal entry address.
 ///
-/// Reserved filename checks that cannot fit Rust regex syntax are enforced by `EntryId`.
-pub const WITNESS_ENTRY_ID_CAPTURE_REGEX: &str = witness_entry_id_capture_regex!();
+/// Reserved path checks that cannot fit Rust regex syntax are enforced by `EntryAddress`.
+pub const WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX: &str = witness_entry_address_capture_regex!();
 
 /// Standard opening delimiter regex for line-comment repository witness blocks.
-pub const STANDARD_LINE_WITNESS_BEGIN_REGEX: &str =
-    concat!(r"(?m)^[ \t]*//[ \t]*sirno:witness:", witness_entry_id_capture_regex!(), r":begin");
+pub const STANDARD_LINE_WITNESS_BEGIN_REGEX: &str = concat!(
+    r"(?m)^[ \t]*//[ \t]*sirno:witness:",
+    witness_entry_address_capture_regex!(),
+    r":begin"
+);
 
 /// Standard closing delimiter regex for line-comment repository witness blocks.
 pub const STANDARD_LINE_WITNESS_END_REGEX: &str =
-    concat!(r"(?m)^[ \t]*//[ \t]*sirno:witness:", witness_entry_id_capture_regex!(), r":end");
+    concat!(r"(?m)^[ \t]*//[ \t]*sirno:witness:", witness_entry_address_capture_regex!(), r":end");
 
 /// Standard opening delimiter regex for Markdown repository witness blocks.
 pub const STANDARD_MARKDOWN_WITNESS_BEGIN_REGEX: &str = concat!(
     r"(?m)^[ \t]*<!--[ \t]*sirno:witness:",
-    witness_entry_id_capture_regex!(),
+    witness_entry_address_capture_regex!(),
     r":begin[ \t]*-->"
 );
 
 /// Standard closing delimiter regex for Markdown repository witness blocks.
 pub const STANDARD_MARKDOWN_WITNESS_END_REGEX: &str = concat!(
     r"(?m)^[ \t]*<!--[ \t]*sirno:witness:",
-    witness_entry_id_capture_regex!(),
+    witness_entry_address_capture_regex!(),
     r":end[ \t]*-->"
 );
 // sirno:witness:project-config:end
@@ -232,7 +235,7 @@ impl RepoSettings {
 /// Configured witness delimiter pair.
 ///
 /// Invariant: `begin` and `end` are non-empty regex strings.
-/// Each regex captures the entry id as its first capture group.
+/// Each regex captures the entry address as its first capture group.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:project-config:begin
@@ -663,10 +666,10 @@ impl ConfigRenderer {
         &mut self, delimiters: &[WitnessDelimiterSettings],
     ) -> Result<(), toml::ser::Error> {
         self.out.push_str(
-            "# Witness delimiter regex pairs; each first capture group is the entry id.\n",
+            "# Witness delimiter regex pairs; each first capture group is the entry address.\n",
         );
-        self.out.push_str("# Canonical filename entry-id capture: ");
-        self.out.push_str(WITNESS_ENTRY_ID_CAPTURE_REGEX);
+        self.out.push_str("# Canonical entry-address capture: ");
+        self.out.push_str(WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX);
         self.out.push('\n');
         for (index, delimiter) in delimiters.iter().enumerate() {
             if index > 0 {
@@ -689,10 +692,10 @@ impl ConfigRenderer {
             for comment in [
                 "Structural metadata fields.",
                 "Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.",
-                "FIELD must name the lake entry that documents the field and follow normal entry-id rules.",
+                "FIELD must name the lake entry that documents the field and follow normal entry-atom rules.",
                 "FIELD must be a non-empty single-line metadata key with no comma.",
                 "FIELD cannot be name, desc, or frozen.",
-                "Entry metadata values for FIELD must be lists of entry ids; targets must exist by review.",
+                "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
                 "`to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.",
                 "render = true writes generated footer links.",
                 "ripple.lake and ripple.frost add tide workitems from the waterline and frostline.",
@@ -799,8 +802,8 @@ pub enum ConfigError {
         #[source]
         source: regex::Error,
     },
-    /// A witness delimiter regex does not capture an entry id.
-    #[error("{field} at index {index} must capture the entry id")]
+    /// A witness delimiter regex does not capture an entry address.
+    #[error("{field} at index {index} must capture the entry address")]
     WitnessRegexCapture {
         /// Config field that did not declare a capture group.
         field: &'static str,
@@ -1405,29 +1408,29 @@ delimiters = []
     }
 
     #[test]
-    fn standard_witness_regexes_use_canonical_entry_id_capture() {
+    fn standard_witness_regexes_use_canonical_entry_address_capture() {
         let syntax = WitnessSettings::standard();
 
         for delimiter in syntax.delimiters {
-            assert!(delimiter.begin.contains(WITNESS_ENTRY_ID_CAPTURE_REGEX));
-            assert!(delimiter.end.contains(WITNESS_ENTRY_ID_CAPTURE_REGEX));
+            assert!(delimiter.begin.contains(WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX));
+            assert!(delimiter.end.contains(WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX));
         }
     }
 
     #[test]
-    fn standard_witness_regexes_reject_entry_id_separators_and_line_breaks() {
+    fn standard_witness_regexes_accept_dotted_paths_and_reject_other_separators() {
         let line_begin = Regex::new(STANDARD_LINE_WITNESS_BEGIN_REGEX).unwrap();
         let markdown_begin = Regex::new(STANDARD_MARKDOWN_WITNESS_BEGIN_REGEX).unwrap();
 
         assert!(line_begin.is_match("// sirno:witness:valid-entry:begin"));
+        assert!(line_begin.is_match("// sirno:witness:core.design:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad,id:begin"));
-        assert!(!line_begin.is_match("// sirno:witness:bad.id:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad\rid:begin"));
         assert!(!line_begin.is_match("// sirno:witness:bad\nid:begin"));
 
         assert!(markdown_begin.is_match("<!-- sirno:witness:valid-entry:begin -->"));
+        assert!(markdown_begin.is_match("<!-- sirno:witness:core.design:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad,id:begin -->"));
-        assert!(!markdown_begin.is_match("<!-- sirno:witness:bad.id:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\rid:begin -->"));
         assert!(!markdown_begin.is_match("<!-- sirno:witness:bad\nid:begin -->"));
     }
@@ -1455,7 +1458,7 @@ delimiters = []
         assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(
-            "# Canonical filename entry-id capture: {WITNESS_ENTRY_ID_CAPTURE_REGEX}"
+            "# Canonical entry-address capture: {WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX}"
         )));
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
@@ -1510,7 +1513,7 @@ delimiters = []
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(
-            "# Canonical filename entry-id capture: {WITNESS_ENTRY_ID_CAPTURE_REGEX}"
+            "# Canonical entry-address capture: {WITNESS_ENTRY_ADDRESS_CAPTURE_REGEX}"
         )));
         assert!(!source.contains("# Opening witness delimiter regex."));
         assert!(!source.contains("# Closing witness delimiter regex."));
@@ -1539,14 +1542,14 @@ delimiters = []
             "# Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure."
         ));
         assert!(source.contains(
-            "# FIELD must name the lake entry that documents the field and follow normal entry-id rules."
+            "# FIELD must name the lake entry that documents the field and follow normal entry-atom rules."
         ));
         assert!(
             source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
         );
         assert!(source.contains("# FIELD cannot be name, desc, or frozen."));
         assert!(source.contains(
-            "# Entry metadata values for FIELD must be lists of entry ids; targets must exist by review."
+            "# Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review."
         ));
         assert!(source.contains(
             "# `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors."

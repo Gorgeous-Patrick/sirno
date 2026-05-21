@@ -164,7 +164,7 @@ pub(crate) fn diagnostics_from_entry_report(
             path: diagnostic
                 .entry
                 .as_ref()
-                .and_then(|entry| report.entry_path(entry))
+                .and_then(|entry| report.entry_file_path(entry))
                 .map(display_path),
             message: diagnostic.message(),
         });
@@ -496,8 +496,8 @@ fn format_query_column(
         | QueryColumn::Name => Ok(entry.metadata.name.clone()),
         | QueryColumn::Path => {
             let path = report
-                .entry_path(&entry.id)
-                .ok_or_else(|| EntryDirectoryError::MissingEntryPath(entry.id.clone()))?;
+                .entry_file_path(&entry.id)
+                .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
             Ok(path.display().to_string())
         }
         | QueryColumn::Desc => Ok(entry.metadata.desc.clone()),
@@ -683,7 +683,9 @@ fn format_entry_directory_report_with_style(
     }
 
     for diagnostic in report.structural_report().diagnostics() {
-        if let Some(path) = diagnostic.entry.as_ref().and_then(|entry| report.entry_path(entry)) {
+        if let Some(path) =
+            diagnostic.entry.as_ref().and_then(|entry| report.entry_file_path(entry))
+        {
             output.push_str(&format!(
                 "{}: {}: {}\n",
                 styled_diagnostic_severity(diagnostic.severity.label(), style),

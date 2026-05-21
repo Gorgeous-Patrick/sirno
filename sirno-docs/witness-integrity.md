@@ -24,11 +24,11 @@ A begin or end token that no resolved block consumed is an orphan delimiter.
 The diagnostic names the file, the captured id, and the line and column,
 and states which side is missing.
 
-A marker fails when its captured text is not a valid *entry* id.
+A marker fails when its captured text is not a valid *entry address*.
 The text between the sentinel colons must pass the normal id checks,
 or the block cannot be keyed to an *entry*.
 
-These failures keep the *entry* id a reliable query key.
+These failures keep the *entry address* a reliable query key.
 Evidence that cannot be tied to exactly one *entry*
 is reported rather than silently indexed.
 

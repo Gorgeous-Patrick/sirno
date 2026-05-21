@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::{
-    ConfigError, EntryArtifactPathError, EntryDirectoryError, EntryId, EntryIdError,
+    ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError, EntryDirectoryError,
     EntryParseError, FrostError, GeneratedLinkError, LockError, TideError, TutorialSettings,
     WitnessError,
 };
@@ -171,9 +171,9 @@ pub enum CommandError {
     /// Witness lookup requires configured repo members.
     #[error("repo members are not configured; add [repo].members to Sirno.toml")]
     RepoMembersNotConfigured,
-    /// Witness lookup requires an existing entry id.
+    /// Witness lookup requires an existing entry address.
     #[error("entry `{0}` does not exist")]
-    MissingWitnessEntry(EntryId),
+    MissingWitnessEntry(EntryAddress),
     /// Lake path override does not apply to checking a frost path directly.
     #[error("`--lake-path` cannot be used with `check --frost-path`")]
     LakePathWithFrostPath,
@@ -328,9 +328,9 @@ pub enum CommandError {
     /// Sirno Lake entry directory command failed.
     #[error(transparent)]
     EntryDirectory(#[from] EntryDirectoryError),
-    /// Entry id parsing failed.
+    /// Entry address parsing failed.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
     /// Entry artifact path parsing failed.
     #[error(transparent)]
     ArtifactPath(#[from] EntryArtifactPathError),

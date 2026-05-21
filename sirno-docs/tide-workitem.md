@@ -24,7 +24,7 @@ such as `lake`, `frost`, or both.
 The source list explains why the obligation exists without changing its identity.
 
 Text commands may name a full workitem as comma-separated fields.
-Entry ids and structural field names cannot contain commas,
+Entry addresss and structural field names cannot contain commas,
 so `ripple,field,direction,neighbor` is unambiguous.
 JSON input can carry the same tuple when a caller needs structured command input.
 

@@ -20,7 +20,7 @@ use tracing::trace;
 use crate::artifact::{EntryArtifact, EntryArtifactPath, EntryArtifactPathError};
 use crate::check::{CheckMode, CheckReport};
 use crate::entry::{Entry, EntryMetadata, EntryStructuralFields};
-use crate::id::{EntryId, EntryIdError};
+use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy,
 };
@@ -118,13 +118,15 @@ impl SirnoFrost {
     }
 
     /// Return the private backend directory path for one stored entry.
-    pub fn entry_storage_path(root: impl AsRef<Path>, id: &EntryId) -> Result<PathBuf, FrostError> {
+    pub fn entry_storage_path(
+        root: impl AsRef<Path>, id: &EntryAddress,
+    ) -> Result<PathBuf, FrostError> {
         Ok(root.as_ref().join(id.to_filesystem_id()?.as_str()))
     }
 
     /// Return the private backend directory path for one entry-version artifact tree.
     pub fn entry_artifact_snapshot_path(
-        root: impl AsRef<Path>, owner: &EntryId, version: Eterator,
+        root: impl AsRef<Path>, owner: &EntryAddress, version: Eterator,
     ) -> Result<PathBuf, FrostError> {
         Ok(Self::entry_storage_path(root, owner)?
             .join(artifact_snapshot_directory_name(owner, version)?))
@@ -214,14 +216,14 @@ impl SirnoFrost {
     // sirno:witness:sirno-frost:end
 
     /// Read one entry at the current snapshot.
-    pub fn read_entry(&self, id: &EntryId) -> Result<Option<Entry>, FrostError> {
+    pub fn read_entry(&self, id: &EntryAddress) -> Result<Option<Entry>, FrostError> {
         self.read_entry_at_snapshot(self.current_snapshot()?, id)
     }
 
     /// Read one entry at a selected frozen snapshot.
     // sirno:witness:sirno-frost:begin
     pub fn read_entry_at_snapshot(
-        &self, at: SnapshotRef, id: &EntryId,
+        &self, at: SnapshotRef, id: &EntryAddress,
     ) -> Result<Option<Entry>, FrostError> {
         trace!("sirno read_entry_at begin: id={id} at={}", at.version());
         let fs_id = id.to_filesystem_id()?;
@@ -246,7 +248,7 @@ impl SirnoFrost {
         trace!("sirno read_all_entries begin: at={}", at.version());
         let mut entries = Vec::new();
         for fs_id in self.backend.live_entries(at)? {
-            let id = EntryId::try_from(fs_id)?;
+            let id = EntryAddress::try_from(fs_id)?;
             if let Some(entry) = self.read_entry_at_snapshot(at, &id)? {
                 entries.push(entry);
             }
@@ -269,7 +271,7 @@ impl SirnoFrost {
         trace!("sirno read_all_artifacts begin: at={}", at.version());
         let mut artifacts = Vec::new();
         for fs_id in self.backend.live_entries(at)? {
-            let owner = EntryId::try_from(fs_id.clone())?;
+            let owner = EntryAddress::try_from(fs_id.clone())?;
             let Some(facet) = StoredEntryFacet::load_from(&self.backend, at, &fs_id)? else {
                 continue;
             };
@@ -458,12 +460,13 @@ impl SirnoFrost {
             .map(|artifact| artifact.owner.clone())
             .chain(deleted_artifacts.iter().map(|(owner, _)| owner.clone()))
             .collect::<BTreeSet<_>>();
-        let changed_entry_ids =
+        let changed_entry_addresses =
             changed_entries.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
         let entries_to_write = entries
             .iter()
             .filter(|entry| {
-                changed_entry_ids.contains(&entry.id) || changed_artifact_owners.contains(&entry.id)
+                changed_entry_addresses.contains(&entry.id)
+                    || changed_artifact_owners.contains(&entry.id)
             })
             .collect::<Vec<_>>();
 
@@ -500,13 +503,13 @@ impl SirnoFrost {
     }
 
     fn read_artifact_content_at_snapshot(
-        &self, at: SnapshotRef, owner: &EntryId, path: &EntryArtifactPath,
+        &self, at: SnapshotRef, owner: &EntryAddress, path: &EntryArtifactPath,
     ) -> Result<Vec<u8>, FrostError> {
         Ok(fs::read(self.artifact_content_path_at_snapshot(at, owner, path)?)?)
     }
 
     fn artifact_content_path_at_snapshot(
-        &self, at: SnapshotRef, owner: &EntryId, path: &EntryArtifactPath,
+        &self, at: SnapshotRef, owner: &EntryAddress, path: &EntryArtifactPath,
     ) -> Result<PathBuf, FrostError> {
         for (_, directory) in
             self.artifact_snapshot_directories_at(owner, at.eterator)?.into_iter().rev()
@@ -533,7 +536,7 @@ impl SirnoFrost {
             return Ok(paths);
         }
         for fs_id in self.backend.live_entries(at)? {
-            let owner = EntryId::try_from(fs_id.clone())?;
+            let owner = EntryAddress::try_from(fs_id.clone())?;
             let Some(facet) = StoredEntryFacet::load_from(&self.backend, at, &fs_id)? else {
                 continue;
             };
@@ -563,7 +566,7 @@ impl SirnoFrost {
     }
 
     fn artifact_snapshot_directories_at(
-        &self, owner: &EntryId, at: Eterator,
+        &self, owner: &EntryAddress, at: Eterator,
     ) -> Result<Vec<(Eterator, PathBuf)>, FrostError> {
         let entry_root = Self::entry_storage_path(&self.root, owner)?;
         if !entry_root.exists() {
@@ -598,7 +601,7 @@ impl SirnoFrost {
                 continue;
             }
             let fs_id = FilesystemEntryId::new(entry.file_name().to_string_lossy().to_string())?;
-            let owner = EntryId::try_from(fs_id)?;
+            let owner = EntryAddress::try_from(fs_id)?;
             for child in fs::read_dir(entry.path())? {
                 let child = child?;
                 if !child.file_type()?.is_dir() {
@@ -614,7 +617,8 @@ impl SirnoFrost {
     }
 
     fn write_artifact_snapshot_directories(
-        &self, version: Eterator, owners: &BTreeSet<EntryId>, changed_artifacts: &[&EntryArtifact],
+        &self, version: Eterator, owners: &BTreeSet<EntryAddress>,
+        changed_artifacts: &[&EntryArtifact],
     ) -> Result<(), FrostError> {
         for owner in owners {
             let directory = Self::entry_artifact_snapshot_path(&self.root, owner, version)?;
@@ -680,14 +684,14 @@ impl SirnoFrost {
 }
 
 // sirno:witness:entry-artifact:begin
-fn artifact_key(artifact: &EntryArtifact) -> (EntryId, EntryArtifactPath) {
+fn artifact_key(artifact: &EntryArtifact) -> (EntryAddress, EntryArtifactPath) {
     (artifact.owner.clone(), artifact.path.clone())
 }
 
 fn artifacts_by_owner(
     artifacts: impl IntoIterator<Item = EntryArtifact>,
-) -> BTreeMap<EntryId, Vec<EntryArtifact>> {
-    let mut by_owner = BTreeMap::<EntryId, Vec<EntryArtifact>>::new();
+) -> BTreeMap<EntryAddress, Vec<EntryArtifact>> {
+    let mut by_owner = BTreeMap::<EntryAddress, Vec<EntryArtifact>>::new();
     for artifact in artifacts {
         by_owner.entry(artifact.owner.clone()).or_default().push(artifact);
     }
@@ -704,13 +708,13 @@ fn next_version(current: SnapshotRef) -> Eterator {
 }
 
 fn artifact_snapshot_directory_name(
-    owner: &EntryId, version: Eterator,
+    owner: &EntryAddress, version: Eterator,
 ) -> Result<String, FrostError> {
     Ok(format!("{:016x}-{}", version.version(), owner.to_filesystem_id()?.as_str()))
 }
 
 fn parse_artifact_snapshot_directory_name(
-    name: &str, owner: &EntryId,
+    name: &str, owner: &EntryAddress,
 ) -> Result<Eterator, FrostError> {
     let expected_suffix = format!("-{}", owner.to_filesystem_id()?.as_str());
     let Some(hex) = name.strip_suffix(&expected_suffix) else {
@@ -794,7 +798,7 @@ impl StoredEntryFacet {
         }
     }
 
-    fn into_entry(self, id: EntryId) -> Result<Entry, FrostError> {
+    fn into_entry(self, id: EntryAddress) -> Result<Entry, FrostError> {
         let name =
             self.name.ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "name" })?;
         let desc =
@@ -907,9 +911,9 @@ pub enum FrostError {
     /// Sirno Lake entry directory operation failed.
     #[error(transparent)]
     EntryDirectory(#[from] EntryDirectoryError),
-    /// A filesystem directory cannot be interpreted as a Sirno entry id.
+    /// A filesystem directory cannot be interpreted as a Sirno entry address.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
     /// A stored artifact path cannot be interpreted as a lake artifact path.
     #[error(transparent)]
     ArtifactPath(#[from] EntryArtifactPathError),
@@ -918,17 +922,17 @@ pub enum FrostError {
     InvalidEntryDirectory(PathBuf),
     /// Seed initialization would overwrite an existing entry.
     #[error("entry `{0}` already exists")]
-    EntryAlreadyExists(EntryId),
+    EntryAlreadyExists(EntryAddress),
     /// A frozen entry differs from the current frost snapshot.
     #[error(
         "entry `{0}` is frozen but does not match the current frost snapshot; run `sirno melt {0}` before changing it"
     )]
-    FrozenEntryChanged(EntryId),
+    FrozenEntryChanged(EntryAddress),
     /// A frozen entry is missing a required Sirno field.
     #[error("frozen entry `{id}` is missing required field `{field}`")]
     CorruptEntry {
         /// Entry containing the corrupt field state.
-        id: EntryId,
+        id: EntryAddress,
         /// Field that could not be resolved.
         field: &'static str,
     },
@@ -936,7 +940,7 @@ pub enum FrostError {
     #[error("frozen artifact `{owner}/{path}` is missing content")]
     CorruptArtifact {
         /// Entry that owns the corrupt artifact.
-        owner: EntryId,
+        owner: EntryAddress,
         /// Owner-relative artifact path.
         path: EntryArtifactPath,
     },
@@ -976,8 +980,8 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let mut frost = SirnoFrost::open(temp.path()).unwrap();
         let mut metadata = EntryMetadata::new("Witness", "Repository evidence.").unwrap();
-        metadata.push_structural_target("topic", EntryId::new("concept").unwrap());
-        let entry = Entry::new(EntryId::new("witness").unwrap(), metadata, "Body.\n");
+        metadata.push_structural_target("topic", EntryAddress::new("concept").unwrap());
+        let entry = Entry::new(EntryAddress::new("witness").unwrap(), metadata, "Body.\n");
 
         frost.put_entry(&entry).unwrap();
         let read = frost.read_entry(&entry.id).unwrap().unwrap();
@@ -1220,8 +1224,8 @@ mod tests {
         let frost_path = tempfile::tempdir().unwrap();
         let checkout = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        entry.metadata.push_structural_target("zeta", EntryId::new("concept").unwrap());
-        entry.metadata.push_structural_target("area", EntryId::new("meta").unwrap());
+        entry.metadata.push_structural_target("zeta", EntryAddress::new("concept").unwrap());
+        entry.metadata.push_structural_target("area", EntryAddress::new("meta").unwrap());
         write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
@@ -1485,28 +1489,64 @@ mod tests {
         );
     }
 
+    #[test]
+    fn checkout_entry_directory_materializes_nested_entries_with_artifacts() {
+        let lake = tempfile::tempdir().unwrap();
+        let frost_path = tempfile::tempdir().unwrap();
+        let checkout = tempfile::tempdir().unwrap();
+        let entry = test_entry("core.design", "Design");
+        write_lake_entry(lake.path(), &entry);
+        write_lake_artifact(lake.path(), &entry.id, "images/logo.bin", b"artifact");
+        let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
+
+        let version = frost
+            .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        frost
+            .checkout_entry_directory(
+                version,
+                checkout.path(),
+                EntryDirectoryWritePolicy::EmptyDirectory,
+            )
+            .unwrap();
+
+        let checked = EntryDirectory::new(checkout.path())
+            .check_with_settings(CheckMode::Review, &EntryDirectoryCheckSettings::default())
+            .unwrap();
+        assert_eq!(checked.entries(), &[entry]);
+        assert!(checkout.path().join("core/design.md").exists());
+        assert_eq!(
+            fs::read(
+                checkout.path().join(".artifacts").join("core.design").join("images/logo.bin")
+            )
+            .unwrap(),
+            b"artifact"
+        );
+    }
+
     fn test_entry(id: &str, name: &str) -> Entry {
         let metadata = EntryMetadata::new(name, format!("{name} desc.")).expect("valid metadata");
-        Entry::new(EntryId::new(id).expect("valid id"), metadata, format!("{name} body.\n"))
+        Entry::new(EntryAddress::new(id).expect("valid id"), metadata, format!("{name} body.\n"))
     }
 
     fn write_lake_entry(root: &Path, entry: &Entry) {
-        let path = root.join(format!("{}.md", entry.id.as_str()));
+        let path = root.join(entry.id.to_lake_relative_path());
+        fs::create_dir_all(path.parent().expect("entry has parent")).unwrap();
         fs::write(path, entry.to_markdown().expect("render entry")).expect("write entry");
     }
 
-    fn write_lake_artifact(root: &Path, owner: &EntryId, path: &str, content: &[u8]) {
+    fn write_lake_artifact(root: &Path, owner: &EntryAddress, path: &str, content: &[u8]) {
         let path = root.join(".artifacts").join(owner.as_str()).join(path);
         fs::create_dir_all(path.parent().expect("artifact has parent")).unwrap();
         fs::write(path, content).unwrap();
     }
 
-    fn assert_entry_snapshot_file(root: &Path, id: &EntryId, snapshot: SnapshotRef) {
+    fn assert_entry_snapshot_file(root: &Path, id: &EntryAddress, snapshot: SnapshotRef) {
         let versions = entry_snapshot_versions(root, id);
         assert_eq!(versions, [snapshot]);
     }
 
-    fn entry_snapshot_versions(root: &Path, id: &EntryId) -> Vec<SnapshotRef> {
+    fn entry_snapshot_versions(root: &Path, id: &EntryAddress) -> Vec<SnapshotRef> {
         let dir = root.join(id.as_str());
         let mut versions = fs::read_dir(dir)
             .unwrap()
@@ -1528,14 +1568,14 @@ mod tests {
     }
 
     fn artifact_snapshot_path(
-        root: &Path, id: &EntryId, snapshot: SnapshotRef, artifact: &str,
+        root: &Path, id: &EntryAddress, snapshot: SnapshotRef, artifact: &str,
     ) -> PathBuf {
         SirnoFrost::entry_artifact_snapshot_path(root, id, snapshot.eterator)
             .unwrap()
             .join(artifact)
     }
 
-    fn entry_snapshot_file_path(root: &Path, id: &EntryId, snapshot: SnapshotRef) -> PathBuf {
+    fn entry_snapshot_file_path(root: &Path, id: &EntryAddress, snapshot: SnapshotRef) -> PathBuf {
         root.join(id.as_str()).join(format!("{:016x}-{}.md", snapshot.version(), id.as_str()))
     }
 }

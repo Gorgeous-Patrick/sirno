@@ -17,7 +17,7 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
-use crate::{CheckMode, Entry, EntryArtifact, EntryDirectory, EntryDirectoryReport, EntryId};
+use crate::{CheckMode, Entry, EntryAddress, EntryArtifact, EntryDirectory, EntryDirectoryReport};
 
 /// Default action for the shared entry freeze/melt UI.
 // sirno:witness:entry-freeze:begin
@@ -247,7 +247,7 @@ impl TuiApp for EntryFreezeTui {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct EntryFreezeRow {
-    id: EntryId,
+    id: EntryAddress,
     state: EntryFreezeState,
     artifacts: usize,
     name: String,
@@ -291,7 +291,7 @@ fn entry_freeze_rows(report: &EntryDirectoryReport) -> Vec<EntryFreezeRow> {
         .map(|entry| {
             let artifacts = artifacts_by_owner.get(&entry.id).copied().unwrap_or(0);
             let path = report
-                .entry_path(&entry.id)
+                .entry_file_path(&entry.id)
                 .map(|path| path.display().to_string())
                 .unwrap_or_else(|| "-".to_owned());
             EntryFreezeRow {
@@ -306,7 +306,7 @@ fn entry_freeze_rows(report: &EntryDirectoryReport) -> Vec<EntryFreezeRow> {
         .collect()
 }
 
-fn artifact_counts(artifacts: &[EntryArtifact]) -> BTreeMap<EntryId, usize> {
+fn artifact_counts(artifacts: &[EntryArtifact]) -> BTreeMap<EntryAddress, usize> {
     let mut counts = BTreeMap::new();
     for artifact in artifacts {
         *counts.entry(artifact.owner.clone()).or_default() += 1;
@@ -339,8 +339,8 @@ mod tests {
 
     #[test]
     fn artifact_counts_group_by_owner() {
-        let alpha = EntryId::new("alpha").unwrap();
-        let beta = EntryId::new("beta").unwrap();
+        let alpha = EntryAddress::new("alpha").unwrap();
+        let beta = EntryAddress::new("beta").unwrap();
         let artifacts = vec![
             EntryArtifact::new(
                 alpha.clone(),
@@ -364,9 +364,9 @@ mod tests {
     #[test]
     fn state_reports_frozen_marker() {
         let mut metadata = EntryMetadata::new("Alpha", "Alpha entry.").unwrap();
-        let mutable = Entry::new(EntryId::new("alpha").unwrap(), metadata.clone(), "");
+        let mutable = Entry::new(EntryAddress::new("alpha").unwrap(), metadata.clone(), "");
         metadata.frozen = Some(FrozenMarker::Present);
-        let frozen = Entry::new(EntryId::new("alpha").unwrap(), metadata, "");
+        let frozen = Entry::new(EntryAddress::new("alpha").unwrap(), metadata, "");
 
         assert_eq!(EntryFreezeState::from_entry(&mutable), EntryFreezeState::Mutable);
         assert_eq!(EntryFreezeState::from_entry(&frozen), EntryFreezeState::Frozen);

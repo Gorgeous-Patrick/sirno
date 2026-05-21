@@ -19,15 +19,15 @@ Configured fields are ordinary *entry* metadata,
 but Sirno treats their values as the graph that powers query, checking,
 generated footer rendering, and tide review worklists.
 
-Structural fields refer to *entries* by id.
+Structural fields refer to *entries* by path.
 They are list-valued and may name several targets.
 An empty list is still a present field.
 Their configured order is user-managed.
 Sirno uses that order when rendering configured structural surfaces.
-Humans discover *witness* regions mechanically with `sirno witness ENTRY_ID --full`.
+Humans discover *witness* regions mechanically with `sirno witness ENTRY_ADDRESS --full`.
 Agents use the corresponding MCP witness tool.
 
-Because a configured field name is also an *entry* id,
+Because a configured field name is also a local *entry* id,
 `sirno entry rename OLD NEW` treats that field name as part of the rename.
 It rewrites authored metadata keys from `OLD` to `NEW` across the *lake*
 and rewrites `[structural.OLD]` in `Sirno.toml` to `[structural.NEW]`.

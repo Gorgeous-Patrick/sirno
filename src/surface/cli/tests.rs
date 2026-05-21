@@ -13,9 +13,9 @@ use crate::surface::dto::{
 use super::OpenTideTutorial;
 
 use crate::{
-    CONFIG_FILE_NAME, CheckMode, CheckSettings, Entry, EntryDirectory, EntryDirectoryCheckSettings,
-    EntryId, EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus, FrostSettings,
-    LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
+    CONFIG_FILE_NAME, CheckMode, CheckSettings, Entry, EntryAddress, EntryDirectory,
+    EntryDirectoryCheckSettings, EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus,
+    FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
     StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings,
     StructuralRippleSettings, StructuralSettings, TideSource, TideStatus, TideWorkitem,
     TutorialSettings, WitnessRecord, WitnessSpan,
@@ -23,7 +23,7 @@ use crate::{
 
 use super::{
     ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, ConfigUtilityCommand,
-    EntryCommand, EntryNewRequest, EntryPathArgs, EntryRenameArgs, EntryUtilityCommand,
+    EntryCommand, EntryNewRequest, EntryPathsArgs, EntryRenameArgs, EntryUtilityCommand,
     FrostCommand, FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand,
     OutputStyle, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
     SkillCommand, StructuralFieldState, StructuralFilter, StructuralPredicate,
@@ -446,7 +446,7 @@ fn surface_context_lake_init_and_entry_new_return_json_dtos() {
     let init = context.lake_init(LakeInitRequest { lake: Some(PathBuf::from("docs")) }).unwrap();
     let entry = context
         .entry_new(EntryNewRequest {
-            id: EntryId::new("alpha").unwrap(),
+            id: EntryAddress::new("alpha").unwrap(),
             name: None,
             desc: "Alpha entry.".to_owned(),
             structural: Vec::new(),
@@ -1018,7 +1018,7 @@ Changed body.
     let after = frost.current_snapshot().unwrap();
     let lock = SirnoLock::from_file(temp.path().join(LOCK_FILE_NAME)).unwrap();
     let read =
-        frost.read_entry_at_snapshot(after, &EntryId::new("alpha").unwrap()).unwrap().unwrap();
+        frost.read_entry_at_snapshot(after, &EntryAddress::new("alpha").unwrap()).unwrap().unwrap();
 
     assert!(after.generation > before.generation);
     assert_eq!(after.version(), 2);
@@ -1603,7 +1603,7 @@ fn tide_resolve_accepts_neighbor_and_tuple_selectors() {
                 infer: false,
                 json: None
             })))
-        } if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        } if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
     assert!(matches!(
         tuple.command,
@@ -1675,7 +1675,7 @@ fn top_level_resolve_accepts_tide_resolve_args() {
             items,
             infer: false,
             json: None
-        })) if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+        })) if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
     assert!(matches!(
         tuple.command,
@@ -1717,26 +1717,26 @@ fn unresolve_accepts_top_level_grouped_and_reopen_alias() {
     assert!(matches!(
         top_level.command,
         Command::TopLevelTide(TideReviewCommand::Unresolve(UnresolveArgs { items }))
-            if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+            if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
     assert!(matches!(
         top_level_alias.command,
         Command::TopLevelTide(TideReviewCommand::Unresolve(UnresolveArgs { items }))
-            if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+            if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
     assert!(matches!(
         grouped.command,
         Command::Tide {
             command: Some(TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items })))
         }
-            if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+            if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
     assert!(matches!(
         alias.command,
         Command::Tide {
             command: Some(TideCommand::Review(TideReviewCommand::Unresolve(UnresolveArgs { items })))
         }
-            if items == vec![TideItemSelector::Neighbor(EntryId::new("beta").unwrap())]
+            if items == vec![TideItemSelector::Neighbor(EntryAddress::new("beta").unwrap())]
     ));
 }
 
@@ -1855,11 +1855,11 @@ fn new_accepts_structural_targets() {
             if structural == vec![
                 StructuralPredicate {
                     field: "topic".to_owned(),
-                    target: EntryId::new("concept").unwrap(),
+                    target: EntryAddress::new("concept").unwrap(),
                 },
                 StructuralPredicate {
                     field: "topic".to_owned(),
-                    target: EntryId::new("methodology").unwrap(),
+                    target: EntryAddress::new("methodology").unwrap(),
                 },
         ]
     ));
@@ -1902,7 +1902,7 @@ fn path_accepts_filters_and_entry_form() {
 
     assert!(matches!(
         top_level.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Path(EntryPathArgs {
+        Command::TopLevelEntry(TopLevelEntryCommand::Path(EntryPathsArgs {
             id,
             show_entry: false,
             show_artifact: true,
@@ -1913,7 +1913,7 @@ fn path_accepts_filters_and_entry_form() {
     ));
     assert!(matches!(
         entry.command,
-        Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(EntryPathArgs {
+        Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(EntryPathsArgs {
             id,
             show_entry: true,
             show_artifact: false,
@@ -2127,7 +2127,7 @@ Body.
     .unwrap();
     fs::create_dir_all(docs.join(".artifacts").join("alpha")).unwrap();
     fs::write(docs.join(".artifacts").join("alpha").join("note.bin"), b"note").unwrap();
-    let args = EntryPathArgs {
+    let args = EntryPathsArgs {
         id: "alpha".to_owned(),
         show_entry: false,
         show_artifact: false,
@@ -2199,8 +2199,8 @@ fn query_accepts_structural_filter() {
             if has == vec![StructuralFilter {
                 field: "topic".to_owned(),
                 targets: vec![
-                    EntryId::new("concept").unwrap(),
-                    EntryId::new("methodology").unwrap(),
+                    EntryAddress::new("concept").unwrap(),
+                    EntryAddress::new("methodology").unwrap(),
                 ],
             }]
     ));
@@ -2246,7 +2246,7 @@ fn query_accepts_short_alias_and_options() {
         has,
         vec![StructuralFilter {
             field: "topic".to_owned(),
-            targets: vec![EntryId::new("concept").unwrap()],
+            targets: vec![EntryAddress::new("concept").unwrap()],
         }]
     );
     assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
@@ -2283,7 +2283,7 @@ fn entry_query_accepts_short_alias_and_options() {
         has,
         vec![StructuralFilter {
             field: "topic".to_owned(),
-            targets: vec![EntryId::new("concept").unwrap()],
+            targets: vec![EntryAddress::new("concept").unwrap()],
         }]
     );
     assert_eq!(columns.columns, vec![QueryColumn::Id, QueryColumn::Path]);
@@ -2514,10 +2514,10 @@ fn tide_status_fixture(
 ) -> TideStatus {
     TideStatus {
         workitem: TideWorkitem::new(
-            EntryId::new(ripple).unwrap(),
+            EntryAddress::new(ripple).unwrap(),
             field,
             direction,
-            EntryId::new(neighbor).unwrap(),
+            EntryAddress::new(neighbor).unwrap(),
         )
         .unwrap(),
         sources: sources.iter().copied().collect(),
@@ -2852,8 +2852,8 @@ fn query_filter_rejects_unconfigured_structural_field() {
 #[test]
 fn query_filter_keeps_comma_separated_targets_disjunctive() {
     let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
-    metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
-    let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
+    metadata.push_structural_target("topic", EntryAddress::new("meta").unwrap());
+    let entry = Entry::new(EntryAddress::new("concept").unwrap(), metadata, "");
     let settings = StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
     let query = entry_query_from_filters(
         EntryQuery::new(),
@@ -2869,8 +2869,8 @@ fn query_filter_keeps_comma_separated_targets_disjunctive() {
 #[test]
 fn query_filter_keeps_repeated_field_targets_disjunctive() {
     let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
-    metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
-    let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
+    metadata.push_structural_target("topic", EntryAddress::new("meta").unwrap());
+    let entry = Entry::new(EntryAddress::new("concept").unwrap(), metadata, "");
     let settings = StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
     let query = entry_query_from_filters(
         EntryQuery::new(),
@@ -2889,8 +2889,8 @@ fn query_filter_keeps_repeated_field_targets_disjunctive() {
 #[test]
 fn query_filter_matches_present_empty_structural_field() {
     let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
-    metadata.set_structural_targets("topic", Vec::<EntryId>::new());
-    let entry = Entry::new(EntryId::new("concept").unwrap(), metadata, "");
+    metadata.set_structural_targets("topic", Vec::<EntryAddress>::new());
+    let entry = Entry::new(EntryAddress::new("concept").unwrap(), metadata, "");
     let settings = StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
     let query = entry_query_from_filters(
         EntryQuery::new(),
@@ -2906,11 +2906,11 @@ fn query_filter_matches_present_empty_structural_field() {
 #[test]
 fn query_filter_keeps_target_and_state_matchers_disjunctive() {
     let mut empty_metadata = EntryMetadata::new("Empty", "A present empty field.").unwrap();
-    empty_metadata.set_structural_targets("topic", Vec::<EntryId>::new());
-    let empty = Entry::new(EntryId::new("empty").unwrap(), empty_metadata, "");
+    empty_metadata.set_structural_targets("topic", Vec::<EntryAddress>::new());
+    let empty = Entry::new(EntryAddress::new("empty").unwrap(), empty_metadata, "");
     let mut targeted_metadata = EntryMetadata::new("Targeted", "A targeted field.").unwrap();
-    targeted_metadata.push_structural_target("topic", EntryId::new("meta").unwrap());
-    let targeted = Entry::new(EntryId::new("targeted").unwrap(), targeted_metadata, "");
+    targeted_metadata.push_structural_target("topic", EntryAddress::new("meta").unwrap());
+    let targeted = Entry::new(EntryAddress::new("targeted").unwrap(), targeted_metadata, "");
     let settings = StructuralSettings::from_fields([("topic", StructuralFieldSettings::default())]);
     let query = entry_query_from_filters(
         EntryQuery::new(),
@@ -3820,7 +3820,7 @@ fn witness_rejects_missing_entry_before_repo_scan() {
 #[test]
 fn format_witness_record_prints_range_and_preserves_body() {
     let record = WitnessRecord {
-        entry: EntryId::new("entry").unwrap(),
+        entry: EntryAddress::new("entry").unwrap(),
         path: PathBuf::from("src/lib.rs"),
         region: witness_span(10, 5, 14, 25),
         opening: witness_span(10, 5, 10, 33),
@@ -3850,7 +3850,7 @@ fn format_witness_record_prints_range_and_preserves_body() {
 #[test]
 fn format_witness_records_adds_full_region_spacing() {
     let first = WitnessRecord {
-        entry: EntryId::new("entry").unwrap(),
+        entry: EntryAddress::new("entry").unwrap(),
         path: PathBuf::from("src/lib.rs"),
         region: witness_span(10, 5, 14, 25),
         opening: witness_span(10, 5, 10, 33),

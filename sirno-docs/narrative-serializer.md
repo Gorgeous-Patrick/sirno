@@ -19,17 +19,20 @@ known and missing terms,
 the ordered route of steps,
 durable feedback,
 deferred detail,
-and an aftertaste phrase, handle, or entry id.
-Each route step records an entry id or proposed id, its role, the prerequisite it satisfies,
+and an aftertaste phrase, handle, or entry address.
+Each route step records an entry address or proposed address,
+its role,
+the prerequisite it satisfies,
 and the detail deferred to an entry body.
 
 The serializer input is a separate, smaller shape.
-It carries an `id`, a `name`, a `desc`, a `structural` map from field name to a list of entry ids,
+It carries an `id`, a `name`, a `desc`,
+a `structural` map from field name to a list of entry addresses,
 and a `body` as a list of paragraph strings.
 The notes are scaffolding for the route; the input is what becomes the file.
 
 The contract holds these invariants.
-The entry id is lowercase kebab-case.
+The entry address uses lowercase kebab-case atoms.
 `name`, `desc`, and `frozen` are reserved metadata and are never written as structural fields.
 Structural fields are written exactly as supplied, in the order given,
 because their order is user-managed and Sirno renders configured surfaces in that order.

@@ -23,7 +23,7 @@ use crate::surface::SurfaceContext;
 use crate::surface::context::{default_config_path, default_frost_path, default_lake_path};
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
+    EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
     PathSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
     SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
     TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode,
@@ -40,7 +40,7 @@ use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
-    CheckMode, EntryId, EntryIdError, SirnoConfig, SirnoFrost, TideSource, TideStatus,
+    CheckMode, EntryAddress, EntryAddressError, SirnoConfig, SirnoFrost, TideSource, TideStatus,
     TideWorkitem, TideWorkitemParseError,
 };
 
@@ -172,7 +172,7 @@ enum EntryCommand {
     /// Run a top-level entry operation under `sirno entry`.
     #[command(flatten)]
     TopLevel(TopLevelEntryCommand),
-    /// Rename one entry id and its Sirno references.
+    /// Rename one entry address and its Sirno references.
     #[command(visible_aliases = ["mv", "move"])]
     Rename(EntryRenameArgs),
 }
@@ -183,7 +183,8 @@ enum TopLevelEntryCommand {
     /// Create one Markdown entry.
     // sirno:witness:entry-commands:begin
     New {
-        /// Entry id and filename stem.
+        /// Entry address.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
         /// Human-readable entry name.
         #[arg(short = 'n', long)]
@@ -191,8 +192,8 @@ enum TopLevelEntryCommand {
         /// Short entry desc.
         #[arg(short = 'd', long)]
         desc: String,
-        /// Structural metadata target as FIELD=ENTRY_ID.
-        #[arg(long = "structural", value_name = "FIELD=ENTRY_ID")]
+        /// Structural metadata target as FIELD=ENTRY_ADDRESS.
+        #[arg(long = "structural", value_name = "FIELD=ENTRY_ADDRESS")]
         structural: Vec<StructuralPredicate>,
         /// Initial Markdown body.
         #[arg(short = 'b', long)]
@@ -202,8 +203,8 @@ enum TopLevelEntryCommand {
     /// Freeze one current frost entry and make its lake file read-only.
     // sirno:witness:entry-commands:begin
     Freeze {
-        /// Entry id to freeze. Omit this or pass `tui` to open the entry freeze/melt UI.
-        #[arg(conflicts_with = "fix_all")]
+        /// Entry address to freeze. Omit this or pass `tui` to open the entry freeze/melt UI.
+        #[arg(value_name = "ENTRY_ADDRESS", conflicts_with = "fix_all")]
         id: Option<String>,
         /// Reapply local protection from frozen metadata and immutable checkout state.
         #[arg(long = "fix-all", conflicts_with = "id")]
@@ -217,8 +218,8 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:begin
     #[command(visible_alias = "unfreeze")]
     Melt {
-        /// Entry id to melt. Omit this or pass `tui` to open the entry freeze/melt UI.
-        #[arg(conflicts_with = "unsafe_all")]
+        /// Entry address to melt. Omit this or pass `tui` to open the entry freeze/melt UI.
+        #[arg(value_name = "ENTRY_ADDRESS", conflicts_with = "unsafe_all")]
         id: Option<String>,
         /// Clear every Sirno local protection guard without editing metadata.
         #[arg(long = "unsafe-all", conflicts_with = "id")]
@@ -230,7 +231,7 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:end
     /// Show filesystem paths related to one entry.
     // sirno:witness:entry-commands:begin
-    Path(EntryPathArgs),
+    Path(EntryPathsArgs),
     // sirno:witness:entry-commands:end
     /// Query Sirno Lake Markdown entries.
     // sirno:witness:entry-commands:begin
@@ -241,11 +242,11 @@ enum TopLevelEntryCommand {
         /// Exact text term matched against id, name, desc, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
-        /// Structural target filter as FIELD=ENTRY_ID[,ENTRY_ID].
+        /// Structural target filter as FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS].
         ///
         /// Different fields narrow results.
         /// Comma-separated values and repeated same-field filters are alternatives.
-        #[arg(long = "has", value_name = "FIELD=ENTRY_ID[,ENTRY_ID]")]
+        #[arg(long = "has", value_name = "FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]")]
         has: Vec<StructuralFilter>,
         /// Structural field state filter as FIELD=present, FIELD=empty, or FIELD=missing.
         ///
@@ -280,11 +281,12 @@ enum TopLevelEntryCommand {
         command: ArtifactCommand,
     },
     // sirno:witness:entry-commands:end
-    /// Show repository witness blocks for one entry id.
+    /// Show repository witness blocks for one entry address.
     // sirno:witness:entry-commands:begin
     #[command(visible_aliases = ["w", "wit"])]
     Witness {
-        /// Entry id used as the witness query key.
+        /// Entry address used as the witness query key.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
         /// Print full witness regions instead of only their locations.
         #[arg(short = 'f', long)]
@@ -340,7 +342,7 @@ enum TopLevelLakeCommand {
 // sirno:witness:cli-interface:begin
 #[derive(Debug, Subcommand)]
 enum MoveCommand {
-    /// Rename one entry id and its Sirno references.
+    /// Rename one entry address and its Sirno references.
     Entry(EntryRenameArgs),
     /// Move the configured lake path.
     Lake(LakeMoveArgs),
@@ -348,12 +350,14 @@ enum MoveCommand {
     Frost(FrostMoveArgs),
 }
 
-/// Arguments for renaming one entry id and its Sirno references.
+/// Arguments for renaming one entry address and its Sirno references.
 #[derive(Debug, Args)]
 struct EntryRenameArgs {
-    /// Existing entry id.
+    /// Existing entry address.
+    #[arg(value_name = "OLD_ENTRY_ADDRESS")]
     old_id: String,
-    /// New entry id.
+    /// New entry address.
+    #[arg(value_name = "NEW_ENTRY_ADDRESS")]
     new_id: String,
 }
 
@@ -372,11 +376,12 @@ struct FrostMoveArgs {
 }
 // sirno:witness:cli-interface:end
 
-/// Arguments for entry path lookup.
+/// Arguments for entry address lookup.
 // sirno:witness:entry-commands:begin
 #[derive(Clone, Debug, Args)]
-struct EntryPathArgs {
-    /// Entry id whose paths should be shown.
+struct EntryPathsArgs {
+    /// Entry address whose paths should be shown.
+    #[arg(value_name = "ENTRY_ADDRESS")]
     id: String,
     /// Show the Sirno Lake Markdown entry file path.
     #[arg(long = "entry")]
@@ -410,11 +415,11 @@ enum PathOutputFormat {
 }
 // sirno:witness:entry-commands:end
 
-/// Structural metadata predicate parsed from `FIELD=ENTRY_ID`.
+/// Structural metadata predicate parsed from `FIELD=ENTRY_ADDRESS`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct StructuralPredicate {
     field: String,
-    target: EntryId,
+    target: EntryAddress,
 }
 
 impl FromStr for StructuralPredicate {
@@ -427,23 +432,23 @@ impl FromStr for StructuralPredicate {
         if field.is_empty() {
             return Err(StructuralPredicateParseError::EmptyField);
         }
-        let target = EntryId::new(target)?;
+        let target = EntryAddress::new(target)?;
         Ok(Self { field: field.to_owned(), target })
     }
 }
 
-/// Error raised while parsing one structural `FIELD=ENTRY_ID` argument.
+/// Error raised while parsing one structural `FIELD=ENTRY_ADDRESS` argument.
 #[derive(Debug, Error)]
 enum StructuralPredicateParseError {
     /// The argument does not contain the field-target separator.
-    #[error("expected FIELD=ENTRY_ID")]
+    #[error("expected FIELD=ENTRY_ADDRESS")]
     MissingEquals,
     /// The structural field name is empty.
     #[error("structural field name must not be empty")]
     EmptyField,
-    /// The target entry id is invalid.
+    /// The target entry address is invalid.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
 }
 
 /// Supported entry artifact commands.
@@ -452,12 +457,14 @@ enum StructuralPredicateParseError {
 enum ArtifactCommand {
     /// List artifacts owned by one entry.
     List {
-        /// Entry id whose artifacts should be listed.
+        /// Entry address whose artifacts should be listed.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
     },
     /// Copy a file into one entry's artifact tree.
     Add {
-        /// Entry id that will own the artifact.
+        /// Entry address that will own the artifact.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
         /// Source file to copy.
         source: PathBuf,
@@ -467,7 +474,8 @@ enum ArtifactCommand {
     /// Rename one artifact path owned by an entry.
     #[command(visible_aliases = ["mv", "move"])]
     Rename {
-        /// Entry id that owns the artifact.
+        /// Entry address that owns the artifact.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
         /// Existing owner-relative artifact path.
         old_path: PathBuf,
@@ -477,7 +485,8 @@ enum ArtifactCommand {
     /// Remove one artifact owned by an entry.
     #[command(visible_aliases = ["rm", "delete"])]
     Remove {
-        /// Entry id that owns the artifact.
+        /// Entry address that owns the artifact.
+        #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
         /// Owner-relative artifact path to remove.
         artifact_path: PathBuf,
@@ -556,7 +565,7 @@ struct CheckoutArgs {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum TideItemSelector {
     /// Select every open workitem whose neighbor matches this entry.
-    Neighbor(EntryId),
+    Neighbor(EntryAddress),
     /// Select one full workitem tuple.
     Workitem(TideWorkitem),
 }
@@ -568,16 +577,16 @@ impl FromStr for TideItemSelector {
         if raw.contains(',') {
             return Ok(Self::Workitem(raw.parse()?));
         }
-        Ok(Self::Neighbor(EntryId::new(raw)?))
+        Ok(Self::Neighbor(EntryAddress::new(raw)?))
     }
 }
 
 /// Error raised while parsing one tide item selector.
 #[derive(Debug, Error)]
 enum TideItemSelectorParseError {
-    /// Entry id parsing failed.
+    /// Entry address parsing failed.
     #[error(transparent)]
-    EntryId(#[from] EntryIdError),
+    EntryAddress(#[from] EntryAddressError),
     /// Full workitem parsing failed.
     #[error(transparent)]
     Workitem(#[from] TideWorkitemParseError),
@@ -641,7 +650,7 @@ struct ResolveArgs {
     /// JSON array of full workitem tuples.
     #[arg(long, conflicts_with_all = ["infer", "items"])]
     json: Option<String>,
-    /// Entry ids or full workitem tuples.
+    /// Entry addresses or full workitem tuples.
     #[arg(required_unless_present_any = ["infer", "json"])]
     items: Vec<TideItemSelector>,
 }
@@ -649,7 +658,7 @@ struct ResolveArgs {
 /// Arguments for removing resolved marks from tide workitems.
 #[derive(Debug, Args)]
 struct UnresolveArgs {
-    /// Entry ids or full workitem tuples.
+    /// Entry addresses or full workitem tuples.
     #[arg(required = true)]
     items: Vec<TideItemSelector>,
 }
@@ -1229,8 +1238,8 @@ impl EntryCommand {
 
 impl EntryRenameArgs {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let old_id = EntryId::new(&self.old_id)?;
-        let new_id = EntryId::new(&self.new_id)?;
+        let old_id = EntryAddress::new(&self.old_id)?;
+        let new_id = EntryAddress::new(&self.new_id)?;
         let result =
             SurfaceContext::from_cli_paths(config_path, lake_path).entry_rename(old_id, new_id)?;
         println!("{}", result.message);
@@ -1251,7 +1260,7 @@ impl TopLevelEntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let structural = structural
                     .into_iter()
                     .map(|target| StructuralTarget { field: target.field, target: target.target })
@@ -1285,7 +1294,7 @@ impl TopLevelEntryCommand {
                         freeze::EntryFreezeTuiAction::Freeze,
                     );
                 }
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_freeze(id)?;
                 println!("{}", result.message);
@@ -1307,7 +1316,7 @@ impl TopLevelEntryCommand {
                 if id == "tui" {
                     return freeze::run(config_path, lake_path, freeze::EntryFreezeTuiAction::Melt);
                 }
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
                 println!("{}", result.message);
@@ -1672,14 +1681,14 @@ fn print_tide_review_waves(
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TideReviewWave {
-    ripple: EntryId,
-    entries: Vec<EntryId>,
+    ripple: EntryAddress,
+    entries: Vec<EntryAddress>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TideReviewEntryGroup {
-    entry: EntryId,
-    ripples: Vec<EntryId>,
+    entry: EntryAddress,
+    ripples: Vec<EntryAddress>,
 }
 
 fn format_tide_review_waves_grouped(
@@ -1958,18 +1967,18 @@ fn heavy_table_separator(separator: &str) -> String {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TideStatusWave<'a> {
-    ripple: EntryId,
+    ripple: EntryAddress,
     statuses: Vec<&'a TideStatus>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct TideStatusEntryGroup<'a> {
-    entry: EntryId,
+    entry: EntryAddress,
     statuses: Vec<&'a TideStatus>,
 }
 
 fn tide_review_waves(statuses: &[TideStatus]) -> Vec<TideReviewWave> {
-    let mut entries_by_ripple = BTreeMap::<EntryId, BTreeSet<EntryId>>::new();
+    let mut entries_by_ripple = BTreeMap::<EntryAddress, BTreeSet<EntryAddress>>::new();
     for status in statuses.iter().filter(|status| !status.resolved) {
         entries_by_ripple
             .entry(status.workitem.ripple.clone())
@@ -1984,7 +1993,7 @@ fn tide_review_waves(statuses: &[TideStatus]) -> Vec<TideReviewWave> {
 }
 
 fn tide_review_entry_groups(statuses: &[TideStatus]) -> Vec<TideReviewEntryGroup> {
-    let mut ripples_by_entry = BTreeMap::<EntryId, BTreeSet<EntryId>>::new();
+    let mut ripples_by_entry = BTreeMap::<EntryAddress, BTreeSet<EntryAddress>>::new();
     for status in statuses.iter().filter(|status| !status.resolved) {
         ripples_by_entry
             .entry(status.workitem.neighbor.clone())
@@ -2002,7 +2011,7 @@ fn tide_review_entry_groups(statuses: &[TideStatus]) -> Vec<TideReviewEntryGroup
 }
 
 fn tide_status_waves(statuses: &[TideStatus]) -> Vec<TideStatusWave<'_>> {
-    let mut statuses_by_ripple = BTreeMap::<EntryId, Vec<&TideStatus>>::new();
+    let mut statuses_by_ripple = BTreeMap::<EntryAddress, Vec<&TideStatus>>::new();
     for status in statuses {
         statuses_by_ripple.entry(status.workitem.ripple.clone()).or_default().push(status);
     }
@@ -2014,7 +2023,7 @@ fn tide_status_waves(statuses: &[TideStatus]) -> Vec<TideStatusWave<'_>> {
 }
 
 fn tide_status_entry_groups(statuses: &[TideStatus]) -> Vec<TideStatusEntryGroup<'_>> {
-    let mut statuses_by_entry = BTreeMap::<EntryId, Vec<&TideStatus>>::new();
+    let mut statuses_by_entry = BTreeMap::<EntryAddress, Vec<&TideStatus>>::new();
     for status in statuses {
         statuses_by_entry.entry(status.workitem.neighbor.clone()).or_default().push(status);
     }
@@ -2028,7 +2037,7 @@ fn tide_status_entry_groups(statuses: &[TideStatus]) -> Vec<TideStatusEntryGroup
         .collect()
 }
 
-fn tide_review_entries_from_statuses(statuses: &[TideStatus]) -> Vec<EntryId> {
+fn tide_review_entries_from_statuses(statuses: &[TideStatus]) -> Vec<EntryAddress> {
     statuses
         .iter()
         .filter(|status| !status.resolved)
@@ -2063,21 +2072,21 @@ impl ArtifactCommand {
         let context = SurfaceContext::from_cli_paths(config_path, lake_path);
         match self {
             | ArtifactCommand::List { id } => {
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 for artifact in context.entry_artifact_list(id)?.artifacts {
                     println!("{artifact}");
                 }
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Add { id, source, artifact_path } => {
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let result =
                     context.entry_artifact_add(ArtifactAddRequest { id, source, artifact_path })?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Rename { id, old_path, new_path } => {
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let result = context.entry_artifact_rename(ArtifactRenameRequest {
                     id,
                     old_path,
@@ -2087,7 +2096,7 @@ impl ArtifactCommand {
                 Ok(ExitCode::SUCCESS)
             }
             | ArtifactCommand::Remove { id, artifact_path } => {
-                let id = EntryId::new(&id)?;
+                let id = EntryAddress::new(&id)?;
                 let result =
                     context.entry_artifact_remove(ArtifactRemoveRequest { id, artifact_path })?;
                 println!("{}", result.message);
@@ -2220,7 +2229,7 @@ fn print_skill_wrapper_result(result: SkillWrapperResult) -> ExitCode {
 fn run_witness_command(
     config_path: &Path, lake_path: Option<&Path>, raw_id: &str, full: bool,
 ) -> Result<ExitCode, CommandError> {
-    let id = EntryId::new(raw_id)?;
+    let id = EntryAddress::new(raw_id)?;
     let records = SurfaceContext::from_cli_paths(config_path, lake_path).witness_records(&id)?;
     if records.is_empty() {
         println!("no witness found for {id}");
@@ -2231,10 +2240,10 @@ fn run_witness_command(
 }
 
 fn entry_path_records(
-    config_path: &Path, lake_path: Option<&Path>, args: &EntryPathArgs,
+    config_path: &Path, lake_path: Option<&Path>, args: &EntryPathsArgs,
 ) -> Result<Vec<PathRecord>, CommandError> {
-    let request = EntryPathRequest::new(
-        EntryId::new(&args.id)?,
+    let request = EntryPathsRequest::new(
+        EntryAddress::new(&args.id)?,
         path_selection_from_args(args),
         args.absolute,
     );
@@ -2256,7 +2265,7 @@ fn print_path_records(
     Ok(())
 }
 
-fn path_selection_from_args(args: &EntryPathArgs) -> PathSelection {
+fn path_selection_from_args(args: &EntryPathsArgs) -> PathSelection {
     let all = !args.show_entry && !args.show_artifact && !args.show_frost;
     PathSelection::new(all || args.show_entry, all || args.show_artifact, all || args.show_frost)
 }

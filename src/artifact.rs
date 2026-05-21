@@ -1,6 +1,6 @@
 //! Lake-owned artifacts attached to Sirno entries.
 //!
-//! Entry artifacts live under `.artifacts/<entry-id>/` in the Sirno Lake.
+//! Entry artifacts live under `.artifacts/<entry-address>/` in the Sirno Lake.
 //! The entry Markdown files stay flat at the lake root.
 
 use std::fmt::{Display, Formatter};
@@ -11,7 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use smol_str::SmolStr;
 use thiserror::Error;
 
-use crate::id::EntryId;
+use crate::identifier::EntryAddress;
 
 /// Reserved lake directory that stores entry-owned artifacts.
 // sirno:witness:entry-artifact:begin
@@ -101,11 +101,11 @@ impl<'de> Deserialize<'de> for EntryArtifactPath {
 
 /// One lake-owned artifact attached to an entry.
 ///
-/// Invariant: `owner` names the entry whose `.artifacts/<entry-id>/` tree contains `path`.
+/// Invariant: `owner` names the entry whose `.artifacts/<entry-address>/` tree contains `path`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryArtifact {
     /// Entry that owns this artifact.
-    pub owner: EntryId,
+    pub owner: EntryAddress,
     /// Path relative to the owning entry artifact directory.
     pub path: EntryArtifactPath,
     /// Opaque artifact bytes.
@@ -115,7 +115,7 @@ pub struct EntryArtifact {
 
 impl EntryArtifact {
     /// Construct one typed entry artifact.
-    pub fn new(owner: EntryId, path: EntryArtifactPath, content: impl Into<Vec<u8>>) -> Self {
+    pub fn new(owner: EntryAddress, path: EntryArtifactPath, content: impl Into<Vec<u8>>) -> Self {
         Self { owner, path, content: content.into() }
     }
 }
@@ -126,7 +126,7 @@ pub enum EntryArtifactPathError {
     /// Artifact paths must contain at least one component.
     #[error("artifact path must not be empty")]
     Empty,
-    /// Artifact paths are always relative to `.artifacts/<entry-id>/`.
+    /// Artifact paths are always relative to `.artifacts/<entry-address>/`.
     #[error("artifact path must be relative: {0}")]
     Absolute(PathBuf),
     /// Artifact paths must not contain parent, root, prefix, or current-directory components.

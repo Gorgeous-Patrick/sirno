@@ -11,7 +11,7 @@ prerequisite:
 
 Tide commands expose dependency review obligations created by structural changes.
 
-`sirno tide status` reports entry ids that need dependency review,
+`sirno tide status` reports entry addresses that need dependency review,
 grouped by review entry in one table.
 The reason column lists the ripple entry whose change created the review obligation.
 It prints a one-sentence summary after the table.
@@ -42,22 +42,22 @@ In full mode, they apply to the selected exact workitem.
 The canonical review command forms are `sirno tide resolve` and `sirno tide unresolve`.
 The top-level forms `sirno resolve` and `sirno unresolve` select the same operations.
 
-`sirno resolve ENTRY_ID` resolves open workitems whose neighbor is that entry.
+`sirno resolve ENTRY_ADDRESS` resolves open workitems whose neighbor is that entry.
 `sirno resolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` resolves one full workitem tuple.
 `sirno resolve --infer` resolves open workitems whose neighbor also appears in the ripple set.
 `sirno resolve --json JSON` resolves full workitem tuples encoded as JSON.
 
-`sirno unresolve ENTRY_ID` removes resolutions whose neighbor is that entry.
+`sirno unresolve ENTRY_ADDRESS` removes resolutions whose neighbor is that entry.
 `sirno unresolve RIPPLE,FIELD,DIRECTION,NEIGHBOR` removes one full workitem resolution.
 `sirno reopen` is an alias for `sirno unresolve`.
 `sirno tide reopen` is an alias for `sirno tide unresolve`.
 `sirno tide reset` clears tide resolution state.
 
 MCP tide tools use typed selectors.
-`sirno_tide_status` returns review entry ids by default.
+`sirno_tide_status` returns review entry addresses by default.
 Its `show` argument selects `review`, `full`, or `all`.
 `sirno_tide_resolve` and `sirno_tide_unresolve`
-accept neighbor id arrays and existing JSON-shaped workitem objects.
+accept neighbor path arrays and existing JSON-shaped workitem objects.
 
 ---
 

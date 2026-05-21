@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 use thiserror::Error;
 
-use crate::id::{EntryId, EntryIdError};
+use crate::identifier::{EntryAddress, EntryAddressError};
 
 pub const NAME_FIELD: &str = "name";
 pub const DESC_FIELD: &str = "desc";
@@ -18,13 +18,13 @@ pub const FROZEN_FIELD: &str = "frozen";
 // sirno:witness:entry:begin
 /// One Sirno entry.
 ///
-/// Invariant: `id` is a valid entry id.
+/// Invariant: `id` is a valid entry address.
 /// `metadata` contains typed entry metadata.
 /// `body` is normal Markdown prose outside the metadata block.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Entry {
-    /// Stable nominal id for this entry.
-    pub id: EntryId,
+    /// Lookup path for this entry.
+    pub id: EntryAddress,
     /// Typed metadata read from the YAML block.
     pub metadata: EntryMetadata,
     /// Markdown body after the metadata block.
@@ -35,8 +35,10 @@ pub struct Entry {
 impl Entry {
     /// Construct an entry from already typed parts.
     // sirno:witness:entry:begin
-    pub fn new(id: EntryId, metadata: EntryMetadata, body: impl Into<String>) -> Self {
-        Self { id, metadata, body: body.into() }
+    pub fn new(
+        id: impl Into<EntryAddress>, metadata: EntryMetadata, body: impl Into<String>,
+    ) -> Self {
+        Self { id: id.into(), metadata, body: body.into() }
     }
     // sirno:witness:entry:end
 
@@ -45,7 +47,9 @@ impl Entry {
     /// Sirno accepts mixed line endings so tooling can still inspect the file.
     /// Lake checks warn when one file mixes LF and CRLF.
     // sirno:witness:entry:begin
-    pub fn from_markdown(id: EntryId, source: &str) -> Result<Self, EntryParseError> {
+    pub fn from_markdown(
+        id: impl Into<EntryAddress>, source: &str,
+    ) -> Result<Self, EntryParseError> {
         let (metadata_source, body) = split_frontmatter(source)?;
         let metadata = EntryMetadata::from_yaml_source(metadata_source)?;
         Ok(Self::new(id, metadata, body))
@@ -121,12 +125,12 @@ impl Entry {
 }
 
 /// Ordered structural metadata fields for one entry.
-pub type EntryStructuralFields = IndexMap<String, Vec<EntryId>>;
+pub type EntryStructuralFields = IndexMap<String, Vec<EntryAddress>>;
 
 /// Metadata for one Sirno entry.
 ///
 /// Invariant: `name` and `desc` are single-line plain strings.
-/// Structural fields map metadata field names to entry-id targets.
+/// Structural fields map metadata field names to entry-path targets.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryMetadata {
     /// Human-readable entry name.
@@ -195,9 +199,9 @@ impl EntryMetadata {
     }
     // sirno:witness:metadata:end
 
-    /// Returns every entry id mentioned by structural metadata.
+    /// Returns every entry address mentioned by structural metadata.
     // sirno:witness:metadata:begin
-    pub fn structural_targets(&self) -> impl Iterator<Item = (&str, &EntryId)> {
+    pub fn structural_targets(&self) -> impl Iterator<Item = (&str, &EntryAddress)> {
         self.structural
             .iter()
             .flat_map(|(field, targets)| targets.iter().map(move |id| (field.as_str(), id)))
@@ -205,12 +209,12 @@ impl EntryMetadata {
     // sirno:witness:metadata:end
 
     /// Return structural field names and their targets in user-authored order.
-    pub fn structural_fields(&self) -> impl Iterator<Item = (&str, &[EntryId])> {
+    pub fn structural_fields(&self) -> impl Iterator<Item = (&str, &[EntryAddress])> {
         self.structural.iter().map(|(field, targets)| (field.as_str(), targets.as_slice()))
     }
 
     /// Return targets for one structural field.
-    pub fn structural_targets_for(&self, field: &str) -> &[EntryId] {
+    pub fn structural_targets_for(&self, field: &str) -> &[EntryAddress] {
         self.structural.get(field).map(Vec::as_slice).unwrap_or_default()
     }
 
@@ -218,12 +222,14 @@ impl EntryMetadata {
     ///
     /// `None` means the field is absent.
     /// `Some([])` means the field is present and has no targets.
-    pub fn structural_field(&self, field: &str) -> Option<&[EntryId]> {
+    pub fn structural_field(&self, field: &str) -> Option<&[EntryAddress]> {
         self.structural.get(field).map(Vec::as_slice)
     }
 
     /// Return a mutable target list for one structural field.
-    pub fn structural_targets_for_mut(&mut self, field: impl Into<String>) -> &mut Vec<EntryId> {
+    pub fn structural_targets_for_mut(
+        &mut self, field: impl Into<String>,
+    ) -> &mut Vec<EntryAddress> {
         self.structural.entry(field.into()).or_default()
     }
 
@@ -231,18 +237,22 @@ impl EntryMetadata {
     ///
     /// An empty target list records a present empty field.
     pub fn set_structural_targets(
-        &mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryId>,
+        &mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryAddress>,
     ) {
         self.structural.insert(field.into(), targets.into_iter().collect::<Vec<_>>());
     }
 
     /// Add one target to one structural field.
-    pub fn push_structural_target(&mut self, field: impl Into<String>, target: EntryId) {
-        self.structural_targets_for_mut(field).push(target);
+    pub fn push_structural_target(
+        &mut self, field: impl Into<String>, target: impl Into<EntryAddress>,
+    ) {
+        self.structural_targets_for_mut(field).push(target.into());
     }
 
     /// Rename every structural metadata target that matches `old_id`.
-    pub fn rename_structural_target(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+    pub fn rename_structural_target(
+        &mut self, old_id: &EntryAddress, new_id: &EntryAddress,
+    ) -> bool {
         let mut changed = false;
         for targets in self.structural.values_mut() {
             for target in targets {
@@ -258,7 +268,9 @@ impl EntryMetadata {
     /// Rename one structural metadata field.
     ///
     /// The field stays in its original order position.
-    pub fn rename_structural_field(&mut self, old_id: &EntryId, new_id: &EntryId) -> bool {
+    pub fn rename_structural_field(
+        &mut self, old_id: &EntryAddress, new_id: &EntryAddress,
+    ) -> bool {
         let old_field = old_id.as_str();
         if !self.structural.contains_key(old_field) {
             return false;
@@ -287,8 +299,9 @@ pub enum FrozenMarker {
     Present,
 }
 
-fn seed_id(raw: &str) -> EntryId {
-    EntryId::new(raw).unwrap_or_else(|error| panic!("invalid built-in seed id `{raw}`: {error}"))
+fn seed_id(raw: &str) -> EntryAddress {
+    EntryAddress::new(raw)
+        .unwrap_or_else(|error| panic!("invalid built-in seed path `{raw}`: {error}"))
 }
 
 /// Byte ranges for one Markdown frontmatter block.
@@ -436,7 +449,7 @@ fn take_structural_fields(mapping: Mapping) -> Result<EntryStructuralFields, Ent
     Ok(structural)
 }
 
-fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryId>, EntryParseError> {
+fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, EntryParseError> {
     let Value::Sequence(values) = value else {
         return Err(EntryParseError::FieldMustBeList(field));
     };
@@ -444,7 +457,7 @@ fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryId>, EntryParse
     values
         .into_iter()
         .map(|value| match value {
-            | Value::String(raw) => EntryId::new(&raw).map_err(|source| {
+            | Value::String(raw) => EntryAddress::new(&raw).map_err(|source| {
                 EntryParseError::InvalidStructuralId { field: field.clone(), value: raw, source }
             }),
             | _ => Err(EntryParseError::ListItemMustBeString(field.clone())),
@@ -479,7 +492,7 @@ fn validate_plain_string(field: &'static str, value: &str) -> Result<(), EntryPa
 }
 
 fn render_id_list(
-    out: &mut String, field: &str, values: &[EntryId],
+    out: &mut String, field: &str, values: &[EntryAddress],
 ) -> Result<(), EntryRenderError> {
     if values.is_empty() {
         out.push_str(field);
@@ -546,16 +559,16 @@ pub enum EntryParseError {
     /// A structural list item is not a string.
     #[error("items in metadata field `{0}` must be strings")]
     ListItemMustBeString(String),
-    /// A structural field item is not a valid entry id.
-    #[error("metadata field `{field}` contains invalid entry id `{value}`")]
+    /// A structural field item is not a valid entry address.
+    #[error("metadata field `{field}` contains invalid entry address `{value}`")]
     InvalidStructuralId {
-        /// Structural field containing the invalid id.
+        /// Structural field containing the invalid path.
         field: String,
-        /// Invalid raw id.
+        /// Invalid raw path.
         value: String,
-        /// Entry id validation error.
+        /// Entry address validation error.
         #[source]
-        source: EntryIdError,
+        source: EntryAddressError,
     },
     /// The frozen field is present with a value or noncanonical spelling.
     #[error("metadata field `frozen` must be written as canonical marker `frozen:`")]
@@ -577,8 +590,8 @@ pub enum EntryRenderError {
 mod tests {
     use super::*;
 
-    fn entry_id() -> EntryId {
-        EntryId::new("witness").unwrap()
+    fn entry_id() -> EntryAddress {
+        EntryAddress::new("witness").unwrap()
     }
 
     #[test]
@@ -598,7 +611,7 @@ Body.
         assert_eq!(entry.metadata.name, "Witness");
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
-            &[EntryId::new("concept").unwrap()]
+            &[EntryAddress::new("concept").unwrap()]
         );
         assert_eq!(entry.body, "Body.\n");
     }
@@ -621,7 +634,7 @@ Body.
         assert_eq!(entry.metadata.name, "Witness");
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
-            &[EntryId::new("concept").unwrap()]
+            &[EntryAddress::new("concept").unwrap()]
         );
         assert_eq!(entry.body, "Body.\r\n");
     }
@@ -655,7 +668,7 @@ witness:
 
         assert_eq!(
             entry.metadata.structural_targets_for("witness"),
-            &[EntryId::new("repository-evidence").unwrap()]
+            &[EntryAddress::new("repository-evidence").unwrap()]
         );
     }
 
@@ -709,7 +722,7 @@ Body.
 
     #[test]
     fn renders_structural_ids_as_yaml_scalars() {
-        let target = EntryId::new("Design Note #1").unwrap();
+        let target = EntryAddress::new("Design Note #1").unwrap();
         let mut metadata =
             EntryMetadata::new("Evidence", "Metadata with a quoted target.").unwrap();
         metadata.push_structural_target("witness", target.clone());
@@ -723,30 +736,30 @@ Body.
 
     #[test]
     fn renames_structural_targets() {
-        let old_id = EntryId::new("old-entry").unwrap();
-        let new_id = EntryId::new("new-entry").unwrap();
+        let old_id = EntryAddress::new("old-entry").unwrap();
+        let new_id = EntryAddress::new("new-entry").unwrap();
         let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
         metadata.push_structural_target("belongs", old_id.clone());
-        metadata.push_structural_target("belongs", EntryId::new("other-entry").unwrap());
+        metadata.push_structural_target("belongs", EntryAddress::new("other-entry").unwrap());
         metadata.push_structural_target("refines", old_id.clone());
 
         assert!(metadata.rename_structural_target(&old_id, &new_id));
 
         assert_eq!(
             metadata.structural_targets_for("belongs"),
-            &[new_id.clone(), EntryId::new("other-entry").unwrap()]
+            &[new_id.clone(), EntryAddress::new("other-entry").unwrap()]
         );
         assert_eq!(metadata.structural_targets_for("refines"), &[new_id]);
     }
 
     #[test]
     fn renames_structural_fields() {
-        let old_id = EntryId::new("refines").unwrap();
-        let new_id = EntryId::new("prerequisite").unwrap();
+        let old_id = EntryAddress::new("refines").unwrap();
+        let new_id = EntryAddress::new("prerequisite").unwrap();
         let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
-        metadata.push_structural_target("category", EntryId::new("concept").unwrap());
-        metadata.push_structural_target("refines", EntryId::new("broader").unwrap());
-        metadata.push_structural_target("belongs", EntryId::new("area").unwrap());
+        metadata.push_structural_target("category", EntryAddress::new("concept").unwrap());
+        metadata.push_structural_target("refines", EntryAddress::new("broader").unwrap());
+        metadata.push_structural_target("belongs", EntryAddress::new("area").unwrap());
 
         assert!(metadata.rename_structural_field(&old_id, &new_id));
 
@@ -754,7 +767,7 @@ Body.
         assert_eq!(fields, ["category", "prerequisite", "belongs"]);
         assert_eq!(
             metadata.structural_targets_for("prerequisite"),
-            &[EntryId::new("broader").unwrap()]
+            &[EntryAddress::new("broader").unwrap()]
         );
         assert!(metadata.structural_field("refines").is_none());
     }

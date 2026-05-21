@@ -107,7 +107,7 @@ they are not drawn as lifecycle transitions.
 
 ## State Definitions
 
-`absent` means no managed Markdown file exists for the *entry* id in the waterline.
+`absent` means no managed Markdown file exists for the *entry address* in the waterline.
 `sirno new`, `sirno init`, `sirno lake init`, manual file creation,
 or checkout of a live frost entry can create the file.
 If an entry is absent from the waterline but live in the frostline,
@@ -117,8 +117,8 @@ If an entry is absent from the waterline but live in the frostline,
 It is the normal editing state.
 Direct Markdown edits, generated-link rendering,
 metadata updates, and renames keep the file in working state.
-A rename changes the *entry* id.
-For frost, the old id and new id are different entries.
+A rename changes the *entry address*.
+For frost, the old path and new path are different entries.
 
 `reviewed` means the working file set passed the review checks required for commit.
 It is a gate, not a stored state.
@@ -135,10 +135,10 @@ Editing it moves it back to working state until the next successful frost commit
 
 `frozen` means the waterline file carries `frozen:`
 and its committed form matches the frostline.
-`sirno freeze ENTRY_ID` enters this state.
+`sirno freeze ENTRY_ADDRESS` enters this state.
 The command verifies current frost first,
 then adds the marker and applies local file protection.
-`sirno melt ENTRY_ID` removes the marker,
+`sirno melt ENTRY_ADDRESS` removes the marker,
 clears local file protection,
 and returns the entry to the aligned state if the content still matches frost.
 
@@ -181,7 +181,8 @@ Storage commands affect the frame around entries.
 `sirno frost init` and `sirno frost move PATH` configure or move the frost path.
 `sirno move lake PATH` and `sirno move frost PATH` select the same storage moves.
 They do not change one entry file's lifecycle state by themselves.
-`sirno move entry OLD_ID NEW_ID` follows the same lifecycle behavior as `sirno entry move`.
+`sirno move entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`
+follows the same lifecycle behavior as `sirno entry move`.
 
 ---
 

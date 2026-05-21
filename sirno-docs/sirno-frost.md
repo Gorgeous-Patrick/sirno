@@ -29,7 +29,7 @@ usually constrains the others, so these parts are reviewed together here.
 
 The `SirnoFrost` facade opens the configured filesystem backend
 and exposes frozen data as ordinary typed Sirno *entries* and *entry artifacts*.
-Each *entry* is stored under its stable id.
+Each *entry* is stored under its dot-joined entry address.
 The backend records `name`, `desc`, ordered structural metadata,
 an artifact manifest,
 and Markdown body as typed fields.
@@ -42,7 +42,7 @@ The artifact manifest stores owner-relative paths for one *entry* version.
 Changed artifact bytes are stored beside the entry's Markdown snapshot
 in a matching version directory.
 For the filesystem backend,
-that directory uses the same version prefix and entry id as the Markdown file.
+that directory uses the same version prefix and entry address as the Markdown row.
 Unchanged artifact bytes are read from older matching version directories.
 
 `sirno frost init [PATH]` configures frost when needed

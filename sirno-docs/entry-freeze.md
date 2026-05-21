@@ -15,11 +15,11 @@ An *entry freeze* is an explicit protection state for one lake Markdown *entry*
 that already matches the current frost snapshot.
 The metadata marker is canonical `frozen:` with no value.
 
-`sirno freeze ENTRY_ID` verifies that the lake *entry* matches current frost,
+`sirno freeze ENTRY_ADDRESS` verifies that the lake *entry* matches current frost,
 adds the marker,
 and applies local file protection to the *entry* file and artifact tree.
-`sirno melt ENTRY_ID` removes the marker and clears that local protection.
-`sirno unfreeze ENTRY_ID` is an alias for `sirno melt ENTRY_ID`.
+`sirno melt ENTRY_ADDRESS` removes the marker and clears that local protection.
+`sirno unfreeze ENTRY_ADDRESS` is an alias for `sirno melt ENTRY_ADDRESS`.
 The command pair is the supported way to change the state.
 
 `sirno freeze`, `sirno melt`, `sirno freeze tui`, and `sirno melt tui`

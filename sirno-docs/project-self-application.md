@@ -36,7 +36,7 @@ it lets the project document its own documentation method.
 
 Repository *witnesses* make self-application stronger.
 When code actualizes *entry* parsing, *generated footer* handling, or *structural checks*,
-that code can be placed inside a *witness* block for the relevant *entry* id.
+that code can be placed inside a *witness* block for the relevant *entry address*.
 Then Sirno can answer both sides of a design question:
 what does this *entry* mean,
 and where is it witnessed?
