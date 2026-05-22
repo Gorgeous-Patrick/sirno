@@ -122,12 +122,28 @@ impl QueryColumns {
     pub fn labels(&self) -> Vec<String> {
         self.columns.iter().map(|column| column.label().to_owned()).collect()
     }
+
+    /// Return selected structural field columns.
+    pub(crate) fn structural_fields(&self) -> impl Iterator<Item = &str> {
+        self.columns.iter().filter_map(QueryColumn::structural_field)
+    }
+
+    /// Build the default query output columns.
+    pub fn default_output() -> Self {
+        Self { columns: vec![QueryColumn::Id, QueryColumn::Name] }
+    }
 }
 
-impl Default for QueryColumns {
-    fn default() -> Self {
-        Self { columns: vec![QueryColumn::Id, QueryColumn::Path, QueryColumn::Name] }
-    }
+/// Query column mode requested by a caller.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum QueryColumnSelection {
+    /// Select the standard query output columns.
+    #[default]
+    Default,
+    /// Print selectable column names without selecting entries.
+    Options,
+    /// Select explicit output columns.
+    Selected(QueryColumns),
 }
 
 impl FromStr for QueryColumns {
@@ -152,7 +168,8 @@ impl FromStr for QueryColumns {
 }
 
 /// One column printable by `sirno query`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+// sirno:witness:query:begin
 pub enum QueryColumn {
     /// Entry address.
     Id,
@@ -162,7 +179,13 @@ pub enum QueryColumn {
     Path,
     /// Short entry desc.
     Desc,
+    /// Configured structural metadata field.
+    Structural {
+        /// Metadata field to read from each entry.
+        field: String,
+    },
 }
+// sirno:witness:query:end
 
 impl FromStr for QueryColumn {
     type Err = QueryColumnsParseError;
@@ -173,20 +196,73 @@ impl FromStr for QueryColumn {
             | "name" => Ok(Self::Name),
             | "path" => Ok(Self::Path),
             | "desc" => Ok(Self::Desc),
-            | column => Err(QueryColumnsParseError::UnknownColumn(column.to_owned())),
+            | column => Ok(Self::Structural { field: column.to_owned() }),
         }
     }
 }
 
 impl QueryColumn {
     /// Return the stable output field name for this column.
-    pub fn label(self) -> &'static str {
+    pub fn label(&self) -> &str {
         match self {
             | Self::Id => "id",
             | Self::Name => "name",
             | Self::Path => "path",
             | Self::Desc => "desc",
+            | Self::Structural { field } => field,
         }
+    }
+
+    /// Return the structural field name when this column selects structural metadata.
+    pub fn structural_field(&self) -> Option<&str> {
+        match self {
+            | Self::Structural { field } => Some(field),
+            | Self::Id | Self::Name | Self::Path | Self::Desc => None,
+        }
+    }
+}
+
+/// One materialized query cell value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+// sirno:witness:query:begin
+pub enum QueryValue {
+    /// Scalar entry field value.
+    Text(String),
+    /// Structural targets for one configured field.
+    ///
+    /// `None` means the field is absent.
+    /// `Some([])` means the field is present and has no targets.
+    Targets(Option<Vec<String>>),
+}
+// sirno:witness:query:end
+
+impl QueryValue {
+    /// Build a scalar query value.
+    pub fn text(value: impl Into<String>) -> Self {
+        Self::Text(value.into())
+    }
+
+    /// Build a structural target query value.
+    pub fn targets(targets: Option<&[EntryAddress]>) -> Self {
+        Self::Targets(
+            targets.map(|targets| targets.iter().map(ToString::to_string).collect::<Vec<_>>()),
+        )
+    }
+
+    /// Return the human table display string for this value.
+    pub(crate) fn display(&self) -> String {
+        match self {
+            | Self::Text(value) => value.clone(),
+            | Self::Targets(Some(targets)) => targets.join(", "),
+            | Self::Targets(None) => String::new(),
+        }
+    }
+}
+
+impl From<String> for QueryValue {
+    fn from(value: String) -> Self {
+        Self::Text(value)
     }
 }
 
@@ -199,9 +275,6 @@ pub enum QueryColumnsParseError {
     /// The list contains a separator without a column.
     #[error("query columns contain an empty column")]
     EmptyColumn,
-    /// The list contains an unknown output column.
-    #[error("unknown query column `{0}`; expected id, name, path, or desc")]
-    UnknownColumn(String),
 }
 
 /// Structural query filter parsed from `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
@@ -345,14 +418,21 @@ pub struct QueryRequest {
     /// Structural field state filters.
     pub is: Vec<StructuralStateFilter>,
     /// Output columns to materialize.
-    pub columns: QueryColumns,
+    pub columns: QueryColumnSelection,
 }
 
 /// Query execution result before presentation rendering.
 #[derive(Debug)]
 pub enum QueryRun {
+    /// The caller requested selectable column names without selecting entries.
+    ColumnOptions(QueryColumns),
     /// The lake did not pass the edit-mode checks needed for query.
-    InvalidLake(EntryDirectoryReport),
+    InvalidLake {
+        /// Columns selected for the attempted query.
+        columns: QueryColumns,
+        /// Lake report that blocked query execution.
+        report: EntryDirectoryReport,
+    },
     /// The query completed and produced rows.
     Results(QueryResults),
 }
@@ -361,12 +441,12 @@ pub enum QueryRun {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QueryResults {
     pub(crate) columns: QueryColumns,
-    pub(crate) rows: Vec<Vec<String>>,
+    pub(crate) rows: Vec<Vec<QueryValue>>,
 }
 
 impl QueryResults {
     /// Build query results from selected columns and materialized rows.
-    pub fn new(columns: QueryColumns, rows: Vec<Vec<String>>) -> Self {
+    pub fn new(columns: QueryColumns, rows: Vec<Vec<QueryValue>>) -> Self {
         Self { columns, rows }
     }
 
@@ -376,12 +456,12 @@ impl QueryResults {
     }
 
     /// Return raw row values in selected column order.
-    pub fn rows(&self) -> &[Vec<String>] {
+    pub fn rows(&self) -> &[Vec<QueryValue>] {
         &self.rows
     }
 
     /// Return JSON-ready records keyed by selected column labels.
-    pub fn records(&self) -> Vec<IndexMap<String, String>> {
+    pub fn records(&self) -> Vec<IndexMap<String, QueryValue>> {
         query_result_records(&self.columns, &self.rows)
     }
 
@@ -523,12 +603,12 @@ pub struct EntryRenameResult {
 /// Query result designed for JSON-first callers.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryResponse {
-    /// Whether the query ran against a clean-enough lake.
+    /// Whether the request completed against a clean-enough lake.
     pub ok: bool,
-    /// Selected output columns.
+    /// Available or selected output columns.
     pub columns: Vec<String>,
     /// Query records keyed by column label.
-    pub records: Vec<IndexMap<String, String>>,
+    pub records: Vec<IndexMap<String, QueryValue>>,
     /// Diagnostics when the lake prevents query execution.
     pub diagnostics: Vec<DiagnosticRecord>,
 }

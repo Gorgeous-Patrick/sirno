@@ -11,8 +11,8 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
-    QueryOutputFormat, QueryResults, RenderResult, SkillWrapperRecord, StatusCommitBlocker,
-    StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
+    QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord,
+    StatusCommitBlocker, StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
 };
 use crate::surface::error::CommandError;
 use crate::{
@@ -496,6 +496,24 @@ pub(crate) fn print_query_results(
     Ok(())
 }
 
+pub(crate) fn print_query_column_options(
+    columns: &QueryColumns, format: QueryOutputFormat,
+) -> Result<(), CommandError> {
+    match format {
+        | QueryOutputFormat::Json => {
+            println!("{}", format_json(&columns.labels())?);
+        }
+        | QueryOutputFormat::Human => {
+            let labels = columns.labels();
+            print!(
+                "{}",
+                format_human_table(["column"], labels.iter().map(|label| [label.as_str()]))
+            );
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn output_path(path: PathBuf, absolute: bool) -> Result<PathBuf, CommandError> {
     if !absolute || path.is_absolute() {
         return Ok(path);
@@ -530,44 +548,47 @@ fn format_skill_wrapper_table_with_style(
 
 pub(crate) fn query_result_rows(
     report: &EntryDirectoryReport, entries: &[&Entry], columns: &QueryColumns,
-) -> Result<Vec<Vec<String>>, CommandError> {
+) -> Result<Vec<Vec<QueryValue>>, CommandError> {
     entries
         .iter()
         .map(|entry| {
             columns
                 .columns
                 .iter()
-                .map(|column| format_query_column(report, entry, *column))
+                .map(|column| format_query_column(report, entry, column))
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect()
 }
 
 fn format_query_column(
-    report: &EntryDirectoryReport, entry: &Entry, column: QueryColumn,
-) -> Result<String, CommandError> {
+    report: &EntryDirectoryReport, entry: &Entry, column: &QueryColumn,
+) -> Result<QueryValue, CommandError> {
     match column {
-        | QueryColumn::Id => Ok(entry.id.to_string()),
-        | QueryColumn::Name => Ok(entry.metadata.name.clone()),
+        | QueryColumn::Id => Ok(QueryValue::text(entry.id.to_string())),
+        | QueryColumn::Name => Ok(QueryValue::text(entry.metadata.name.clone())),
         | QueryColumn::Path => {
             let path = report
                 .entry_file_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
-            Ok(path.display().to_string())
+            Ok(QueryValue::text(path.display().to_string()))
         }
-        | QueryColumn::Desc => Ok(entry.metadata.desc.clone()),
+        | QueryColumn::Desc => Ok(QueryValue::text(entry.metadata.desc.clone())),
+        | QueryColumn::Structural { field } => {
+            Ok(QueryValue::targets(entry.metadata.structural_field(field)))
+        }
     }
 }
 
 pub(crate) fn format_query_json(
-    columns: &QueryColumns, rows: &[Vec<String>],
+    columns: &QueryColumns, rows: &[Vec<QueryValue>],
 ) -> Result<String, CommandError> {
     format_json(&query_result_records(columns, rows))
 }
 
 pub(crate) fn query_result_records(
-    columns: &QueryColumns, rows: &[Vec<String>],
-) -> Vec<IndexMap<String, String>> {
+    columns: &QueryColumns, rows: &[Vec<QueryValue>],
+) -> Vec<IndexMap<String, QueryValue>> {
     rows.iter()
         .map(|row| {
             columns
@@ -580,9 +601,13 @@ pub(crate) fn query_result_records(
         .collect()
 }
 
-pub(crate) fn format_query_table(columns: &QueryColumns, rows: &[Vec<String>]) -> String {
+pub(crate) fn format_query_table(columns: &QueryColumns, rows: &[Vec<QueryValue>]) -> String {
     let headers = columns.columns.iter().map(|column| column.label()).collect::<Vec<_>>();
-    format_human_table(headers, rows.iter().map(|row| row.iter().map(String::as_str)))
+    let display_rows = rows
+        .iter()
+        .map(|row| row.iter().map(QueryValue::display).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    format_human_table(headers, display_rows.iter().map(|row| row.iter().map(String::as_str)))
 }
 
 fn format_human_table<'a>(

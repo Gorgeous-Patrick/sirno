@@ -15,13 +15,13 @@ use crate::surface::dto::{
     EntryPathsRequest, EntryReadResult, EntryRenameResult, FrostCheckoutRequest,
     FrostCheckoutResult, FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult,
     LakeInitRequest, LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord,
-    QueryRequest, QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult,
-    SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy, StatusCommit, StatusCommitBlocker,
-    StatusCommitState, StatusFrost, StatusFrostState, StatusResult, StatusTide,
-    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
-    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
-    WitnessResult,
+    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
+    QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult,
+    StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState, StatusFrost,
+    StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
+    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
@@ -136,11 +136,21 @@ impl SurfaceContext {
     pub fn query_entries(&self, request: QueryRequest) -> Result<QueryRun, CommandError> {
         let (lake, mut settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        // sirno:witness:query:begin
+        let columns = match request.columns {
+            | QueryColumnSelection::Default => QueryColumns::default_output(),
+            | QueryColumnSelection::Options => {
+                return Ok(QueryRun::ColumnOptions(query_column_options(&settings.structural)));
+            }
+            | QueryColumnSelection::Selected(columns) => columns,
+        };
+        // sirno:witness:query:end
+        let columns = validate_query_columns(columns, &settings.structural)?;
         settings.render = false;
         settings.witness = None;
         let report = EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
         if report.has_errors() {
-            return Ok(QueryRun::InvalidLake(report));
+            return Ok(QueryRun::InvalidLake { columns, report });
         }
 
         let vague_query = VagueEntryQuery::new().with_text_terms(request.terms);
@@ -152,8 +162,8 @@ impl SurfaceContext {
         )?;
         let vague_matches = vague_query.select_entries(report.entries());
         let matches = filtered_query.select_entries(vague_matches);
-        let rows = query_result_rows(&report, &matches, &request.columns)?;
-        Ok(QueryRun::Results(QueryResults::new(request.columns, rows)))
+        let rows = query_result_rows(&report, &matches, &columns)?;
+        Ok(QueryRun::Results(QueryResults::new(columns, rows)))
     }
 
     /// Return filesystem paths related to one entry.
@@ -422,9 +432,14 @@ impl SurfaceContext {
 
     /// Query entries and return an MCP-friendly JSON result.
     pub fn entry_query(&self, request: QueryRequest) -> Result<QueryResponse, CommandError> {
-        let columns = request.columns.clone();
         match self.query_entries(request)? {
-            | QueryRun::InvalidLake(report) => Ok(QueryResponse {
+            | QueryRun::ColumnOptions(columns) => Ok(QueryResponse {
+                ok: true,
+                columns: columns.labels(),
+                records: Vec::new(),
+                diagnostics: Vec::new(),
+            }),
+            | QueryRun::InvalidLake { columns, report } => Ok(QueryResponse {
                 ok: false,
                 columns: columns.labels(),
                 records: Vec::new(),
@@ -1903,6 +1918,26 @@ pub(crate) fn entry_query_from_filters(
         }
     }
     Ok(query)
+}
+
+fn validate_query_columns(
+    columns: QueryColumns, structural: &StructuralSettings,
+) -> Result<QueryColumns, CommandError> {
+    for field in columns.structural_fields() {
+        if !structural.contains_field(field) {
+            return Err(CommandError::UnconfiguredStructuralField(field.to_owned()));
+        }
+    }
+    Ok(columns)
+}
+
+fn query_column_options(structural: &StructuralSettings) -> QueryColumns {
+    let mut columns =
+        vec![QueryColumn::Id, QueryColumn::Name, QueryColumn::Path, QueryColumn::Desc];
+    columns.extend(
+        structural.fields().map(|(field, _)| QueryColumn::Structural { field: field.to_owned() }),
+    );
+    QueryColumns::new(columns)
 }
 
 fn structural_matchers_by_field(

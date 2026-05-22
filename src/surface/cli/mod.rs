@@ -24,8 +24,8 @@ use crate::surface::context::{default_config_path, default_frost_path, default_l
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
-    PathSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
-    SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    PathSelection, QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun,
+    RgRequest, SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
     TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
     UpstreamCrystallizeRequest,
 };
@@ -35,7 +35,7 @@ use crate::surface::output::{
     format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
     print_check_diagnostic, print_check_summary, print_cli_error, print_config_comment_result,
     print_entry_directory_report, print_json, print_lake_check_result, print_ok_path,
-    print_query_results, print_render_result, print_status_result,
+    print_query_column_options, print_query_results, print_render_result, print_status_result,
     print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
 };
 use crate::surface::rg::{
@@ -49,7 +49,7 @@ use crate::{
 #[cfg(test)]
 use crate::surface::context::entry_query_from_filters;
 #[cfg(test)]
-use crate::surface::dto::{QueryColumn, StructuralFieldState};
+use crate::surface::dto::{QueryColumn, QueryValue, StructuralFieldState};
 #[cfg(test)]
 use crate::surface::error::OpenTideTutorial;
 #[cfg(test)]
@@ -262,9 +262,9 @@ enum TopLevelEntryCommand {
         /// Same-field target filters and state filters are alternatives.
         #[arg(long = "is", value_name = "FIELD=STATE")]
         is: Vec<StructuralStateFilter>,
-        /// Comma-separated output columns: id, name, path, desc.
-        #[arg(long = "columns", value_name = "COLUMNS")]
-        columns: Option<QueryColumns>,
+        /// Optional comma-separated output columns: id, name, path, desc, or configured structural fields.
+        #[arg(long = "columns", alias = "column", value_name = "COLUMNS", num_args = 0..=1)]
+        columns: Option<Option<QueryColumns>>,
         /// Output format.
         #[arg(short = 'o', long, value_enum)]
         format: Option<QueryOutputFormat>,
@@ -1420,18 +1420,26 @@ impl TopLevelEntryCommand {
                     exact_terms,
                     has,
                     is,
-                    columns: columns.unwrap_or_default(),
+                    columns: match columns {
+                        | None => QueryColumnSelection::Default,
+                        | Some(None) => QueryColumnSelection::Options,
+                        | Some(Some(columns)) => QueryColumnSelection::Selected(columns),
+                    },
                 };
-                let results = match SurfaceContext::from_cli_paths(config_path, lake_path)
-                    .query_entries(request)?
-                {
-                    | QueryRun::InvalidLake(report) => {
+                let run = SurfaceContext::from_cli_paths(config_path, lake_path)
+                    .query_entries(request)?;
+                let format = format.unwrap_or_default();
+                let results = match run {
+                    | QueryRun::ColumnOptions(columns) => {
+                        print_query_column_options(&columns, format)?;
+                        return Ok(ExitCode::SUCCESS);
+                    }
+                    | QueryRun::InvalidLake { report, .. } => {
                         print_entry_directory_report(&report);
                         return Ok(ExitCode::FAILURE);
                     }
                     | QueryRun::Results(results) => results,
                 };
-                let format = format.unwrap_or_default();
                 print_query_results(&results, format)?;
                 Ok(ExitCode::SUCCESS)
             }

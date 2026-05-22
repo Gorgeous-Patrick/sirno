@@ -27,8 +27,8 @@ use serde::{Deserialize, Serialize};
 use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
-    QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
+    QueryColumnSelection, QueryColumns, QueryRequest, RgRequest, StructuralFieldState,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
     TideSelectionRequest, TideStatusMode, UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
 use crate::{
@@ -509,16 +509,21 @@ fn path_selection(
     }
 }
 
-fn query_columns(columns: Option<Vec<String>>) -> Result<QueryColumns, String> {
+// sirno:witness:mcp-interface:begin
+fn query_columns(columns: Option<Vec<String>>) -> Result<QueryColumnSelection, String> {
     let Some(columns) = columns else {
-        return Ok(QueryColumns::default());
+        return Ok(QueryColumnSelection::Default);
     };
+    if columns.is_empty() {
+        return Ok(QueryColumnSelection::Options);
+    }
     let columns = columns
         .into_iter()
         .map(|column| QueryColumn::from_str(&column).map_err(|error| error.to_string()))
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(QueryColumns::new(columns))
+    Ok(QueryColumnSelection::Selected(QueryColumns::new(columns)))
 }
+// sirno:witness:mcp-interface:end
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct CwdParams {
@@ -1246,6 +1251,20 @@ Changed body.
         assert_eq!(filters[0].targets[0].as_str(), "agent-skills");
         assert_eq!(states[0].field, "category");
         assert!(matches!(states[0].state, StructuralFieldState::Present));
+    }
+
+    #[test]
+    fn query_columns_distinguish_omitted_empty_and_selected() {
+        assert!(matches!(query_columns(None).unwrap(), QueryColumnSelection::Default));
+        assert!(matches!(query_columns(Some(Vec::new())).unwrap(), QueryColumnSelection::Options));
+
+        let QueryColumnSelection::Selected(columns) =
+            query_columns(Some(vec!["id".to_owned(), "category".to_owned()])).unwrap()
+        else {
+            panic!("expected selected query columns");
+        };
+
+        assert_eq!(columns.labels(), vec!["id", "category"]);
     }
 
     #[test]

@@ -74,7 +74,11 @@ Structural filters use `--has FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 Distinct fields narrow results.
 Same-field target filters and state filters are alternatives.
-The `--columns` option selects output columns.
+The `--columns` option selects built-in output columns and configured structural fields.
+When omitted,
+query selects the default `id` and `name` columns.
+When present with no value,
+query prints selectable column names without selecting entries.
 The `-o, --format` option selects the output format.
 
 `sirno rg` runs `rg` against the active lake path.

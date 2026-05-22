@@ -25,15 +25,16 @@ use super::{
     ArtifactCommand, CheckModeArg, CheckoutArgs, Cli, Command, CommandError, ConfigUtilityCommand,
     EntryCommand, EntryNewRequest, EntryPathsArgs, EntryRenameArgs, EntryUtilityCommand,
     FrostCommand, FrostMoveArgs, LakeCommand, LakeInitRequest, LakeMoveArgs, MoveCommand,
-    OutputStyle, PathOutputFormat, QueryColumn, QueryColumns, QueryOutputFormat, ResolveArgs,
-    SkillCommand, StructuralFieldState, StructuralFilter, StructuralPredicate,
-    StructuralStateFilter, SurfaceContext, TideCommand, TideItemSelector, TideOutputFormat,
-    TideReviewCommand, TideStatusGrouping, TideStatusMode, TopLevelEntryCommand,
-    TopLevelFrostCommand, TopLevelInitRequest, TopLevelLakeCommand, UnresolveArgs, UtilCommand,
-    entry_path_records, entry_query_from_filters, format_config_comment_result,
-    format_gen_link_report, format_human_table_semantic_with_width, format_human_table_with_width,
-    format_json, format_lake_check_result, format_path_table, format_query_json,
-    format_query_table, format_render_result, format_skill_wrapper_table, format_status_result,
+    OutputStyle, PathOutputFormat, QueryColumn, QueryColumnSelection, QueryColumns,
+    QueryOutputFormat, QueryRequest, QueryRun, QueryValue, ResolveArgs, SkillCommand,
+    StructuralFieldState, StructuralFilter, StructuralPredicate, StructuralStateFilter,
+    SurfaceContext, TideCommand, TideItemSelector, TideOutputFormat, TideReviewCommand,
+    TideStatusGrouping, TideStatusMode, TopLevelEntryCommand, TopLevelFrostCommand,
+    TopLevelInitRequest, TopLevelLakeCommand, UnresolveArgs, UtilCommand, entry_path_records,
+    entry_query_from_filters, format_config_comment_result, format_gen_link_report,
+    format_human_table_semantic_with_width, format_human_table_with_width, format_json,
+    format_lake_check_result, format_path_table, format_query_json, format_query_table,
+    format_render_result, format_skill_wrapper_table, format_status_result,
     format_tide_review_entries, format_tide_review_waves, format_tide_statuses,
     format_tide_statuses_by_entry, format_witness_record, format_witness_records,
     rg_args_include_preprocessor, run_prompted_top_level_init,
@@ -2238,7 +2239,7 @@ fn query_accepts_short_alias_and_options() {
     ]);
     let Command::TopLevelEntry(TopLevelEntryCommand::Query {
         has,
-        columns: Some(columns),
+        columns: Some(Some(columns)),
         format: Some(format),
         ..
     }) = cli.command
@@ -2274,7 +2275,7 @@ fn entry_query_accepts_short_alias_and_options() {
         command:
             EntryCommand::TopLevel(TopLevelEntryCommand::Query {
                 has,
-                columns: Some(columns),
+                columns: Some(Some(columns)),
                 format: Some(format),
                 ..
             }),
@@ -2296,17 +2297,40 @@ fn entry_query_accepts_short_alias_and_options() {
 
 #[test]
 fn query_accepts_comma_separated_columns() {
-    let cli = Cli::parse_from(["sirno", "query", "--columns", "id,name,path,desc"]);
-    let Command::TopLevelEntry(TopLevelEntryCommand::Query { columns: Some(columns), .. }) =
-        cli.command
+    let cli = Cli::parse_from(["sirno", "query", "--columns", "id,name,path,desc,topic"]);
+    let Command::TopLevelEntry(TopLevelEntryCommand::Query {
+        columns: Some(Some(columns)), ..
+    }) = cli.command
     else {
         panic!("expected query command with columns");
     };
 
     assert_eq!(
-        columns.columns,
+        &columns.columns[..4],
         vec![QueryColumn::Id, QueryColumn::Name, QueryColumn::Path, QueryColumn::Desc,]
     );
+    assert_eq!(columns.columns[4].structural_field(), Some("topic"));
+    assert_eq!(columns.columns[4].label(), "topic");
+}
+
+#[test]
+fn query_accepts_bare_columns_option() {
+    let cli = Cli::parse_from(["sirno", "query", "--columns"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Query { columns: Some(None), .. })
+    ));
+}
+
+#[test]
+fn query_accepts_singular_column_alias() {
+    let cli = Cli::parse_from(["sirno", "query", "--column"]);
+
+    assert!(matches!(
+        cli.command,
+        Command::TopLevelEntry(TopLevelEntryCommand::Query { columns: Some(None), .. })
+    ));
 }
 
 #[test]
@@ -2378,13 +2402,6 @@ fn query_rejects_old_output_flag() {
 }
 
 #[test]
-fn query_rejects_unknown_column() {
-    let error = Cli::try_parse_from(["sirno", "query", "--columns", "id,summary"]).unwrap_err();
-
-    assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
-}
-
-#[test]
 fn query_rejects_empty_column() {
     let error = Cli::try_parse_from(["sirno", "query", "--columns", "id,,desc"]).unwrap_err();
 
@@ -2394,8 +2411,11 @@ fn query_rejects_empty_column() {
 #[test]
 fn query_json_uses_selected_column_names() {
     let columns = "id,desc".parse::<QueryColumns>().unwrap();
-    let json =
-        format_query_json(&columns, &[vec!["query".to_owned(), "Selection".to_owned()]]).unwrap();
+    let json = format_query_json(
+        &columns,
+        &[vec![QueryValue::text("query"), QueryValue::text("Selection")]],
+    )
+    .unwrap();
     let parsed = serde_json::from_str::<serde_json::Value>(&json).unwrap();
 
     assert_eq!(
@@ -2412,9 +2432,34 @@ fn query_json_uses_selected_column_names() {
 }
 
 #[test]
+fn query_json_uses_structural_column_values() {
+    let columns = "id,topic".parse::<QueryColumns>().unwrap();
+    let json = format_query_json(
+        &columns,
+        &[
+            vec![QueryValue::text("concept"), QueryValue::Targets(Some(vec!["meta".to_owned()]))],
+            vec![QueryValue::text("route"), QueryValue::Targets(None)],
+        ],
+    )
+    .unwrap();
+    let parsed = serde_json::from_str::<serde_json::Value>(&json).unwrap();
+
+    assert_eq!(
+        parsed,
+        serde_json::json!([
+            { "id": "concept", "topic": ["meta"] },
+            { "id": "route", "topic": null }
+        ])
+    );
+}
+
+#[test]
 fn query_table_uses_selected_column_headers_and_widths() {
     let columns = "id,desc".parse::<QueryColumns>().unwrap();
-    let table = format_query_table(&columns, &[vec!["query".to_owned(), "Selection".to_owned()]]);
+    let table = format_query_table(
+        &columns,
+        &[vec![QueryValue::text("query"), QueryValue::text("Selection")]],
+    );
 
     assert_eq!(
         table,
@@ -2431,7 +2476,10 @@ fn query_table_uses_selected_column_headers_and_widths() {
 #[test]
 fn query_table_uses_unicode_display_width() {
     let columns = "id".parse::<QueryColumns>().unwrap();
-    let table = format_query_table(&columns, &[vec!["界界".to_owned()], vec!["aaa".to_owned()]]);
+    let table = format_query_table(
+        &columns,
+        &[vec![QueryValue::text("界界")], vec![QueryValue::text("aaa")]],
+    );
 
     assert_eq!(
         table,
@@ -2467,6 +2515,132 @@ fn human_table_wraps_to_explicit_width() {
 └───────┴────────┘
 "
     );
+}
+
+#[test]
+fn query_result_rows_include_structural_columns() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    let config = SirnoConfig {
+        structural: StructuralSettings::from_fields([(
+            "topic",
+            StructuralFieldSettings::default(),
+        )]),
+        ..SirnoConfig::new("docs")
+    };
+    fs::create_dir(&docs).unwrap();
+    config.write_new(&config_path).unwrap();
+    fs::write(
+        docs.join("topic.md"),
+        "\
+---
+name: Topic
+desc: A structural field.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("meta.md"),
+        "\
+---
+name: Meta
+desc: A target entry.
+---
+
+Body.
+",
+    )
+    .unwrap();
+    fs::write(
+        docs.join("concept.md"),
+        "\
+---
+name: Concept
+desc: A named idea.
+topic:
+  - meta
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    let request = QueryRequest {
+        terms: vec!["Concept".to_owned()],
+        columns: QueryColumnSelection::Selected("id,topic".parse().unwrap()),
+        ..QueryRequest::default()
+    };
+    let QueryRun::Results(results) =
+        SurfaceContext::new(&config_path).query_entries(request).unwrap()
+    else {
+        panic!("expected query results");
+    };
+
+    assert_eq!(
+        results.rows(),
+        &[vec![QueryValue::text("concept"), QueryValue::Targets(Some(vec!["meta".to_owned()]))]]
+    );
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&results.to_json().unwrap()).unwrap(),
+        serde_json::json!([{ "id": "concept", "topic": ["meta"] }])
+    );
+
+    let request = QueryRequest { terms: vec!["Concept".to_owned()], ..QueryRequest::default() };
+    let QueryRun::Results(results) =
+        SurfaceContext::new(&config_path).query_entries(request).unwrap()
+    else {
+        panic!("expected default query results");
+    };
+
+    assert_eq!(results.columns().labels(), vec!["id", "name"]);
+    assert_eq!(results.rows(), &[vec![QueryValue::text("concept"), QueryValue::text("Concept")]]);
+
+    let request = QueryRequest {
+        terms: vec!["Concept".to_owned()],
+        columns: QueryColumnSelection::Options,
+        ..QueryRequest::default()
+    };
+    let QueryRun::ColumnOptions(column_options) =
+        SurfaceContext::new(&config_path).query_entries(request).unwrap()
+    else {
+        panic!("expected query column options");
+    };
+
+    assert_eq!(column_options.labels(), vec!["id", "name", "path", "desc", "topic"]);
+}
+
+#[test]
+fn query_rejects_unconfigured_structural_column() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    fs::create_dir(&docs).unwrap();
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    fs::write(
+        docs.join("concept.md"),
+        "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+    )
+    .unwrap();
+
+    let request = QueryRequest {
+        columns: QueryColumnSelection::Selected("topic".parse().unwrap()),
+        ..QueryRequest::default()
+    };
+    let error = SurfaceContext::new(&config_path).query_entries(request).unwrap_err();
+
+    assert!(matches!(error, CommandError::UnconfiguredStructuralField(field) if field == "topic"));
 }
 
 #[test]
