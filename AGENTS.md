@@ -30,9 +30,9 @@ The authoritative project design lives in `sirno-lake/`.
 The split Chinese translation snapshot lives in `sirno-lake-zh/`.
 Do not update `sirno-lake-zh/` during normal agent workflow or lake maintenance.
 Whenever anything changes about the project design, keep the Sirno Lake in sync.
-Use `sirno-editor` when editing, moving, or reorganizing lake knowledge.
-Use `sirno-explorer` before design-sensitive repository exploration.
-Use `sirno-witness` when adding or refining repository witness blocks.
+Use `sirno-editor` for design-sensitive repository exploration, lake knowledge edits, and any repository edits.
+Use `sirno-narrative-session` when guiding or saving a route through lake knowledge.
+Use `sirno-curator` when auditing an existing lake for clarity, focus, structure, or witness alignment.
 Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
 After lake metadata changes, run `sirno_lake_render`,
 then `sirno_lake_check` in edit and review modes.
