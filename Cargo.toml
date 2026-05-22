@@ -4,6 +4,9 @@ version = "0.0.4"
 edition = "2024"
 description = "Sirno gives project design a semantic intermediate representation."
 license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/sirno"
+readme = "README.md"
+repository = "https://github.com/LighghtEeloo/sirno"
 
 [dependencies]
 anstream = "1.0.0"
