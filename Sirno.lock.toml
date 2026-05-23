@@ -1404,56 +1404,56 @@ ripple = "mcp-interface"
 field = "belongs"
 direction = "to"
 neighbor = "interfaces"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "cli-interface"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "entry-commands"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "interfaces"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "project-commands"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "tide-commands"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "utility-commands"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "mcp-interface"
 field = "prerequisite"
 direction = "to"
 neighbor = "project-config"
-fingerprint = "0b3e856069586ba8"
+fingerprint = "34f40deb94e2567a"
 
 [[tide.resolved]]
 ripple = "meta"

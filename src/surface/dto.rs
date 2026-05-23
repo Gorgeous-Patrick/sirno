@@ -652,7 +652,28 @@ pub struct WitnessSpanResult {
 // sirno:witness:mcp-interface:begin
 /// One JSON-ready witness record.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WitnessRecordResult {
+#[serde(untagged)]
+pub enum WitnessRecordResult {
+    /// Compact MCP witness record for ordinary agent use.
+    Compact(CompactWitnessRecordResult),
+    /// Verbose MCP witness record for callers that need structured coordinates.
+    Verbose(VerboseWitnessRecordResult),
+}
+
+/// Compact JSON-ready witness record.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompactWitnessRecordResult {
+    /// Entry address captured by the witness block.
+    pub entry: String,
+    /// Repository location of the matched witness block.
+    pub location: String,
+    /// Full matched witness block body.
+    pub body: String,
+}
+
+/// Verbose JSON-ready witness record.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VerboseWitnessRecordResult {
     /// Entry address captured by the witness block.
     pub entry: String,
     /// Repository file path containing the witness.
@@ -664,14 +685,33 @@ pub struct WitnessRecordResult {
 }
 
 impl WitnessRecordResult {
-    pub(crate) fn from_record(record: &WitnessRecord) -> Self {
-        Self {
-            entry: record.entry.to_string(),
-            path: display_path(&record.path),
-            region: WitnessSpanResult::from(record.region),
-            body: record.body.clone(),
+    pub(crate) fn from_record(record: &WitnessRecord, verbose_json: bool) -> Self {
+        if verbose_json {
+            return Self::Verbose(VerboseWitnessRecordResult {
+                entry: record.entry.to_string(),
+                path: display_path(&record.path),
+                region: WitnessSpanResult::from(record.region),
+                body: record.body.clone(),
+            });
         }
+
+        Self::Compact(CompactWitnessRecordResult {
+            entry: record.entry.to_string(),
+            location: format_witness_location(record),
+            body: record.body.clone(),
+        })
     }
+}
+
+fn format_witness_location(record: &WitnessRecord) -> String {
+    format!(
+        "{}:{}:{}-{}:{}",
+        display_path(&record.path),
+        record.region.start_line,
+        record.region.start_column,
+        record.region.end_line,
+        record.region.end_column
+    )
 }
 // sirno:witness:mcp-interface:end
 
