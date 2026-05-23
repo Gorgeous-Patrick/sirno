@@ -986,9 +986,9 @@ dependencies = [
 
 [[package]]
 name = "mosaika"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c14cb61d406afc4e98273070adeaa4a3b3abe91be5a1db5fa72508cec1340532"
+checksum = "c630237f28859dd578561af5155863102b61a0e167313fde6e305c2879abbf68"
 dependencies = [
  "clap",
  "glob",

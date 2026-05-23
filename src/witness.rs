@@ -15,8 +15,8 @@ use mosaika::engine::{
 };
 use mosaika::semantics::Scheme;
 use mosaika::syntax::{
-    self as syn, Arrow, Delimiter, Effect, LogDestination, LogPipe, PipeName, RegexDelimiter,
-    Transaction, Transform,
+    self as syn, Arrow, Delimiter, Effect, LogDestination, LogPipe, Matching, PipeName,
+    RegexDelimiter, Transaction, Transform,
 };
 use regex::Regex;
 use thiserror::Error;
@@ -524,6 +524,7 @@ impl WitnessSettings {
             .enumerate()
             .map(|(index, delimiter)| Transform {
                 name: Self::transform_name(index),
+                matching: Matching::Balanced,
                 delimiters: vec![
                     Delimiter::Regex(RegexDelimiter { regex: delimiter.begin.clone() }),
                     Delimiter::Regex(RegexDelimiter { regex: delimiter.end.clone() }),
@@ -893,6 +894,16 @@ mod tests {
         format!("    {}\n        body\n    {}\n", witness_begin(id), witness_end(id))
     }
 
+    fn nested_witness_block(outer: &str, inner: &str) -> String {
+        format!(
+            "{}\nouter start\n{}\ninner body\n{}\nouter end\n{}\n",
+            witness_begin(outer),
+            witness_begin(inner),
+            witness_end(inner),
+            witness_end(outer)
+        )
+    }
+
     #[test]
     fn scans_recursive_directory_members_with_mosaika() {
         let temp = tempfile::tempdir().unwrap();
@@ -1037,6 +1048,34 @@ mod tests {
 
         assert!(index.contains_entry(&id));
         assert_eq!(records[0].entry, id);
+    }
+
+    #[test]
+    fn scans_nested_witness_blocks_with_balanced_mosaika_matching() {
+        let temp = tempfile::tempdir().unwrap();
+        std::fs::write(temp.path().join("README.md"), nested_witness_block("outer", "inner"))
+            .unwrap();
+        let settings = WitnessCheckSettings::new(
+            temp.path(),
+            [RepoMember::new("README.md").unwrap()],
+            WitnessSettings::standard(),
+        );
+
+        let index = settings.scan().unwrap();
+        let outer = index.records_for(&EntryAddress::new("outer").unwrap());
+        let inner = index.records_for(&EntryAddress::new("inner").unwrap());
+
+        assert!(index.orphan_delimiters().is_empty());
+        assert_eq!(outer.len(), 1);
+        assert_eq!(inner.len(), 1);
+        assert_eq!(
+            outer[0].region,
+            WitnessSpan { start_line: 1, start_column: 1, end_line: 7, end_column: 27 }
+        );
+        assert_eq!(
+            inner[0].region,
+            WitnessSpan { start_line: 3, start_column: 1, end_line: 5, end_column: 27 }
+        );
     }
 
     #[test]
