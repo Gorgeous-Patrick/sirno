@@ -86,16 +86,16 @@ pub struct ConfigCommentResult {
 /// Request to add or replace one upstream declaration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpstreamAddRequest {
-    /// Upstream domain.
+    /// Glacier domain.
     pub domain: EntryAtom,
     /// Upstream settings to write.
     pub settings: UpstreamSettings,
 }
 
-/// Request to crystallize or update upstream domains.
+/// Request to crystallize or update glacier domains.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct UpstreamCrystallizeRequest {
-    /// Selected domains. Empty means every upstream.
+    /// Selected glacier domains. Empty means every upstream.
     pub domains: Vec<EntryAtom>,
     /// Use only the existing lock state and cache.
     pub locked: bool,

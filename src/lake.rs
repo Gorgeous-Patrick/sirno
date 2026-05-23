@@ -193,9 +193,9 @@ pub struct EntryProtectionReport {
     paths: Vec<PathBuf>,
 }
 
-/// Result of replacing one crystallized upstream domain.
+/// Result of replacing one glacier.
 #[derive(Debug)]
-pub struct CrystallizeDomainReport {
+pub struct GlacierReport {
     root: PathBuf,
     domain: EntryAtom,
     changed_paths: Vec<PathBuf>,
@@ -230,13 +230,13 @@ impl EntryProtectionReport {
     }
 }
 
-impl CrystallizeDomainReport {
+impl GlacierReport {
     /// Lake directory that was updated.
     pub fn root(&self) -> &Path {
         &self.root
     }
 
-    /// Upstream domain that was crystallized.
+    /// Glacier domain that was crystallized.
     pub fn domain(&self) -> &EntryAtom {
         &self.domain
     }
@@ -754,32 +754,32 @@ impl EntryDirectory {
     }
     // sirno:witness:sirno-lake:end
 
-    /// Replace one crystallized upstream domain.
+    /// Replace one glacier.
     ///
-    /// Existing files under the domain must already be managed by crystallization.
-    pub fn replace_crystallized_domain(
+    /// Existing files under the glacier domain must already be managed by crystallization.
+    pub fn replace_glacier(
         &self, domain: &EntryAtom, entries: &[Entry], artifacts: &[EntryArtifact],
         settings: &EntryDirectoryCheckSettings,
-    ) -> Result<CrystallizeDomainReport, EntryDirectoryError> {
-        trace!("replace_crystallized_domain begin: root={} domain={}", self.root.display(), domain);
+    ) -> Result<GlacierReport, EntryDirectoryError> {
+        trace!("replace_glacier begin: root={} domain={}", self.root.display(), domain);
         fs::create_dir_all(&self.root)?;
         for entry in entries {
             if !entry.id.starts_with_domain(domain) {
-                return Err(EntryDirectoryError::CrystallizedEntryOutsideDomain {
+                return Err(EntryDirectoryError::GlacierEntryOutsideDomain {
                     domain: domain.clone(),
                     id: entry.id.clone(),
                 });
             }
             if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                return Err(EntryDirectoryError::CrystallizedEntryNotManaged(entry.id.clone()));
+                return Err(EntryDirectoryError::GlacierEntryNotManaged(entry.id.clone()));
             }
         }
 
-        self.ensure_crystallized_domain_replaceable(domain, settings)?;
+        self.ensure_glacier_replaceable(domain, settings)?;
 
         let mut changed_paths = Vec::new();
-        changed_paths.extend(self.remove_crystallized_domain_entries(domain, settings)?);
-        changed_paths.extend(self.remove_crystallized_domain_artifacts(domain)?);
+        changed_paths.extend(self.remove_glacier_entries(domain, settings)?);
+        changed_paths.extend(self.remove_glacier_artifacts(domain)?);
         for entry in entries {
             changed_paths.push(self.write_new_entry_file(entry)?);
         }
@@ -787,24 +787,16 @@ impl EntryDirectory {
 
         changed_paths.sort();
         changed_paths.dedup();
-        trace!(
-            "replace_crystallized_domain end: domain={} changed={}",
-            domain,
-            changed_paths.len()
-        );
-        Ok(CrystallizeDomainReport {
-            root: self.root.clone(),
-            domain: domain.clone(),
-            changed_paths,
-        })
+        trace!("replace_glacier end: domain={} changed={}", domain, changed_paths.len());
+        Ok(GlacierReport { root: self.root.clone(), domain: domain.clone(), changed_paths })
     }
 
-    /// Require all existing paths in an upstream domain to be crystallization-managed.
-    pub fn ensure_crystallized_domain_replaceable(
+    /// Require all existing paths in a glacier domain to be crystallization-managed.
+    pub fn ensure_glacier_replaceable(
         &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
     ) -> Result<(), EntryDirectoryError> {
-        self.ensure_crystallized_domain_entries_replaceable(domain, settings)?;
-        self.ensure_crystallized_domain_artifacts_replaceable(domain)?;
+        self.ensure_glacier_entries_replaceable(domain, settings)?;
+        self.ensure_glacier_artifacts_replaceable(domain)?;
         Ok(())
     }
 
@@ -925,7 +917,7 @@ impl EntryDirectory {
         )
     }
 
-    /// Generate Markdown link footers while allowing managed crystallized entries to change.
+    /// Generate Markdown link footers while allowing managed glacier entries to change.
     pub fn generate_links_for_crystallization(
         &self, settings: &EntryDirectoryCheckSettings,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
@@ -1215,7 +1207,7 @@ impl EntryDirectory {
         self.remove_managed_entry_files_in(&self.root, settings)
     }
 
-    fn remove_crystallized_domain_entries(
+    fn remove_glacier_entries(
         &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         let domain_root = self.root.join(domain.as_str());
@@ -1259,7 +1251,7 @@ impl EntryDirectory {
             let id = EntryAddress::from_lake_relative_path(relative)?;
             let entry = self.read_entry(&id)?;
             if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
+                return Err(EntryDirectoryError::UnmanagedGlacierPath(path));
             }
             melt_path_best_effort(&path)?;
             fs::remove_file(&path)?;
@@ -1272,7 +1264,7 @@ impl EntryDirectory {
         Ok(changed)
     }
 
-    fn ensure_crystallized_domain_entries_replaceable(
+    fn ensure_glacier_entries_replaceable(
         &self, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
     ) -> Result<(), EntryDirectoryError> {
         let domain_root = self.root.join(domain.as_str());
@@ -1311,13 +1303,13 @@ impl EntryDirectory {
             let id = EntryAddress::from_lake_relative_path(relative)?;
             let entry = self.read_entry(&id)?;
             if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
+                return Err(EntryDirectoryError::UnmanagedGlacierPath(path));
             }
         }
         Ok(())
     }
 
-    fn remove_crystallized_domain_artifacts(
+    fn remove_glacier_artifacts(
         &self, domain: &EntryAtom,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         let artifact_root = self.artifact_root();
@@ -1343,7 +1335,7 @@ impl EntryDirectory {
             if owner_entry.exists() {
                 let entry = self.read_entry(&owner)?;
                 if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                    return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
+                    return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
                 }
             }
             melt_tree_best_effort(&owner_root)?;
@@ -1353,7 +1345,7 @@ impl EntryDirectory {
         Ok(changed)
     }
 
-    fn ensure_crystallized_domain_artifacts_replaceable(
+    fn ensure_glacier_artifacts_replaceable(
         &self, domain: &EntryAtom,
     ) -> Result<(), EntryDirectoryError> {
         let artifact_root = self.artifact_root();
@@ -1378,7 +1370,7 @@ impl EntryDirectory {
             if owner_entry.exists() {
                 let entry = self.read_entry(&owner)?;
                 if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                    return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
+                    return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
                 }
             }
         }
@@ -2229,20 +2221,20 @@ pub enum EntryDirectoryError {
     /// A command attempted to change an entry marked as frozen.
     #[error("entry `{0}` is frozen; run `sirno melt {0}` before changing it")]
     FrozenEntryProtected(EntryAddress),
-    /// Crystallization tried to write an entry outside the selected domain.
-    #[error("crystallized entry `{id}` is outside upstream domain `{domain}`")]
-    CrystallizedEntryOutsideDomain {
-        /// Selected upstream domain.
+    /// Crystallization tried to write an entry outside the selected glacier domain.
+    #[error("glacier entry `{id}` is outside glacier domain `{domain}`")]
+    GlacierEntryOutsideDomain {
+        /// Selected glacier domain.
         domain: EntryAtom,
         /// Entry address outside the domain.
         id: EntryAddress,
     },
     /// Crystallization tried to write an entry without managed protection.
-    #[error("crystallized entry `{0}` must carry frozen reason `managed`")]
-    CrystallizedEntryNotManaged(EntryAddress),
-    /// A path inside a crystallized domain is not managed by crystallization.
-    #[error("crystallized upstream domain contains unmanaged path: {0}")]
-    UnmanagedCrystallizedPath(PathBuf),
+    #[error("glacier entry `{0}` must carry frozen reason `managed`")]
+    GlacierEntryNotManaged(EntryAddress),
+    /// A path inside a glacier is not managed by crystallization.
+    #[error("glacier contains unmanaged path: {0}")]
+    UnmanagedGlacierPath(PathBuf),
     /// A parsed entry had no file path in the directory report.
     #[error("entry `{0}` has no source file path")]
     MissingEntryFilePath(EntryAddress),
@@ -2400,7 +2392,7 @@ Body.
     // sirno:witness:witness-lookup:end
 
     #[test]
-    fn replaces_only_managed_crystallized_domain_entries() {
+    fn replaces_only_managed_glacier_entries() {
         let temp = tempfile::tempdir().unwrap();
         let directory = entry_directory(temp.path());
         let domain = EntryAtom::new("core").unwrap();
@@ -2414,7 +2406,7 @@ Body.
         );
 
         let report = directory
-            .replace_crystallized_domain(
+            .replace_glacier(
                 &domain,
                 &[entry],
                 &[artifact],
@@ -2439,11 +2431,11 @@ Body.
 ",
         );
         let error = directory
-            .replace_crystallized_domain(&domain, &[], &[], &EntryDirectoryCheckSettings::default())
+            .replace_glacier(&domain, &[], &[], &EntryDirectoryCheckSettings::default())
             .unwrap_err();
 
         assert!(
-            matches!(error, EntryDirectoryError::UnmanagedCrystallizedPath(path) if path.ends_with("core/local.md"))
+            matches!(error, EntryDirectoryError::UnmanagedGlacierPath(path) if path.ends_with("core/local.md"))
         );
     }
 

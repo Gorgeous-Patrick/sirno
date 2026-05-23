@@ -525,8 +525,7 @@ impl SurfaceContext {
         let mut settings = entry_directory_check_settings(&self.config_path, &config);
         settings.render = false;
         settings.witness = None;
-        EntryDirectory::new(lake_path)
-            .ensure_crystallized_domain_replaceable(&request.domain, &settings)?;
+        EntryDirectory::new(lake_path).ensure_glacier_replaceable(&request.domain, &settings)?;
         config.write(&self.config_path)?;
         self.upstream_crystallize(UpstreamCrystallizeRequest {
             domains: vec![request.domain],
@@ -534,7 +533,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Remove one upstream declaration and its crystallized domain.
+    /// Remove one upstream declaration and its glacier.
     pub fn upstream_remove(
         &self, domain: crate::EntryAtom,
     ) -> Result<UpstreamCrystallizeReport, CommandError> {
@@ -551,7 +550,7 @@ impl SurfaceContext {
             &self.config_path,
             &config,
         ));
-        let report = lake.replace_crystallized_domain(&domain, &[], &[], &settings)?;
+        let report = lake.replace_glacier(&domain, &[], &[], &settings)?;
         let mut lock =
             SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?
                 .unwrap_or_default();
@@ -565,7 +564,7 @@ impl SurfaceContext {
         })
     }
 
-    /// Crystallize configured upstream lakes.
+    /// Crystallize configured upstream lakes into glaciers.
     pub fn upstream_crystallize(
         &self, request: UpstreamCrystallizeRequest,
     ) -> Result<UpstreamCrystallizeReport, CommandError> {
@@ -599,7 +598,7 @@ impl SurfaceContext {
         Ok(report)
     }
 
-    /// Update upstream locks and crystallized domains.
+    /// Update upstream locks and glaciers.
     pub fn upstream_update(
         &self, domains: Vec<crate::EntryAtom>,
     ) -> Result<UpstreamCrystallizeReport, CommandError> {

@@ -13,19 +13,19 @@ prerequisite:
 
 *Sirno Upstream* is the subsystem for declaring Git-backed upstream lakes,
 locking them to exact Git commits,
-and crystallizing them into the current lake.
+and crystallizing them into glaciers in the current lake.
 
 The subsystem gives one handle to the operational dependency model:
 upstream declarations,
 the lake system formed by those declarations,
-and crystallization of managed frozen content.
+and crystallization of glaciers.
 
 Every upstream is included through crystallization.
-Crystallized entries use the upstream domain as their entry-address prefix,
-and Sirno protects the materialized files with the `managed` frozen reason.
-The upstream domain is an explicit local name in `Sirno.toml`.
+The resulting glacier uses the glacier domain as its entry-address prefix,
+and Sirno protects the glacier files with the `managed` frozen reason.
+The glacier domain is an explicit local name in `Sirno.toml`.
 It has no default derived from the Git source.
-It shares the top-level lake namespace with implicit local sublakes,
+It shares its lake path with implicit local lakelets,
 so an unmanaged local folder blocks crystallization for the same domain.
 
 A lake sheaf remains the composition model for the resolved addressable view.
@@ -39,6 +39,7 @@ Sirno Upstream is the operator-facing feature that produces that local view.
   - [sirno-lake](sirno-lake.md)
 - belongs (from):
   - [crystallization](crystallization.md)
+  - [glacier](glacier.md)
   - [lake-sheaf](lake-sheaf.md)
   - [lake-system](lake-system.md)
   - [upstream-lake](upstream-lake.md)

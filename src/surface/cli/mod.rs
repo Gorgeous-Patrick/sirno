@@ -541,24 +541,24 @@ enum FrostCommand {
 enum UpstreamCommand {
     /// Add or replace one Git-backed upstream and crystallize it.
     Add(UpstreamAddArgs),
-    /// Remove one upstream declaration and its crystallized content.
+    /// Remove one upstream declaration and its glacier.
     Remove {
-        /// Upstream domain.
+        /// Glacier domain.
         #[arg(value_name = "DOMAIN")]
         domain: String,
     },
-    /// Crystallize configured upstream lakes into the current lake.
+    /// Crystallize configured upstream lakes into glaciers.
     Crystallize {
-        /// Upstream domain. Omit to crystallize every upstream.
+        /// Glacier domain. Omit to crystallize every upstream.
         #[arg(value_name = "DOMAIN")]
         domain: Option<String>,
         /// Use only existing lock records and cache mirrors.
         #[arg(long)]
         locked: bool,
     },
-    /// Refresh upstream locks and crystallized content.
+    /// Refresh upstream locks and glaciers.
     Update {
-        /// Upstream domain. Omit to update every upstream.
+        /// Glacier domain. Omit to update every upstream.
         #[arg(value_name = "DOMAIN")]
         domain: Option<String>,
     },
@@ -579,7 +579,7 @@ enum UpstreamCommand {
         .args(["branch", "tag", "rev"])
 ))]
 struct UpstreamAddArgs {
-    /// Upstream domain used as the crystallized entry-address prefix.
+    /// Glacier domain used as the crystallized entry-address prefix.
     #[arg(value_name = "DOMAIN")]
     domain: String,
     /// Git URI or local Git repository source accepted by Git.

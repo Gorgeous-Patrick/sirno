@@ -29,7 +29,7 @@ When upstream lakes are configured,
 the lock contains `[upstreams.DOMAIN]` tables.
 Each table copies the upstream request fields from `Sirno.toml`,
 stores the upstream project path and configured lake path,
-and records `commit` as the exact Git object crystallized into the current lake.
+and records `commit` as the exact Git object crystallized into the glacier.
 Branch and tag upstreams stay pinned to that commit until explicit update.
 Commit-pinned upstreams already name their resolved commit.
 

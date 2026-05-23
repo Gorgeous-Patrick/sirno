@@ -62,7 +62,7 @@ When the platform and process allow it,
 Sirno also applies the stronger immutable file guard.
 The frost comparison remains the authoritative protection against committing drift.
 
-Crystallized entries are frozen because they carry `managed`.
+Glacier entries are frozen because they carry `managed`.
 They may also carry `reviewed` when the upstream entry was reviewed.
 Normal melt removes only `reviewed`;
 crystallization owns adding and removing `managed`.

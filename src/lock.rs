@@ -48,7 +48,7 @@ pub struct SirnoLock {
 }
 // sirno:witness:sirno-lock:end
 
-/// Ordered upstream lock records keyed by upstream domain.
+/// Ordered upstream lock records keyed by glacier domain.
 pub type UpstreamLockMap = IndexMap<EntryAtom, UpstreamLock>;
 
 impl SirnoLock {
@@ -202,7 +202,7 @@ pub struct UpstreamLock {
     pub project: PathBuf,
     /// Lake path read from the upstream project's `Sirno.toml`.
     pub lake: PathBuf,
-    /// Exact Git commit crystallized into the lake.
+    /// Exact Git commit crystallized into the glacier.
     pub commit: String,
 }
 

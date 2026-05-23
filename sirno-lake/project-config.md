@@ -34,8 +34,8 @@ Relative paths are resolved from the directory that contains `Sirno.toml`.
 The CLI `--lake-path PATH` option can override `[lake].path` for one command.
 The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
 
-`[upstreams.DOMAIN]` declares an upstream lake crystallized under `DOMAIN`.
-`DOMAIN` is an *entry atom* and becomes the injected *entry address* prefix.
+`[upstreams.DOMAIN]` declares an upstream lake crystallized into a glacier under `DOMAIN`.
+`DOMAIN` is an *entry atom* and becomes the glacier *entry address* prefix.
 It is an explicit local name with no default derived from `SOURCE`.
 Each upstream has `git = "SOURCE"` and exactly one of `branch`, `tag`, or `rev`.
 `SOURCE` is a remote Git URL or local Git repository source accepted by Git.
@@ -43,8 +43,8 @@ Each upstream has `git = "SOURCE"` and exactly one of `branch`, `tag`, or `rev`.
 it defaults to `.`.
 There is no non-Git path upstream.
 Every declared upstream is included by crystallization.
-The domain shares the top-level lake namespace with implicit local sublakes,
-so unmanaged files under `lake/DOMAIN/` block the declaration from being materialized.
+The glacier domain shares its lake path with implicit local lakelets,
+so unmanaged files under `lake/DOMAIN/` block the declaration from being crystallized.
 
 A project can use Sirno without configured repo members or frost.
 `sirno init` opens an interactive setup flow for the config, lake,
@@ -77,7 +77,7 @@ and the resolved upstream state when upstream lakes are configured.
 It lives next to `Sirno.toml`.
 The lock says whether the lake is current
 or checked out to a frozen version.
-It also pins each upstream to the exact Git commit crystallized into the lake.
+It also pins each upstream to the exact Git commit crystallized into the glacier.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,

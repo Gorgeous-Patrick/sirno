@@ -1,7 +1,7 @@
 //! Upstream lake resolution and crystallization.
 //!
 //! Upstream lakes are Git-backed Sirno projects declared by the current project.
-//! Crystallization materializes each upstream into a managed entry-address domain.
+//! Crystallization materializes each upstream lake into a managed glacier.
 
 use std::ffi::OsStr;
 use std::fs;
@@ -17,7 +17,7 @@ use crate::check::CheckMode;
 use crate::config::{CONFIG_FILE_NAME, SirnoConfig, UpstreamRef, UpstreamSettings};
 use crate::entry::{Entry, FrozenMarker};
 use crate::identifier::{EntryAddress, EntryAtom};
-use crate::lake::{CrystallizeDomainReport, EntryDirectory, EntryDirectoryCheckSettings};
+use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
 use crate::lock::{SirnoLock, UpstreamLock};
 use crate::render::GeneratedLinkBody;
 
@@ -37,22 +37,22 @@ pub(crate) struct CrystallizeUpstreams<'a> {
     pub(crate) lock: &'a mut SirnoLock,
     /// Current lake directory.
     pub(crate) lake: &'a EntryDirectory,
-    /// Lake check settings used while replacing domains.
+    /// Lake check settings used while replacing glaciers.
     pub(crate) settings: &'a EntryDirectoryCheckSettings,
     /// Global upstream Git cache.
     pub(crate) cache: &'a UpstreamGitCache,
-    /// Selected upstream domains. Empty means every upstream.
+    /// Selected glacier domains. Empty means every upstream.
     pub(crate) domains: &'a [EntryAtom],
     /// Use only existing lock records and cache mirrors.
     pub(crate) locked: bool,
 }
 
-/// Report from crystallizing upstream lakes.
+/// Report from crystallizing upstream lakes into glaciers.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpstreamCrystallizeReport {
     /// Whether crystallization completed.
     pub ok: bool,
-    /// Upstream domains that were crystallized.
+    /// Glacier domains that were crystallized.
     pub domains: Vec<String>,
     /// Paths changed in the current lake.
     pub changed_paths: Vec<String>,
@@ -63,7 +63,7 @@ pub struct UpstreamCrystallizeReport {
 /// Status report for configured upstream lakes.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpstreamStatusReport {
-    /// Whether every upstream is locked, cached, and materialized.
+    /// Whether every upstream is locked, cached, and crystallized into its glacier.
     pub ok: bool,
     /// Per-upstream status rows.
     pub upstreams: Vec<UpstreamStatus>,
@@ -74,7 +74,7 @@ pub struct UpstreamStatusReport {
 /// Status for one configured upstream lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpstreamStatus {
-    /// Upstream domain.
+    /// Glacier domain.
     pub domain: String,
     /// Configured Git source.
     pub git: String,
@@ -89,7 +89,7 @@ pub struct UpstreamStatus {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum UpstreamStatusState {
-    /// The upstream has a matching lock, cache mirror, and materialized domain.
+    /// The upstream has a matching lock, cache mirror, and glacier.
     Ok,
     /// The upstream has no lock record.
     MissingLock,
@@ -97,10 +97,10 @@ pub enum UpstreamStatusState {
     StaleLock,
     /// The global cache mirror is absent.
     MissingCache,
-    /// The upstream lock exists but the lake domain has not been materialized.
-    MissingCrystallization,
-    /// The materialized lake domain differs from the locked upstream commit.
-    MaterializationDrift,
+    /// The upstream lock exists but the glacier has not been materialized.
+    MissingGlacier,
+    /// The glacier differs from the locked upstream commit.
+    GlacierDrift,
 }
 
 impl UpstreamGitCache {
@@ -151,10 +151,10 @@ impl UpstreamGitCache {
     }
 }
 
-/// Crystallize selected upstream domains into a lake.
+/// Crystallize selected upstream lake domains into glaciers.
 pub(crate) fn crystallize_upstreams(
     input: CrystallizeUpstreams<'_>,
-) -> Result<(UpstreamCrystallizeReport, Vec<CrystallizeDomainReport>), UpstreamError> {
+) -> Result<(UpstreamCrystallizeReport, Vec<GlacierReport>), UpstreamError> {
     let CrystallizeUpstreams { config_path, config, lock, lake, settings, cache, domains, locked } =
         input;
     let selected = select_upstreams(config, domains)?;
@@ -165,8 +165,7 @@ pub(crate) fn crystallize_upstreams(
     for (domain, upstream) in selected {
         trace!("crystallize upstream begin: domain={domain}");
         let loaded = load_upstream(config_path, domain, upstream, lock, cache, locked)?;
-        let report =
-            lake.replace_crystallized_domain(domain, &loaded.entries, &loaded.artifacts, settings)?;
+        let report = lake.replace_glacier(domain, &loaded.entries, &loaded.artifacts, settings)?;
         changed_paths.extend(report.changed_paths().iter().map(|path| display_path(path)));
         reports.push(report);
         lock.upstreams.insert(domain.clone(), loaded.lock);
@@ -179,7 +178,11 @@ pub(crate) fn crystallize_upstreams(
             ok: true,
             domains: names.clone(),
             changed_paths,
-            message: format!("crystallized {} upstream {}", names.len(), plural(names.len())),
+            message: format!(
+                "crystallized {} {}",
+                names.len(),
+                plural_named(names.len(), "glacier", "glaciers")
+            ),
         },
         reports,
     ))
@@ -207,8 +210,7 @@ pub fn upstream_status(
         if state == UpstreamStatusState::Ok
             && let (Some(lock), Some((lake, settings))) = (lock, lake)
         {
-            state =
-                materialization_status(config_path, domain, upstream, lock, cache, lake, settings)?;
+            state = glacier_status(config_path, domain, upstream, lock, cache, lake, settings)?;
         }
         upstreams.push(UpstreamStatus {
             domain: domain.to_string(),
@@ -225,22 +227,22 @@ pub fn upstream_status(
     })
 }
 
-fn materialization_status(
+fn glacier_status(
     config_path: &Path, domain: &EntryAtom, upstream: &UpstreamSettings, lock: &SirnoLock,
     cache: &UpstreamGitCache, lake: &EntryDirectory, settings: &EntryDirectoryCheckSettings,
 ) -> Result<UpstreamStatusState, UpstreamError> {
     let loaded = load_upstream(config_path, domain, upstream, lock, cache, true)?;
-    let Some(actual) = read_materialized_domain(lake, domain, settings)? else {
-        return Ok(UpstreamStatusState::MissingCrystallization);
+    let Some(actual) = read_glacier(lake, domain, settings)? else {
+        return Ok(UpstreamStatusState::MissingGlacier);
     };
     if actual.entries == loaded.entries && actual.artifacts == loaded.artifacts {
         Ok(UpstreamStatusState::Ok)
     } else {
-        Ok(UpstreamStatusState::MaterializationDrift)
+        Ok(UpstreamStatusState::GlacierDrift)
     }
 }
 
-fn read_materialized_domain(
+fn read_glacier(
     lake: &EntryDirectory, domain: &EntryAtom, settings: &EntryDirectoryCheckSettings,
 ) -> Result<Option<LoadedUpstreamFiles>, UpstreamError> {
     let mut check_settings = settings.clone();
@@ -560,13 +562,17 @@ fn plural(count: usize) -> &'static str {
     if count == 1 { "lake" } else { "lakes" }
 }
 
+fn plural_named<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
+    if count == 1 { singular } else { plural }
+}
+
 /// Error raised while resolving or crystallizing upstream lakes.
 #[derive(Debug, Error)]
 pub enum UpstreamError {
     /// The user home directory could not be resolved.
     #[error("failed to locate home directory for ~/.sirno")]
     HomeDirectory,
-    /// A configured upstream domain does not exist.
+    /// A configured glacier domain does not exist.
     #[error("upstream `{0}` is not configured")]
     UnknownDomain(EntryAtom),
     /// A locked crystallization requested a missing lock.
@@ -759,7 +765,7 @@ Body.
     }
 
     #[test]
-    fn upstream_add_rejects_implicit_local_sublake_collision_before_config_write() {
+    fn upstream_add_rejects_implicit_local_lakelet_collision_before_config_write() {
         let temp = tempfile::tempdir().unwrap();
         let upstream_root = temp.path().join("upstream");
         fs::create_dir(&upstream_root).unwrap();
@@ -774,7 +780,7 @@ Body.
             "\
 ---
 name: Local
-desc: Local sublake entry.
+desc: Local lakelet entry.
 ---
 
 Body.
@@ -791,9 +797,11 @@ Body.
             })
             .unwrap_err();
 
-        assert!(
-            matches!(error, CommandError::EntryDirectory(EntryDirectoryError::UnmanagedCrystallizedPath(path)) if path.ends_with("lake/core/local.md"))
-        );
+        assert!(matches!(
+            error,
+            CommandError::EntryDirectory(EntryDirectoryError::UnmanagedGlacierPath(path))
+                if path.ends_with("lake/core/local.md")
+        ));
         let config = SirnoConfig::from_file(&config_path).unwrap();
         assert!(config.upstreams.is_empty());
         assert!(!project_root.join(LOCK_FILE_NAME).exists());

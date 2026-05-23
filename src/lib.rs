@@ -44,9 +44,9 @@ pub use crate::freeze::{FreezeError, FrozenPath};
 pub use crate::frost::{FrostError, FrostGcReport, SirnoFrost};
 pub use crate::identifier::{EntryAddress, EntryAddressError, EntryAtom, EntryAtomError};
 pub use crate::lake::{
-    CrystallizeDomainReport, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
-    EntryDirectoryReport, EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport,
-    GenLinkDirectoryReport,
+    EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
+    EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
+    GlacierReport,
 };
 pub use crate::lock::{
     FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock, TideLock, UpstreamLock,

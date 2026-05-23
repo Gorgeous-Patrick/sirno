@@ -226,8 +226,8 @@ fn upstream_status_state_label(state: UpstreamStatusState) -> &'static str {
         | UpstreamStatusState::MissingLock => "missing-lock",
         | UpstreamStatusState::StaleLock => "stale-lock",
         | UpstreamStatusState::MissingCache => "missing-cache",
-        | UpstreamStatusState::MissingCrystallization => "missing-crystallization",
-        | UpstreamStatusState::MaterializationDrift => "materialization-drift",
+        | UpstreamStatusState::MissingGlacier => "missing-glacier",
+        | UpstreamStatusState::GlacierDrift => "glacier-drift",
     }
 }
 
@@ -697,14 +697,8 @@ fn semantic_table_cell_style(header: &str, value: &str) -> Option<SemanticStyle>
 fn semantic_status_style(value: &str) -> Option<SemanticStyle> {
     match value {
         | "ok" | "resolved" | "unchanged" => Some(SemanticStyle::Success),
-        | "drifted"
-        | "materialization-drift"
-        | "missing"
-        | "missing-cache"
-        | "missing-crystallization"
-        | "missing-lock"
-        | "open"
-        | "stale-lock" => Some(SemanticStyle::Warning),
+        | "drifted" | "glacier-drift" | "missing" | "missing-cache" | "missing-glacier"
+        | "missing-lock" | "open" | "stale-lock" => Some(SemanticStyle::Warning),
         | "linked" | "wrote" => Some(SemanticStyle::Changed),
         | _ => None,
     }

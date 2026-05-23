@@ -16,14 +16,14 @@ An *upstream lake* is a Git-backed Sirno project declared by the current project
 The current project names each upstream in `Sirno.toml`.
 The declaration chooses a Git source,
 one ref selector,
-and an entry-domain atom for the crystallized address prefix.
+and an entry-domain atom for the glacier address prefix.
 That domain atom is always explicit.
 Sirno does not infer a local upstream name from the Git source.
 The source may be a remote Git URL or a local Git repository source accepted by Git.
 Local repository sources are read through committed Git objects;
 dirty worktree state is ignored.
 
-Every upstream is explicitly included through crystallization.
+Every upstream is explicitly included by crystallizing it into a glacier.
 Sirno does not have a path-only upstream,
 and it does not leave declared upstreams as linked but unexpanded dependencies.
 

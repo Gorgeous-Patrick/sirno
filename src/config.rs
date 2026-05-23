@@ -170,7 +170,7 @@ impl FrostSettings {
     }
 }
 
-/// Ordered upstream lake declarations keyed by their crystallized domain.
+/// Ordered upstream lake declarations keyed by their glacier domain.
 pub type UpstreamSettingsMap = IndexMap<EntryAtom, UpstreamSettings>;
 
 /// Configured upstream Git lake source.
@@ -910,10 +910,14 @@ impl ConfigRenderer {
                 self.out.push('\n');
             }
             self.push_table(&format!("upstreams.{domain}"));
+            // sirno:witness:project-config-comments:begin
             if index == 0 {
                 self.out
-                    .push_str("# Git-backed upstream lake crystallized under this entry domain.\n");
+                    .push_str(
+                        "# Git-backed upstream lake crystallized into a glacier under this entry domain.\n",
+                    );
             }
+            // sirno:witness:project-config-comments:end
             self.push_bare_field("git", &upstream.git)?;
             if let Some(branch) = &upstream.branch {
                 self.push_bare_field("branch", branch)?;
@@ -1024,7 +1028,7 @@ pub enum ConfigError {
     /// An upstream project path is not a normal Git-tree-relative path.
     #[error("upstream `{domain}` project path must be relative within the Git tree: {path}")]
     UpstreamProjectPath {
-        /// Upstream domain.
+        /// Glacier domain.
         domain: EntryAtom,
         /// Invalid project path.
         path: PathBuf,
@@ -1800,9 +1804,9 @@ delimiters = []
         assert!(source.contains("# Paths in lake that Sirno skips"));
         assert!(source.contains("# frost path"));
         assert!(source.contains("[upstreams.core]"));
-        assert!(
-            source.contains("# Git-backed upstream lake crystallized under this entry domain.")
-        );
+        assert!(source.contains(
+            "# Git-backed upstream lake crystallized into a glacier under this entry domain."
+        ));
         assert!(source.contains("git = \"https://example.invalid/core.git\""));
         assert!(source.contains("branch = \"main\""));
         assert!(source.contains("project = \"packages/core\""));

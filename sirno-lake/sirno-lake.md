@@ -45,19 +45,22 @@ Several paths may resolve to the same *entry* in a composed lake.
 The leading-dot path form `.<id>` is reserved for Sirno built-in functionality.
 Project entries and dependency domains use ordinary `<id>` path segments.
 
-A *local sublake* is an implicit project-owned top-level folder in the *lake*.
-Creating `lake/core/design.md` creates the `core.` local sublake domain
+A *lakelet* is a namespace inside the *lake*.
+Creating `lake/core/design.md` creates the `core.` lakelet domain
 and the `core.design` entry address.
-No `Sirno.toml` table declares local sublakes.
+Creating `lake/core/runtime/scheduler.md` creates the nested `core.runtime.` lakelet domain
+and the `core.runtime.scheduler` entry address.
+A *local lakelet* is project-managed.
+A *glacier* is formed by crystallizing an upstream lake into a managed lakelet.
 
 A *lake sheaf* is the resolved composition of multiple lakes.
-It flattens sublakes to the top level before dependency domains link back
-to the resolved top-level entries.
+It resolves lakelets into one addressable entry surface before dependency domains link back
+to the resolved entries.
 That model resolves diamond dependencies without making dependency versioning part
 of the entry naming syntax.
 
 *Sirno Upstream* is the subsystem for declaring *upstream lakes*
-and crystallizing them into the current lake as managed frozen content.
+and crystallizing them into the current lake as glaciers.
 A *lake system* is the current project plus its declared *upstream lakes*.
 The *lake sheaf* remains the resolved composition model for the addressable view.
 
@@ -114,7 +117,8 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
-  - [local-sublake](local-sublake.md)
+  - [lakelet](lakelet.md)
+  - [local-lakelet](local-lakelet.md)
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)

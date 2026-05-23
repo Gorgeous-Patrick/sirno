@@ -33,7 +33,7 @@ Each *entry* is stored under its dot-joined entry address.
 The backend records `name`, `desc`, Sirno-managed `meta`, ordered structural metadata,
 an artifact manifest,
 and Markdown body as typed fields.
-Nested lake folders and local sublakes are stored by their flattened entry addresses.
+Nested lake folders and lakelets are stored by their flattened entry addresses.
 For example, `lake/core/design.md` is stored as `core.design`.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer

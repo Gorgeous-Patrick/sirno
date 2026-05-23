@@ -393,7 +393,7 @@ impl SirnoMcpServer {
         result(self.context.upstream_add(params.into_request()?))
     }
 
-    /// Remove one upstream declaration and its crystallized content.
+    /// Remove one upstream declaration and its glacier.
     #[tool(name = "sirno_upstream_remove")]
     fn upstream_remove(
         &self, Parameters(params): Parameters<EntryAtomOnlyParams>,
@@ -401,7 +401,7 @@ impl SirnoMcpServer {
         result(self.context.upstream_remove(entry_atom(params.domain)?))
     }
 
-    /// Crystallize configured upstream lakes into the current lake.
+    /// Crystallize configured upstream lakes into glaciers.
     #[tool(name = "sirno_upstream_crystallize")]
     fn upstream_crystallize(
         &self, Parameters(params): Parameters<UpstreamCrystallizeParams>,
@@ -409,7 +409,7 @@ impl SirnoMcpServer {
         result(self.context.upstream_crystallize(params.into_request()?))
     }
 
-    /// Refresh upstream locks and crystallized content.
+    /// Refresh upstream locks and glaciers.
     #[tool(name = "sirno_upstream_update")]
     fn upstream_update(
         &self, Parameters(params): Parameters<UpstreamDomainsParams>,
@@ -551,7 +551,7 @@ struct EntryAddressOnlyParams {
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryAtomOnlyParams {
-    /// Upstream domain.
+    /// Glacier domain.
     domain: String,
 }
 
@@ -841,7 +841,7 @@ struct FrostCheckoutParams {
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct UpstreamAddParams {
-    /// Upstream domain used as the crystallized entry-address prefix.
+    /// Glacier domain used as the crystallized entry-address prefix.
     domain: String,
     /// Git URI or local Git repository source accepted by Git.
     git: String,
@@ -882,14 +882,14 @@ impl UpstreamAddParams {
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct UpstreamDomainsParams {
-    /// Selected upstream domains. Empty means every upstream.
+    /// Selected glacier domains. Empty means every upstream.
     #[serde(default)]
     domains: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct UpstreamCrystallizeParams {
-    /// Selected upstream domains. Empty means every upstream.
+    /// Selected glacier domains. Empty means every upstream.
     #[serde(default)]
     domains: Vec<String>,
     /// Use only existing lock records and cache mirrors.
