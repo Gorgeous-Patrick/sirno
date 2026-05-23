@@ -1911,33 +1911,36 @@ fn rename_accepts_entry_ids_and_aliases() {
 }
 
 #[test]
-fn path_accepts_filters_and_entry_form() {
-    let top_level =
-        Cli::parse_from(["sirno", "path", "alpha", "--artifact", "--frost", "-o", "paths"]);
-    let entry = Cli::parse_from(["sirno", "entry", "path", "alpha", "--entry"]);
+fn path_accepts_filters_in_entry_form() {
+    let entry = Cli::parse_from([
+        "sirno",
+        "entry",
+        "path",
+        "alpha",
+        "--artifact",
+        "--frost",
+        "-o",
+        "paths",
+    ]);
 
     assert!(matches!(
-        top_level.command,
-        Command::TopLevelEntry(TopLevelEntryCommand::Path(EntryPathsArgs {
+        entry.command,
+        Command::Entry { command: EntryCommand::Path(EntryPathsArgs {
             id,
             show_entry: false,
             show_artifact: true,
             show_frost: true,
             absolute: false,
             format: Some(PathOutputFormat::Paths),
-        })) if id == "alpha"
+        }) } if id == "alpha"
     ));
-    assert!(matches!(
-        entry.command,
-        Command::Entry { command: EntryCommand::TopLevel(TopLevelEntryCommand::Path(EntryPathsArgs {
-            id,
-            show_entry: true,
-            show_artifact: false,
-            show_frost: false,
-            absolute: false,
-            format: None,
-        })) } if id == "alpha"
-    ));
+}
+
+#[test]
+fn path_rejects_top_level_form() {
+    let error = Cli::try_parse_from(["sirno", "path", "alpha"]).unwrap_err();
+
+    assert_eq!(error.kind(), clap::error::ErrorKind::InvalidSubcommand);
 }
 
 #[test]

@@ -5,3 +5,199 @@
 status = "current"
 generation = 1
 version = 2
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "to"
+neighbor = "interfaces"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-commands"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "mcp-interface"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "project-commands"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "cli-interface"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "fdab154e9f6ac79c"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "to"
+neighbor = "entry"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-frost"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-freeze"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-lifecycle"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-frost"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lock"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-artifact"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-frost"
+fingerprint = "7aea6198cd9c823a"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "to"
+neighbor = "interfaces"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "cli-interface"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mcp-interface"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "project-commands"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
+fingerprint = "93dcc09918004226"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "93dcc09918004226"

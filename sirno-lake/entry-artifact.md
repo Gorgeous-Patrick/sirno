@@ -26,7 +26,7 @@ A *witness* stays in a configured *repository* artifact and points back to an *e
 An *entry artifact* belongs to the *entry* itself
 and moves with that *entry* when the path is renamed.
 
-`sirno path ENTRY_ADDRESS` shows the lake and frost paths related to an *entry*.
+`sirno entry path ENTRY_ADDRESS` shows the lake and frost paths related to an *entry*.
 It includes artifact paths by default and excludes *repository witness* paths.
 The frost artifact store is sparse and versioned,
 so the path command names the entry's frost root rather than inventing per-artifact backend paths.

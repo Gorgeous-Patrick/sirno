@@ -35,12 +35,13 @@ Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
 and `defrost` for latest frost checkout.
 
-Entry-centric operations also live under `sirno entry`.
+Entry commands live under `sirno entry`.
+Selected common entry operations also have top-level wrappers.
 Storage-wide lake operations also live under `sirno lake`.
 Entry artifact operations also have the top-level `sirno artifact` form.
 Frost operations also live under `sirno frost`.
 
-When a top-level command delegates to a group,
+When a selected top-level command delegates to a group,
 the grouped spelling uses the same subcommands and aliases.
 For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.

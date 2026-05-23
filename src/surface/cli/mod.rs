@@ -183,6 +183,10 @@ enum EntryCommand {
     /// Rename one entry address and its Sirno references.
     #[command(visible_aliases = ["mv", "move"])]
     Rename(EntryRenameArgs),
+    /// Show filesystem paths related to one entry.
+    // sirno:witness:entry-commands:begin
+    Path(EntryPathsArgs),
+    // sirno:witness:entry-commands:end
 }
 
 /// Supported top-level Sirno Lake entry commands.
@@ -236,10 +240,6 @@ enum TopLevelEntryCommand {
         #[arg(long = "dry-run", requires = "unsafe_all")]
         dry_run: bool,
     },
-    // sirno:witness:entry-commands:end
-    /// Show filesystem paths related to one entry.
-    // sirno:witness:entry-commands:begin
-    Path(EntryPathsArgs),
     // sirno:witness:entry-commands:end
     /// Query Sirno Lake Markdown entries.
     // sirno:witness:entry-commands:begin
@@ -1319,6 +1319,11 @@ impl EntryCommand {
         match self {
             | EntryCommand::TopLevel(command) => command.run(config_path, lake_path),
             | EntryCommand::Rename(args) => args.run(config_path, lake_path),
+            | EntryCommand::Path(args) => {
+                let records = entry_path_records(config_path, lake_path, &args)?;
+                print_path_records(&records, args.format.unwrap_or_default())?;
+                Ok(ExitCode::SUCCESS)
+            }
         }
     }
 }
@@ -1407,11 +1412,6 @@ impl TopLevelEntryCommand {
                 let result =
                     SurfaceContext::from_cli_paths(config_path, lake_path).entry_melt(id)?;
                 println!("{}", result.message);
-                Ok(ExitCode::SUCCESS)
-            }
-            | TopLevelEntryCommand::Path(args) => {
-                let records = entry_path_records(config_path, lake_path, &args)?;
-                print_path_records(&records, args.format.unwrap_or_default())?;
                 Ok(ExitCode::SUCCESS)
             }
             | TopLevelEntryCommand::Query { terms, exact_terms, has, is, columns, format } => {

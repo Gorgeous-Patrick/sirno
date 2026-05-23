@@ -26,12 +26,11 @@ and `sirno mv entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`
 select the same entry rename.
 Authored prose outside generated footer regions remains user-owned.
 
-`sirno path ENTRY_ADDRESS` prints filesystem paths related to one entry.
+`sirno entry path ENTRY_ADDRESS` prints filesystem paths related to one entry.
 Its default output includes the lake Markdown entry file path,
 the lake `.artifacts/<entry-address>/` tree,
 and the private frost entry root when frost is configured.
 It excludes repository witness paths.
-The grouped form is `sirno entry path ENTRY_ADDRESS`.
 The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
 The `--absolute` flag prints absolute paths.
 The `-o, --format` option selects `human`, `json`, or `paths`.
