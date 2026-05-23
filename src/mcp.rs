@@ -305,7 +305,7 @@ impl SirnoMcpServer {
     /// Return repository witness blocks for one entry.
     #[tool(name = "sirno_entry_witness")]
     fn entry_witness(&self, Parameters(params): Parameters<EntryWitnessParams>) -> McpToolResult {
-        result(self.context.entry_witness(entry_address(params.id)?, params.verbose))
+        result(self.context.entry_witness(entry_address(params.id)?))
     }
 
     /// List artifacts owned by one entry.
@@ -749,13 +749,12 @@ struct EntryRgParams {
     with_generated_footer: bool,
 }
 
+// sirno:witness:mcp-interface:begin
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct EntryWitnessParams {
     id: String,
-    /// Include opening and closing delimiter spans.
-    #[serde(default)]
-    verbose: bool,
 }
+// sirno:witness:mcp-interface:end
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct ArtifactAddParams {
@@ -1304,16 +1303,13 @@ Changed body.
     }
 
     #[test]
-    fn entry_witness_defaults_to_body_and_hides_delimiter_spans() {
+    fn entry_witness_returns_body_and_hides_delimiter_spans() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_witness_project(temp.path());
         let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
 
         let result = server
-            .entry_witness(Parameters(EntryWitnessParams {
-                id: "alpha".to_owned(),
-                verbose: false,
-            }))
+            .entry_witness(Parameters(EntryWitnessParams { id: "alpha".to_owned() }))
             .unwrap();
         let record = &structured(&result)["records"][0];
 
@@ -1321,23 +1317,6 @@ Changed body.
         assert!(record["body"].as_str().unwrap().contains("pub fn alpha() {}"));
         assert!(record.get("opening").is_none());
         assert!(record.get("closing").is_none());
-        assert!(record.get("marker").is_none());
-    }
-
-    #[test]
-    fn entry_witness_verbose_includes_delimiter_spans() {
-        let temp = tempfile::tempdir().unwrap();
-        let config_path = write_witness_project(temp.path());
-        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
-
-        let result = server
-            .entry_witness(Parameters(EntryWitnessParams { id: "alpha".to_owned(), verbose: true }))
-            .unwrap();
-        let record = &structured(&result)["records"][0];
-
-        assert_eq!(record["opening"]["start_line"], json!(1));
-        assert_eq!(record["closing"]["start_line"], json!(3));
-        assert!(record["body"].as_str().unwrap().contains("pub fn alpha() {}"));
         assert!(record.get("marker").is_none());
     }
 

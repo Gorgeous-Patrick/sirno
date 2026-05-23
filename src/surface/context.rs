@@ -495,17 +495,12 @@ impl SurfaceContext {
     }
 
     /// Return repository witness blocks for one entry as a JSON-first command result.
-    pub fn entry_witness(
-        &self, id: EntryAddress, verbose: bool,
-    ) -> Result<WitnessResult, CommandError> {
+    pub fn entry_witness(&self, id: EntryAddress) -> Result<WitnessResult, CommandError> {
         let records = self.witness_records(&id)?;
         Ok(WitnessResult {
             ok: !records.is_empty(),
             id: id.to_string(),
-            records: records
-                .iter()
-                .map(|record| WitnessRecordResult::from_record(record, verbose))
-                .collect(),
+            records: records.iter().map(WitnessRecordResult::from_record).collect(),
             message: if records.is_empty() {
                 format!("no witness found for {id}")
             } else {

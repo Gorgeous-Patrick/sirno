@@ -70,6 +70,9 @@ A non-empty `columns` array selects built-in columns and configured structural f
 `sirno_status` returns typed frost, check-policy, structural-edge,
 tide, and commit-readiness objects.
 `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
+`sirno_entry_witness` accepts only `{ id }`.
+It returns compact records with `path`, `region`, and `body`.
+Delimiter spans stay internal and CLI-oriented.
 
 Successful tool calls return structured JSON content.
 They also include the same JSON as pretty text content for clients that read only text.
