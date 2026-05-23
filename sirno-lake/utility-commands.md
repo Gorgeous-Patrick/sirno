@@ -40,7 +40,7 @@ Config utility commands reject `--lake-path` and `--frost-path`.
 `sirno util entry` and `sirno util entry tui` open an interactive terminal UI
 for common entry defaults.
 Each row is a default entry address with its presence status
-and the structural fields that would be written under the current `Sirno.toml`.
+and the structural link relations that would be written under the current `Sirno.toml`.
 `i` inserts the selected missing entry.
 `a` inserts all missing defaults.
 

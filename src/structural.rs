@@ -1,7 +1,7 @@
-//! Structural edge policy and neighbor indexes.
+//! Structural link policy and neighbor indexes.
 //!
-//! Structural settings define which metadata fields Sirno treats as graph edges.
-//! The edge index derives `to`, `from`, and `clique` neighbors from parsed entries.
+//! Structural settings define which metadata relations Sirno treats as graph links.
+//! The link index derives `to`, `from`, and `clique` neighbors from parsed entries.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -18,7 +18,7 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
-/// Configured ripple sources for one structural edge direction.
+/// Configured ripple sources for one structural link direction.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 // sirno:witness:structural-edge-policy:begin
@@ -44,7 +44,7 @@ impl StructuralRippleSettings {
     }
 }
 
-/// Tooling settings for one structural edge direction.
+/// Tooling settings for one structural link direction.
 ///
 /// `render` includes the edge in generated footers.
 /// `ripple` includes the edge in tide workitem generation.
@@ -63,7 +63,7 @@ pub struct StructuralEdgeSettings {
 
 // sirno:witness:structural-edge-policy:begin
 impl StructuralEdgeSettings {
-    /// Construct structural edge settings from explicit render and ripple settings.
+    /// Construct structural link settings from explicit render and ripple settings.
     pub fn new(render: bool, ripple: StructuralRippleSettings) -> Self {
         Self { render, ripple }
     }
@@ -100,7 +100,7 @@ impl fmt::Display for StructuralEdgeSettings {
     }
 }
 
-/// Direction of one configured structural edge.
+/// Direction of one configured structural link.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StructuralEdgeDirection {
@@ -108,7 +108,7 @@ pub enum StructuralEdgeDirection {
     To,
     /// Incoming metadata sources that point at the current entry.
     From,
-    /// Entries connected through a shared target in the same field.
+    /// Entries connected through a shared target in the same relation.
     Clique,
 }
 
@@ -145,12 +145,12 @@ impl FromStr for StructuralEdgeDirection {
     }
 }
 
-/// Error raised when text does not name a structural edge direction.
+/// Error raised when text does not name a structural link direction.
 #[derive(Debug, Error, PartialEq, Eq)]
-#[error("unknown structural edge direction `{0}`; expected to, from, or clique")]
+#[error("unknown structural link direction `{0}`; expected to, from, or clique")]
 pub struct StructuralEdgeDirectionParseError(String);
 
-/// Settings for one configured structural field.
+/// Settings for one configured link relation.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 // sirno:witness:structural-edge-policy:begin
@@ -168,14 +168,14 @@ pub struct StructuralFieldSettings {
 // sirno:witness:structural-edge-policy:end
 
 impl StructuralFieldSettings {
-    /// Construct structural field settings from explicit edge policies.
+    /// Construct link relation settings from explicit edge policies.
     pub fn new(
         to: StructuralEdgeSettings, from: StructuralEdgeSettings, clique: StructuralEdgeSettings,
     ) -> Self {
         Self { to, from, clique }
     }
 
-    /// Construct structural field settings from render-only edge flags.
+    /// Construct link relation settings from render-only edge flags.
     pub fn render_only(to: bool, from: bool, clique: bool) -> Self {
         Self::new(
             StructuralEdgeSettings::render_only(to),
@@ -184,7 +184,7 @@ impl StructuralFieldSettings {
         )
     }
 
-    /// Return settings for one structural edge direction.
+    /// Return settings for one structural link direction.
     pub fn edge(&self, direction: StructuralEdgeDirection) -> &StructuralEdgeSettings {
         match direction {
             | StructuralEdgeDirection::To => &self.to,
@@ -198,12 +198,12 @@ fn is_default<T: Default + PartialEq>(value: &T) -> bool {
     value == &T::default()
 }
 
-/// Ordered structural field settings from `Sirno.toml`.
+/// Ordered link relation settings from `Sirno.toml`.
 pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
 
-/// Configured structural fields.
+/// Configured link relations.
 ///
-/// Each key names a metadata field that Sirno should treat as structural.
+/// Each key names a metadata relation that Sirno should treat as structural.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 // sirno:witness:structural-edge-policy:begin
@@ -213,7 +213,7 @@ pub struct StructuralSettings {
 // sirno:witness:structural-edge-policy:end
 
 impl StructuralSettings {
-    /// Construct structural settings from explicit field settings.
+    /// Construct structural settings from explicit relation settings.
     pub fn from_fields(
         fields: impl IntoIterator<Item = (impl Into<String>, StructuralFieldSettings)>,
     ) -> Self {
@@ -222,17 +222,17 @@ impl StructuralSettings {
         }
     }
 
-    /// Iterate configured fields in user-authored order.
+    /// Iterate configured relations in user-authored order.
     pub fn fields(&self) -> impl Iterator<Item = (&str, &StructuralFieldSettings)> {
         self.fields.iter().map(|(field, settings)| (field.as_str(), settings))
     }
 
-    /// Return true when a metadata field is configured as structural.
+    /// Return true when a metadata relation is configured as structural.
     pub fn contains_field(&self, field: &str) -> bool {
         self.fields.contains_key(field)
     }
 
-    /// Rename one configured structural field.
+    /// Rename one configured link relation.
     ///
     /// The field stays in its original order position.
     pub fn rename_field(&mut self, old_id: &EntryAddress, new_id: &EntryAddress) -> bool {
@@ -254,7 +254,7 @@ impl StructuralSettings {
     }
 }
 
-/// Lake-wide structural edge context.
+/// Lake-wide structural link context.
 ///
 /// Invariant: each clique target maps to itself and every parsed entry that names it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -266,7 +266,7 @@ pub struct StructuralEdgeIndex {
 // sirno:witness:generated-footer:end
 
 impl StructuralEdgeIndex {
-    /// Construct a structural edge index from parsed entries.
+    /// Construct a structural link index from parsed entries.
     // sirno:witness:generated-footer:begin
     pub fn from_entries(entries: &[Entry]) -> Self {
         let mut sources_by_field_target =
@@ -313,7 +313,7 @@ impl StructuralEdgeIndex {
         }
     }
 
-    /// Return target entries for one structural edge direction.
+    /// Return target entries for one structural link direction.
     pub fn edge_targets(
         &self, field: &str, direction: StructuralEdgeDirection, entry: &Entry,
     ) -> BTreeSet<EntryAddress> {

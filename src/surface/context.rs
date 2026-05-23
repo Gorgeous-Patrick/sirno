@@ -928,7 +928,7 @@ impl SurfaceContext {
         self.lake_render_with_override_json(dry, None)
     }
 
-    /// Render Markdown links with temporary JSON structural settings.
+    /// Render Markdown links with temporary JSON structural link settings.
     pub fn lake_render_with_override_json(
         &self, dry: bool, override_json: Option<&str>,
     ) -> Result<RenderResult, CommandError> {

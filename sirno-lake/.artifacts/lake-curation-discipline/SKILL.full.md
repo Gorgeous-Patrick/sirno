@@ -13,7 +13,7 @@ Use this skill to optimize an existing Sirno-managed lake.
 The editor skill responds to a request to change repository material.
 The curator skill is the proactive counterpart.
 It audits entries for focus and framing,
-discovers missing structural edges,
+discovers missing structural links,
 identifies witness gaps and witness drift,
 and acts on the user's approved findings.
 

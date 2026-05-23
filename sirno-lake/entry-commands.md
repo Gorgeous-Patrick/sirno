@@ -14,11 +14,11 @@ Entry commands operate on Markdown entries and their owner-relative artifact tre
 `sirno new` creates one Markdown entry from typed command-line metadata.
 `sirno entry new` is its grouped form.
 The `-d`, `-n`, and `-b` flags are short forms for `--desc`, `--name`, and `--body`.
-The `--structural FIELD=ENTRY_ADDRESS` option adds configured structural metadata targets.
+The `--structural FIELD=ENTRY_ADDRESS` option adds configured structural link targets.
 It refuses to overwrite an existing entry file.
 
 `sirno entry rename OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS` renames one entry address.
-It updates structural metadata targets, existing generated footer regions,
+It updates structural link targets, existing generated footer regions,
 and configured witness sentinels that reference `OLD_ENTRY_ADDRESS`.
 `sirno entry mv` and `sirno entry move` are aliases for `sirno entry rename`.
 `sirno move entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`
@@ -73,7 +73,7 @@ Structural filters use `--has FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 Distinct fields narrow results.
 Same-field target filters and state filters are alternatives.
-The `--columns` option selects built-in output columns and configured structural fields.
+The `--columns` option selects built-in output columns and configured link relations.
 When omitted,
 query selects the default `id` and `name` columns.
 When present with no value,

@@ -31,7 +31,7 @@ The names are readable by humans, stable for tools,
 and small enough for agents to inspect without carrying the whole project in context.
 
 Sirno maintains structure:
-*entry* ids, metadata fields, *structural fields*, *generated footers*,
+*entry* ids, metadata fields, *structural links*, *generated footers*,
 storage conventions, and *witness* lookup.
 People, agents, and other tools still judge design quality and semantic truth.
 

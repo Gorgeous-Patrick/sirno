@@ -1169,7 +1169,7 @@ Body.
             "\
 ---
 name: Belongs
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.

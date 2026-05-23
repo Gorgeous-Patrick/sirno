@@ -744,7 +744,7 @@ structural-inhabitance = false
     assert!(fix.ok);
     assert!(fix.changed);
     assert!(check.ok);
-    assert!(source.contains("# Require each configured structural field"));
+    assert!(source.contains("# Require each configured link relation"));
     assert!(source.contains("structural-inhabitance = false"));
     assert!(!source.contains("# Require generated footers"));
     assert!(!source.contains("render ="));
@@ -1106,7 +1106,7 @@ Body.
         "\
 ---
 name: Belongs
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -1221,7 +1221,7 @@ Body.
         "\
 ---
 name: Belongs
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -1269,7 +1269,7 @@ Changed body.
     assert_eq!(status.commit.state, StatusCommitState::Blocked);
     assert_eq!(status.commit.blockers, vec![StatusCommitBlocker::Tide]);
     assert!(output.contains("(3 entries)"));
-    assert!(output.contains("structure: 1 configured field"));
+    assert!(output.contains("structure: 1 configured relation"));
     assert!(output.contains("lake check: ok (review; render links checked)"));
     assert!(output.contains("tide: 1 open workitem in 1 wave, 1 review entry"));
     assert!(output.contains("commit: blocked; run `sirno tide status`"));
@@ -2550,7 +2550,7 @@ fn query_result_rows_include_structural_columns() {
         "\
 ---
 name: Topic
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -3654,7 +3654,7 @@ Body.
         "\
 ---
 name: Area
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -3724,7 +3724,7 @@ Body.
         "\
 ---
 name: Refines
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -4175,7 +4175,7 @@ Body.
         "\
 ---
 name: Belongs
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.

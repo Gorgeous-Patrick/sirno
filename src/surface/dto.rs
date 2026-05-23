@@ -123,7 +123,7 @@ impl QueryColumns {
         self.columns.iter().map(|column| column.label().to_owned()).collect()
     }
 
-    /// Return selected structural field columns.
+    /// Return selected structural link relation columns.
     pub(crate) fn structural_fields(&self) -> impl Iterator<Item = &str> {
         self.columns.iter().filter_map(QueryColumn::structural_field)
     }
@@ -179,9 +179,9 @@ pub enum QueryColumn {
     Path,
     /// Short entry desc.
     Desc,
-    /// Configured structural metadata field.
+    /// Configured structural link relation.
     Structural {
-        /// Metadata field to read from each entry.
+        /// Metadata relation to read from each entry.
         field: String,
     },
 }
@@ -213,7 +213,7 @@ impl QueryColumn {
         }
     }
 
-    /// Return the structural field name when this column selects structural metadata.
+    /// Return the link relation name when this column selects structural metadata.
     pub fn structural_field(&self) -> Option<&str> {
         match self {
             | Self::Structural { field } => Some(field),
@@ -229,10 +229,10 @@ impl QueryColumn {
 pub enum QueryValue {
     /// Scalar entry field value.
     Text(String),
-    /// Structural targets for one configured field.
+    /// Structural link targets for one configured relation.
     ///
-    /// `None` means the field is absent.
-    /// `Some([])` means the field is present and has no targets.
+    /// `None` means the relation is absent.
+    /// `Some([])` means the relation is present and has no targets.
     Targets(Option<Vec<String>>),
 }
 // sirno:witness:query:end
@@ -243,7 +243,7 @@ impl QueryValue {
         Self::Text(value.into())
     }
 
-    /// Build a structural target query value.
+    /// Build a structural link target query value.
     pub fn targets(targets: Option<&[EntryAddress]>) -> Self {
         Self::Targets(
             targets.map(|targets| targets.iter().map(ToString::to_string).collect::<Vec<_>>()),
@@ -277,12 +277,12 @@ pub enum QueryColumnsParseError {
     EmptyColumn,
 }
 
-/// Structural query filter parsed from `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
+/// Structural link query filter parsed from `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StructuralFilter {
-    /// Structural field name.
+    /// Link relation name.
     pub field: String,
-    /// Accepted target entry addresses for this field.
+    /// Accepted target entry addresses for this relation.
     pub targets: Vec<EntryAddress>,
 }
 
@@ -316,14 +316,14 @@ fn parse_structural_filter_targets(
     Ok(targets)
 }
 
-/// Error raised while parsing one structural query filter.
+/// Error raised while parsing one structural link query filter.
 #[derive(Debug, Error)]
 pub enum StructuralFilterParseError {
     /// The argument does not contain the field-target separator.
     #[error("expected FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]")]
     MissingEquals,
-    /// The structural field name is empty.
-    #[error("structural field name must not be empty")]
+    /// The link relation name is empty.
+    #[error("link relation name must not be empty")]
     EmptyField,
     /// The target entry address list contains a separator without a target.
     #[error("structural filter contains an empty target")]
@@ -333,12 +333,12 @@ pub enum StructuralFilterParseError {
     EntryAddress(#[from] EntryAddressError),
 }
 
-/// Structural query state filter parsed from `FIELD=STATE`.
+/// Structural link state filter parsed from `FIELD=STATE`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StructuralStateFilter {
-    /// Structural field name.
+    /// Link relation name.
     pub field: String,
-    /// Accepted state for this field.
+    /// Accepted state for this relation.
     pub state: StructuralFieldState,
 }
 
@@ -357,15 +357,15 @@ impl FromStr for StructuralStateFilter {
     }
 }
 
-/// Structural field state matched by `sirno query --is`.
+/// Structural link state matched by `sirno query --is`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StructuralFieldState {
-    /// The field is present with any target count.
+    /// The relation is present with any target count.
     Present,
-    /// The field is present with no targets.
+    /// The relation is present with no targets.
     Empty,
-    /// The field is absent.
+    /// The relation is absent.
     Missing,
 }
 
@@ -398,11 +398,11 @@ pub enum StructuralStateFilterParseError {
     /// The argument does not contain the field-state separator.
     #[error("expected FIELD=present, FIELD=empty, or FIELD=missing")]
     MissingEquals,
-    /// The structural field name is empty.
-    #[error("structural field name must not be empty")]
+    /// The link relation name is empty.
+    #[error("link relation name must not be empty")]
     EmptyField,
-    /// The structural field state is not recognized.
-    #[error("unknown structural field state `{0}`; expected present, empty, or missing")]
+    /// The structural link state is not recognized.
+    #[error("unknown structural link state `{0}`; expected present, empty, or missing")]
     UnknownState(String),
 }
 
@@ -413,9 +413,9 @@ pub struct QueryRequest {
     pub terms: Vec<String>,
     /// Exact text terms matched against entry-local text.
     pub exact_terms: Vec<String>,
-    /// Structural target filters.
+    /// Structural link target filters.
     pub has: Vec<StructuralFilter>,
-    /// Structural field state filters.
+    /// Structural link state filters.
     pub is: Vec<StructuralStateFilter>,
     /// Output columns to materialize.
     pub columns: QueryColumnSelection,
@@ -511,10 +511,10 @@ pub struct LakeInitResult {
     pub message: String,
 }
 
-/// Structural metadata target for typed command callers.
+/// Structural link target for typed command callers.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralTarget {
-    /// Structural field name.
+    /// Link relation name.
     pub field: String,
     /// Target entry address.
     pub target: EntryAddress,
@@ -529,7 +529,7 @@ pub struct EntryNewRequest {
     pub name: Option<String>,
     /// Short entry description.
     pub desc: String,
-    /// Structural metadata targets.
+    /// Structural link targets.
     #[serde(default)]
     pub structural: Vec<StructuralTarget>,
     /// Initial Markdown body.
@@ -927,7 +927,7 @@ impl RenderResult {
     }
 }
 
-/// Structured edge policy for one structural field direction.
+/// Structured edge policy for one structural link direction.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralEdgeStatus {
     /// Whether generated footers render this edge direction.
@@ -948,10 +948,10 @@ impl StructuralEdgeStatus {
     }
 }
 
-/// Structural field status in one Sirno config.
+/// Link relation status in one Sirno config.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralFieldStatus {
-    /// Structural field name.
+    /// Link relation name.
     pub field: String,
     /// Outgoing edge settings.
     pub to: StructuralEdgeStatus,
@@ -1082,7 +1082,7 @@ pub struct StatusResult {
     pub frost: Option<StatusFrost>,
     /// Status check policy.
     pub check_policy: StatusCheckPolicy,
-    /// Configured structural field summaries.
+    /// Configured link relation summaries.
     pub structural_fields: Vec<StructuralFieldStatus>,
     /// Tide summary when Frost is configured and the lake can be compared.
     #[serde(skip_serializing_if = "Option::is_none")]

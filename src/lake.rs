@@ -64,9 +64,9 @@ pub struct EntryDirectoryReport {
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
-    /// Check that each configured structural field has a matching entry.
+    /// Check that each configured link relation has a matching entry.
     pub structural_inhabitance: bool,
-    /// Configured structural fields and generated footer settings.
+    /// Configured link relations and generated footer settings.
     pub structural: StructuralSettings,
     /// Lake-root-relative paths ignored by Sirno.
     pub ignore: Vec<PathBuf>,
@@ -566,9 +566,9 @@ impl EntryDirectory {
         self.set_entry_frozen(id, false)
     }
 
-    /// Rename one entry address and every structural metadata reference that names it.
+    /// Rename one entry address and every structural link reference that names it.
     ///
-    /// When the old id is a configured structural field, entry metadata keys are renamed too.
+    /// When the old id is a configured link relation, entry metadata keys are renamed too.
     /// Existing generated-link regions are refreshed after metadata changes.
     /// Prose outside generated-link regions remains user-owned.
     pub fn rename_entry(
@@ -2338,7 +2338,7 @@ mod tests {
                     "\
 ---
 name: {field}
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.
@@ -3195,7 +3195,7 @@ Body.
             "\
 ---
 name: Refines
-desc: A structural field.
+desc: A structural link relation.
 ---
 
 Body.

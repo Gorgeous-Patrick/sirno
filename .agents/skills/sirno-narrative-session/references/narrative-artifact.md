@@ -99,5 +99,5 @@ Name the entries and explain why they appear in that order.
 }
 ```
 
-The script writes structural fields exactly as supplied in `structural`.
+The script writes structural links exactly as supplied in `structural`.
 It refuses to overwrite an existing entry unless `--force` is passed.

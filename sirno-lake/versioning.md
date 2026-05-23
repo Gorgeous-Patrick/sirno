@@ -112,7 +112,7 @@ Versioning is field-level in `eter` and *entry*-level in Sirno.
 Artifact manifests are versioned as fields on their owner *entry* rows.
 Artifact bytes are versioned as sparse files under matching entry-version directories.
 Sirno may expose *entry* history, diffs, and restore operations by reading fields at successive snapshots.
-It presents those results as changes to *entries* and *structural fields*.
+It presents those results as changes to *entries* and *structural links*.
 The lake *entry* schema remains unchanged.
 
 Restoring a version is checkout followed by a later *frost* commit.

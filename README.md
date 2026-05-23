@@ -7,7 +7,7 @@ Sirno is a development harness for project design.
 Its full name is literal: a Semantic Intermediate Representation of Nominal Objects.
 It is *semantic* because entries carry design meaning.
 It is *intermediate* because the *lake* sits between intent and implementation.
-It is a *representation* because entries, structural fields, and witnesses give that meaning form.
+It is a *representation* because entries, structural links, and witnesses give that meaning form.
 It is *nominal* because each design *object* is named first by an entry id.
 
 - *Lake*: a queryable, misty collection of Markdown *entries*.
@@ -47,7 +47,7 @@ Documentation should be able to choose its own form and representation.
 If a program is the best form for expressing an algorithm or even a particular design idea, then so be it.
 
 Sirno keeps project design in a queryable *lake* of small, named Markdown *entries*.
-Each entry has a stable id, structural field edges, and witnesses linking back to code, tests, or assets,
+Each entry has a stable id, structural links, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
 
 <!-- sirno:witness:readme:begin -->
@@ -190,7 +190,7 @@ Explore an existing lake; this repository keeps its current design source in `si
 sirno status                                 # project, tide, and commit readiness
 sirno check --mode review                    # review boundary; dangling refs are errors
 sirno query --columns id,desc                # list entry ids and desc as a table
-sirno query --has category=meta              # filter by structural field target
+sirno query --has category=meta              # filter by structural link target
 sirno witness readme --full                  # show how this README witnesses its own intention
 ```
 

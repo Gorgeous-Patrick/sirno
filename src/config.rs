@@ -69,7 +69,7 @@ pub struct CheckSettings {
     /// Check generated footer freshness.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub render: Option<bool>,
-    /// Check that each configured structural field has a matching entry.
+    /// Check that each configured link relation has a matching entry.
     #[serde(rename = "structural-inhabitance", skip_serializing_if = "Option::is_none")]
     pub structural_inhabitance: Option<bool>,
 }
@@ -80,7 +80,7 @@ impl CheckSettings {
         self.render.unwrap_or(true)
     }
 
-    /// Return whether configured structural fields must have matching entries.
+    /// Return whether configured link relations must have matching entries.
     pub fn structural_inhabitance_enabled(&self) -> bool {
         self.structural_inhabitance.unwrap_or(true)
     }
@@ -460,7 +460,7 @@ impl WitnessSettings {
 /// `witness` controls the delimiter syntax for repository witness blocks.
 /// `check` controls optional structural check families.
 /// `tutorial`, when present, enables tutorial output for recoverable command failures.
-/// `structural` controls structural metadata fields and generated-link footer content.
+/// `structural` controls structural link relations and generated-link footer content.
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -485,7 +485,7 @@ pub struct SirnoConfig {
     /// Optional tutorial output settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tutorial: Option<TutorialSettings>,
-    /// Structural metadata and generated-link settings.
+    /// Structural link metadata and generated-link settings.
     #[serde(default)]
     pub structural: StructuralSettings,
 }
@@ -770,7 +770,7 @@ impl ConfigRenderer {
                 self.push_field(
                     "structural-inhabitance",
                     &structural_inhabitance,
-                    "Require each configured structural field to have a matching entry during checks.",
+                    "Require each configured link relation to have a matching entry during checks.",
                 )?;
             }
             // sirno:witness:project-config-comments:end
@@ -854,9 +854,9 @@ impl ConfigRenderer {
         let mut fields = structural.fields().peekable();
         if fields.peek().is_some() {
             for comment in [
-                "Structural metadata fields.",
-                "Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.",
-                "FIELD must name the lake entry that documents the field and follow normal entry-atom rules.",
+                "Structural link relations.",
+                "Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.",
+                "FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.",
                 "FIELD must be a non-empty single-line metadata key with no comma.",
                 "FIELD cannot be name, desc, meta, or frozen.",
                 "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
@@ -972,11 +972,11 @@ pub enum ConfigError {
     /// A repo member path or glob is not relative to the config directory.
     #[error("repo.members path must be relative to the config directory: {0}")]
     RepoMemberPath(String),
-    /// A structural field name cannot be used as a metadata key.
-    #[error("structural field name must be a non-empty single-line metadata key: {0}")]
+    /// A link relation name cannot be used as a metadata key.
+    #[error("link relation name must be a non-empty single-line metadata key: {0}")]
     StructuralFieldName(String),
-    /// A structural field name is reserved for Sirno-managed metadata.
-    #[error("structural field name is reserved for Sirno metadata: {0}")]
+    /// A link relation name is reserved for Sirno-managed metadata.
+    #[error("link relation name is reserved for Sirno metadata: {0}")]
     ReservedStructuralField(String),
     /// A witness delimiter regex is empty.
     #[error("{field} at index {index} must not be empty")]
@@ -1821,7 +1821,7 @@ delimiters = []
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("render = false"));
-        assert!(source.contains("# Require each configured structural field"));
+        assert!(source.contains("# Require each configured link relation"));
         assert!(source.contains("structural-inhabitance = false"));
         assert!(source.contains("[tutorial]"));
         assert!(source.contains(
@@ -1839,12 +1839,12 @@ delimiters = []
         assert!(source.contains("frost_commit_tide = true"));
         assert!(source.contains("frost_bootstrap_tide = false"));
         assert!(source.contains("[structural]"));
-        assert!(source.contains("# Structural metadata fields."));
+        assert!(source.contains("# Structural link relations."));
         assert!(source.contains(
-            "# Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure."
+            "# Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure."
         ));
         assert!(source.contains(
-            "# FIELD must name the lake entry that documents the field and follow normal entry-atom rules."
+            "# FIELD must name the lake entry that documents the relation and follow normal entry-atom rules."
         ));
         assert!(
             source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
@@ -1864,8 +1864,8 @@ delimiters = []
         assert_before(&source, "[frost]", "[upstreams.core]");
         assert_before(&source, "[upstreams.core]", "[repo]");
         assert_before(&source, "[tutorial]", "[structural]");
-        assert_eq!(source.matches("# Structural metadata fields.").count(), 1);
-        assert_before(&source, "# Structural metadata fields", "[structural.kind]");
+        assert_eq!(source.matches("# Structural link relations.").count(), 1);
+        assert_before(&source, "# Structural link relations", "[structural.kind]");
         assert!(
             source
                 .contains("[structural.kind]\nto = { render = true }\nfrom = { render = true }\n")

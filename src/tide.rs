@@ -1,7 +1,7 @@
 //! Dependency review worklists for lake edits.
 //!
 //! Tide compares the current lake against the latest frost snapshot.
-//! It derives review obligations from configured structural edge policies.
+//! It derives review obligations from configured structural link policies.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -36,9 +36,9 @@ pub enum TideSource {
 pub struct TideWorkitem {
     /// Changed entry that produced the obligation.
     pub ripple: EntryAddress,
-    /// Structural field that produced the obligation.
+    /// Link relation that produced the obligation.
     pub field: String,
-    /// Structural edge direction that produced the obligation.
+    /// Structural link direction that produced the obligation.
     pub direction: StructuralEdgeDirection,
     /// Entry that must be reviewed.
     pub neighbor: EntryAddress,
@@ -105,9 +105,9 @@ impl FromStr for TideWorkitem {
 pub struct TideResolution {
     /// Changed entry that produced the obligation.
     pub ripple: EntryAddress,
-    /// Structural field that produced the obligation.
+    /// Link relation that produced the obligation.
     pub field: String,
-    /// Structural edge direction that produced the obligation.
+    /// Structural link direction that produced the obligation.
     pub direction: StructuralEdgeDirection,
     /// Entry that was reviewed.
     pub neighbor: EntryAddress,
@@ -409,8 +409,8 @@ pub enum TideWorkitemParseError {
     /// The text does not contain exactly four comma-separated tuple fields.
     #[error("expected RIPPLE,FIELD,DIRECTION,NEIGHBOR")]
     TupleShape,
-    /// A structural field cannot be used in a workitem tuple.
-    #[error("structural field must be non-empty and cannot contain comma or line breaks: {0}")]
+    /// A link relation cannot be used in a workitem tuple.
+    #[error("link relation must be non-empty and cannot contain comma or line breaks: {0}")]
     InvalidField(String),
     /// Entry address parsing failed.
     #[error(transparent)]

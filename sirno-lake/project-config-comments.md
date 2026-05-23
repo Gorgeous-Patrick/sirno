@@ -26,14 +26,14 @@ The canonical comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry address.`
 - `Canonical entry-address capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Require each configured structural field to have a matching entry during checks.`
+- `Require each configured link relation to have a matching entry during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`
 - `Show tutorial text when frost commit is blocked by open tide workitems.`
 - `Include first-snapshot bootstrap context in the frost commit tide tutorial.`
-- `Structural metadata fields.`
-- `Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.`
-- `FIELD must name the lake entry that documents the field and follow normal entry-atom rules.`
+- `Structural link relations.`
+- `Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.`
+- `FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.`
 - `FIELD must be a non-empty single-line metadata key with no comma.`
 - `FIELD cannot be name, desc, meta, or frozen.`
 - `Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.`

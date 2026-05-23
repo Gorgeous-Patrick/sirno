@@ -14,7 +14,7 @@ The frostline is the latest frost snapshot.
 The waterline is the current lake.
 
 A *ripple* exists when an *entry* differs between those two states.
-The difference may be a changed name, description, prose body, or structural field.
+The difference may be a changed name, description, prose body, or structural link.
 Added and deleted *entries* are ripples too.
 Generated footer regions are ignored,
 because frost stores canonical metadata and prose rather than rendered navigation.
@@ -29,7 +29,7 @@ The *ripple* names reviewable difference, not semantic judgment.
 Sirno can show what changed and which configured neighbors must be reviewed.
 It does not decide whether the new design is correct.
 
-A *ripple* produces a *wave* of *tide workitems* through configured structural edge policies.
+A *ripple* produces a *wave* of *tide workitems* through configured structural link policies.
 The *tide* is the active worklist created from all current ripples.
 
 ---

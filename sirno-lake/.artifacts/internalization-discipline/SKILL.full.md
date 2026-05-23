@@ -60,7 +60,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 4. Write and connect the entry.
    State the fact directly and keep the body compact.
-   Attach structural fields only when they improve navigation, review, or accountability.
+   Attach link relations only when they improve navigation, review, or accountability.
    When repository evidence already exists,
    add or refine a precise witness block around the smallest stable region that supports the entry.
    Do not add placeholder witnesses.

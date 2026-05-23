@@ -22,18 +22,18 @@ query reads the lake.
 
 The default query mode is vague text query.
 It matches an *entry*'s address, local atom, name, desc, and body.
-It also matches the paths, names, and `desc` values of *entries* named by structural fields.
+It also matches the paths, names, and `desc` values of *entries* named by structural links.
 
 Vague query is for recall.
-A user can search for nearby language without choosing the exact *structural field* first.
+A user can search for nearby language without choosing the exact link relation first.
 Each text term must match somewhere in the expanded *entry* text.
 
 Target filters use `--has FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]`.
 Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 `empty` means the field is present with no targets.
 `missing` means the field is absent.
-Query combines text terms and distinct *structural fields* with all-of logic.
-Inside one structural field,
+Query combines text terms and distinct link relations with all-of logic.
+Inside one relation,
 comma-separated values, repeated `--has` flags, and `--is` states use any-of logic.
 `--has category=concept,meta` means either category.
 `--has category=concept --has refines=interfaces` requires both fields to match.
@@ -44,14 +44,14 @@ Query output is presentation.
 The default output columns are `id` and `name`.
 `sirno query --columns COLUMNS` accepts a comma-separated list of columns.
 The printable built-in columns are `id`, `name`, `path`, and `desc`.
-Configured structural field names are printable columns too.
-Structural columns print target entry addresses in metadata order.
+Configured link relation names are printable columns too.
+Structural link columns print target entry addresses in metadata order.
 When `sirno query --columns` has no value,
 query prints every selectable column name and does not select entries.
 Run query again with `--columns` to select entries.
 `--format json` prints a JSON array of objects with the selected columns;
-structural column values are arrays,
-and missing structural fields are `null`.
+structural link column values are arrays,
+and missing link relations are `null`.
 `--format human` prints the same selected columns as a bordered Unicode table.
 In a terminal, the table detects the available width and wraps cell content.
 When the selected columns cannot fit, Sirno keeps the leftmost columns that fit

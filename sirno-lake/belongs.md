@@ -1,6 +1,6 @@
 ---
 name: Belongs
-desc: A structural field that places an entry in a review neighborhood.
+desc: A structural link relation that places an entry in a review neighborhood.
 category:
   - concept
 belongs:
@@ -33,7 +33,7 @@ Use `refines` when the current *entry* narrows a broader design claim.
 
 Keep `belongs` targets sparse.
 A target should help navigation, review, or accountability.
-A loose browsing tag should not become structural metadata.
+A loose browsing tag should not become structural link metadata.
 
 Generated `belongs` links preserve direct target and source links.
 The active tide policy also uses waterline `to`,

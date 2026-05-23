@@ -59,7 +59,7 @@ Query the active lake with `sirno_entry_query`,
 then read the few candidate entries that govern the request.
 Read frozen entries with the same weight as mutable ones;
 let the freeze mark guide care rather than skipping.
-Follow configured structural fields such as `category`, `belongs`, `prerequisite`, and `refines`.
+Follow configured link relations such as `category`, `belongs`, `prerequisite`, and `refines`.
 Use `sirno_entry_witness` to inspect existing evidence before touching repository material.
 
 Confirm the entries name the work.
@@ -96,7 +96,7 @@ for routine lake, frost, and artifact moves.
 Use manual `Sirno.toml` edits only for schema work or comment maintenance the MCP tools
 cannot express,
 then run deterministic config repair when available.
-Preserve path rules from `Sirno.toml` and structural field meaning from the active project.
+Preserve path rules from `Sirno.toml` and link relation meaning from the active project.
 Add `[repo].members` paths only when they are intended witness surfaces.
 
 Sync public documentation from the lake.

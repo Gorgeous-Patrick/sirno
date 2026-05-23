@@ -105,7 +105,7 @@ Omitting the table or an individual check flag leaves that check enabled.
 `[check].render` controls generated-footer freshness checks.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
-`[check].structural-inhabitance` controls whether checks require each configured structural field
+`[check].structural-inhabitance` controls whether checks require each configured link relation
 to name an existing *entry*.
 When a check flag is present,
 the config UI can restore that flag's canonical comment.
@@ -120,12 +120,13 @@ Sirno shows enabled tutorials after matching recoverable command failures.
 `[tutorial].frost_bootstrap_tide` adds first-snapshot context to that tutorial.
 Removing the table silences all tutorial text.
 
-`[structural]` controls which metadata fields are treated as structural.
-Each structural field is written as a `[structural.FIELD]` subtable.
-The field name should also name the *entry* that documents that structural field
+`[structural]` controls which metadata fields define structural link relations.
+Each link relation is written as a `[structural.FIELD]` subtable.
+The field name is the relation name.
+It should also name the *entry* that documents that relation
 and follow normal *entry atom* rules.
 When `[check].structural-inhabitance` is enabled,
-checks report configured structural fields without matching *entries*.
+checks report configured link relations without matching *entries*.
 It must be a non-empty single-line metadata key,
 must not contain a comma,
 and must not be `name`, `desc`, or `frozen`.
@@ -139,7 +140,7 @@ Absent values are false.
 
 `to` links from the *entry* to metadata targets.
 `from` links from the *entry* to *entries* that name it as a metadata target.
-`clique` adds separate clique-derived sections through shared targets in that field.
+`clique` adds separate clique-derived sections through shared targets in that relation.
 
 `render` controls generated footer output.
 `ripple.lake` and `ripple.frost` control which edge directions produce *tide* workitems.

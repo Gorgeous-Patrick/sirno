@@ -19,7 +19,7 @@ so rendered navigation never counts as a change.
 The remaining canonical metadata and prose are what the waterline contributes.
 
 The waterline is also the live side of *wave* derivation.
-When a configured structural edge enables `ripple.lake`,
+When a configured structural link enables `ripple.lake`,
 Sirno reads the changed *entry*'s neighbors from the waterline
 and adds them to the *tide*.
 These are the neighbors that exist *after* the edit,

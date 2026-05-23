@@ -127,14 +127,14 @@ impl Entry {
     }
 }
 
-/// Ordered structural metadata fields for one entry.
+/// Ordered structural link metadata for one entry.
 pub type EntryStructuralFields = IndexMap<String, Vec<EntryAddress>>;
 
 /// Metadata for one Sirno entry.
 ///
 /// Invariant: `name` and `desc` are single-line plain strings.
 /// `meta` carries Sirno-managed optional metadata.
-/// Structural fields map metadata field names to entry-path targets.
+/// Structural links map relation names to entry-path targets.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryMetadata {
     /// Human-readable entry name.
@@ -144,16 +144,16 @@ pub struct EntryMetadata {
     /// Sirno-managed metadata fields.
     pub meta: EntryMeta,
     // sirno:witness:structural:begin
-    /// Structural metadata fields keyed by their Markdown metadata field name.
+    /// Structural link targets keyed by their Markdown metadata field name.
     ///
-    /// Field order follows the user-authored metadata order and is preserved when entries move
+    /// Relation order follows the user-authored metadata order and is preserved when entries move
     /// through other storage forms.
     pub structural: EntryStructuralFields,
     // sirno:witness:structural:end
 }
 
 impl EntryMetadata {
-    /// Construct metadata with required fields and no structural field values.
+    /// Construct metadata with required fields and no structural link values.
     // sirno:witness:metadata:begin
     pub fn new(name: impl Into<String>, desc: impl Into<String>) -> Result<Self, EntryParseError> {
         let name = name.into();
@@ -208,7 +208,7 @@ impl EntryMetadata {
     }
     // sirno:witness:metadata:end
 
-    /// Returns every entry address mentioned by structural metadata.
+    /// Returns every entry address mentioned by structural links.
     // sirno:witness:metadata:begin
     pub fn structural_targets(&self) -> impl Iterator<Item = (&str, &EntryAddress)> {
         self.structural
@@ -217,17 +217,17 @@ impl EntryMetadata {
     }
     // sirno:witness:metadata:end
 
-    /// Return structural field names and their targets in user-authored order.
+    /// Return link relation names and their targets in user-authored order.
     pub fn structural_fields(&self) -> impl Iterator<Item = (&str, &[EntryAddress])> {
         self.structural.iter().map(|(field, targets)| (field.as_str(), targets.as_slice()))
     }
 
-    /// Return targets for one structural field.
+    /// Return targets for one link relation.
     pub fn structural_targets_for(&self, field: &str) -> &[EntryAddress] {
         self.structural.get(field).map(Vec::as_slice).unwrap_or_default()
     }
 
-    /// Return targets for one structural field while preserving field presence.
+    /// Return targets for one link relation while preserving field presence.
     ///
     /// `None` means the field is absent.
     /// `Some([])` means the field is present and has no targets.
@@ -235,14 +235,14 @@ impl EntryMetadata {
         self.structural.get(field).map(Vec::as_slice)
     }
 
-    /// Return a mutable target list for one structural field.
+    /// Return a mutable target list for one link relation.
     pub fn structural_targets_for_mut(
         &mut self, field: impl Into<String>,
     ) -> &mut Vec<EntryAddress> {
         self.structural.entry(field.into()).or_default()
     }
 
-    /// Set the targets for one structural field.
+    /// Set the targets for one link relation.
     ///
     /// An empty target list records a present empty field.
     pub fn set_structural_targets(
@@ -251,14 +251,14 @@ impl EntryMetadata {
         self.structural.insert(field.into(), targets.into_iter().collect::<Vec<_>>());
     }
 
-    /// Add one target to one structural field.
+    /// Add one target to one link relation.
     pub fn push_structural_target(
         &mut self, field: impl Into<String>, target: impl Into<EntryAddress>,
     ) {
         self.structural_targets_for_mut(field).push(target.into());
     }
 
-    /// Rename every structural metadata target that matches `old_id`.
+    /// Rename every structural link target that matches `old_id`.
     pub fn rename_structural_target(
         &mut self, old_id: &EntryAddress, new_id: &EntryAddress,
     ) -> bool {
@@ -274,7 +274,7 @@ impl EntryMetadata {
         changed
     }
 
-    /// Rename one structural metadata field.
+    /// Rename one structural link relation.
     ///
     /// The field stays in its original order position.
     pub fn rename_structural_field(
@@ -703,16 +703,16 @@ pub enum EntryParseError {
     /// A string field is not a single-line plain string.
     #[error("metadata field `{0}` must be a single-line plain string")]
     FieldMustBePlainString(&'static str),
-    /// A structural field is not a YAML list.
+    /// A structural link relation is not a YAML list.
     #[error("metadata field `{0}` must be a list")]
     FieldMustBeList(String),
     /// A structural list item is not a string.
     #[error("items in metadata field `{0}` must be strings")]
     ListItemMustBeString(String),
-    /// A structural field item is not a valid entry address.
+    /// A structural link target is not a valid entry address.
     #[error("metadata field `{field}` contains invalid entry address `{value}`")]
     InvalidStructuralId {
-        /// Structural field containing the invalid path.
+        /// Link relation containing the invalid path.
         field: String,
         /// Invalid raw path.
         value: String,
@@ -793,7 +793,7 @@ Body.
     }
 
     #[test]
-    fn rejects_scalar_structural_field() {
+    fn rejects_scalar_structural_link_relation() {
         let source = "\
 ---
 name: Bad
@@ -807,11 +807,11 @@ topic: concept
     }
 
     #[test]
-    fn parses_extra_list_metadata_as_structural_field() {
+    fn parses_extra_list_metadata_as_structural_link_relation() {
         let source = "\
 ---
 name: Evidence
-desc: Metadata with a project-defined structural field.
+desc: Metadata with a project-defined structural link relation.
 witness:
   - repository-evidence
 ---
@@ -826,11 +826,11 @@ witness:
     }
 
     #[test]
-    fn preserves_structural_field_order_when_rendering() {
+    fn preserves_structural_link_relation_order_when_rendering() {
         let source = "\
 ---
 name: Ordered
-desc: Metadata with user-authored structural field order.
+desc: Metadata with user-authored structural link relation order.
 zeta:
   - concept
 alpha:
@@ -849,11 +849,11 @@ Body.
     }
 
     #[test]
-    fn preserves_present_empty_structural_field_when_rendering() {
+    fn preserves_present_empty_structural_link_relation_when_rendering() {
         let source = "\
 ---
 name: Empty Field
-desc: Metadata with a present empty structural field.
+desc: Metadata with a present empty structural link relation.
 topic: []
 ---
 

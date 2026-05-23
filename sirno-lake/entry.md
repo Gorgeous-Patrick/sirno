@@ -32,7 +32,7 @@ so the final `.md` filename stays inside common component limits.
 Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
-The active structural field set is configured in `Sirno.toml`.
+The active structural link relation set is configured in `Sirno.toml`.
 The `meta.frozen` field stores protection reasons such as `reviewed` and `managed`.
 `sirno freeze ENTRY_ADDRESS` adds `reviewed`.
 Crystallization adds `managed`.
@@ -54,14 +54,14 @@ the body should explain the durable design fact rather than narrating the most r
 The metadata block carries structure that tools must read exactly.
 The body carries judgment, examples, and explanation.
 This split lets Sirno stay simple.
-It can validate addresses and *structural fields*
+It can validate addresses and structural links
 without pretending to understand the full meaning of the prose.
 
 Good *entries* are compact but not cryptic.
 They avoid repeating every repository artifact,
 but they also give enough context that a reader can follow a query result without opening ten files.
 If a concept depends on several other concepts,
-the *structural fields* should carry the navigational structure,
+the structural links should carry the navigational structure,
 and the prose should explain the local meaning in ordinary language.
 
 When an *entry* has *repository* evidence,

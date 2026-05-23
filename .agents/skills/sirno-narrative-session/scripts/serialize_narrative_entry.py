@@ -45,14 +45,14 @@ def structural_fields(data: dict[str, Any]) -> dict[str, list[str]]:
     if value is None:
         return {}
     if not isinstance(value, dict):
-        fail("structural must be an object from field names to entry-id lists")
+        fail("structural must be an object from link relation names to entry-id lists")
 
     fields: dict[str, list[str]] = {}
     for field, targets in value.items():
         if not isinstance(field, str) or not FIELD_RE.match(field):
-            fail("structural field names must be ASCII identifiers")
+            fail("link relation names must be ASCII identifiers")
         if field in RESERVED_FIELDS:
-            fail(f"{field} is reserved metadata, not a structural field")
+            fail(f"{field} is reserved metadata, not a link relation")
         fields[field] = string_list_value(targets, f"structural.{field}")
     return fields
 

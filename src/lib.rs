@@ -2,7 +2,7 @@
 //!
 //! Sirno keeps design as named Markdown entries with exact metadata.
 //! The public model follows the repository design:
-//! entries are nominal objects, structural fields are explicit,
+//! entries are nominal objects, structural links are explicit,
 //! and repository witnesses are discovered by entry address.
 
 pub mod artifact;

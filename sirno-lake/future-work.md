@@ -29,7 +29,7 @@ and version selection without making entry naming carry all dependency policy.
 
 Future work should remain explicit without becoming speculative architecture.
 The current design is useful because its core is small:
-*entries*, metadata, structural fields, generated footers, forms, *transforms*, checks, and *witnesses*.
+*entries*, metadata, structural links, generated footers, forms, *transforms*, checks, and *witnesses*.
 New features should preserve that clarity.
 
 The `locked` field is one example.

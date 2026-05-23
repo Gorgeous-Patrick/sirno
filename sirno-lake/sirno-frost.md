@@ -23,7 +23,7 @@ This *entry* is also the review front door for the freezing subsystem.
 `entry-freeze` protects one current frost-backed lake *entry* from edits,
 `tide` is the frost-based review worklist,
 `wave` is the workitem set produced by one *ripple*,
-and `structural-edge-policy` chooses how structural edges feed rendering and the tide.
+and `structural-edge-policy` chooses how structural links feed rendering and the tide.
 A change to the snapshot path, the lock file, artifacts, *entry* protection, or the review worklist
 usually constrains the others, so these parts are reviewed together here.
 
@@ -40,7 +40,7 @@ For example, `lake/core/design.md` is stored as `core.design`.
 An *entry*'s presence is represented through the `eter` lifecycle field.
 This keeps versioning in the storage layer
 while preserving the lake *entry* schema.
-Structural field order stays in Sirno's typed structural metadata,
+Structural link relation order stays in Sirno's typed structural metadata,
 so a frost round trip renders the same order back to Markdown.
 The artifact manifest stores owner-relative paths for one *entry* version.
 Changed artifact bytes are stored beside the entry's Markdown snapshot

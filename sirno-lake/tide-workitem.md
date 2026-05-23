@@ -14,7 +14,7 @@ Its identity is the tuple `(ripple, field, direction, neighbor)`.
 Sirno does not create a separate workitem id.
 
 `ripple` names the changed *entry* that created the obligation.
-`field` names the configured structural field.
+`field` names the configured link relation.
 `direction` is `to`, `from`, or `clique`.
 `neighbor` names the *entry* that must be reviewed.
 
@@ -24,7 +24,7 @@ such as `lake`, `frost`, or both.
 The source list explains why the obligation exists without changing its identity.
 
 Text commands may name a full workitem as comma-separated fields.
-Entry addresss and structural field names cannot contain commas,
+Entry addresss and link relation names cannot contain commas,
 so `ripple,field,direction,neighbor` is unambiguous.
 JSON input can carry the same tuple when a caller needs structured command input.
 

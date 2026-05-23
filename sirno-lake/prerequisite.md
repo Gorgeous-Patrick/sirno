@@ -1,6 +1,6 @@
 ---
 name: Prerequisite
-desc: A structural field that defines a knowledge dependency between entries.
+desc: A structural link relation that defines a knowledge dependency between entries.
 category:
   - concept
 belongs:

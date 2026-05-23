@@ -204,7 +204,7 @@ enum TopLevelEntryCommand {
         /// Short entry desc.
         #[arg(short = 'd', long)]
         desc: String,
-        /// Structural metadata target as FIELD=ENTRY_ADDRESS.
+        /// Structural link target as FIELD=ENTRY_ADDRESS.
         #[arg(long = "structural", value_name = "FIELD=ENTRY_ADDRESS")]
         structural: Vec<StructuralPredicate>,
         /// Initial Markdown body.
@@ -245,24 +245,24 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:begin
     #[command(visible_alias = "q")]
     Query {
-        /// Vague text terms matched against entries and structural target summaries.
+        /// Vague text terms matched against entries and structural link target summaries.
         terms: Vec<String>,
         /// Exact text term matched against id, name, desc, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
-        /// Structural target filter as FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS].
+        /// Structural link target filter as FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS].
         ///
-        /// Different fields narrow results.
-        /// Comma-separated values and repeated same-field filters are alternatives.
+        /// Different relations narrow results.
+        /// Comma-separated values and repeated same-relation filters are alternatives.
         #[arg(long = "has", value_name = "FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]")]
         has: Vec<StructuralFilter>,
-        /// Structural field state filter as FIELD=present, FIELD=empty, or FIELD=missing.
+        /// Structural link state filter as FIELD=present, FIELD=empty, or FIELD=missing.
         ///
-        /// Empty means the field is present with no targets.
-        /// Same-field target filters and state filters are alternatives.
+        /// Empty means the relation is present with no targets.
+        /// Same-relation target filters and state filters are alternatives.
         #[arg(long = "is", value_name = "FIELD=STATE")]
         is: Vec<StructuralStateFilter>,
-        /// Optional comma-separated output columns: id, name, path, desc, or configured structural fields.
+        /// Optional comma-separated output columns: id, name, path, desc, or configured link relations.
         #[arg(long = "columns", alias = "column", value_name = "COLUMNS", num_args = 0..=1)]
         columns: Option<Option<QueryColumns>>,
         /// Output format.
@@ -336,7 +336,7 @@ enum TopLevelLakeCommand {
         /// Report rendered-footer changes without writing files.
         #[arg(short = 'n', long, visible_alias = "dry-run")]
         dry: bool,
-        /// JSON structural render settings used instead of the configured settings for this run.
+        /// JSON structural link render settings used instead of the configured settings for this run.
         #[arg(long = "override-json", value_name = "JSON")]
         override_json: Option<String>,
         /// Render command.
@@ -423,7 +423,7 @@ enum PathOutputFormat {
 }
 // sirno:witness:entry-commands:end
 
-/// Structural metadata predicate parsed from `FIELD=ENTRY_ADDRESS`.
+/// Structural link predicate parsed from `FIELD=ENTRY_ADDRESS`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct StructuralPredicate {
     field: String,
@@ -445,14 +445,14 @@ impl FromStr for StructuralPredicate {
     }
 }
 
-/// Error raised while parsing one structural `FIELD=ENTRY_ADDRESS` argument.
+/// Error raised while parsing one structural link `FIELD=ENTRY_ADDRESS` argument.
 #[derive(Debug, Error)]
 enum StructuralPredicateParseError {
     /// The argument does not contain the field-target separator.
     #[error("expected FIELD=ENTRY_ADDRESS")]
     MissingEquals,
-    /// The structural field name is empty.
-    #[error("structural field name must not be empty")]
+    /// The link relation name is empty.
+    #[error("link relation name must not be empty")]
     EmptyField,
     /// The target entry address is invalid.
     #[error(transparent)]

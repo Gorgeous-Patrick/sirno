@@ -1,6 +1,6 @@
 ---
 name: Refines
-desc: A structural field from a specific entry to the broader entries it makes concrete.
+desc: A structural link relation from a specific entry to the broader entries it makes concrete.
 category:
   - concept
 belongs:

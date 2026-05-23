@@ -13,7 +13,7 @@ A *wave* is the set of *tide workitems* produced by one *ripple*.
 It is the local review surface around a single changed *entry*.
 
 Sirno builds a wave by comparing one ripple entry across the frostline and waterline,
-then applying the configured structural edge policies.
+then applying the configured structural link policies.
 Each enabled edge direction can add neighbors from the waterline,
 the frostline,
 or both.

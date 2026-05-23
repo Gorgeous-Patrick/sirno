@@ -14,10 +14,10 @@ and generated footer state.
 
 `sirno status` and `sirno st` summarize the configured project as an operational dashboard.
 Status reports the config path, lake path, entry count, optional typed frost state,
-structural field count, review-mode lake check, active tide summary,
+structural link relation count, review-mode lake check, active tide summary,
 and frost commit readiness.
 CLI status keeps structural policy collapsed.
-MCP status returns the full typed structural edge policy.
+MCP status returns the full typed structural link policy.
 
 `sirno init` opens an interactive setup flow.
 It asks which setup parts to run, asks for default paths when no path flag supplies them,
@@ -93,7 +93,7 @@ Render commands print changed paths or blocking diagnostics before their summary
 
 `sirno render --override-json JSON` uses JSON structural render settings for that run,
 instead of the configured settings.
-The JSON uses structural field and edge names,
+The JSON uses link relation and edge names,
 such as `{"belongs":{"to":{"render":true}}}`.
 It does not write `Sirno.toml`.
 `sirno render delete` removes generated footer regions.

@@ -40,9 +40,9 @@ Sirno keeps its metadata vocabulary small.
 `prerequisite` points to the *entries* a reader should understand first.
 `refines` connects a local *entry* back to the broader *entry* it makes concrete.
 These recommended fields form this repository's structural graph.
-Other Sirno projects may configure a different structural field set.
+Other Sirno projects may configure a different structural link relation set.
 Repository *witness* status is discovered through `sirno witness ENTRY_ADDRESS --full`.
-The *structural fields* are explicit metadata,
+The *structural links* are explicit metadata,
 so tools can query them without pretending to understand the whole design semantically.
 
 The *lake* is not only a glossary.
@@ -80,7 +80,7 @@ This repository now treats `sirno-lake/` as the design source.
 The introduction you are reading is the first route through this *lake*.
 The `methodology` *entry* is the compact working guide for acting inside this *lake*.
 The detailed design lives in the *entries* themselves:
-*forms*, *structural fields*, *transforms*, storage, checks, *witnesses*, and *generated footers*.
+*forms*, *structural links*, *transforms*, storage, checks, *witnesses*, and *generated footers*.
 Read this *entry* first,
 then follow `belongs`, `prerequisite`, `refines`, and *witnesses*
 to the local design you need.

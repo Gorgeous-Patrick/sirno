@@ -1,6 +1,6 @@
 ---
-name: Structural Check
-desc: Validation of entry shape, structural targets, footers, and witnesses.
+name: Structural Link Check
+desc: Validation of entry shape, structural link targets, footers, and witnesses.
 category:
   - concept
 belongs:
@@ -17,7 +17,7 @@ Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
-Each configured structural field must also name an existing *entry*.
+Each configured link relation must also name an existing *entry*.
 That structural-inhabitance check is controlled by `[check].structural-inhabitance`
 and is enabled when the flag or the whole `[check]` table is absent.
 Category metadata also has a semantic target check.
@@ -33,11 +33,11 @@ Sentinel shape is always checked.
 Freshness is controlled by `[check].render`,
 which is enabled by default.
 
-During editing, dangling structural ids may warn.
+During editing, dangling structural link targets may warn.
 At an explicit review boundary, dangling references are errors.
 List-valued metadata fields that are absent from `[structural]` always warn.
-Configured structural fields that name missing *entries* follow the same edit warning
-and review error boundary as dangling structural ids.
+Configured link relations that name missing *entries* follow the same edit warning
+and review error boundary as dangling structural link targets.
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
@@ -55,16 +55,16 @@ Files may use LF or CRLF line endings.
 Mixed LF and CRLF line endings warn,
 because a file should keep one line-ending style even when Sirno can still parse it.
 Generated footer sentinels must be well formed.
-Malformed structural values are errors because tools cannot safely infer target ids from them.
-Unconfigured structural fields are warnings
+Malformed structural link values are errors because tools cannot safely infer target ids from them.
+Unconfigured structural link relations are warnings
 because the *entry* names structure the project config does not enable.
 
 Metadata target checks keep the graph navigable.
-If an *entry* names a target through configured structural metadata,
+If an *entry* names a target through configured structural link metadata,
 that target should exist by the time the *lake* is reviewed.
-If `Sirno.toml` configures a structural field,
-the field name should also exist as the *entry* that documents that field.
-`[check].structural-inhabitance` controls that configured-field entry check.
+If `Sirno.toml` configures a link relation,
+the relation name should also exist as the *entry* that documents that relation.
+`[check].structural-inhabitance` controls that configured-relation entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
 

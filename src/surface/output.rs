@@ -251,7 +251,7 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
     output.push_str(&format!(
         "structure: {} configured {}\n",
         result.structural_fields.len(),
-        plural(result.structural_fields.len(), "field", "fields")
+        plural(result.structural_fields.len(), "relation", "relations")
     ));
     let render =
         if result.check_policy.render { "render links checked" } else { "render links skipped" };

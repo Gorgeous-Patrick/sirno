@@ -24,12 +24,12 @@ The frost layer accepts reviewed entries only while their committed form still m
 `managed` means crystallization owns the entry content.
 An entry may carry both reasons.
 
-Configured structural fields are optional.
+Configured structural link relations are optional.
 This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
 They are always lists when present,
 and their values are *entry addresses*.
 An empty list is a present empty field.
-Their field order is user-authored metadata.
+Their relation order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 
 Operational structure is formed only from metadata.
@@ -39,12 +39,12 @@ but they do not define Sirno structure.
 The metadata block should be small and stable.
 It is the part of an *entry* that tools must read without interpretation.
 That is why required fields are plain strings,
-and structural fields are lists of entry addresses.
+and structural links are lists of entry addresses.
 
 The body can explain nuance,
 but the metadata must not require prose parsing.
 If a tool needs to know that one *entry* depends on or refines another,
-the configured structural metadata must say so.
+the configured structural link metadata must say so.
 If an agent needs to inspect *repository* evidence for an *entry*,
 it should use the agent-facing MCP tool.
 If a human needs the same evidence,
@@ -65,7 +65,8 @@ category:
 ```
 
 The schema keeps required scalar fields small.
-New list-valued metadata can become structural when `[structural.FIELD]` configures that field.
+New list-valued metadata can become a structural link relation
+when `[structural.FIELD]` configures that field.
 Unconfigured list-valued metadata fields remain visible as check warnings.
 
 ---

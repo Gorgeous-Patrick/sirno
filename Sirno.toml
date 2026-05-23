@@ -24,9 +24,9 @@ begin = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):b
 end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end[ \t]*-->'
 
 [structural]
-# Structural metadata fields.
-# Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.
-# FIELD must name the lake entry that documents the field and follow normal entry-atom rules.
+# Structural link relations.
+# Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.
+# FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.
 # FIELD must be a non-empty single-line metadata key with no comma.
 # FIELD cannot be name, desc, meta, or frozen.
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.

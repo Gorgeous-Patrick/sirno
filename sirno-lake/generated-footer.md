@@ -32,9 +32,9 @@ The *generated footer* is an interoperability layer.
 Some editors and documentation tools navigate Markdown links more naturally than metadata fields.
 Sirno can project selected fields into links so those tools can participate in the *lake*.
 
-The generated body is grouped by configured *structural field*.
+The generated body is grouped by configured link relation.
 Each group enabled with `render = true` appears in the region.
-Within one field,
+Within one relation,
 groups render in `to`, `from`, then `clique` order.
 Each group is a top-level Markdown list item,
 such as `- category (from):`, `- belongs (to):`, or `- belongs (clique):`.
@@ -50,7 +50,7 @@ A *frost* commit removes the *generated footer* before writing the *entry* snaps
 The frost layer keeps canonical metadata and prose,
 not navigation projections.
 
-The `[structural]` edge policy controls which *structural fields* appear.
+The `[structural]` edge policy controls which link relations appear.
 
 `sirno check` reports stale *generated footer* regions when render checking is enabled.
 `sirno render` creates or replaces *generated footer* regions.

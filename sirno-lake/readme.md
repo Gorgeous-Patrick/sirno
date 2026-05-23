@@ -24,7 +24,7 @@ It then reads the full name literally,
 glossing each word with an `It is X because` clause:
 *semantic* because entries carry design meaning,
 *intermediate* because the *lake* sits between intent and implementation,
-*representation* because entries, structural fields, and *witnesses* give that meaning form,
+*representation* because entries, structural links, and *witnesses* give that meaning form,
 and *nominal* because each design object is named first by an *entry* id.
 
 A short feature list follows, each item led by a Sirno term:
@@ -48,7 +48,7 @@ so the reader meets the idea before the picture.
 
 A `TL;DR` follows the mascot.
 Its first paragraph compresses the project model into one breath:
-a queryable *lake* of small, named *entries* with stable ids, structural field edges,
+a queryable *lake* of small, named *entries* with stable ids, structural links,
 and *witnesses* back to *repository* artifacts.
 That paragraph stays outside the witness markers
 because it restates the design rather than asserting a demonstrable capability.

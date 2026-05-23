@@ -21,7 +21,7 @@ like any other *lake entries*.
 This keeps the core model small.
 Planning often needs state, priorities, sequencing, ownership, and progress signals.
 Those concerns vary by team and project.
-Sirno provides names, prose, structural fields, checks, and *witnesses*;
+Sirno provides names, prose, structural links, checks, and *witnesses*;
 a planning skill can decide how to express a worklist using those primitives.
 
 The benefit is continuity.
@@ -32,7 +32,7 @@ or mark work that should be witnessed by *repository* artifacts.
 The plan remains inspectable as Markdown rather than being hidden in a separate task system.
 
 Planning *entries* should still respect the *lake*.
-They should not smuggle in new structural fields unless the project explicitly designs them.
+They should not smuggle in new link relations unless the project explicitly designs them.
 If a worklist needs special behavior,
 that behavior belongs in the skill or in future Sirno design,
 not in ad hoc metadata that core tools silently ignore.

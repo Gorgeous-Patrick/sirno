@@ -1,6 +1,6 @@
 ---
 name: Category
-desc: A structural field that classifies an entry by other entries.
+desc: A structural link relation that classifies an entry by other entries.
 category:
   - category
   - meta

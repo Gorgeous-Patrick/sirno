@@ -37,7 +37,7 @@ to the local design.
 Name the thing before the work becomes local.
 An *entry* should be small enough to read in place
 and durable enough to survive the edit that made it useful.
-It may name a concept, *structural field*, refinement, invariant,
+It may name a concept, structural link relation, refinement, invariant,
 implementation commitment, or narrative route.
 
 Use `category` for kind.
@@ -46,7 +46,7 @@ Use `belongs` for review locality.
 Use `prerequisite` for knowledge dependencies.
 Use `refines` for semantic narrowing.
 Use *repository witness* blocks when the *repository* contains evidence for the *entry* claim.
-Leave a *structural field* out when it does not improve navigation, review, or accountability.
+Leave a structural link relation out when it does not improve navigation, review, or accountability.
 Run `sirno witness ENTRY_ADDRESS --full`
 and read the *entry* prose for what the evidence should mean.
 
@@ -90,7 +90,8 @@ The footer exists for navigation and interoperability.
 
 Check at review boundaries.
 During editing, some structural problems can remain warnings.
-At review boundaries, dangling structural ids and *witness* blocks that name missing *entries* should be errors.
+At review boundaries, dangling structural link targets and *witness* blocks
+that name missing *entries* should be errors.
 Checks confirm structure.
 They do not replace judgment about meaning.
 

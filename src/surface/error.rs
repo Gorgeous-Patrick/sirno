@@ -266,8 +266,8 @@ pub enum CommandError {
     /// Render JSON overrides apply only to generated-link writing.
     #[error("`--override-json` only applies to `sirno render` without a subcommand")]
     OverrideJsonWithRenderSubcommand,
-    /// A command named a structural field not configured for this project.
-    #[error("structural field `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
+    /// A command named a link relation not configured for this project.
+    #[error("link relation `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
     UnconfiguredStructuralField(String),
     /// Generated-footer masking cannot compose with another ripgrep preprocessor.
     #[error(

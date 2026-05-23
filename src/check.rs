@@ -1,6 +1,6 @@
 //! Structural checks for Sirno entries.
 //!
-//! Sirno checks the shape of entries and structural targets.
+//! Sirno checks the shape of entries and structural link targets.
 //! It does not decide whether prose is true or whether code satisfies a claim.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -19,7 +19,7 @@ const CATEGORY_FIELD: &str = "category";
 pub enum CheckMode {
     /// Editing checks keep local movement fast.
     Edit,
-    /// Review checks treat dangling structural references as errors.
+    /// Review checks treat dangling structural link references as errors.
     Review,
 }
 
@@ -33,19 +33,19 @@ impl CheckMode {
     }
 
     // sirno:witness:structural-check:begin
-    /// Check structural metadata targets for a set of entries.
+    /// Check structural link targets for a set of entries.
     ///
     /// Parsing already enforces required fields, accepted field shapes, and valid path syntax.
-    /// This pass checks configured structural field entries and entry addresses named by those fields.
+    /// This pass checks configured link relation entries and entry addresses named by those relations.
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
     ) -> CheckReport {
         self.check_entries_with_structural_inhabitance(entries, structural, true)
     }
 
-    /// Check structural metadata targets, with explicit structural-inhabitance policy.
+    /// Check structural link targets, with explicit structural-inhabitance policy.
     ///
-    /// Structural inhabitance requires each configured structural field to name an existing entry.
+    /// Structural inhabitance requires each configured link relation to name an existing entry.
     pub fn check_entries_with_structural_inhabitance<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
         structural_inhabitance: bool,
@@ -166,11 +166,11 @@ impl CheckSeverity {
 /// Reason for one structural diagnostic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CheckDiagnosticKind {
-    /// A configured structural field does not name an existing entry.
+    /// A configured link relation does not name an existing entry.
     MissingStructuralFieldEntry,
-    /// An entry uses a structural metadata field not configured in `Sirno.toml`.
+    /// An entry uses a structural link relation not configured in `Sirno.toml`.
     UnconfiguredStructuralField,
-    /// A structural target id does not name an entry.
+    /// A structural link target id does not name an entry.
     MissingTarget,
     /// Category metadata is present but the `category` entry is missing.
     MissingCategoryEntry,
@@ -198,11 +198,11 @@ impl CheckDiagnostic {
     pub fn message(&self) -> String {
         match self.kind {
             | CheckDiagnosticKind::MissingStructuralFieldEntry => format!(
-                "`Sirno.toml` configures structural field `{}`, but entry `{}` does not exist",
+                "`Sirno.toml` configures link relation `{}`, but entry `{}` does not exist",
                 self.field, self.field
             ),
             | CheckDiagnosticKind::UnconfiguredStructuralField => format!(
-                "`{}` uses structural field `{}` that is not configured in `Sirno.toml`",
+                "`{}` uses link relation `{}` that is not configured in `Sirno.toml`",
                 self.entry.as_ref().expect("unconfigured field diagnostic has entry"),
                 self.field
             ),

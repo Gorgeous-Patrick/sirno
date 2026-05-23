@@ -14,7 +14,7 @@ It compares the *waterline*, the current lake,
 against the *frostline*, the latest frost snapshot.
 
 Every changed *entry* is a *ripple*.
-For each *ripple*, Sirno reads the configured structural edge policies
+For each *ripple*, Sirno reads the configured structural link policies
 and produces one *wave* of *tide workitems*.
 The *tide* is the union of those open obligations.
 
@@ -27,7 +27,7 @@ flowchart LR
     tide([tide])
     frostline --> ripple
     waterline --> ripple
-    ripple -->|structural edge policies| wave
+    ripple -->|structural link policies| wave
     wave --> tide
 ```
 

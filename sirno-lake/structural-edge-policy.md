@@ -1,6 +1,6 @@
 ---
-name: Structural Edge Policy
-desc: Configuration that chooses rendered links and tide review neighbors for structural edges.
+name: Structural Link Policy
+desc: Configuration that chooses rendered links and tide review neighbors for structural links.
 category:
   - concept
 belongs:
@@ -10,10 +10,10 @@ prerequisite:
   - generated-footer
 ---
 
-Structural edge policy decides how configured structural edges participate in Sirno tooling.
+Structural link policy decides how configured structural links participate in Sirno tooling.
 
-`[structural]` lists the metadata fields Sirno treats as structural.
-Each metadata field is configured by a `[structural.FIELD]` subtable.
+`[structural]` lists the metadata fields that define structural link relations.
+Each relation is configured by a `[structural.FIELD]` subtable.
 The subtable may define `to`, `from`, and `clique` edge policies.
 Each edge policy may enable `render`,
 `ripple.lake`,
@@ -45,7 +45,7 @@ from = { ripple = { lake = true, frost = true } }
 
 `to` follows outgoing metadata targets.
 `from` follows incoming sources that name the current *entry*.
-`clique` follows entries connected through a shared target in that field.
+`clique` follows entries connected through a shared target in that relation.
 `prerequisite` and `refines` use direct `to` and `from` edges without clique expansion,
 because both relations are directional.
 They do not render generated footer sections by default.
@@ -70,7 +70,7 @@ and each member links to the target and to the other members.
 
 This policy is configuration, not *entry* data.
 Changing it alters rendered navigation and review obligations
-without changing structural metadata.
+without changing structural link metadata.
 
 ---
 

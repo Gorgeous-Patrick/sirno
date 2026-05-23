@@ -40,16 +40,16 @@ impl EntryTextTerm {
     }
 }
 
-/// Structural field matcher for an entry query.
+/// Structural link matcher for an entry query.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EntryStructuralMatcher {
-    /// The field has any listed target.
+    /// The relation has any listed target.
     Targets(Vec<EntryAddress>),
-    /// The field is present with any target count.
+    /// The relation is present with any target count.
     Present,
-    /// The field is present with no targets.
+    /// The relation is present with no targets.
     Empty,
-    /// The field is absent.
+    /// The relation is absent.
     Missing,
 }
 
@@ -70,7 +70,7 @@ impl EntryStructuralMatcher {
 ///
 /// Text terms are conjunctive.
 /// Distinct metadata fields are conjunctive.
-/// Structural matchers inside one metadata field are disjunctive.
+/// Structural matchers inside one link relation are disjunctive.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:query:begin
 pub struct EntryQuery {
@@ -92,7 +92,7 @@ impl EntryQuery {
         self
     }
 
-    /// Add a target matcher for one structural field.
+    /// Add a target matcher for one link relation.
     pub fn with_structural_targets(
         mut self, field: impl Into<String>, targets: impl IntoIterator<Item = EntryAddress>,
     ) -> Self {
@@ -106,7 +106,7 @@ impl EntryQuery {
         self
     }
 
-    /// Add one matcher for one structural field.
+    /// Add one matcher for one link relation.
     pub fn with_structural_matcher(
         mut self, field: impl Into<String>, matcher: EntryStructuralMatcher,
     ) -> Self {
@@ -150,7 +150,7 @@ impl EntryQuery {
 
 /// Vague predicate over Sirno entries.
 ///
-/// Vague text terms match an entry plus the ids, names, and desc values of structural targets.
+/// Vague text terms match an entry plus the ids, names, and desc values of structural link targets.
 /// Each text term must match somewhere in that expanded text.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:query:begin

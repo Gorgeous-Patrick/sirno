@@ -53,7 +53,7 @@ A skill discipline owns exactly one `SKILL.full.md` resource artifact,
 one `SKILL.md` wrapper artifact,
 and one `.agents/skills/sirno-<role>/SKILL.md` installed wrapper package.
 The target package path is written in the discipline body until the project defines
-a structural field for skill packages.
+a structural link relation for skill packages.
 Keep the existing skill directory name and do not invent a new role
 unless the active roster adds one.
 Every rostered Sirno discipline should have both artifacts and a package,
