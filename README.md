@@ -30,13 +30,32 @@ This is the dawn of documentation-driven development.
 
 ## TL;DR
 
+If you've heard of RAG, Sirno is human-readable RAG that evolves naturally along with the project,
+avoiding cache invalidation, infamously one of the two major headaches in computer science
+(followed by naming variables, and off-by-one errors).
+
+If you've heard of harness engineering,
+Sirno is a documentation harness that keeps design readable, connected, and resilient to drift.
+No more vibe-coded slop that only the author can understand -- or should we say not even the author can understand?
+
+If you've heard of {spec/test/intent}-driven development,
+Sirno believe in all of them, and integrate these ideas and just consider them documentations of different aspects.
+Details should be so abundant that the codebase can be trivially recovered from the documentation alone.
+
+This is what we call documentation-driven development. Any novelty should be contained in the documentation itself.
+Documentation should be able to choose its own form and representation.
+If a program is the best form for expressing an algorithm or even a particular design idea, then so be it.
+
 Sirno keeps project design in a queryable *lake* of small, named Markdown *entries*.
 Each entry has a stable id, structural field edges, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
 
 <!-- sirno:witness:readme:begin -->
-If you'd like to see for yourself how Sirno's idea works directly on Sirno,
-clone the repo and start with an interactive onboarding session,
+<details>
+<summary>
+If you'd like to see for yourself how Sirno's idea works directly on the documentation of Sirno itself...
+</summary>
+Clone the repo and start with an interactive onboarding session,
 which not only installs Sirno (revertably of course lol) and sets up the MCP server for you,
 but also guides you through the design of Sirno itself.
 
@@ -54,6 +73,7 @@ and start the introduction session in the fresh conversation:
 Start an introduction session with $sirno-narrative-session based on sirno-lake/introduction.md:
 I am new to Sirno. Ask about my background and goals. Guide me through the entries I should care about.
 ```
+</details>
 <!-- sirno:witness:readme:end -->
 
 ## Setup Sirno and Quick Start
