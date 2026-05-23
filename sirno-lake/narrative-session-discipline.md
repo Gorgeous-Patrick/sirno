@@ -9,6 +9,8 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - interactive-narrative-session
+refines:
+  - interactive-narrative-session
 ---
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.

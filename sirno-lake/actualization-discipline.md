@@ -12,6 +12,8 @@ prerequisite:
   - actualize
   - sirno-witness
   - project-config
+refines:
+  - actualize
 ---
 
 Actualization shapes repository material from the configured lake.

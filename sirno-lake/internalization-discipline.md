@@ -11,6 +11,8 @@ prerequisite:
   - methodology
   - internalize
   - sirno-witness
+refines:
+  - internalize
 ---
 
 Internalization records durable design facts from repository material into the configured lake.

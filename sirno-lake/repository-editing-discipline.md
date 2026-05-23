@@ -12,6 +12,8 @@ prerequisite:
   - actualize
   - sirno-witness
   - project-config
+refines:
+  - methodology
 ---
 
 Repository editing is the default agent procedure for changing a Sirno-managed repository.
