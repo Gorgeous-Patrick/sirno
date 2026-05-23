@@ -225,6 +225,7 @@ impl EntryAddress {
     // sirno:witness:entry-domain:end
 
     // sirno:witness:entry-address-resolution:begin
+    // sirno:witness:lakelet:begin
     /// Convert this address into a lake-root-relative Markdown file path.
     pub fn to_lake_relative_path(&self) -> PathBuf {
         let mut path = PathBuf::new();
@@ -277,6 +278,7 @@ impl EntryAddress {
         }
         Ok(Self::from_segments(segments))
     }
+    // sirno:witness:lakelet:end
     // sirno:witness:entry-address-resolution:end
 
     /// Convert this address into the filesystem-safe identifier used by `eter`.

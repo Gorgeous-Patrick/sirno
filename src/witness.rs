@@ -313,6 +313,7 @@ impl WitnessIndex {
 /// Invariant: `entry` is the parsed path captured from the opening delimiter.
 /// `region` identifies the matched block.
 /// `opening` and `closing` identify the delimiter spans.
+// sirno:witness:witness-record:begin
 #[derive(Clone, Debug, PartialEq, Eq)]
 // sirno:witness:sirno-witness:begin
 pub struct WitnessRecord {
@@ -332,6 +333,7 @@ pub struct WitnessRecord {
     pub body: String,
 }
 // sirno:witness:sirno-witness:end
+// sirno:witness:witness-record:end
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum WitnessDelimiterKind {
@@ -587,6 +589,7 @@ impl WitnessSettings {
 }
 
 // sirno:witness:witness-lookup:begin
+// sirno:witness:witness-delimiter:begin
 struct WitnessDelimiterRegex {
     index: usize,
     begin: Regex,
@@ -692,6 +695,7 @@ impl<'a> WitnessLocator<'a> {
         WitnessSpan { start_line, start_column, end_line, end_column }
     }
 }
+// sirno:witness:witness-delimiter:end
 // sirno:witness:witness-lookup:end
 
 /// Error raised while scanning repository witnesses.

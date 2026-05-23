@@ -330,6 +330,7 @@ impl SirnoFrost {
     /// The directory must pass review-mode checks before any frozen row is written.
     /// Generated-link regions are stripped from the committed snapshot.
     // sirno:witness:sirno-frost:begin
+    // sirno:witness:entry-lifecycle:begin
     pub fn commit_entry_directory(
         &mut self, root: impl Into<PathBuf>, settings: &EntryDirectoryCheckSettings,
     ) -> Result<SnapshotRef, FrostError> {
@@ -344,10 +345,12 @@ impl SirnoFrost {
         trace!("sirno commit_entry_directory end: version={}", version.version());
         Ok(version)
     }
+    // sirno:witness:entry-lifecycle:end
     // sirno:witness:sirno-frost:end
 
     /// Materialize a frozen snapshot into a lake entry directory.
     // sirno:witness:sirno-frost:begin
+    // sirno:witness:entry-lifecycle:begin
     pub fn checkout_entry_directory(
         &self, at: SnapshotRef, root: impl Into<PathBuf>, policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, FrostError> {
@@ -360,6 +363,7 @@ impl SirnoFrost {
         trace!("sirno checkout_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
+    // sirno:witness:entry-lifecycle:end
     // sirno:witness:sirno-frost:end
 
     /// Initialize ordinary seed entries.
