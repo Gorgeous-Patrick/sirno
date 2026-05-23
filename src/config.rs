@@ -15,7 +15,7 @@ use tracing::trace;
 
 use indexmap::IndexMap;
 
-use crate::entry::{DESC_FIELD, FROZEN_FIELD, NAME_FIELD};
+use crate::entry::{DESC_FIELD, FROZEN_FIELD, META_FIELD, NAME_FIELD};
 use crate::identifier::EntryAtom;
 use crate::structural::{StructuralEdgeSettings, StructuralSettings};
 
@@ -674,7 +674,7 @@ impl SirnoConfig {
             {
                 return Err(ConfigError::StructuralFieldName(field.to_owned()));
             }
-            if matches!(field, NAME_FIELD | DESC_FIELD | FROZEN_FIELD) {
+            if matches!(field, NAME_FIELD | DESC_FIELD | META_FIELD | FROZEN_FIELD) {
                 return Err(ConfigError::ReservedStructuralField(field.to_owned()));
             }
         }
@@ -856,7 +856,7 @@ impl ConfigRenderer {
                 "Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.",
                 "FIELD must name the lake entry that documents the field and follow normal entry-atom rules.",
                 "FIELD must be a non-empty single-line metadata key with no comma.",
-                "FIELD cannot be name, desc, or frozen.",
+                "FIELD cannot be name, desc, meta, or frozen.",
                 "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
                 "`to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.",
                 "render = true writes generated footer links.",
@@ -969,7 +969,7 @@ pub enum ConfigError {
     /// A structural field name cannot be used as a metadata key.
     #[error("structural field name must be a non-empty single-line metadata key: {0}")]
     StructuralFieldName(String),
-    /// A structural field name is reserved for scalar Sirno metadata.
+    /// A structural field name is reserved for Sirno-managed metadata.
     #[error("structural field name is reserved for Sirno metadata: {0}")]
     ReservedStructuralField(String),
     /// A witness delimiter regex is empty.
@@ -1843,7 +1843,7 @@ delimiters = []
         assert!(
             source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
         );
-        assert!(source.contains("# FIELD cannot be name, desc, or frozen."));
+        assert!(source.contains("# FIELD cannot be name, desc, meta, or frozen."));
         assert!(source.contains(
             "# Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review."
         ));

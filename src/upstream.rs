@@ -253,7 +253,7 @@ fn read_materialized_domain(
 
     let mut entries = Vec::new();
     for entry in checked.entries().iter().filter(|entry| entry.id.starts_with_domain(domain)) {
-        if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+        if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
             return Ok(Some(LoadedUpstreamFiles { entries: Vec::new(), artifacts: Vec::new() }));
         }
         let mut entry = entry.clone();
@@ -368,9 +368,9 @@ fn load_upstream_files(
         let mut entry = Entry::from_markdown(source_address.under_domain(domain), &source)?;
         entry.body = strip_generated_footer_for_import(&entry.body)?;
         rebase_structural_targets(&mut entry, domain);
-        match &mut entry.metadata.frozen {
+        match &mut entry.metadata.meta.frozen {
             | Some(marker) => marker.insert_managed(),
-            | None => entry.metadata.frozen = Some(FrozenMarker::managed()),
+            | None => entry.metadata.meta.frozen = Some(FrozenMarker::managed()),
         }
         entries.push(entry);
     }
@@ -662,8 +662,9 @@ mod tests {
 ---
 name: Design
 desc: Upstream design entry.
-frozen:
-  - reviewed
+meta:
+  frozen:
+    - reviewed
 belongs:
   - alpha
 ---

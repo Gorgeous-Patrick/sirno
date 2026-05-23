@@ -5,3 +5,843 @@
 status = "current"
 generation = 0
 version = 1
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "from"
+neighbor = "entry-address-resolution"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "from"
+neighbor = "entry-artifact"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "from"
+neighbor = "entry-freeze"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "from"
+neighbor = "entry-lifecycle"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-artifact"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-freeze"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-lifecycle"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "local-sublake"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lake"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-address"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-address-resolution"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-artifact"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-atom"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-freeze"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-lifecycle"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "metadata"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "planning"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry"
+field = "prerequisite"
+direction = "from"
+neighbor = "sirno-witness"
+fingerprint = "305f8d21fd728aa7"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "to"
+neighbor = "interfaces"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "cli-interface"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mcp-interface"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "project-commands"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-commands"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "f337865849484e3f"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "to"
+neighbor = "entry"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-frost"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-artifact"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-lifecycle"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-frost"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lock"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-frost"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "from"
+neighbor = "crystallization"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "from"
+neighbor = "documentation-driven-development"
+fingerprint = "f35335b30a5f1f65"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "belongs"
+direction = "to"
+neighbor = "entry"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-artifact"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-freeze"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "entry-lifecycle"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry"
+fingerprint = "f046554c3c89209f"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "local-sublake"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lake"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "query"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural-check"
+fingerprint = "2a62730cce3185a0"
+
+[[tide.resolved]]
+ripple = "narrative-serializer"
+field = "belongs"
+direction = "to"
+neighbor = "interactive-narrative-session"
+fingerprint = "ee68565d0e0f5f05"
+
+[[tide.resolved]]
+ripple = "narrative-serializer"
+field = "belongs"
+direction = "clique"
+neighbor = "interactive-narrative-session"
+fingerprint = "ee68565d0e0f5f05"
+
+[[tide.resolved]]
+ripple = "narrative-serializer"
+field = "prerequisite"
+direction = "to"
+neighbor = "interactive-narrative-session"
+fingerprint = "ee68565d0e0f5f05"
+
+[[tide.resolved]]
+ripple = "project-config-comments"
+field = "belongs"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "49ab8066eeb0ee69"
+
+[[tide.resolved]]
+ripple = "project-config-comments"
+field = "belongs"
+direction = "clique"
+neighbor = "project-config"
+fingerprint = "49ab8066eeb0ee69"
+
+[[tide.resolved]]
+ripple = "project-config-comments"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "49ab8066eeb0ee69"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "from"
+neighbor = "entry-artifact"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "from"
+neighbor = "entry-freeze"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "from"
+neighbor = "sirno-lock"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "from"
+neighbor = "sirno-tide"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "from"
+neighbor = "versioning"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-artifact"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-freeze"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lock"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "to"
+neighbor = "versioning"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-artifact"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-freeze"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "from"
+neighbor = "local-sublake"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "from"
+neighbor = "sirno-lock"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-frost"
+field = "prerequisite"
+direction = "from"
+neighbor = "sirno-tide"
+fingerprint = "900401ef82a5d816"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "to"
+neighbor = "form"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "design-source-authority"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "entry"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "local-sublake"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "metadata"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "query"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "refinement"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "sirno-tide"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "sirno-upstream"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "structural-check"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "form"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "local-sublake"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "repo"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "transform"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "to"
+neighbor = "form"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-address-resolution"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-domain"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "lake-sheaf"
+fingerprint = "8b2922c18cc30f93"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "transform"
+fingerprint = "8b2922c18cc30f93"

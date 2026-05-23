@@ -28,7 +28,7 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 # Add one [structural.FIELD] subtable for each metadata field Sirno treats as structure.
 # FIELD must name the lake entry that documents the field and follow normal entry-atom rules.
 # FIELD must be a non-empty single-line metadata key with no comma.
-# FIELD cannot be name, desc, or frozen.
+# FIELD cannot be name, desc, meta, or frozen.
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.
 # `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.
 # render = true writes generated footer links.

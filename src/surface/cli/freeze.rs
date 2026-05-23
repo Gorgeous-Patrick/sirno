@@ -272,7 +272,7 @@ enum EntryFreezeState {
 
 impl EntryFreezeState {
     fn from_entry(entry: &Entry) -> Self {
-        if entry.metadata.frozen.is_some() { Self::Frozen } else { Self::Mutable }
+        if entry.metadata.meta.frozen.is_some() { Self::Frozen } else { Self::Mutable }
     }
 
     fn label(self) -> &'static str {
@@ -365,7 +365,7 @@ mod tests {
     fn state_reports_frozen_marker() {
         let mut metadata = EntryMetadata::new("Alpha", "Alpha entry.").unwrap();
         let mutable = Entry::new(EntryAddress::new("alpha").unwrap(), metadata.clone(), "");
-        metadata.frozen = Some(FrozenMarker::reviewed());
+        metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let frozen = Entry::new(EntryAddress::new("alpha").unwrap(), metadata, "");
 
         assert_eq!(EntryFreezeState::from_entry(&mutable), EntryFreezeState::Mutable);

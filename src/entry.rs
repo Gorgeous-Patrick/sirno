@@ -15,6 +15,7 @@ use crate::identifier::{EntryAddress, EntryAddressError};
 
 pub const NAME_FIELD: &str = "name";
 pub const DESC_FIELD: &str = "desc";
+pub const META_FIELD: &str = "meta";
 pub const FROZEN_FIELD: &str = "frozen";
 
 // sirno:witness:entry:begin
@@ -132,6 +133,7 @@ pub type EntryStructuralFields = IndexMap<String, Vec<EntryAddress>>;
 /// Metadata for one Sirno entry.
 ///
 /// Invariant: `name` and `desc` are single-line plain strings.
+/// `meta` carries Sirno-managed optional metadata.
 /// Structural fields map metadata field names to entry-path targets.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryMetadata {
@@ -139,6 +141,8 @@ pub struct EntryMetadata {
     pub name: String,
     /// Short prose summary of the entry.
     pub desc: String,
+    /// Sirno-managed metadata fields.
+    pub meta: EntryMeta,
     // sirno:witness:structural:begin
     /// Structural metadata fields keyed by their Markdown metadata field name.
     ///
@@ -146,8 +150,6 @@ pub struct EntryMetadata {
     /// through other storage forms.
     pub structural: EntryStructuralFields,
     // sirno:witness:structural:end
-    /// Freeze reasons declaring that this Sirno Lake entry file is protected.
-    pub frozen: Option<FrozenMarker>,
 }
 
 impl EntryMetadata {
@@ -158,7 +160,12 @@ impl EntryMetadata {
         let desc = desc.into();
         validate_plain_string(NAME_FIELD, &name)?;
         validate_plain_string(DESC_FIELD, &desc)?;
-        Ok(Self { name, desc, structural: EntryStructuralFields::new(), frozen: None })
+        Ok(Self {
+            name,
+            desc,
+            meta: EntryMeta::default(),
+            structural: EntryStructuralFields::new(),
+        })
     }
     // sirno:witness:metadata:end
 
@@ -176,10 +183,13 @@ impl EntryMetadata {
         validate_plain_string(NAME_FIELD, &name)?;
         validate_plain_string(DESC_FIELD, &desc)?;
 
-        let frozen = take_frozen_marker(&mut mapping)?;
+        if mapping.contains_key(Value::String(FROZEN_FIELD.to_owned())) {
+            return Err(EntryParseError::TopLevelFrozenMarker);
+        }
+        let meta = take_entry_meta(&mut mapping)?;
         let structural = take_structural_fields(mapping)?;
 
-        Ok(Self { name, desc, structural, frozen })
+        Ok(Self { name, desc, meta, structural })
     }
     // sirno:witness:metadata:end
 
@@ -192,10 +202,8 @@ impl EntryMetadata {
         let mut out = String::new();
         out.push_str(&format!("name: {}\n", render_yaml_scalar(&self.name)?));
         out.push_str(&format!("desc: {}\n", render_yaml_scalar(&self.desc)?));
+        render_entry_meta(&mut out, &self.meta);
         render_structural_fields(&mut out, &self.structural)?;
-        if let Some(frozen) = &self.frozen {
-            render_frozen_marker(&mut out, frozen);
-        }
         Ok(out)
     }
     // sirno:witness:metadata:end
@@ -290,7 +298,23 @@ impl EntryMetadata {
     }
 }
 
-/// Protection reasons stored in the canonical `frozen` metadata field.
+/// Sirno-managed metadata for one entry.
+///
+/// Empty managed metadata is omitted from rendered entry frontmatter.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryMeta {
+    /// Freeze reasons declaring that this Sirno Lake entry file is protected.
+    pub frozen: Option<FrozenMarker>,
+}
+
+impl EntryMeta {
+    /// Return whether no managed metadata is set.
+    pub fn is_empty(&self) -> bool {
+        self.frozen.is_none()
+    }
+}
+
+/// Protection reasons stored in the canonical `meta.frozen` metadata field.
 ///
 /// Invariant: the reason set is non-empty.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -511,6 +535,25 @@ fn take_structural_fields(mapping: Mapping) -> Result<EntryStructuralFields, Ent
     Ok(structural)
 }
 
+fn take_entry_meta(mapping: &mut Mapping) -> Result<EntryMeta, EntryParseError> {
+    let Some(value) = mapping.shift_remove(Value::String(META_FIELD.to_owned())) else {
+        return Ok(EntryMeta::default());
+    };
+    let Value::Mapping(mut meta_mapping) = value else {
+        return Err(EntryParseError::MetaMustBeMapping);
+    };
+
+    let frozen = take_meta_frozen_marker(&mut meta_mapping)?;
+    if let Some((key, _)) = meta_mapping.into_iter().next() {
+        let Value::String(field) = key else {
+            return Err(EntryParseError::MetaKeyMustBeString);
+        };
+        return Err(EntryParseError::UnknownMetaField(field));
+    }
+
+    Ok(EntryMeta { frozen })
+}
+
 fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, EntryParseError> {
     let Value::Sequence(values) = value else {
         return Err(EntryParseError::FieldMustBeList(field));
@@ -527,10 +570,14 @@ fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, Entry
         .collect()
 }
 
-fn take_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>, EntryParseError> {
+fn take_meta_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>, EntryParseError> {
     let Some(value) = mapping.shift_remove(Value::String(FROZEN_FIELD.to_owned())) else {
         return Ok(None);
     };
+    parse_frozen_marker_value(value).map(Some)
+}
+
+fn parse_frozen_marker_value(value: Value) -> Result<FrozenMarker, EntryParseError> {
     let Value::Sequence(values) = value else {
         return Err(EntryParseError::InvalidFrozenMarker);
     };
@@ -552,7 +599,7 @@ fn take_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>, Ent
             return Err(EntryParseError::InvalidFrozenMarker);
         }
     }
-    Ok(Some(FrozenMarker { reasons }))
+    Ok(FrozenMarker { reasons })
 }
 
 fn validate_plain_string(field: &'static str, value: &str) -> Result<(), EntryParseError> {
@@ -589,10 +636,21 @@ fn render_structural_fields(
     Ok(())
 }
 
-fn render_frozen_marker(out: &mut String, marker: &FrozenMarker) {
-    out.push_str("frozen:\n");
+fn render_entry_meta(out: &mut String, meta: &EntryMeta) {
+    if meta.is_empty() {
+        return;
+    }
+
+    out.push_str("meta:\n");
+    if let Some(marker) = &meta.frozen {
+        render_meta_frozen_marker(out, marker);
+    }
+}
+
+fn render_meta_frozen_marker(out: &mut String, marker: &FrozenMarker) {
+    out.push_str("  frozen:\n");
     for reason in marker.reasons() {
-        out.push_str("  - ");
+        out.push_str("    - ");
         out.push_str(match reason {
             | FrozenReason::Reviewed => "reviewed",
             | FrozenReason::Managed => "managed",
@@ -627,6 +685,15 @@ pub enum EntryParseError {
     /// Metadata keys must be strings.
     #[error("entry metadata keys must be strings")]
     MetadataKeyMustBeString,
+    /// The managed meta field must be a YAML mapping.
+    #[error("metadata field `meta` must be a mapping")]
+    MetaMustBeMapping,
+    /// Managed meta keys must be strings.
+    #[error("metadata field `meta` keys must be strings")]
+    MetaKeyMustBeString,
+    /// A managed meta field is not supported.
+    #[error("unknown Sirno-managed metadata field `meta.{0}`")]
+    UnknownMetaField(String),
     /// A required field is absent.
     #[error("missing required metadata field `{0}`")]
     MissingField(&'static str),
@@ -654,8 +721,11 @@ pub enum EntryParseError {
         source: EntryAddressError,
     },
     /// The frozen field is present with invalid protection reasons.
-    #[error("metadata field `frozen` must be a non-empty list of reviewed or managed reasons")]
+    #[error("metadata field `meta.frozen` must be a non-empty list of reviewed or managed reasons")]
     InvalidFrozenMarker,
+    /// The old top-level frozen field is no longer valid.
+    #[error("metadata field `frozen` moved to `meta.frozen`")]
+    TopLevelFrozenMarker,
 }
 
 /// Error raised when typed entry data cannot be rendered.
@@ -861,8 +931,9 @@ Body.
 ---
 name: Frozen
 desc: A protected entry.
-frozen:
-  - reviewed
+meta:
+  frozen:
+    - reviewed
 ---
 
 Body.
@@ -870,8 +941,46 @@ Body.
 
         let entry = Entry::from_markdown(entry_id(), source).unwrap();
 
-        assert_eq!(entry.metadata.frozen, Some(FrozenMarker::reviewed()));
-        assert!(entry.metadata.frozen.as_ref().unwrap().is_reviewed());
+        assert_eq!(entry.metadata.meta.frozen, Some(FrozenMarker::reviewed()));
+        assert!(entry.metadata.meta.frozen.as_ref().unwrap().is_reviewed());
+    }
+
+    #[test]
+    fn parses_entry_without_managed_meta() {
+        let source = "\
+---
+name: Plain
+desc: No managed metadata.
+topic:
+  - concept
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+
+        assert!(entry.metadata.meta.is_empty());
+        assert_eq!(
+            entry.metadata.structural_targets_for("topic"),
+            &[EntryAddress::new("concept").unwrap()]
+        );
+    }
+
+    #[test]
+    fn rejects_top_level_frozen_marker() {
+        let source = "\
+---
+name: Old
+desc: Old frozen marker.
+frozen:
+  - reviewed
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::TopLevelFrozenMarker));
     }
 
     #[test]
@@ -880,7 +989,8 @@ Body.
 ---
 name: Bad
 desc: Bad frozen marker.
-frozen: true
+meta:
+  frozen: true
 ---
 ";
 
@@ -895,7 +1005,8 @@ frozen: true
 ---
 name: Bad
 desc: Bad frozen marker.
-frozen: null
+meta:
+  frozen: null
 ---
 ";
 
@@ -910,16 +1021,17 @@ frozen: null
 ---
 name: Managed
 desc: A managed entry.
-frozen:
-  - reviewed
-  - managed
+meta:
+  frozen:
+    - reviewed
+    - managed
 ---
 
 Body.
 ";
 
         let entry = Entry::from_markdown(entry_id(), source).unwrap();
-        let frozen = entry.metadata.frozen.as_ref().unwrap();
+        let frozen = entry.metadata.meta.frozen.as_ref().unwrap();
 
         assert!(frozen.is_reviewed());
         assert!(frozen.is_managed());
@@ -928,14 +1040,58 @@ Body.
     #[test]
     fn renders_canonical_frozen_marker() {
         let mut metadata = EntryMetadata::new("Frozen", "Protected entry.").unwrap();
-        metadata.frozen = Some(FrozenMarker::reviewed());
+        metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
 
-        assert!(rendered.contains("frozen:\n  - reviewed\n"));
+        assert!(rendered.contains("meta:\n  frozen:\n    - reviewed\n"));
+        assert!(
+            rendered.find("desc: Protected entry.\n").unwrap() < rendered.find("meta:\n").unwrap()
+        );
         assert!(!rendered.contains("frozen: null"));
         assert!(!rendered.contains("frozen: true"));
+    }
+
+    #[test]
+    fn omits_empty_managed_meta_when_rendering() {
+        let metadata = EntryMetadata::new("Plain", "No managed metadata.").unwrap();
+        let entry = Entry::new(entry_id(), metadata, "Body.\n");
+
+        let rendered = entry.to_markdown().unwrap();
+
+        assert!(!rendered.contains("meta:\n"));
+    }
+
+    #[test]
+    fn rejects_non_mapping_meta() {
+        let source = "\
+---
+name: Bad
+desc: Bad meta.
+meta: true
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::MetaMustBeMapping));
+    }
+
+    #[test]
+    fn rejects_unknown_meta_field() {
+        let source = "\
+---
+name: Bad
+desc: Bad meta.
+meta:
+  owner: sirno
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "owner"));
     }
 
     #[test]

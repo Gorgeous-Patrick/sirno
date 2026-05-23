@@ -3456,14 +3456,14 @@ Body.
         .run()
         .unwrap();
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(source.contains("frozen:\n  - reviewed\n"));
+    assert!(source.contains("meta:\n  frozen:\n    - reviewed\n"));
     assert!(fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 
     Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "melt", "alpha"])
         .run()
         .unwrap();
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(!source.contains("frozen:\n  - reviewed\n"));
+    assert!(!source.contains("meta:\n  frozen:\n    - reviewed\n"));
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 }
 
@@ -3499,7 +3499,7 @@ Body.
         .unwrap();
 
     let source = fs::read_to_string(docs.join("alpha.md")).unwrap();
-    assert!(source.contains("frozen:\n  - reviewed\n"));
+    assert!(source.contains("meta:\n  frozen:\n    - reviewed\n"));
     assert!(!fs::metadata(docs.join("alpha.md")).unwrap().permissions().readonly());
 
     Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "freeze", "--fix-all"])
@@ -3844,8 +3844,12 @@ Body.
     .run()
     .unwrap();
 
-    assert!(!fs::read_to_string(configured_docs.join("alpha.md")).unwrap().contains("frozen:"));
-    assert!(fs::read_to_string(override_docs.join("alpha.md")).unwrap().contains("frozen:"));
+    assert!(
+        !fs::read_to_string(configured_docs.join("alpha.md")).unwrap().contains("meta:\n  frozen:")
+    );
+    assert!(
+        fs::read_to_string(override_docs.join("alpha.md")).unwrap().contains("meta:\n  frozen:")
+    );
 }
 
 #[test]

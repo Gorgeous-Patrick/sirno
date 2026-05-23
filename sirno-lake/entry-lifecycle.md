@@ -133,7 +133,7 @@ and are removed before comparison with frost.
 An aligned entry can still be writable.
 Editing it moves it back to working state until the next successful frost commit.
 
-`frozen` means the waterline file carries a `frozen:` reason.
+`frozen` means the waterline file carries a `meta.frozen` reason.
 For frost-backed manual freeze,
 that reason is `reviewed` and the committed form matches the frostline.
 `sirno freeze ENTRY_ADDRESS` enters this state.

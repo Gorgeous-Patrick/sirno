@@ -595,7 +595,7 @@ impl EntryDirectory {
         if checked
             .entries()
             .iter()
-            .any(|entry| &entry.id == old_id && entry.metadata.frozen.is_some())
+            .any(|entry| &entry.id == old_id && entry.metadata.meta.frozen.is_some())
         {
             return Err(EntryDirectoryError::FrozenEntryProtected(old_id.clone()));
         }
@@ -636,7 +636,7 @@ impl EntryDirectory {
         let mut changed_paths = Vec::new();
 
         for (original_id, mut entry, mut content_changed) in entries {
-            if content_changed && entry.metadata.frozen.is_some() {
+            if content_changed && entry.metadata.meta.frozen.is_some() {
                 return Err(EntryDirectoryError::FrozenEntryProtected(original_id));
             }
             let source_path = checked
@@ -650,7 +650,7 @@ impl EntryDirectory {
                 entry.body = body.apply(&footer)?;
                 content_changed = true;
             }
-            if content_changed && entry.metadata.frozen.is_some() {
+            if content_changed && entry.metadata.meta.frozen.is_some() {
                 return Err(EntryDirectoryError::FrozenEntryProtected(original_id.clone()));
             }
 
@@ -673,7 +673,7 @@ impl EntryDirectory {
                         }
                     })?;
                 }
-                if entry.metadata.frozen.is_some() {
+                if entry.metadata.meta.frozen.is_some() {
                     freeze_path_best_effort(destination_path)?;
                 }
                 changed_paths.push(destination_path.to_path_buf());
@@ -686,7 +686,7 @@ impl EntryDirectory {
                 fs::write(source_path, rendered).map_err(|source| {
                     EntryDirectoryError::WriteFile { path: source_path.to_path_buf(), source }
                 })?;
-                if entry.metadata.frozen.is_some() {
+                if entry.metadata.meta.frozen.is_some() {
                     freeze_path_best_effort(source_path)?;
                 }
                 changed_paths.push(source_path.to_path_buf());
@@ -770,7 +770,7 @@ impl EntryDirectory {
                     id: entry.id.clone(),
                 });
             }
-            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+            if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
                 return Err(EntryDirectoryError::CrystallizedEntryNotManaged(entry.id.clone()));
             }
         }
@@ -1053,7 +1053,7 @@ impl EntryDirectory {
             let body = GeneratedLinkBody::new(&entry.body).delete()?;
             let rendered = Entry::replace_markdown_body(&source, &body)?;
             if rendered != source {
-                if entry.metadata.frozen.is_some() {
+                if entry.metadata.meta.frozen.is_some() {
                     return Err(EntryDirectoryError::FrozenEntryProtected(entry.id.clone()));
                 }
                 fs::write(path, rendered).map_err(|source| EntryDirectoryError::WriteFile {
@@ -1145,16 +1145,16 @@ impl EntryDirectory {
         let source = fs::read_to_string(&path)?;
         let mut entry = Entry::from_markdown(id.clone(), &source)?;
         if frozen {
-            match &mut entry.metadata.frozen {
+            match &mut entry.metadata.meta.frozen {
                 | Some(marker) => marker.insert_reviewed(),
-                | None => entry.metadata.frozen = Some(FrozenMarker::reviewed()),
+                | None => entry.metadata.meta.frozen = Some(FrozenMarker::reviewed()),
             }
-        } else if let Some(marker) = &mut entry.metadata.frozen
+        } else if let Some(marker) = &mut entry.metadata.meta.frozen
             && !marker.remove_reviewed()
         {
-            entry.metadata.frozen = None;
+            entry.metadata.meta.frozen = None;
         }
-        let still_frozen = entry.metadata.frozen.is_some();
+        let still_frozen = entry.metadata.meta.frozen.is_some();
         let rendered = entry.to_markdown()?;
         if !frozen {
             melt_path_best_effort(&path)?;
@@ -1258,7 +1258,7 @@ impl EntryDirectory {
                 })?;
             let id = EntryAddress::from_lake_relative_path(relative)?;
             let entry = self.read_entry(&id)?;
-            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+            if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
                 return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
             }
             melt_path_best_effort(&path)?;
@@ -1310,7 +1310,7 @@ impl EntryDirectory {
                 })?;
             let id = EntryAddress::from_lake_relative_path(relative)?;
             let entry = self.read_entry(&id)?;
-            if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+            if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
                 return Err(EntryDirectoryError::UnmanagedCrystallizedPath(path));
             }
         }
@@ -1342,7 +1342,7 @@ impl EntryDirectory {
             let owner_entry = self.entry_file_path(&owner);
             if owner_entry.exists() {
                 let entry = self.read_entry(&owner)?;
-                if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
                     return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
                 }
             }
@@ -1377,7 +1377,7 @@ impl EntryDirectory {
             let owner_entry = self.entry_file_path(&owner);
             if owner_entry.exists() {
                 let entry = self.read_entry(&owner)?;
-                if !entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+                if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
                     return Err(EntryDirectoryError::UnmanagedCrystallizedPath(owner_root));
                 }
             }
@@ -1449,7 +1449,7 @@ impl EntryDirectory {
         };
         let source = fs::read_to_string(path)?;
         Ok(Entry::from_markdown(id, &source)
-            .map(|entry| entry.metadata.frozen.is_some())
+            .map(|entry| entry.metadata.meta.frozen.is_some())
             .unwrap_or(false))
     }
 
@@ -1493,7 +1493,7 @@ impl EntryDirectory {
         }
 
         let mut paths = Vec::new();
-        for entry in checked.entries().iter().filter(|entry| entry.metadata.frozen.is_some()) {
+        for entry in checked.entries().iter().filter(|entry| entry.metadata.meta.frozen.is_some()) {
             let path = checked
                 .entry_file_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
@@ -1529,7 +1529,7 @@ impl EntryDirectory {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
         }
 
-        for entry in checked.entries().iter().filter(|entry| entry.metadata.frozen.is_some()) {
+        for entry in checked.entries().iter().filter(|entry| entry.metadata.meta.frozen.is_some()) {
             let path = checked
                 .entry_file_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
@@ -1657,7 +1657,7 @@ impl EntryDirectory {
 
     fn ensure_entry_artifacts_mutable(&self, id: &EntryAddress) -> Result<(), EntryDirectoryError> {
         let entry = self.read_entry(id)?;
-        if entry.metadata.frozen.is_some() {
+        if entry.metadata.meta.frozen.is_some() {
             return Err(EntryDirectoryError::FrozenEntryProtected(id.clone()));
         }
         Ok(())
@@ -1711,7 +1711,7 @@ impl GenLinkOperation {
     }
 
     fn allows_entry_write(self, entry: &Entry) -> bool {
-        match &entry.metadata.frozen {
+        match &entry.metadata.meta.frozen {
             | None => true,
             | Some(marker) => self == Self::WriteManaged && marker.is_managed(),
         }
@@ -2405,7 +2405,7 @@ Body.
         let directory = entry_directory(temp.path());
         let domain = EntryAtom::new("core").unwrap();
         let mut metadata = EntryMetadata::new("Design", "Managed upstream entry.").unwrap();
-        metadata.frozen = Some(FrozenMarker::managed());
+        metadata.meta.frozen = Some(FrozenMarker::managed());
         let entry = Entry::new(EntryAddress::new("core.design").unwrap(), metadata, "Body.\n");
         let artifact = EntryArtifact::new(
             EntryAddress::new("core.design").unwrap(),
@@ -2457,9 +2457,10 @@ Body.
 ---
 name: Design
 desc: Managed upstream entry.
-frozen:
-  - reviewed
-  - managed
+meta:
+  frozen:
+    - reviewed
+    - managed
 ---
 
 Body.
@@ -2472,7 +2473,7 @@ Body.
         assert!(!source.contains("reviewed"));
         assert!(source.contains("  - managed"));
         let entry = directory.read_entry(&EntryAddress::new("core.design").unwrap()).unwrap();
-        assert!(entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_managed()));
+        assert!(entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()));
     }
 
     #[test]
@@ -3336,7 +3337,7 @@ Body.
             .unwrap();
         let source = fs::read_to_string(&path).unwrap();
 
-        assert!(source.contains("frozen:\n  - reviewed\n"));
+        assert!(source.contains("meta:\n  frozen:\n    - reviewed\n"));
         assert_path_readonly(&path);
     }
 
@@ -3375,8 +3376,9 @@ Body.
 ---
 name: Alpha
 desc: Alpha entry.
-frozen:
-  - reviewed
+meta:
+  frozen:
+    - reviewed
 ---
 
 Body.
@@ -3403,8 +3405,9 @@ Body.
 ---
 name: Alpha
 desc: Alpha entry.
-frozen:
-  - reviewed
+meta:
+  frozen:
+    - reviewed
 kind:
   - beta
 ---
@@ -3560,7 +3563,7 @@ Body.
             .unwrap();
         let source = fs::read_to_string(&path).unwrap();
 
-        assert!(source.contains("frozen:\n  - reviewed\n"));
+        assert!(source.contains("meta:\n  frozen:\n    - reviewed\n"));
         assert_path_writable(&path);
         assert!(report.paths().contains(&path));
     }

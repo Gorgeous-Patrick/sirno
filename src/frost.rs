@@ -19,7 +19,7 @@ use tracing::trace;
 
 use crate::artifact::{EntryArtifact, EntryArtifactPath, EntryArtifactPathError};
 use crate::check::{CheckMode, CheckReport};
-use crate::entry::{Entry, EntryMetadata, EntryStructuralFields, FrozenMarker};
+use crate::entry::{Entry, EntryMeta, EntryMetadata, EntryStructuralFields};
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy,
@@ -60,9 +60,9 @@ impl Field for ArtifactManifestField {
     type Content = Vec<EntryArtifactPath>;
 }
 
-struct FrozenField;
-impl Field for FrozenField {
-    type Content = FrozenMarker;
+struct MetaField;
+impl Field for MetaField {
+    type Content = EntryMeta;
 }
 
 /// Sirno Frost facade for Sirno entries.
@@ -206,7 +206,7 @@ impl SirnoFrost {
     pub fn put_entry(&mut self, entry: &Entry) -> Result<SnapshotRef, FrostError> {
         trace!("sirno put_entry begin: id={}", entry.id);
         let current = self.current_snapshot()?;
-        if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed()) {
+        if entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_reviewed()) {
             self.ensure_reviewed_entry_matches_snapshot(current, entry)?;
         }
         let fs_id = entry.id.to_filesystem_id()?;
@@ -409,7 +409,7 @@ impl SirnoFrost {
         let entries = entries
             .iter()
             .map(|entry| {
-                if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed()) {
+                if entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_reviewed()) {
                     let previous_entry =
                         previous_entries.get(&entry.id).map(Self::entry_without_reviewed_reason);
                     let current_entry = Self::entry_without_reviewed_reason(entry);
@@ -417,7 +417,7 @@ impl SirnoFrost {
                         return Err(FrostError::FrozenEntryChanged(entry.id.clone()));
                     }
                 }
-                if entry.metadata.frozen.as_ref().is_some_and(|marker| marker.is_reviewed())
+                if entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_reviewed())
                     && previous_artifacts_by_owner
                         .get(&entry.id)
                         .map(Vec::as_slice)
@@ -666,10 +666,10 @@ impl SirnoFrost {
 
     fn entry_without_reviewed_reason(entry: &Entry) -> Entry {
         let mut metadata = entry.metadata.clone();
-        if let Some(marker) = &mut metadata.frozen
+        if let Some(marker) = &mut metadata.meta.frozen
             && !marker.remove_reviewed()
         {
-            metadata.frozen = None;
+            metadata.meta.frozen = None;
         }
         Entry::new(entry.id.clone(), metadata, entry.body.clone())
     }
@@ -697,9 +697,9 @@ impl SirnoFrost {
         eter::filesystem::builtins_registry::<EntryLifecycle>()
             .with_field::<NameField>("name")
             .with_field::<DescField>("desc")
+            .with_field::<MetaField>("meta")
             .with_field::<StructuralField>("structural")
             .with_field::<ArtifactManifestField>("artifacts")
-            .with_field::<FrozenField>("frozen")
     }
     // sirno:witness:sirno-frost:end
 }
@@ -799,9 +799,9 @@ fn remove_empty_artifact_directories(directory: &Path) -> Result<usize, FrostErr
 struct StoredEntryFacet {
     name: Option<String>,
     desc: Option<String>,
+    meta: EntryMeta,
     structural: EntryStructuralFields,
     artifact_paths: Vec<EntryArtifactPath>,
-    frozen: Option<FrozenMarker>,
     body: Option<String>,
 }
 
@@ -814,9 +814,9 @@ impl StoredEntryFacet {
         Self {
             name: Some(entry.metadata.name.clone()),
             desc: Some(entry.metadata.desc.clone()),
+            meta: entry.metadata.meta.clone(),
             structural: entry.metadata.structural.clone(),
             artifact_paths: artifacts.iter().map(|artifact| artifact.path.clone()).collect(),
-            frozen: entry.metadata.frozen.clone(),
             body: Some(entry.body.clone()),
         }
     }
@@ -829,8 +829,8 @@ impl StoredEntryFacet {
         let body =
             self.body.ok_or_else(|| FrostError::CorruptEntry { id: id.clone(), field: "body" })?;
         let mut metadata = EntryMetadata::new(name, desc)?;
+        metadata.meta = self.meta;
         metadata.structural = self.structural;
-        metadata.frozen = self.frozen;
         Ok(Entry::new(id, metadata, body))
     }
 
@@ -861,12 +861,12 @@ impl StoredEntryFacet {
         }
     }
 
-    fn resolve_optional_frozen(
+    fn resolve_optional_meta(
         backend: &SirnoBackend, at: SnapshotRef, id: &FilesystemEntryId,
-    ) -> Result<Option<FrozenMarker>, FilesystemError> {
-        match backend.resolve::<FrozenField>(at, id)? {
-            | Resolution::Content(marker) => Ok(Some(marker)),
-            | Resolution::Deleted | Resolution::Absent => Ok(None),
+    ) -> Result<EntryMeta, FilesystemError> {
+        match backend.resolve::<MetaField>(at, id)? {
+            | Resolution::Content(meta) => Ok(meta),
+            | Resolution::Deleted | Resolution::Absent => Ok(EntryMeta::default()),
         }
     }
 
@@ -890,12 +890,13 @@ impl StoredEntryFacet {
         }
     }
 
-    fn apply_frozen<'a>(
-        txn: SirnoWriteTxn<'a>, fs_id: &FilesystemEntryId, value: &Option<FrozenMarker>,
+    fn apply_meta<'a>(
+        txn: SirnoWriteTxn<'a>, fs_id: &FilesystemEntryId, value: &EntryMeta,
     ) -> SirnoWriteTxn<'a> {
-        match value {
-            | Some(marker) => txn.set::<FrozenField>(fs_id, marker.clone()),
-            | None => txn.delete::<FrozenField>(fs_id),
+        if value.is_empty() {
+            txn.delete::<MetaField>(fs_id)
+        } else {
+            txn.set::<MetaField>(fs_id, value.clone())
         }
     }
 
@@ -917,9 +918,9 @@ impl EntryFacet<SirnoBackend> for StoredEntryFacet {
         Ok(Some(Self {
             name: Self::resolve_optional_text::<NameField>(backend, at, id)?,
             desc: Self::resolve_optional_text::<DescField>(backend, at, id)?,
+            meta: Self::resolve_optional_meta(backend, at, id)?,
             structural: Self::resolve_optional_structural(backend, at, id)?,
             artifact_paths: Self::resolve_artifact_paths(backend, at, id)?,
-            frozen: Self::resolve_optional_frozen(backend, at, id)?,
             body: match backend.resolve_body(at, id)? {
                 | Resolution::Content(body) => Some(body),
                 | Resolution::Deleted | Resolution::Absent => None,
@@ -936,9 +937,9 @@ impl EntryFacet<SirnoBackend> for StoredEntryFacet {
             .set::<NameField>(id, Self::required_text(&self.name, "name"))
             .set::<DescField>(id, Self::required_text(&self.desc, "desc"));
 
+        let txn = Self::apply_meta(txn, id, &self.meta);
         let txn = Self::apply_structural(txn, id, &self.structural);
         let txn = Self::apply_artifacts(txn, id, &self.artifact_paths);
-        let txn = Self::apply_frozen(txn, id, &self.frozen);
         txn.set_body(id, Self::required_text(&self.body, "body"))
     }
 }
@@ -1325,7 +1326,7 @@ mod tests {
             .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let mut frozen_alpha = alpha.clone();
-        frozen_alpha.metadata.frozen = Some(FrozenMarker::reviewed());
+        frozen_alpha.metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let mut changed_beta = beta.clone();
         changed_beta.body = "Beta changed body.\n".to_owned();
         write_lake_entry(lake.path(), &frozen_alpha);
@@ -1350,7 +1351,7 @@ mod tests {
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
         frost.commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default()).unwrap();
         let mut changed_entry = entry.clone();
-        changed_entry.metadata.frozen = Some(FrozenMarker::reviewed());
+        changed_entry.metadata.meta.frozen = Some(FrozenMarker::reviewed());
         changed_entry.body = "Changed body.\n".to_owned();
         write_lake_entry(lake.path(), &changed_entry);
 
@@ -1366,7 +1367,7 @@ mod tests {
         let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        entry.metadata.frozen = Some(FrozenMarker::reviewed());
+        entry.metadata.meta.frozen = Some(FrozenMarker::reviewed());
         write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
@@ -1385,7 +1386,7 @@ mod tests {
 
         let first = frost.put_entry(&entry).unwrap();
         let mut frozen_entry = entry.clone();
-        frozen_entry.metadata.frozen = Some(FrozenMarker::reviewed());
+        frozen_entry.metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let second = frost.put_entry(&frozen_entry).unwrap();
 
         assert_ne!(first, second);
@@ -1399,7 +1400,7 @@ mod tests {
         let entry = test_entry("alpha", "Alpha");
         frost.put_entry(&entry).unwrap();
         let mut changed_entry = entry.clone();
-        changed_entry.metadata.frozen = Some(FrozenMarker::reviewed());
+        changed_entry.metadata.meta.frozen = Some(FrozenMarker::reviewed());
         changed_entry.body = "Changed body.\n".to_owned();
 
         let error = frost.put_entry(&changed_entry).unwrap_err();
@@ -1412,7 +1413,7 @@ mod tests {
         let lake = tempfile::tempdir().unwrap();
         let frost_path = tempfile::tempdir().unwrap();
         let mut entry = test_entry("alpha", "Alpha");
-        entry.metadata.frozen = Some(FrozenMarker::managed());
+        entry.metadata.meta.frozen = Some(FrozenMarker::managed());
         write_lake_entry(lake.path(), &entry);
         let mut frost = SirnoFrost::open(frost_path.path()).unwrap();
 
@@ -1420,7 +1421,7 @@ mod tests {
             .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
             .unwrap();
         let mut reviewed_entry = entry.clone();
-        reviewed_entry.metadata.frozen.as_mut().unwrap().insert_reviewed();
+        reviewed_entry.metadata.meta.frozen.as_mut().unwrap().insert_reviewed();
         write_lake_entry(lake.path(), &reviewed_entry);
         let second = frost
             .commit_entry_directory(lake.path(), &EntryDirectoryCheckSettings::default())
@@ -1530,7 +1531,7 @@ mod tests {
         let frost_path = tempfile::tempdir().unwrap();
         let checkout = tempfile::tempdir().unwrap();
         let mut alpha = test_entry("alpha", "Alpha");
-        alpha.metadata.frozen = Some(FrozenMarker::managed());
+        alpha.metadata.meta.frozen = Some(FrozenMarker::managed());
         let beta = test_entry("beta", "Beta");
         write_lake_entry(lake.path(), &alpha);
         write_lake_entry(lake.path(), &beta);
