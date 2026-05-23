@@ -48,7 +48,7 @@ This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
 so a skill can be rebuilt from the lake rather than only from its packaged wrapper.
 Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
-The discipline entries are `lake-first-maintenance-discipline`,
+The discipline entries are `repository-editing-discipline`,
 `narrative-session-discipline`, `skill-synthesis-discipline`, and `lake-curation-discipline`.
 
 Packaged skills are portable.
@@ -99,7 +99,7 @@ When an agent discovers that utility maintenance is needed,
 it should report the needed human CLI action instead of treating it as an MCP operation.
 The editor skill may call CLI `sirno util config fix`
 to canonicalize `Sirno.toml` comments.
-That exception belongs to lake-first maintenance and does not add utility commands to MCP.
+That exception belongs to repository editing and does not add utility commands to MCP.
 
 A full skill resource is an operational rendering of lake method, not a separate authority.
 When a resource or wrapper and the lake disagree, the lake and `Sirno.toml` win,
@@ -115,11 +115,13 @@ so installed skills stay small while the full method remains source-controlled.
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
+  - [actualization-discipline](actualization-discipline.md)
   - [design-doc-writer-skill](design-doc-writer-skill.md)
+  - [internalization-discipline](internalization-discipline.md)
   - [lake-curation-discipline](lake-curation-discipline.md)
-  - [lake-first-maintenance-discipline](lake-first-maintenance-discipline.md)
   - [narrative-session-discipline](narrative-session-discipline.md)
   - [portable-agent-skill-language](portable-agent-skill-language.md)
+  - [repository-editing-discipline](repository-editing-discipline.md)
   - [skill-synthesis-discipline](skill-synthesis-discipline.md)
 
 > **Sirno generated links end.**

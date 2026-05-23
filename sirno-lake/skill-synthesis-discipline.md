@@ -73,7 +73,7 @@ names the matching `sirno://skills/sirno-*` resource,
 and instructs the agent to read that resource before working.
 Do not duplicate the full procedure in the wrapper.
 Project configuration maintenance lives in the editor skill.
-Other full resources should point back to the lake-first maintenance workflow
+Other full resources should point back to the repository editing workflow
 instead of copying the `Sirno.toml` schema checklist.
 
 Routine project initialization installs wrappers by default.

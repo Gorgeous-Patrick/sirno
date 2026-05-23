@@ -18,7 +18,7 @@ and is embedded by `src/mcp.rs` as `sirno://skills/sirno-curator`.
 Its packaged wrapper lives in `.artifacts/lake-curation-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-curator/SKILL.md`.
 
-Lake curation is the proactive counterpart to lake-first maintenance.
+Lake curation is the proactive counterpart to repository editing.
 The editor skill responds to a request to change repository material.
 The curator skill is invoked when no code change drives the work,
 but the lake itself needs a pass for clarity, focus, accurate structure,

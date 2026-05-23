@@ -40,12 +40,12 @@ use crate::{
 const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
     SkillWrapperSpec {
         name: "sirno-editor",
-        entry_id: "lake-first-maintenance-discipline",
-        wrapper_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md",
+        entry_id: "repository-editing-discipline",
+        wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
         content: include_str!(
-            "../../sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md"
+            "../../sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"
         ),
     },
     SkillWrapperSpec {

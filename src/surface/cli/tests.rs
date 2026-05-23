@@ -887,10 +887,10 @@ fn util_skills_rejects_global_lake_path() {
 #[test]
 fn skill_wrapper_output_uses_table() {
     let table = format_skill_wrapper_table(&[SkillWrapperRecord {
-        entry_id: "lake-first-maintenance-discipline".to_owned(),
+        entry_id: "repository-editing-discipline".to_owned(),
         name: "sirno-editor".to_owned(),
-        wrapper_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md".to_owned(),
-        full_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+        wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md".to_owned(),
+        full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
             .to_owned(),
         target_path: ".agents/skills/sirno-editor/SKILL.md".to_owned(),
         status: "ok".to_owned(),

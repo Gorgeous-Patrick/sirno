@@ -222,11 +222,11 @@ mod tests {
 
     fn record(name: &str, target_path: &str, status: &str) -> SkillWrapperRecord {
         SkillWrapperRecord {
-            entry_id: "lake-first-maintenance-discipline".to_owned(),
+            entry_id: "repository-editing-discipline".to_owned(),
             name: name.to_owned(),
-            wrapper_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.md"
+            wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"
                 .to_owned(),
-            full_path: "sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+            full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
                 .to_owned(),
             target_path: target_path.to_owned(),
             status: status.to_owned(),

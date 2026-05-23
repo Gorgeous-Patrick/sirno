@@ -59,7 +59,7 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         title: "Sirno Editor",
         description: "Full Sirno editor skill text.",
         content: include_str!(
-            "../sirno-lake/.artifacts/lake-first-maintenance-discipline/SKILL.full.md"
+            "../sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
         ),
     },
     SkillResourceSpec {

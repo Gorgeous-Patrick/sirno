@@ -1,5 +1,5 @@
 ---
-name: Lake-First Maintenance Discipline
+name: Repository Editing Discipline
 desc: The agent procedure for codebase changes that start in the Sirno Lake and keep documentation synced.
 category:
   - meta
@@ -14,10 +14,10 @@ prerequisite:
   - project-config
 ---
 
-Lake-first maintenance is the default agent procedure for changing a Sirno-managed repository.
-Its full MCP resource text lives in `.artifacts/lake-first-maintenance-discipline/SKILL.full.md`
+Repository editing is the default agent procedure for changing a Sirno-managed repository.
+Its full MCP resource text lives in `.artifacts/repository-editing-discipline/SKILL.full.md`
 and is embedded by `src/mcp.rs` as `sirno://skills/sirno-editor`.
-Its packaged wrapper lives in `.artifacts/lake-first-maintenance-discipline/SKILL.md`
+Its packaged wrapper lives in `.artifacts/repository-editing-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
 Start every repository edit in the configured lake.
@@ -47,7 +47,7 @@ code, test, configuration, or artifact region that supports the entry.
 Do not create placeholder witnesses.
 When evidence supports a related but different claim, create the exact entry for that claim.
 
-Maintain project configuration as part of the same lake-first workflow.
+Maintain project configuration as part of the same workflow.
 Prefer MCP tools for routine lake and frost moves.
 When manual `Sirno.toml` edits are needed, preserve schema comments and path rules from
 `Sirno.toml` and the active project,
