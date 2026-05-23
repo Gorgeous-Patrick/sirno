@@ -115,7 +115,7 @@ walk workitems with `sirno_tide_status`
 and resolve them with `sirno_tide_resolve` or `sirno_tide_unresolve`
 once the curation pass is otherwise complete.
 If the current checkout is frozen or an entry is immutable,
-use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
+use `sirno_frost_defrost`, `sirno_entry_melt`, or the project's frost workflow
 instead of forcing a write.
 
 If a check is blocked,
