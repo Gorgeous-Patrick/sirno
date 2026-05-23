@@ -1,7 +1,6 @@
 ---
 name: Storage
-desc: The storage surfaces that hold Sirno entries, snapshots, config, and repository
-  evidence.
+desc: The storage surfaces that hold Sirno entries, snapshots, config, and repository evidence.
 category:
   - concept
 belongs:
