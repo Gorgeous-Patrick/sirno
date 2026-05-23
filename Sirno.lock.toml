@@ -24,6 +24,13 @@ fingerprint = "b62b3f0f43926248"
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "b62b3f0f43926248"
+
+[[tide.resolved]]
+ripple = "actualization-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "internalization-discipline"
 fingerprint = "b62b3f0f43926248"
 
@@ -39,6 +46,13 @@ ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "narrative-session-discipline"
+fingerprint = "b62b3f0f43926248"
+
+[[tide.resolved]]
+ripple = "actualization-discipline"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
 fingerprint = "b62b3f0f43926248"
 
 [[tide.resolved]]
@@ -80,7 +94,21 @@ fingerprint = "b62b3f0f43926248"
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
+neighbor = "portable-agent-skill-language"
+fingerprint = "b62b3f0f43926248"
+
+[[tide.resolved]]
+ripple = "actualization-discipline"
+field = "prerequisite"
+direction = "to"
 neighbor = "project-config"
+fingerprint = "b62b3f0f43926248"
+
+[[tide.resolved]]
+ripple = "actualization-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-witness"
 fingerprint = "b62b3f0f43926248"
 
 [[tide.resolved]]
@@ -93,8 +121,22 @@ fingerprint = "b62b3f0f43926248"
 [[tide.resolved]]
 ripple = "agent-skills"
 field = "belongs"
+direction = "to"
+neighbor = "sirno"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
 direction = "from"
 neighbor = "actualization-discipline"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "from"
+neighbor = "design-doc-writer-skill"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -129,6 +171,13 @@ fingerprint = "64c83d99f27a5201"
 ripple = "agent-skills"
 field = "belongs"
 direction = "from"
+neighbor = "portable-agent-skill-language"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "from"
 neighbor = "repository-editing-discipline"
 fingerprint = "64c83d99f27a5201"
 
@@ -144,6 +193,20 @@ ripple = "agent-skills"
 field = "belongs"
 direction = "clique"
 neighbor = "actualization-discipline"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "form"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -185,7 +248,28 @@ fingerprint = "64c83d99f27a5201"
 ripple = "agent-skills"
 field = "belongs"
 direction = "clique"
+neighbor = "planning"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
 neighbor = "project-config"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "project-self-application"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -199,7 +283,35 @@ fingerprint = "64c83d99f27a5201"
 ripple = "agent-skills"
 field = "belongs"
 direction = "clique"
+neighbor = "sirno"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-witness"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
 neighbor = "skill-synthesis-discipline"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "storage"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "belongs"
+direction = "clique"
+neighbor = "structural"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -214,6 +326,13 @@ ripple = "agent-skills"
 field = "prerequisite"
 direction = "from"
 neighbor = "actualization-discipline"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "prerequisite"
+direction = "from"
+neighbor = "design-doc-writer-skill"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -242,6 +361,13 @@ ripple = "agent-skills"
 field = "prerequisite"
 direction = "from"
 neighbor = "narrative-session-discipline"
+fingerprint = "64c83d99f27a5201"
+
+[[tide.resolved]]
+ripple = "agent-skills"
+field = "prerequisite"
+direction = "from"
+neighbor = "portable-agent-skill-language"
 fingerprint = "64c83d99f27a5201"
 
 [[tide.resolved]]
@@ -526,9 +652,51 @@ fingerprint = "93dcc09918004226"
 
 [[tide.resolved]]
 ripple = "entry-domain"
+field = "belongs"
+direction = "to"
+neighbor = "entry-address-resolution"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-atom"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry-atom"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
 field = "prerequisite"
 direction = "to"
 neighbor = "sirno-lake"
+fingerprint = "55d36abdee74fc9b"
+
+[[tide.resolved]]
+ripple = "entry-domain"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-address"
 fingerprint = "55d36abdee74fc9b"
 
 [[tide.resolved]]
@@ -563,6 +731,13 @@ fingerprint = "55d36abdee74fc9b"
 ripple = "entry-freeze"
 field = "belongs"
 direction = "to"
+neighbor = "entry"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "to"
 neighbor = "sirno-frost"
 fingerprint = "8f796ab0cfda6fef"
 
@@ -570,7 +745,28 @@ fingerprint = "8f796ab0cfda6fef"
 ripple = "entry-freeze"
 field = "belongs"
 direction = "clique"
+neighbor = "entry"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-address-resolution"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
 neighbor = "entry-artifact"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-lifecycle"
 fingerprint = "8f796ab0cfda6fef"
 
 [[tide.resolved]]
@@ -605,6 +801,13 @@ fingerprint = "8f796ab0cfda6fef"
 ripple = "entry-freeze"
 field = "prerequisite"
 direction = "to"
+neighbor = "entry"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "to"
 neighbor = "sirno-frost"
 fingerprint = "8f796ab0cfda6fef"
 
@@ -613,6 +816,13 @@ ripple = "entry-freeze"
 field = "prerequisite"
 direction = "from"
 neighbor = "crystallization"
+fingerprint = "8f796ab0cfda6fef"
+
+[[tide.resolved]]
+ripple = "entry-freeze"
+field = "prerequisite"
+direction = "from"
+neighbor = "documentation-driven-development"
 fingerprint = "8f796ab0cfda6fef"
 
 [[tide.resolved]]
@@ -717,6 +927,13 @@ fingerprint = "381cf1627a952151"
 ripple = "internalization-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "381cf1627a952151"
+
+[[tide.resolved]]
+ripple = "internalization-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "lake-curation-discipline"
 fingerprint = "381cf1627a952151"
 
@@ -725,6 +942,13 @@ ripple = "internalization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "narrative-session-discipline"
+fingerprint = "381cf1627a952151"
+
+[[tide.resolved]]
+ripple = "internalization-discipline"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
 fingerprint = "381cf1627a952151"
 
 [[tide.resolved]]
@@ -760,6 +984,20 @@ ripple = "internalization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "methodology"
+fingerprint = "381cf1627a952151"
+
+[[tide.resolved]]
+ripple = "internalization-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "portable-agent-skill-language"
+fingerprint = "381cf1627a952151"
+
+[[tide.resolved]]
+ripple = "internalization-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-witness"
 fingerprint = "381cf1627a952151"
 
 [[tide.resolved]]
@@ -794,6 +1032,13 @@ fingerprint = "b2fbcae7c1d77e5f"
 ripple = "lake-curation-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "b2fbcae7c1d77e5f"
+
+[[tide.resolved]]
+ripple = "lake-curation-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "internalization-discipline"
 fingerprint = "b2fbcae7c1d77e5f"
 
@@ -802,6 +1047,13 @@ ripple = "lake-curation-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "narrative-session-discipline"
+fingerprint = "b2fbcae7c1d77e5f"
+
+[[tide.resolved]]
+ripple = "lake-curation-discipline"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
 fingerprint = "b2fbcae7c1d77e5f"
 
 [[tide.resolved]]
@@ -830,6 +1082,20 @@ ripple = "lake-curation-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "methodology"
+fingerprint = "b2fbcae7c1d77e5f"
+
+[[tide.resolved]]
+ripple = "lake-curation-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "portable-agent-skill-language"
+fingerprint = "b2fbcae7c1d77e5f"
+
+[[tide.resolved]]
+ripple = "lake-curation-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-witness"
 fingerprint = "b2fbcae7c1d77e5f"
 
 [[tide.resolved]]
@@ -872,6 +1138,13 @@ ripple = "lake-sheaf"
 field = "belongs"
 direction = "clique"
 neighbor = "upstream-lake"
+fingerprint = "334ae08219bac0fc"
+
+[[tide.resolved]]
+ripple = "lake-sheaf"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry-address"
 fingerprint = "334ae08219bac0fc"
 
 [[tide.resolved]]
@@ -941,7 +1214,42 @@ fingerprint = "997515a9bcb1bffc"
 ripple = "lakelet"
 field = "belongs"
 direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
 neighbor = "local-lakelet"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
 fingerprint = "997515a9bcb1bffc"
 
 [[tide.resolved]]
@@ -963,6 +1271,20 @@ ripple = "lakelet"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-upstream"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "997515a9bcb1bffc"
+
+[[tide.resolved]]
+ripple = "lakelet"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry-address-resolution"
 fingerprint = "997515a9bcb1bffc"
 
 [[tide.resolved]]
@@ -997,7 +1319,42 @@ fingerprint = "f98bb965cbc84545"
 ripple = "local-lakelet"
 field = "belongs"
 direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
 neighbor = "lakelet"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
 fingerprint = "f98bb965cbc84545"
 
 [[tide.resolved]]
@@ -1019,6 +1376,13 @@ ripple = "local-lakelet"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-upstream"
+fingerprint = "f98bb965cbc84545"
+
+[[tide.resolved]]
+ripple = "local-lakelet"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
 fingerprint = "f98bb965cbc84545"
 
 [[tide.resolved]]
@@ -1068,6 +1432,20 @@ ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "project-commands"
+fingerprint = "0b3e856069586ba8"
+
+[[tide.resolved]]
+ripple = "mcp-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "0b3e856069586ba8"
+
+[[tide.resolved]]
+ripple = "mcp-interface"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
 fingerprint = "0b3e856069586ba8"
 
 [[tide.resolved]]
@@ -1144,6 +1522,13 @@ fingerprint = "ec6a475dc765fb23"
 ripple = "narrative-session-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "ec6a475dc765fb23"
+
+[[tide.resolved]]
+ripple = "narrative-session-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "interactive-narrative-session"
 fingerprint = "ec6a475dc765fb23"
 
@@ -1159,6 +1544,13 @@ ripple = "narrative-session-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "lake-curation-discipline"
+fingerprint = "ec6a475dc765fb23"
+
+[[tide.resolved]]
+ripple = "narrative-session-discipline"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
 fingerprint = "ec6a475dc765fb23"
 
 [[tide.resolved]]
@@ -1187,6 +1579,13 @@ ripple = "narrative-session-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "interactive-narrative-session"
+fingerprint = "ec6a475dc765fb23"
+
+[[tide.resolved]]
+ripple = "narrative-session-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "portable-agent-skill-language"
 fingerprint = "ec6a475dc765fb23"
 
 [[tide.resolved]]
@@ -1233,10 +1632,31 @@ fingerprint = "9035234986583e52"
 
 [[tide.resolved]]
 ripple = "project-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "9035234986583e52"
+
+[[tide.resolved]]
+ripple = "project-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
+fingerprint = "9035234986583e52"
+
+[[tide.resolved]]
+ripple = "project-commands"
 field = "prerequisite"
 direction = "to"
 neighbor = "project-config"
 fingerprint = "9035234986583e52"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "to"
+neighbor = "sirno"
+fingerprint = "fd81158fae640e53"
 
 [[tide.resolved]]
 ripple = "project-config"
@@ -1250,6 +1670,13 @@ ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "agent-skills"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "form"
 fingerprint = "fd81158fae640e53"
 
 [[tide.resolved]]
@@ -1270,7 +1697,56 @@ fingerprint = "fd81158fae640e53"
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
+neighbor = "planning"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
 neighbor = "project-config-comments"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "project-self-application"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-witness"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "storage"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "belongs"
+direction = "clique"
+neighbor = "structural"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "prerequisite"
+direction = "to"
+neighbor = "storage"
 fingerprint = "fd81158fae640e53"
 
 [[tide.resolved]]
@@ -1347,7 +1823,28 @@ fingerprint = "fd81158fae640e53"
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
+neighbor = "tide-commands"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "prerequisite"
+direction = "from"
 neighbor = "upstream-lake"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "prerequisite"
+direction = "from"
+neighbor = "utility-commands"
+fingerprint = "fd81158fae640e53"
+
+[[tide.resolved]]
+ripple = "project-config"
+field = "prerequisite"
+direction = "from"
+neighbor = "witness-lookup"
 fingerprint = "fd81158fae640e53"
 
 [[tide.resolved]]
@@ -1396,6 +1893,13 @@ fingerprint = "8175e3a05259ede7"
 ripple = "repository-editing-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "8175e3a05259ede7"
+
+[[tide.resolved]]
+ripple = "repository-editing-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "internalization-discipline"
 fingerprint = "8175e3a05259ede7"
 
@@ -1411,6 +1915,13 @@ ripple = "repository-editing-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "narrative-session-discipline"
+fingerprint = "8175e3a05259ede7"
+
+[[tide.resolved]]
+ripple = "repository-editing-discipline"
+field = "belongs"
+direction = "clique"
+neighbor = "portable-agent-skill-language"
 fingerprint = "8175e3a05259ede7"
 
 [[tide.resolved]]
@@ -1445,7 +1956,21 @@ fingerprint = "8175e3a05259ede7"
 ripple = "repository-editing-discipline"
 field = "prerequisite"
 direction = "to"
+neighbor = "portable-agent-skill-language"
+fingerprint = "8175e3a05259ede7"
+
+[[tide.resolved]]
+ripple = "repository-editing-discipline"
+field = "prerequisite"
+direction = "to"
 neighbor = "project-config"
+fingerprint = "8175e3a05259ede7"
+
+[[tide.resolved]]
+ripple = "repository-editing-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-witness"
 fingerprint = "8175e3a05259ede7"
 
 [[tide.resolved]]
@@ -1584,6 +2109,27 @@ fingerprint = "861cb115fb70c2fb"
 [[tide.resolved]]
 ripple = "sirno-lake"
 field = "belongs"
+direction = "to"
+neighbor = "form"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "design-source-authority"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "entry"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
 direction = "from"
 neighbor = "lakelet"
 fingerprint = "d5a11dcc6490fd7a"
@@ -1606,6 +2152,27 @@ fingerprint = "d5a11dcc6490fd7a"
 ripple = "sirno-lake"
 field = "belongs"
 direction = "from"
+neighbor = "metadata"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "query"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "refinement"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
 neighbor = "sirno-tide"
 fingerprint = "d5a11dcc6490fd7a"
 
@@ -1614,6 +2181,34 @@ ripple = "sirno-lake"
 field = "belongs"
 direction = "from"
 neighbor = "sirno-upstream"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "from"
+neighbor = "structural-check"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "form"
 fingerprint = "d5a11dcc6490fd7a"
 
 [[tide.resolved]]
@@ -1634,6 +2229,34 @@ fingerprint = "d5a11dcc6490fd7a"
 ripple = "sirno-lake"
 field = "belongs"
 direction = "clique"
+neighbor = "metadata"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "repo"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
 neighbor = "sirno-tide"
 fingerprint = "d5a11dcc6490fd7a"
 
@@ -1642,6 +2265,41 @@ ripple = "sirno-lake"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-upstream"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "belongs"
+direction = "clique"
+neighbor = "transform"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "to"
+neighbor = "form"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "entry-address-resolution"
 fingerprint = "d5a11dcc6490fd7a"
 
 [[tide.resolved]]
@@ -1656,6 +2314,13 @@ ripple = "sirno-lake"
 field = "prerequisite"
 direction = "from"
 neighbor = "lake-sheaf"
+fingerprint = "d5a11dcc6490fd7a"
+
+[[tide.resolved]]
+ripple = "sirno-lake"
+field = "prerequisite"
+direction = "from"
+neighbor = "transform"
 fingerprint = "d5a11dcc6490fd7a"
 
 [[tide.resolved]]
@@ -1752,6 +2417,41 @@ fingerprint = "dd20c586eb207ccf"
 [[tide.resolved]]
 ripple = "sirno-tide"
 field = "belongs"
+direction = "from"
+neighbor = "ripple"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "from"
+neighbor = "tide"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "from"
+neighbor = "wave"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
 direction = "clique"
 neighbor = "entry-artifact"
 fingerprint = "dd20c586eb207ccf"
@@ -1775,6 +2475,34 @@ ripple = "sirno-tide"
 field = "belongs"
 direction = "clique"
 neighbor = "local-lakelet"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "ripple"
 fingerprint = "dd20c586eb207ccf"
 
 [[tide.resolved]]
@@ -1809,7 +2537,35 @@ fingerprint = "dd20c586eb207ccf"
 ripple = "sirno-tide"
 field = "belongs"
 direction = "clique"
+neighbor = "structural-check"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "tide"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
 neighbor = "versioning"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "wave"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "to"
+neighbor = "ripple"
 fingerprint = "dd20c586eb207ccf"
 
 [[tide.resolved]]
@@ -1817,6 +2573,20 @@ ripple = "sirno-tide"
 field = "prerequisite"
 direction = "to"
 neighbor = "sirno-frost"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "to"
+neighbor = "structural-edge-policy"
+fingerprint = "dd20c586eb207ccf"
+
+[[tide.resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "from"
+neighbor = "tide"
 fingerprint = "dd20c586eb207ccf"
 
 [[tide.resolved]]
@@ -1879,6 +2649,20 @@ fingerprint = "c8a9156285438251"
 ripple = "sirno-upstream"
 field = "belongs"
 direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
 neighbor = "glacier"
 fingerprint = "c8a9156285438251"
 
@@ -1914,6 +2698,27 @@ fingerprint = "c8a9156285438251"
 ripple = "sirno-upstream"
 field = "belongs"
 direction = "clique"
+neighbor = "metadata"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
 neighbor = "sirno-lake"
 fingerprint = "c8a9156285438251"
 
@@ -1922,6 +2727,13 @@ ripple = "sirno-upstream"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-tide"
+fingerprint = "c8a9156285438251"
+
+[[tide.resolved]]
+ripple = "sirno-upstream"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
 fingerprint = "c8a9156285438251"
 
 [[tide.resolved]]
@@ -1977,6 +2789,13 @@ fingerprint = "c5a51a36157786b5"
 ripple = "skill-synthesis-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "design-doc-writer-skill"
+fingerprint = "c5a51a36157786b5"
+
+[[tide.resolved]]
+ripple = "skill-synthesis-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "internalization-discipline"
 fingerprint = "c5a51a36157786b5"
 
@@ -1998,6 +2817,13 @@ fingerprint = "c5a51a36157786b5"
 ripple = "skill-synthesis-discipline"
 field = "belongs"
 direction = "clique"
+neighbor = "portable-agent-skill-language"
+fingerprint = "c5a51a36157786b5"
+
+[[tide.resolved]]
+ripple = "skill-synthesis-discipline"
+field = "belongs"
+direction = "clique"
 neighbor = "repository-editing-discipline"
 fingerprint = "c5a51a36157786b5"
 
@@ -2006,6 +2832,13 @@ ripple = "skill-synthesis-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "agent-skills"
+fingerprint = "c5a51a36157786b5"
+
+[[tide.resolved]]
+ripple = "skill-synthesis-discipline"
+field = "prerequisite"
+direction = "to"
+neighbor = "portable-agent-skill-language"
 fingerprint = "c5a51a36157786b5"
 
 [[tide.resolved]]
