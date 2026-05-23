@@ -44,9 +44,23 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md",
         full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
-        content: include_str!(
-            "../../sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"
-        ),
+        content: include_str!("../../sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-actualizer",
+        entry_id: "actualization-discipline",
+        wrapper_path: "sirno-lake/.artifacts/actualization-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/actualization-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-actualizer/SKILL.md",
+        content: include_str!("../../sirno-lake/.artifacts/actualization-discipline/SKILL.md"),
+    },
+    SkillWrapperSpec {
+        name: "sirno-internalizer",
+        entry_id: "internalization-discipline",
+        wrapper_path: "sirno-lake/.artifacts/internalization-discipline/SKILL.md",
+        full_path: "sirno-lake/.artifacts/internalization-discipline/SKILL.full.md",
+        target_path: ".agents/skills/sirno-internalizer/SKILL.md",
+        content: include_str!("../../sirno-lake/.artifacts/internalization-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-narrative-session",

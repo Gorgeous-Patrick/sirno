@@ -224,8 +224,7 @@ mod tests {
         SkillWrapperRecord {
             entry_id: "repository-editing-discipline".to_owned(),
             name: name.to_owned(),
-            wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"
-                .to_owned(),
+            wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md".to_owned(),
             full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
                 .to_owned(),
             target_path: target_path.to_owned(),

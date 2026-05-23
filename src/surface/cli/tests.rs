@@ -821,12 +821,24 @@ fn util_skills_init_installs_bundled_wrappers() {
 
     let init = context.skill_wrappers_init().unwrap();
     let target = temp.path().join(".agents").join("skills").join("sirno-editor").join("SKILL.md");
+    let actualizer_target =
+        temp.path().join(".agents").join("skills").join("sirno-actualizer").join("SKILL.md");
+    let internalizer_target =
+        temp.path().join(".agents").join("skills").join("sirno-internalizer").join("SKILL.md");
     let check = context.skill_wrappers_check().unwrap();
 
     assert!(init.ok);
     assert_eq!(init.records.len(), expected);
     assert!(init.records.iter().all(|record| record.status == "wrote"));
     assert!(fs::read_to_string(target).unwrap().contains("sirno://skills/sirno-editor"));
+    assert!(
+        fs::read_to_string(actualizer_target).unwrap().contains("sirno://skills/sirno-actualizer")
+    );
+    assert!(
+        fs::read_to_string(internalizer_target)
+            .unwrap()
+            .contains("sirno://skills/sirno-internalizer")
+    );
     assert!(check.ok);
     assert_eq!(check.records.len(), expected);
     assert!(check.records.iter().all(|record| record.status == "ok"));
@@ -890,8 +902,7 @@ fn skill_wrapper_output_uses_table() {
         entry_id: "repository-editing-discipline".to_owned(),
         name: "sirno-editor".to_owned(),
         wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md".to_owned(),
-        full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
-            .to_owned(),
+        full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md".to_owned(),
         target_path: ".agents/skills/sirno-editor/SKILL.md".to_owned(),
         status: "ok".to_owned(),
         changed: false,

@@ -63,6 +63,20 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         ),
     },
     SkillResourceSpec {
+        uri: "sirno://skills/sirno-actualizer",
+        name: "sirno-actualizer",
+        title: "Sirno Actualizer",
+        description: "Full Sirno actualizer skill text.",
+        content: include_str!("../sirno-lake/.artifacts/actualization-discipline/SKILL.full.md"),
+    },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-internalizer",
+        name: "sirno-internalizer",
+        title: "Sirno Internalizer",
+        description: "Full Sirno internalizer skill text.",
+        content: include_str!("../sirno-lake/.artifacts/internalization-discipline/SKILL.full.md"),
+    },
+    SkillResourceSpec {
         uri: "sirno://skills/sirno-narrative-session",
         name: "sirno-narrative-session",
         title: "Sirno Narrative Session",
@@ -1356,6 +1370,14 @@ Changed body.
         assert_eq!(resources.resources.len(), SKILL_RESOURCES.len());
         assert!(resources.resources.iter().any(|resource| {
             resource.uri == "sirno://skills/sirno-editor"
+                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
+        }));
+        assert!(resources.resources.iter().any(|resource| {
+            resource.uri == "sirno://skills/sirno-actualizer"
+                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
+        }));
+        assert!(resources.resources.iter().any(|resource| {
+            resource.uri == "sirno://skills/sirno-internalizer"
                 && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
         }));
         assert!(resources.resources.iter().any(|resource| {

@@ -12,12 +12,14 @@ prerequisite:
 
 Sirno ships an agent skill set that renders the method into operational procedure.
 
-There are four packaged Sirno skills.
+There are six packaged Sirno skills.
 The editor skill is the default entry point for codebase changes.
 It starts in the configured lake,
 updates or creates the entries that govern the work,
 actualizes from those entries into repository material,
 and keeps witnesses, configuration, and generated skill artifacts synced.
+The actualizer skill handles lake-to-repository work after the governing entry is clear.
+The internalizer skill records durable repository facts back into the lake.
 The narrative-session skill conducts an adaptive route through lake knowledge
 and materializes it as a narrative entry when the route should persist.
 The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
@@ -48,8 +50,9 @@ This entry is the review front door for those skills.
 The durable procedure each skill encodes lives in its own discipline entry,
 so a skill can be rebuilt from the lake rather than only from its packaged wrapper.
 Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
-The discipline entries are `repository-editing-discipline`,
-`narrative-session-discipline`, `skill-synthesis-discipline`, and `lake-curation-discipline`.
+The discipline entries are `repository-editing-discipline`, `actualization-discipline`,
+`internalization-discipline`, `narrative-session-discipline`, `skill-synthesis-discipline`,
+and `lake-curation-discipline`.
 
 Packaged skills are portable.
 They are installed into arbitrary user repositories,
@@ -73,7 +76,7 @@ and `METHODOLOGY` prose when those documents have their own roles and style.
 The `design-doc-writer-skill` entry documents the adjacent meta-management skill
 for design documents.
 It is documented in the Sirno source lake as a method input,
-not as part of the four packaged Sirno skills.
+not as part of the six packaged Sirno skills.
 `design-doc-writer-skill` contributes reusable design-document habits:
 read the whole design document,
 order sections by conceptual dependency and scope,

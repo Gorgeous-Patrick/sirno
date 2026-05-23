@@ -28,8 +28,11 @@ MCP resources are:
 
 - `sirno://skills/design-doc-writer`
 - `sirno://skills/sirno-editor`
+- `sirno://skills/sirno-actualizer`
+- `sirno://skills/sirno-internalizer`
 - `sirno://skills/sirno-narrative-session`
 - `sirno://skills/sirno-skill-synthesizer`
+- `sirno://skills/sirno-curator`
 - `sirno://entries/{id}` through the entry resource template
 
 Reading one entry resource returns the full stored Markdown source as `text/markdown`.
