@@ -31,11 +31,13 @@ use crate::structural::StructuralSettings;
 ///
 /// Sirno currently distinguishes only entry presence.
 /// Deletion or archival policy is left to a later design step.
+// sirno:witness:entry-lifecycle:begin
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum EntryLifecycle {
     /// The entry exists at this snapshot.
     Active,
 }
+// sirno:witness:entry-lifecycle:end
 
 type SirnoBackend = FilesystemBackend<EntryLifecycle>;
 type SirnoWriteTxn<'a> = FilesystemWriteTxn<'a, EntryLifecycle>;

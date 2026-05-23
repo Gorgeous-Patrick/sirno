@@ -173,6 +173,7 @@ impl FrostSettings {
 /// Ordered upstream lake declarations keyed by their glacier domain.
 pub type UpstreamSettingsMap = IndexMap<EntryAtom, UpstreamSettings>;
 
+// sirno:witness:upstream-lake:begin
 /// Configured upstream Git lake source.
 ///
 /// Invariant: exactly one requested ref selector is present.
@@ -264,6 +265,7 @@ impl UpstreamSettings {
         Ok(())
     }
 }
+// sirno:witness:upstream-lake:end
 
 /// Requested upstream Git ref selector.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

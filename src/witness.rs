@@ -254,6 +254,7 @@ impl WitnessIndex {
         self.records_by_entry.keys()
     }
 
+    // sirno:witness:witness-integrity:begin
     pub(crate) fn orphan_delimiters(&self) -> &[WitnessDelimiterToken] {
         &self.orphan_delimiters
     }
@@ -261,6 +262,7 @@ impl WitnessIndex {
     fn set_orphan_delimiters(&mut self, orphan_delimiters: Vec<WitnessDelimiterToken>) {
         self.orphan_delimiters = orphan_delimiters;
     }
+    // sirno:witness:witness-integrity:end
 
     fn resolved_delimiter_keys(&self) -> BTreeSet<WitnessDelimiterKey> {
         self.records_by_entry

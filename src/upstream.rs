@@ -1,7 +1,9 @@
+// sirno:witness:sirno-upstream:begin
 //! Upstream lake resolution and crystallization.
 //!
 //! Upstream lakes are Git-backed Sirno projects declared by the current project.
 //! Crystallization materializes each upstream lake into a managed glacier.
+// sirno:witness:sirno-upstream:end
 
 use std::ffi::OsStr;
 use std::fs;
@@ -151,6 +153,7 @@ impl UpstreamGitCache {
     }
 }
 
+// sirno:witness:crystallization:begin
 /// Crystallize selected upstream lake domains into glaciers.
 pub(crate) fn crystallize_upstreams(
     input: CrystallizeUpstreams<'_>,
@@ -187,7 +190,9 @@ pub(crate) fn crystallize_upstreams(
         reports,
     ))
 }
+// sirno:witness:crystallization:end
 
+// sirno:witness:lake-system:begin
 /// Return status for configured upstream lakes.
 pub fn upstream_status(
     config_path: &Path, config: &SirnoConfig, lock: Option<&SirnoLock>, cache: &UpstreamGitCache,
@@ -226,6 +231,7 @@ pub fn upstream_status(
         upstreams,
     })
 }
+// sirno:witness:lake-system:end
 
 fn glacier_status(
     config_path: &Path, domain: &EntryAtom, upstream: &UpstreamSettings, lock: &SirnoLock,
@@ -278,6 +284,7 @@ fn read_glacier(
     Ok(Some(LoadedUpstreamFiles { entries, artifacts }))
 }
 
+// sirno:witness:upstream-lake:begin
 fn select_upstreams<'a>(
     config: &'a SirnoConfig, domains: &[EntryAtom],
 ) -> Result<Vec<(&'a EntryAtom, &'a UpstreamSettings)>, UpstreamError> {
@@ -326,6 +333,7 @@ fn load_upstream(
     let lock = UpstreamLock::new(settings, upstream_config.lake.path.clone(), commit);
     Ok(LoadedUpstream { entries: loaded.entries, artifacts: loaded.artifacts, lock })
 }
+// sirno:witness:upstream-lake:end
 
 struct LoadedUpstream {
     entries: Vec<Entry>,
@@ -338,6 +346,7 @@ struct LoadedUpstreamFiles {
     artifacts: Vec<EntryArtifact>,
 }
 
+// sirno:witness:lake-sheaf:begin
 fn load_upstream_files(
     mirror: &Path, commit: &str, lake_tree_path: &str, files: &[String], domain: &EntryAtom,
     config: &SirnoConfig,
@@ -382,6 +391,7 @@ fn load_upstream_files(
     });
     Ok(LoadedUpstreamFiles { entries, artifacts })
 }
+// sirno:witness:lake-sheaf:end
 
 fn load_artifact(
     mirror: &Path, commit: &str, file: &str, relative: &str, domain: &EntryAtom,

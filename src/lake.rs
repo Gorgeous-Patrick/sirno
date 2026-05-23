@@ -193,6 +193,7 @@ pub struct EntryProtectionReport {
     paths: Vec<PathBuf>,
 }
 
+// sirno:witness:glacier:begin
 /// Result of replacing one glacier.
 #[derive(Debug)]
 pub struct GlacierReport {
@@ -200,6 +201,7 @@ pub struct GlacierReport {
     domain: EntryAtom,
     changed_paths: Vec<PathBuf>,
 }
+// sirno:witness:glacier:end
 
 impl EntryRenameReport {
     /// Entry address before the rename.
@@ -757,6 +759,7 @@ impl EntryDirectory {
     /// Replace one glacier.
     ///
     /// Existing files under the glacier domain must already be managed by crystallization.
+    // sirno:witness:glacier:begin
     pub fn replace_glacier(
         &self, domain: &EntryAtom, entries: &[Entry], artifacts: &[EntryArtifact],
         settings: &EntryDirectoryCheckSettings,
@@ -790,6 +793,7 @@ impl EntryDirectory {
         trace!("replace_glacier end: domain={} changed={}", domain, changed_paths.len());
         Ok(GlacierReport { root: self.root.clone(), domain: domain.clone(), changed_paths })
     }
+    // sirno:witness:glacier:end
 
     /// Require all existing paths in a glacier domain to be crystallization-managed.
     pub fn ensure_glacier_replaceable(
@@ -1993,6 +1997,7 @@ impl LoadedEntryDirectory {
     }
 }
 
+// sirno:witness:local-lakelet:begin
 fn collect_entry_file_paths(
     root: &Path, directory: &Path, settings: &EntryDirectoryCheckSettings, severity: CheckSeverity,
     artifact_root: &mut Option<PathBuf>, diagnostics: &mut Vec<EntryFileDiagnostic>,
@@ -2050,6 +2055,7 @@ fn collect_entry_file_paths(
     }
     Ok(entries)
 }
+// sirno:witness:local-lakelet:end
 
 fn is_reserved_builtin_root(relative_path: &Path) -> bool {
     relative_path.components().next().is_some_and(|component| match component {

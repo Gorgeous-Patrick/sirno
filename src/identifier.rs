@@ -177,6 +177,7 @@ impl<'de> Deserialize<'de> for EntryAtom {
     }
 }
 
+// sirno:witness:entry-address:begin
 /// Dot-separated lookup address for one Sirno entry.
 ///
 /// Invariant: every segment is a valid [`EntryAtom`].
@@ -184,6 +185,7 @@ impl<'de> Deserialize<'de> for EntryAtom {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(transparent)]
 pub struct EntryAddress(SmolStr);
+// sirno:witness:entry-address:end
 
 impl EntryAddress {
     /// Construct a validated entry address.
@@ -209,6 +211,7 @@ impl EntryAddress {
             .expect("entry address segment is valid")
     }
 
+    // sirno:witness:entry-domain:begin
     /// Return this address under a domain prefix.
     pub fn under_domain(&self, domain: &EntryAtom) -> Self {
         Self::new(format!("{}.{}", domain.as_str(), self.as_str()))
@@ -219,7 +222,9 @@ impl EntryAddress {
     pub fn starts_with_domain(&self, domain: &EntryAtom) -> bool {
         self.as_str().strip_prefix(domain.as_str()).is_some_and(|suffix| suffix.starts_with('.'))
     }
+    // sirno:witness:entry-domain:end
 
+    // sirno:witness:entry-address-resolution:begin
     /// Convert this address into a lake-root-relative Markdown file path.
     pub fn to_lake_relative_path(&self) -> PathBuf {
         let mut path = PathBuf::new();
@@ -272,6 +277,7 @@ impl EntryAddress {
         }
         Ok(Self::from_segments(segments))
     }
+    // sirno:witness:entry-address-resolution:end
 
     /// Convert this address into the filesystem-safe identifier used by `eter`.
     pub fn to_filesystem_id(&self) -> Result<FilesystemEntryId, FilesystemError> {
