@@ -8,8 +8,6 @@ belongs:
 prerequisite:
   - entry-address
   - sirno-lake
-refines:
-  - future-work
 ---
 
 A *lake sheaf* is the resolved view of a top-level *lake* and its lakelets.
