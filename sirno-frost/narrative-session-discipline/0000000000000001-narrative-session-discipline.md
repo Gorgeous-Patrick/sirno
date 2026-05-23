@@ -1,4 +1,7 @@
 ---
+artifacts:
+- SKILL.full.md
+- SKILL.md
 desc: The agent procedure for conducting and materializing a narrative session.
 lifecycle: Active
 name: Narrative Session Discipline
@@ -11,9 +14,6 @@ structural:
   - agent-skills
   - portable-agent-skill-language
   - interactive-narrative-session
-artifacts:
-- SKILL.full.md
-- SKILL.md
 ---
 
 A narrative session builds an adaptive route through lake knowledge for one reader or task.

@@ -1,4 +1,7 @@
 ---
+artifacts:
+- SKILL.full.md
+- SKILL.md
 desc: The agent procedure for rebuilding MCP skill resources and installed skill wrappers.
 lifecycle: Active
 name: Skill Synthesis Discipline
@@ -10,9 +13,6 @@ structural:
   prerequisite:
   - agent-skills
   - portable-agent-skill-language
-artifacts:
-- SKILL.full.md
-- SKILL.md
 ---
 
 Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resources

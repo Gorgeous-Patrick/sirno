@@ -1,4 +1,6 @@
 ---
+artifacts:
+- SKILL.full.md
 desc: The default design-document method Sirno ships as a safety-net MCP resource.
 lifecycle: Active
 name: Design Doc Writer Skill
@@ -9,8 +11,6 @@ structural:
   - agent-skills
   prerequisite:
   - agent-skills
-artifacts:
-- SKILL.full.md
 ---
 
 `design-doc-writer-skill` is the default design-document method

@@ -1,3 +1,3 @@
 lock_format_version = 1
-gc_generation = 1
-committed_version = 6
+gc_generation = 0
+committed_version = 1
