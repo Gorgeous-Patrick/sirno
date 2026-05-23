@@ -10,6 +10,8 @@ prerequisite:
   - sirno-frost
   - ripple
   - structural-edge-policy
+refines:
+  - versioning
 ---
 
 Sirno Tide is the dependency-review subsystem of a frost-versioned lake.

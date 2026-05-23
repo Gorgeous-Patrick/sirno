@@ -7,6 +7,8 @@ belongs:
   - sirno-frost
 prerequisite:
   - sirno-frost
+refines:
+  - versioning
 ---
 
 `Sirno.lock.toml` records generated project state.

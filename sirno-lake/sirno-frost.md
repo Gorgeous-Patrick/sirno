@@ -5,6 +5,8 @@ category:
   - concept
 prerequisite:
   - versioning
+refines:
+  - versioning
 ---
 
 The *frost* path is optional private `eter` storage for immutable *lake* snapshots.
