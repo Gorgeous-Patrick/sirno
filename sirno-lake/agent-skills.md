@@ -7,7 +7,6 @@ belongs:
   - sirno
 prerequisite:
   - methodology
-  - interfaces
 ---
 
 Sirno ships an agent skill set that renders the method into operational procedure.
