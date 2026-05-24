@@ -23,6 +23,10 @@ It is a non-empty list of protection reasons when present.
 The frost layer accepts reviewed entries only while their committed form still matches that snapshot.
 `managed` means crystallization owns the entry content.
 An entry may carry both reasons.
+Flat `meta.lake.*` and `meta.frost.*` fields define how *tide* follows a structural relation.
+They are present on entries that define configured structural link relations.
+Their `to`, `from`, and `clique` booleans enable waterline or frostline review workitems.
+`meta.lake: false` and `meta.frost: false` mean the relation has no tide behavior.
 
 Configured structural link relations are optional.
 This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
@@ -54,13 +58,12 @@ A canonical *entry* shape looks like this:
 
 ```yaml
 ---
-name: Concept
-desc: A named idea that compresses project knowledge.
-meta:
-  frozen:
-    - reviewed
+name: Category
+desc: A structural link relation that classifies an entry by other entries.
+meta.lake: false
+meta.frost: false
 category:
-  - concept
+  - category
 ---
 ```
 

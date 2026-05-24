@@ -106,7 +106,7 @@ Omitting the table or an individual check flag leaves that check enabled.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 `[check].structural-inhabitance` controls whether checks require each configured link relation
-to name an existing *entry*.
+to name an existing *entry* with Tide metadata.
 When a check flag is present,
 the config UI can restore that flag's canonical comment.
 `sirno util config check` reports when the comment is missing.
@@ -130,12 +130,11 @@ checks report configured link relations without matching *entries*.
 It must be a non-empty single-line metadata key,
 must not contain a comma,
 and must not be `name`, `desc`, or `frozen`.
-The subtable may define `to`, `from`, and `clique` edge policies.
+The subtable may define `to`, `from`, and `clique` edge policies for rendering.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The key order is user-authored project structure.
 Sirno preserves that order when it rewrites `Sirno.toml`.
-Each edge policy may set `render = true`
-and `ripple = { lake = bool, frost = bool }`.
+Each edge policy may set `render = true`.
 Absent values are false.
 
 `to` links from the *entry* to metadata targets.
@@ -143,7 +142,7 @@ Absent values are false.
 `clique` adds separate clique-derived sections through shared targets in that relation.
 
 `render` controls generated footer output.
-`ripple.lake` and `ripple.frost` control which edge directions produce *tide* workitems.
+Tide policy lives in the relation entry's `meta.lake.*` and `meta.frost.*` fields.
 
 `Sirno.lock.toml` also records explicit *tide* resolutions when frost is configured.
 Those resolutions are compared against the current ripple fingerprint.

@@ -16,7 +16,7 @@ use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
 use crate::{
     CheckMode, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings, EntryMetadata,
-    StructuralSettings,
+    StructuralRippleSettings, StructuralSettings, StructuralTideSettings,
 };
 
 const CATEGORY_FIELD: &str = "category";
@@ -291,6 +291,9 @@ struct DefaultEntrySpec {
 impl DefaultEntrySpec {
     fn entry(self, structural: &StructuralSettings) -> Result<Entry, CommandError> {
         let mut metadata = EntryMetadata::new(self.name, self.desc)?;
+        if structural.contains_field(self.id) {
+            metadata.meta.tide = default_structural_tide_settings(self.id);
+        }
         self.set_targets(&mut metadata, structural, CATEGORY_FIELD, self.category);
         self.set_targets(&mut metadata, structural, BELONGS_FIELD, self.belongs);
         self.set_targets(&mut metadata, structural, PREREQUISITE_FIELD, self.prerequisite);
@@ -305,6 +308,23 @@ impl DefaultEntrySpec {
             return;
         }
         metadata.set_structural_targets(field, targets.iter().map(|target| entry_address(target)));
+    }
+}
+
+fn default_structural_tide_settings(id: &str) -> Option<StructuralTideSettings> {
+    match id {
+        | CATEGORY_FIELD => Some(StructuralTideSettings::default()),
+        | BELONGS_FIELD => Some(StructuralTideSettings::new(
+            StructuralRippleSettings::new(true, false),
+            StructuralRippleSettings::new(true, true),
+            StructuralRippleSettings::new(true, false),
+        )),
+        | "refines" | PREREQUISITE_FIELD => Some(StructuralTideSettings::new(
+            StructuralRippleSettings::new(true, false),
+            StructuralRippleSettings::new(true, true),
+            StructuralRippleSettings::default(),
+        )),
+        | _ => None,
     }
 }
 
@@ -411,6 +431,11 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["structural"]
         );
+        let tide = full.metadata.meta.tide.unwrap();
+        assert!(tide.to.lake);
+        assert!(tide.from.lake);
+        assert!(tide.from.frost);
+        assert!(tide.clique.lake);
     }
 
     #[test]

@@ -23,7 +23,7 @@ This *entry* is also the review front door for the freezing subsystem.
 `entry-freeze` protects one current frost-backed lake *entry* from edits,
 `tide` is the frost-based review worklist,
 `wave` is the workitem set produced by one *ripple*,
-and `structural-edge-policy` chooses how structural links feed rendering and the tide.
+and `structural-edge-policy` splits structural rendering from relation-defined tide behavior.
 A change to the snapshot path, the lock file, artifacts, *entry* protection, or the review worklist
 usually constrains the others, so these parts are reviewed together here.
 

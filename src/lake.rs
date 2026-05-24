@@ -64,7 +64,7 @@ pub struct EntryDirectoryReport {
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
-    /// Check that each configured link relation has a matching entry.
+    /// Check that each configured link relation has a matching entry with tide policy.
     pub structural_inhabitance: bool,
     /// Configured link relations and generated footer settings.
     pub structural: StructuralSettings,
@@ -2330,7 +2330,16 @@ mod tests {
     }
 
     fn write_structural_field_entries(root: &Path, fields: &[&str]) {
+        write_structural_field_entries_with_meta(root, fields, true);
+    }
+
+    fn write_plain_structural_field_entries(root: &Path, fields: &[&str]) {
+        write_structural_field_entries_with_meta(root, fields, false);
+    }
+
+    fn write_structural_field_entries_with_meta(root: &Path, fields: &[&str], meta: bool) {
         for field in fields {
+            let meta = if meta { "meta.lake: false\nmeta.frost: false\n" } else { "" };
             write_entry(
                 root,
                 &format!("{field}.md"),
@@ -2339,6 +2348,7 @@ mod tests {
 ---
 name: {field}
 desc: A structural link relation.
+{meta}\
 ---
 
 Body.
@@ -3189,18 +3199,7 @@ desc: A named idea.
 Body.
 ",
         );
-        write_entry(
-            &root,
-            "refines.md",
-            "\
----
-name: Refines
-desc: A structural link relation.
----
-
-Body.
-",
-        );
+        write_structural_field_entries(&root, &["refines"]);
         write_entry(
             &root,
             "reader.md",
@@ -3781,6 +3780,7 @@ Body.
         write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
+        write_plain_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
 
         let report = entry_directory(&root)
             .check_with_settings(
@@ -3806,6 +3806,7 @@ Body.
         write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
+        write_plain_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
 
         let report = entry_directory(&root)
             .check_with_settings(
@@ -3830,6 +3831,7 @@ Body.
         write_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
         let old_settings = all_test_fields_linked();
         entry_directory(&root).generate_links(&old_settings).unwrap();
+        write_plain_structural_field_entries(&root, &[FIELD_KIND, FIELD_AREA, FIELD_PARENT]);
 
         let report = entry_directory(&root)
             .check_with_settings(

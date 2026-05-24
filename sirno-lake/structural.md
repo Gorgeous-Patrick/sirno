@@ -19,6 +19,8 @@ and follow normal *entry* id rules.
 Configured relations are ordinary *entry* metadata fields today,
 but Sirno treats their values as the graph that powers query, checking,
 generated footer rendering, and tide review worklists.
+The relation entry defines Tide behavior in `meta.lake.*` and `meta.frost.*` fields.
+`Sirno.toml` defines relation order and generated-footer rendering.
 
 Structural links refer to *entries* by path.
 They are list-valued and may name several targets.
@@ -39,7 +41,7 @@ It gives the relation set one review front door while leaving each relation *ent
 to carry its own meaning and other `belongs` targets.
 
 The *repository witness* for this *entry* should show the generic structural metadata map.
-The active relation set is defined by `Sirno.toml`.
+The active relation set and rendered directions are defined by `Sirno.toml`.
 
 ---
 

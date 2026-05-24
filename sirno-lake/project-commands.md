@@ -17,7 +17,8 @@ Status reports the config path, lake path, entry count, optional typed frost sta
 structural link relation count, review-mode lake check, active tide summary,
 and frost commit readiness.
 CLI status keeps structural policy collapsed.
-MCP status returns the full typed structural link policy.
+MCP status returns the effective typed structural link policy,
+including rendered directions from config and tide directions from relation entries.
 
 `sirno init` opens an interactive setup flow.
 It asks which setup parts to run, asks for default paths when no path flag supplies them,

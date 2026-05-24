@@ -1,7 +1,7 @@
 //! Dependency review worklists for lake edits.
 //!
 //! Tide compares the current lake against the latest frost snapshot.
-//! It derives review obligations from configured structural link policies.
+//! It derives review obligations from structural relation entries.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -439,6 +439,7 @@ mod tests {
     use super::*;
     use crate::{
         EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
+        StructuralTideSettings,
     };
 
     fn id(raw: &str) -> EntryAddress {
@@ -477,6 +478,31 @@ mod tests {
             tide.statuses().iter().map(|status| status.workitem.to_string()).collect::<Vec<_>>();
 
         assert_eq!(workitems, ["ripple,belongs,to,new-neighbor", "ripple,belongs,to,old-neighbor"]);
+    }
+
+    #[test]
+    fn derives_workitems_from_entry_defined_tide_policy() {
+        let mut old = entry("ripple");
+        old.metadata.push_structural_target("belongs", id("old-neighbor"));
+        let mut new = entry("ripple");
+        new.metadata.push_structural_target("belongs", id("new-neighbor"));
+        let mut relation = entry("belongs");
+        relation.metadata.meta.tide = Some(StructuralTideSettings::new(
+            StructuralRippleSettings::new(true, false),
+            StructuralRippleSettings::default(),
+            StructuralRippleSettings::default(),
+        ));
+        let settings = StructuralSettings::from_fields([(
+            "belongs",
+            StructuralFieldSettings::render_only(true, false, false),
+        )])
+        .with_tide_policies_from_entries(&[relation]);
+
+        let tide = Tide::from_entries(&[old], &[new], &settings, &[]).unwrap();
+
+        let workitems =
+            tide.statuses().iter().map(|status| status.workitem.to_string()).collect::<Vec<_>>();
+        assert_eq!(workitems, ["ripple,belongs,to,new-neighbor"]);
     }
 
     #[test]

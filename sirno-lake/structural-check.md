@@ -17,7 +17,7 @@ Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
-Each configured link relation must also name an existing *entry*.
+Each configured link relation must also name an existing *entry* with Tide metadata.
 That structural-inhabitance check is controlled by `[check].structural-inhabitance`
 and is enabled when the flag or the whole `[check]` table is absent.
 Category metadata also has a semantic target check.
@@ -36,8 +36,10 @@ which is enabled by default.
 During editing, dangling structural link targets may warn.
 At an explicit review boundary, dangling references are errors.
 List-valued metadata fields that are absent from `[structural]` always warn.
-Configured link relations that name missing *entries* follow the same edit warning
-and review error boundary as dangling structural link targets.
+Configured link relations with missing *entries* or missing Tide metadata
+follow the same edit warning and review error boundary as dangling structural link targets.
+An entry with Tide metadata that is not configured in `Sirno.toml`
+also follows that boundary.
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
@@ -64,6 +66,8 @@ If an *entry* names a target through configured structural link metadata,
 that target should exist by the time the *lake* is reviewed.
 If `Sirno.toml` configures a link relation,
 the relation name should also exist as the *entry* that documents that relation.
+That relation entry should define Tide metadata,
+even when the relation has no tide behavior.
 `[check].structural-inhabitance` controls that configured-relation entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.

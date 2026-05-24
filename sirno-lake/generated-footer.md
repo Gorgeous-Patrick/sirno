@@ -50,7 +50,7 @@ A *frost* commit removes the *generated footer* before writing the *entry* snaps
 The frost layer keeps canonical metadata and prose,
 not navigation projections.
 
-The `[structural]` edge policy controls which link relations appear.
+The `[structural]` render policy controls which link relations appear.
 
 `sirno check` reports stale *generated footer* regions when render checking is enabled.
 `sirno render` creates or replaces *generated footer* regions.

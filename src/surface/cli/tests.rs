@@ -16,9 +16,8 @@ use crate::{
     CONFIG_FILE_NAME, CheckMode, CheckSettings, Entry, EntryAddress, EntryDirectory,
     EntryDirectoryCheckSettings, EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus,
     FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
-    StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings,
-    StructuralRippleSettings, StructuralSettings, TideSource, TideStatus, TideWorkitem,
-    TutorialSettings, WitnessRecord, WitnessSpan,
+    StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings, StructuralSettings,
+    TideSource, TideStatus, TideWorkitem, TutorialSettings, WitnessRecord, WitnessSpan,
 };
 
 use super::{
@@ -49,6 +48,41 @@ fn run_configured(config_path: &Path, args: &[&str]) {
     let mut command = vec!["sirno", "--config", config_path.to_str().unwrap()];
     command.extend_from_slice(args);
     Cli::parse_from(command).run().unwrap();
+}
+
+fn write_empty_relation_entry(docs: &Path, id: &str, name: &str) {
+    fs::write(
+        docs.join(format!("{id}.md")),
+        format!(
+            "\
+---
+name: {name}
+desc: A structural link relation.
+meta.lake: false
+meta.frost: false
+---
+
+Body.
+"
+        ),
+    )
+    .unwrap();
+}
+
+fn write_belongs_relation_entry(docs: &Path) {
+    fs::write(
+        docs.join("belongs.md"),
+        "\
+---
+name: Belongs
+desc: A structural link relation.
+meta.lake.to: true
+---
+
+Body.
+",
+    )
+    .unwrap();
 }
 
 fn committed_alpha_frost_project() -> (tempfile::TempDir, PathBuf, PathBuf) {
@@ -1066,7 +1100,7 @@ fn frost_commit_requires_clear_tide() {
         structural: StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(
-                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                StructuralEdgeSettings::render_only(false),
                 StructuralEdgeSettings::default(),
                 StructuralEdgeSettings::default(),
             ),
@@ -1101,18 +1135,7 @@ Body.
 ",
     )
     .unwrap();
-    fs::write(
-        docs.join("belongs.md"),
-        "\
----
-name: Belongs
-desc: A structural link relation.
----
-
-Body.
-",
-    )
-    .unwrap();
+    write_belongs_relation_entry(&docs);
     Cli::parse_from([
         "sirno",
         "--config",
@@ -1181,7 +1204,7 @@ fn status_summarizes_tide_and_commit_readiness() {
         structural: StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(
-                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                StructuralEdgeSettings::render_only(false),
                 StructuralEdgeSettings::default(),
                 StructuralEdgeSettings::default(),
             ),
@@ -1216,18 +1239,7 @@ Body.
 ",
     )
     .unwrap();
-    fs::write(
-        docs.join("belongs.md"),
-        "\
----
-name: Belongs
-desc: A structural link relation.
----
-
-Body.
-",
-    )
-    .unwrap();
+    write_belongs_relation_entry(&docs);
     Cli::parse_from([
         "sirno",
         "--config",
@@ -1315,7 +1327,7 @@ fn frost_commit_open_tide_tutorial_explains_bootstrap_when_enabled() {
         structural: StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(
-                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                StructuralEdgeSettings::render_only(false),
                 StructuralEdgeSettings::default(),
                 StructuralEdgeSettings::default(),
             ),
@@ -1351,6 +1363,7 @@ Body.
 ",
     )
     .unwrap();
+    write_belongs_relation_entry(&docs);
 
     Cli::parse_from(["sirno", "--config", config_path.to_str().unwrap(), "frost", "init"])
         .run()
@@ -3649,18 +3662,7 @@ Body.
 ",
     )
     .unwrap();
-    fs::write(
-        docs.join("area.md"),
-        "\
----
-name: Area
-desc: A structural link relation.
----
-
-Body.
-",
-    )
-    .unwrap();
+    write_empty_relation_entry(&docs, "area", "Area");
     let witness_source = format!(
         "\
 // sirno{}old-entry:begin
@@ -3719,18 +3721,7 @@ Body.
 ",
     )
     .unwrap();
-    fs::write(
-        docs.join("refines.md"),
-        "\
----
-name: Refines
-desc: A structural link relation.
----
-
-Body.
-",
-    )
-    .unwrap();
+    write_empty_relation_entry(&docs, "refines", "Refines");
     fs::write(
         docs.join("reader.md"),
         "\
@@ -4170,18 +4161,7 @@ Body.
 ",
     )
     .unwrap();
-    fs::write(
-        docs.join("belongs.md"),
-        "\
----
-name: Belongs
-desc: A structural link relation.
----
-
-Body.
-",
-    )
-    .unwrap();
+    write_empty_relation_entry(&docs, "belongs", "Belongs");
 
     Cli::parse_from([
         "sirno",

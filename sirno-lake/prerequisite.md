@@ -7,6 +7,9 @@ belongs:
   - structural
 prerequisite:
   - structural
+meta.lake.to: true
+meta.lake.from: true
+meta.frost.from: true
 ---
 
 `prerequisite` records a knowledge dependency from an *entry*
@@ -34,7 +37,8 @@ Use `category` for kind.
 Use `belongs` for review locality.
 Use `refines` when the current *entry* makes a broader design claim more concrete.
 
-The configured edge policy uses direct `to` and `from` edges for *tide* review workitems.
+This entry's `meta.lake.*` and `meta.frost.*` fields use direct `to` and `from` edges
+for *tide* review workitems.
 It does not use clique expansion,
 because a knowledge dependency is directional.
 Waterline `to` catches the dependencies named by the edited *entry*.

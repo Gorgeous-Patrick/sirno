@@ -1028,6 +1028,7 @@ impl SurfaceContext {
             },
             structural_fields: config
                 .structural
+                .with_tide_policies_from_entries(report.entries())
                 .fields()
                 .map(|(field, settings)| StructuralFieldStatus {
                     field: field.to_owned(),
@@ -1633,12 +1634,8 @@ impl TideContext {
         if report.has_errors() {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.lake_path.clone()).into());
         }
-        Ok(Tide::from_entries(
-            &frostline,
-            report.entries(),
-            &settings.structural,
-            &lock.tide.resolved,
-        )?)
+        let structural = settings.structural.with_tide_policies_from_entries(report.entries());
+        Ok(Tide::from_entries(&frostline, report.entries(), &structural, &lock.tide.resolved)?)
     }
 }
 

@@ -32,20 +32,15 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.
 # `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.
 # render = true writes generated footer links.
-# ripple.lake and ripple.frost add tide workitems from the waterline and frostline.
-# Omitted render and ripple values are false.
+# Tide policy lives in the relation entry's meta.lake.* and meta.frost.* fields.
+# Omitted render values are false.
 
 [structural.category]
 
 [structural.belongs]
-to = { render = true, ripple = { lake = true } }
-from = { render = true, ripple = { lake = true, frost = true } }
-clique = { ripple = { lake = true } }
+to = { render = true }
+from = { render = true }
 
 [structural.refines]
-to = { ripple = { lake = true } }
-from = { ripple = { lake = true, frost = true } }
 
 [structural.prerequisite]
-to = { ripple = { lake = true } }
-from = { ripple = { lake = true, frost = true } }

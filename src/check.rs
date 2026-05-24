@@ -36,7 +36,7 @@ impl CheckMode {
     /// Check structural link targets for a set of entries.
     ///
     /// Parsing already enforces required fields, accepted field shapes, and valid path syntax.
-    /// This pass checks configured link relation entries and entry addresses named by those relations.
+    /// This pass checks configured link relation entries, tide policy, and target addresses.
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
     ) -> CheckReport {
@@ -45,7 +45,7 @@ impl CheckMode {
 
     /// Check structural link targets, with explicit structural-inhabitance policy.
     ///
-    /// Structural inhabitance requires each configured link relation to name an existing entry.
+    /// Structural inhabitance requires each configured link relation to name an entry with tide policy.
     pub fn check_entries_with_structural_inhabitance<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
         structural_inhabitance: bool,
@@ -58,7 +58,10 @@ impl CheckMode {
         let mut report = CheckReport::new();
         if structural_inhabitance {
             for (field, _) in structural.fields() {
-                if !entries_by_id.keys().any(|id| id.as_str() == field) {
+                let Some(entry) = entries_by_id
+                    .iter()
+                    .find_map(|(id, entry)| (id.as_str() == field).then_some(*entry))
+                else {
                     report.push(CheckDiagnostic {
                         severity,
                         kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
@@ -66,10 +69,29 @@ impl CheckMode {
                         field: field.to_owned(),
                         target: None,
                     });
+                    continue;
+                };
+                if entry.metadata.meta.tide.is_none() {
+                    report.push(CheckDiagnostic {
+                        severity,
+                        kind: CheckDiagnosticKind::MissingStructuralMeta,
+                        entry: Some(entry.id.clone()),
+                        field: field.to_owned(),
+                        target: None,
+                    });
                 }
             }
         }
         for entry in &entries {
+            if entry.metadata.meta.tide.is_some() && !structural.contains_field(entry.id.as_str()) {
+                report.push(CheckDiagnostic {
+                    severity,
+                    kind: CheckDiagnosticKind::UnregisteredStructuralMeta,
+                    entry: Some(entry.id.clone()),
+                    field: entry.id.as_str().to_owned(),
+                    target: None,
+                });
+            }
             for (field, targets) in entry.metadata.structural_fields() {
                 if !structural.contains_field(field) {
                     report.push(CheckDiagnostic {
@@ -168,6 +190,10 @@ impl CheckSeverity {
 pub enum CheckDiagnosticKind {
     /// A configured link relation does not name an existing entry.
     MissingStructuralFieldEntry,
+    /// A configured link relation entry does not define entry-side tide policy.
+    MissingStructuralMeta,
+    /// An entry defines tide policy without being a configured link relation.
+    UnregisteredStructuralMeta,
     /// An entry uses a structural link relation not configured in `Sirno.toml`.
     UnconfiguredStructuralField,
     /// A structural link target id does not name an entry.
@@ -200,6 +226,15 @@ impl CheckDiagnostic {
             | CheckDiagnosticKind::MissingStructuralFieldEntry => format!(
                 "`Sirno.toml` configures link relation `{}`, but entry `{}` does not exist",
                 self.field, self.field
+            ),
+            | CheckDiagnosticKind::MissingStructuralMeta => format!(
+                "`Sirno.toml` configures link relation `{}`, but entry `{}` does not define Tide metadata",
+                self.field,
+                self.entry.as_ref().expect("missing structural meta diagnostic has entry")
+            ),
+            | CheckDiagnosticKind::UnregisteredStructuralMeta => format!(
+                "`{}` defines Tide metadata, but it is not configured in `Sirno.toml`",
+                self.entry.as_ref().expect("unregistered structural meta diagnostic has entry")
             ),
             | CheckDiagnosticKind::UnconfiguredStructuralField => format!(
                 "`{}` uses link relation `{}` that is not configured in `Sirno.toml`",
@@ -262,13 +297,19 @@ impl CheckReport {
 mod tests {
     use super::*;
     use crate::entry::EntryMetadata;
-    use crate::structural::StructuralFieldSettings;
+    use crate::structural::{StructuralFieldSettings, StructuralTideSettings};
 
     const FIELD_TOPIC: &str = "topic";
     const FIELD_CATEGORY: &str = "category";
 
     fn entry(id: &str) -> Entry {
         Entry::new(EntryAddress::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
+    }
+
+    fn relation_entry(id: &str) -> Entry {
+        let mut entry = entry(id);
+        entry.metadata.meta.tide = Some(StructuralTideSettings::default());
+        entry
     }
 
     fn structural_settings() -> StructuralSettings {
@@ -285,7 +326,7 @@ mod tests {
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let mut meta = entry("meta");
         meta.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
-        let topic = entry(FIELD_TOPIC);
+        let topic = relation_entry(FIELD_TOPIC);
 
         let report =
             CheckMode::Review.check_entries([&concept, &meta, &topic], &structural_settings());
@@ -296,7 +337,7 @@ mod tests {
     fn edit_mode_reports_dangling_reference_as_warning() {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
-        let topic = entry(FIELD_TOPIC);
+        let topic = relation_entry(FIELD_TOPIC);
 
         let report = CheckMode::Edit.check_entries([&concept, &topic], &structural_settings());
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
@@ -308,7 +349,7 @@ mod tests {
     fn review_mode_reports_dangling_reference_as_error() {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
-        let topic = entry(FIELD_TOPIC);
+        let topic = relation_entry(FIELD_TOPIC);
 
         let report = CheckMode::Review.check_entries([&concept, &topic], &structural_settings());
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
@@ -340,6 +381,18 @@ mod tests {
     }
 
     #[test]
+    fn review_mode_reports_missing_structural_meta_as_error() {
+        let topic = entry(FIELD_TOPIC);
+
+        let report = CheckMode::Review.check_entries([&topic], &structural_settings());
+
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralMeta);
+        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
+        assert!(report.has_errors());
+        assert!(report.diagnostics()[0].message().contains("does not define Tide metadata"));
+    }
+
+    #[test]
     fn structural_inhabitance_can_be_skipped() {
         let concept = entry("concept");
 
@@ -362,6 +415,17 @@ mod tests {
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnconfiguredStructuralField);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
         assert!(!report.has_errors());
+    }
+
+    #[test]
+    fn review_mode_reports_unregistered_structural_meta_as_error() {
+        let topic = relation_entry(FIELD_TOPIC);
+
+        let report = CheckMode::Review.check_entries([&topic], &StructuralSettings::default());
+
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnregisteredStructuralMeta);
+        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
+        assert!(report.has_errors());
     }
 
     #[test]
@@ -388,7 +452,7 @@ mod tests {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_CATEGORY, EntryAddress::new("meta").unwrap());
         let meta = entry("meta");
-        let mut category = entry("category");
+        let mut category = relation_entry("category");
         category
             .metadata
             .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
@@ -413,7 +477,7 @@ mod tests {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_CATEGORY, EntryAddress::new("meta").unwrap());
         let meta = entry("meta");
-        let mut category = entry("category");
+        let mut category = relation_entry("category");
         category
             .metadata
             .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());

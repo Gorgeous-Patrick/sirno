@@ -59,7 +59,7 @@ pub use crate::render::{
 pub use crate::structural::{
     StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
     StructuralEdgeSettings, StructuralFieldMap, StructuralFieldSettings, StructuralRippleSettings,
-    StructuralSettings,
+    StructuralSettings, StructuralTideSettings,
 };
 pub use crate::tide::{
     Tide, TideError, TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,

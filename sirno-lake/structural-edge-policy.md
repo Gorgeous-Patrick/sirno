@@ -1,6 +1,6 @@
 ---
 name: Structural Link Policy
-desc: Configuration that chooses rendered links and tide review neighbors for structural links.
+desc: Rendering and Tide behavior for structural links.
 category:
   - concept
 belongs:
@@ -10,37 +10,34 @@ prerequisite:
   - generated-footer
 ---
 
-Structural link policy decides how configured structural links participate in Sirno tooling.
+Structural link policy has two owners.
 
-`[structural]` lists the metadata fields that define structural link relations.
-Each relation is configured by a `[structural.FIELD]` subtable.
-The subtable may define `to`, `from`, and `clique` edge policies.
-Each edge policy may enable `render`,
-`ripple.lake`,
-and `ripple.frost`.
-Absent values are false.
+`Sirno.toml` registers structural relations,
+preserves their order,
+and chooses which edge directions render in generated footers.
+Each relation is registered by a `[structural.FIELD]` subtable.
+The subtable may define `to`, `from`, and `clique` edge policies with `render = true`.
+Absent render values are false.
 
-`render = true` includes that edge direction in the generated footer.
-The footer guard text still says generated links,
-because it names the owned Markdown region rather than the command name.
-
-`ripple.lake = true` adds waterline neighbors to the *tide*.
-`ripple.frost = true` adds frostline neighbors to the *tide*.
-There is no `ripple = true` shorthand.
+The relation entry defines how Sirno Tide follows that relation.
+It writes tide policy in flat `meta.lake.*` and `meta.frost.*` fields.
+The `to`, `from`, and `clique` suffixes enable each waterline or frostline direction.
+Absent tide values are false.
 
 ```toml
 [structural.belongs]
-to = { ripple = { lake = true, frost = false }, render = true }
-from = { ripple = { lake = true, frost = true }, render = true }
-clique = { ripple = { lake = true } }
+to = { render = true }
+from = { render = true }
 
 [structural.refines]
-to = { ripple = { lake = true, frost = false } }
-from = { ripple = { lake = true, frost = true } }
 
 [structural.prerequisite]
-to = { ripple = { lake = true, frost = false } }
-from = { ripple = { lake = true, frost = true } }
+```
+
+```yaml
+meta.lake.to: true
+meta.lake.from: true
+meta.frost.from: true
 ```
 
 `to` follows outgoing metadata targets.
@@ -68,9 +65,8 @@ The clique semantics are the same for rendering and tide generation:
 the target links to its members,
 and each member links to the target and to the other members.
 
-This policy is configuration, not *entry* data.
-Changing it alters rendered navigation and review obligations
-without changing structural link metadata.
+Changing `Sirno.toml` alters presentation.
+Changing a relation entry's `meta.lake.*` or `meta.frost.*` fields alters tide review obligations.
 
 ---
 

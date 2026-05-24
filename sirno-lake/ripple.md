@@ -29,7 +29,7 @@ The *ripple* names reviewable difference, not semantic judgment.
 Sirno can show what changed and which configured neighbors must be reviewed.
 It does not decide whether the new design is correct.
 
-A *ripple* produces a *wave* of *tide workitems* through configured structural link policies.
+A *ripple* produces a *wave* of *tide workitems* through relation-defined tide policies.
 The *tide* is the active worklist created from all current ripples.
 
 ---

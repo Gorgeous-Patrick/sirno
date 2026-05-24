@@ -1022,7 +1022,7 @@ mod tests {
     use super::*;
     use crate::{
         CONFIG_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, StructuralEdgeSettings,
-        StructuralFieldSettings, StructuralRippleSettings, StructuralSettings,
+        StructuralFieldSettings, StructuralSettings,
     };
 
     // sirno:witness:mcp-interface:begin
@@ -1129,7 +1129,7 @@ Body.
             structural: StructuralSettings::from_fields([(
                 "belongs",
                 StructuralFieldSettings::new(
-                    StructuralEdgeSettings::new(false, StructuralRippleSettings::new(true, false)),
+                    StructuralEdgeSettings::render_only(false),
                     StructuralEdgeSettings::default(),
                     StructuralEdgeSettings::default(),
                 ),
@@ -1170,6 +1170,7 @@ Body.
 ---
 name: Belongs
 desc: A structural link relation.
+meta.lake.to: true
 ---
 
 Body.

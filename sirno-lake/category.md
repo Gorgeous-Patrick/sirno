@@ -9,6 +9,8 @@ belongs:
   - structural
 prerequisite:
   - structural
+meta.lake: false
+meta.frost: false
 ---
 
 `category` classifies an *entry* by other *entries*.

@@ -7,6 +7,10 @@ belongs:
   - structural
 prerequisite:
   - structural
+meta.lake.to: true
+meta.lake.from: true
+meta.lake.clique: true
+meta.frost.from: true
 ---
 
 `belongs` places an *entry* in a named review neighborhood.
@@ -36,7 +40,7 @@ A target should help navigation, review, or accountability.
 A loose browsing tag should not become structural link metadata.
 
 Generated `belongs` links preserve direct target and source links.
-The active tide policy also uses waterline `to`,
+This entry's `meta.lake.*` and `meta.frost.*` fields make Tide use waterline `to`,
 waterline and frostline `from`,
 and waterline `clique`.
 Waterline `to` is enough because neighborhood targets are outgoing metadata on the edited entry.

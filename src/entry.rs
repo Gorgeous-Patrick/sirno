@@ -12,11 +12,14 @@ use serde_yaml::{Mapping, Value};
 use thiserror::Error;
 
 use crate::identifier::{EntryAddress, EntryAddressError};
+use crate::structural::{StructuralEdgeDirection, StructuralTideSettings};
 
 pub const NAME_FIELD: &str = "name";
 pub const DESC_FIELD: &str = "desc";
 pub const META_FIELD: &str = "meta";
 pub const FROZEN_FIELD: &str = "frozen";
+pub const META_LAKE_FIELD: &str = "meta.lake";
+pub const META_FROST_FIELD: &str = "meta.frost";
 
 // sirno:witness:entry:begin
 /// One Sirno entry.
@@ -186,7 +189,8 @@ impl EntryMetadata {
         if mapping.contains_key(Value::String(FROZEN_FIELD.to_owned())) {
             return Err(EntryParseError::TopLevelFrozenMarker);
         }
-        let meta = take_entry_meta(&mut mapping)?;
+        let mut meta = take_entry_meta(&mut mapping)?;
+        meta.tide = take_flat_structural_tide_settings(&mut mapping)?;
         let structural = take_structural_fields(mapping)?;
 
         Ok(Self { name, desc, meta, structural })
@@ -305,12 +309,14 @@ impl EntryMetadata {
 pub struct EntryMeta {
     /// Freeze reasons declaring that this Sirno Lake entry file is protected.
     pub frozen: Option<FrozenMarker>,
+    /// Tide policy for a structural relation defined by this entry.
+    pub tide: Option<StructuralTideSettings>,
 }
 
 impl EntryMeta {
     /// Return whether no managed metadata is set.
     pub fn is_empty(&self) -> bool {
-        self.frozen.is_none()
+        self.frozen.is_none() && self.tide.is_none()
     }
 }
 
@@ -551,7 +557,7 @@ fn take_entry_meta(mapping: &mut Mapping) -> Result<EntryMeta, EntryParseError> 
         return Err(EntryParseError::UnknownMetaField(field));
     }
 
-    Ok(EntryMeta { frozen })
+    Ok(EntryMeta { frozen, tide: None })
 }
 
 fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, EntryParseError> {
@@ -575,6 +581,80 @@ fn take_meta_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>
         return Ok(None);
     };
     parse_frozen_marker_value(value).map(Some)
+}
+
+fn take_flat_structural_tide_settings(
+    mapping: &mut Mapping,
+) -> Result<Option<StructuralTideSettings>, EntryParseError> {
+    let keys = mapping
+        .keys()
+        .filter_map(|key| match key {
+            | Value::String(field) if field.starts_with("meta.") => Some(field.clone()),
+            | _ => None,
+        })
+        .collect::<Vec<_>>();
+    let mut settings = None;
+    for field in keys {
+        let value = mapping
+            .shift_remove(Value::String(field.clone()))
+            .expect("metadata key was collected from this mapping");
+        parse_flat_structural_tide_field(&mut settings, &field, value)?;
+    }
+    Ok(settings)
+}
+
+fn parse_flat_structural_tide_field(
+    settings: &mut Option<StructuralTideSettings>, field: &str, value: Value,
+) -> Result<(), EntryParseError> {
+    let meta_field =
+        field.strip_prefix("meta.").expect("flat structural tide field has meta prefix");
+    let parts = meta_field.split('.').collect::<Vec<_>>();
+    match parts.as_slice() {
+        | ["lake"] | ["frost"] => {
+            if parse_tide_bool_field(field, value)? {
+                return Err(EntryParseError::InvalidStructuralTideField(field.to_owned()));
+            }
+            settings.get_or_insert_with(StructuralTideSettings::default);
+            Ok(())
+        }
+        | [line @ ("lake" | "frost"), direction] => {
+            let enabled = parse_tide_bool_field(field, value)?;
+            let direction = direction
+                .parse::<StructuralEdgeDirection>()
+                .map_err(|_| EntryParseError::UnknownMetaField(meta_field.to_owned()))?;
+            set_structural_tide_setting(
+                settings.get_or_insert_with(StructuralTideSettings::default),
+                line,
+                direction,
+                enabled,
+            );
+            Ok(())
+        }
+        | _ => Err(EntryParseError::UnknownMetaField(meta_field.to_owned())),
+    }
+}
+
+fn parse_tide_bool_field(field: &str, value: Value) -> Result<bool, EntryParseError> {
+    match value {
+        | Value::Bool(enabled) => Ok(enabled),
+        | _ => Err(EntryParseError::InvalidStructuralTideField(field.to_owned())),
+    }
+}
+
+fn set_structural_tide_setting(
+    settings: &mut StructuralTideSettings, line: &str, direction: StructuralEdgeDirection,
+    enabled: bool,
+) {
+    let ripple = match direction {
+        | StructuralEdgeDirection::To => &mut settings.to,
+        | StructuralEdgeDirection::From => &mut settings.from,
+        | StructuralEdgeDirection::Clique => &mut settings.clique,
+    };
+    match line {
+        | "lake" => ripple.lake = enabled,
+        | "frost" => ripple.frost = enabled,
+        | _ => unreachable!("line was parsed before setting tide value"),
+    }
 }
 
 fn parse_frozen_marker_value(value: Value) -> Result<FrozenMarker, EntryParseError> {
@@ -641,9 +721,12 @@ fn render_entry_meta(out: &mut String, meta: &EntryMeta) {
         return;
     }
 
-    out.push_str("meta:\n");
     if let Some(marker) = &meta.frozen {
+        out.push_str("meta:\n");
         render_meta_frozen_marker(out, marker);
+    }
+    if let Some(tide) = &meta.tide {
+        render_flat_structural_tide_settings(out, tide);
     }
 }
 
@@ -656,6 +739,42 @@ fn render_meta_frozen_marker(out: &mut String, marker: &FrozenMarker) {
             | FrozenReason::Managed => "managed",
         });
         out.push('\n');
+    }
+}
+
+fn render_flat_structural_tide_settings(out: &mut String, settings: &StructuralTideSettings) {
+    if settings.is_empty() {
+        out.push_str("meta.lake: false\n");
+        out.push_str("meta.frost: false\n");
+        return;
+    }
+    render_flat_structural_tide_line(
+        out,
+        "lake",
+        settings.to.lake,
+        settings.from.lake,
+        settings.clique.lake,
+    );
+    render_flat_structural_tide_line(
+        out,
+        "frost",
+        settings.to.frost,
+        settings.from.frost,
+        settings.clique.frost,
+    );
+}
+
+fn render_flat_structural_tide_line(
+    out: &mut String, line: &str, to: bool, from: bool, clique: bool,
+) {
+    for (direction, enabled) in [("to", to), ("from", from), ("clique", clique)] {
+        if enabled {
+            out.push_str("meta.");
+            out.push_str(line);
+            out.push('.');
+            out.push_str(direction);
+            out.push_str(": true\n");
+        }
     }
 }
 
@@ -723,6 +842,9 @@ pub enum EntryParseError {
     /// The frozen field is present with invalid protection reasons.
     #[error("metadata field `meta.frozen` must be a non-empty list of reviewed or managed reasons")]
     InvalidFrozenMarker,
+    /// A flat tide metadata field has an invalid value.
+    #[error("metadata field `{0}` must be a boolean tide setting")]
+    InvalidStructuralTideField(String),
     /// The old top-level frozen field is no longer valid.
     #[error("metadata field `frozen` moved to `meta.frozen`")]
     TopLevelFrozenMarker,
@@ -1038,6 +1160,69 @@ Body.
     }
 
     #[test]
+    fn parses_structural_tide_settings() {
+        let source = "\
+---
+name: Belongs
+desc: A structural relation.
+meta.lake.to: true
+meta.lake.from: true
+meta.lake.clique: true
+meta.frost.from: true
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let structural = entry.metadata.meta.tide.unwrap();
+
+        assert_eq!(
+            structural,
+            StructuralTideSettings::new(
+                crate::structural::StructuralRippleSettings::new(true, false),
+                crate::structural::StructuralRippleSettings::new(true, true),
+                crate::structural::StructuralRippleSettings::new(true, false),
+            )
+        );
+    }
+
+    #[test]
+    fn renders_empty_structural_tide_settings() {
+        let mut metadata = EntryMetadata::new("Category", "A structural relation.").unwrap();
+        metadata.meta.tide = Some(StructuralTideSettings::default());
+        let entry = Entry::new(entry_id(), metadata, "Body.\n");
+
+        let rendered = entry.to_markdown().unwrap();
+        let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
+
+        assert!(rendered.contains("meta.lake: false\nmeta.frost: false\n"));
+        assert_eq!(reparsed.metadata.meta.tide, Some(StructuralTideSettings::default()));
+    }
+
+    #[test]
+    fn renders_structural_tide_settings() {
+        let mut metadata = EntryMetadata::new("Belongs", "A structural relation.").unwrap();
+        metadata.meta.tide = Some(StructuralTideSettings::new(
+            crate::structural::StructuralRippleSettings::new(true, false),
+            crate::structural::StructuralRippleSettings::new(true, true),
+            crate::structural::StructuralRippleSettings::new(true, false),
+        ));
+        let entry = Entry::new(entry_id(), metadata, "Body.\n");
+
+        let rendered = entry.to_markdown().unwrap();
+
+        assert!(rendered.contains(
+            "\
+meta.lake.to: true
+meta.lake.from: true
+meta.lake.clique: true
+meta.frost.from: true
+"
+        ));
+    }
+
+    #[test]
     fn renders_canonical_frozen_marker() {
         let mut metadata = EntryMetadata::new("Frozen", "Protected entry.").unwrap();
         metadata.meta.frozen = Some(FrozenMarker::reviewed());
@@ -1092,6 +1277,39 @@ meta:
         let error = Entry::from_markdown(entry_id(), source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "owner"));
+    }
+
+    #[test]
+    fn rejects_old_structural_tide_block() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta:
+  structural: {}
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "structural"));
+    }
+
+    #[test]
+    fn rejects_non_boolean_flat_tide_field() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.lake.to: \"yes\"
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(
+            matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.lake.to")
+        );
     }
 
     #[test]
