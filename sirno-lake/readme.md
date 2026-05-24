@@ -44,14 +44,30 @@ It is part of the witnessed definition because it states the README's ambition i
 The mascot image sits immediately after the definition,
 so the reader meets the idea before the picture.
 
-## TL;DR and Onboarding Invitation
+## TL;DR, Analogy Bridge, and Onboarding Invitation
 
 A `TL;DR` follows the mascot.
-Its first paragraph compresses the project model into one breath:
+It opens as an analogy bridge for readers who bring neighboring mental models.
+The block is witnessed because it names the README's rhetorical intention:
+translate Sirno into familiar vocabularies,
+then converge them into documentation-driven development and the *lake* model.
+
+The analogies move from retrieval to representation to co-design:
+human-readable RAG that co-evolves with the project,
+literate programming's unified design and implementation view without same-file coupling,
+documentation-codebase co-design where code actively helps documentation,
+a documentation harness that resists drift and opaque vibe-coded residue,
+and spec-, test-, and intent-driven development as documentation facets.
+The close states the broad claim:
+documentation may choose its own representation,
+including programs when they explain an algorithm or design idea most directly.
+
+The final paragraph in that block compresses the project model into one breath:
 a queryable *lake* of small, named *entries* with stable ids, structural links,
 and *witnesses* back to *repository* artifacts.
-That paragraph stays outside the witness markers
-because it restates the design rather than asserting a demonstrable capability.
+The intention is reader calibration:
+the README meets a reader through concepts they may already know,
+then gives the Sirno-native handle they can carry forward.
 
 The `TL;DR` then carries the onboarding invitation,
 which is witnessed because it is a concrete, runnable capability claim.
@@ -121,7 +137,7 @@ The README should not become the whole design document.
 It gives the reader motivation, concrete commands, and a route into the *lake* for durable detail.
 
 The *repository witnesses* for this *entry* are hidden Markdown comments in `README.md`.
-They mark the opening definition, the onboarding invitation, the Quick Start section,
+They mark the opening definition, the analogy bridge, the onboarding invitation, the Quick Start section,
 the motivation, the four principle sections, and the Status section.
 
 ---

@@ -30,6 +30,7 @@ This is the dawn of documentation-driven development.
 
 ## TL;DR
 
+<!-- sirno:witness:readme:begin -->
 If you've heard of *RAG*, Sirno is *human-readable RAG* that evolves naturally along with the project,
 avoiding cache invalidation, infamously one of the two major headaches in computer science
 (followed by naming variables, and off-by-one errors).
@@ -60,6 +61,7 @@ If a program is the best form for expressing an algorithm or even a particular d
 Sirno keeps project design in a queryable *lake* of small, named Markdown *entries*.
 Each entry has a stable id, structural links, and witnesses linking back to code, tests, or assets,
 so the design stays readable, connected, and resistant to drift.
+<!-- sirno:witness:readme:end -->
 
 <!-- sirno:witness:readme:begin -->
 <details>
