@@ -15,7 +15,7 @@ It is *nominal* because each design *object* is named first by an entry id.
 - *Witness*: a link from a design claim back to the code, tests, config files, or assets it describes.
 - *Frost*: history for frozen *lake* snapshots.
 - *Tide*: the design review worklist between *frost* commits,
-  preventing locally reasonable changes from freezing into suboptimal design.
+  preventing locally reasonable changes from freezing into suboptimal global design.
 
 This is the dawn of documentation-driven development.
 <!-- sirno:witness:readme:end -->
@@ -30,19 +30,30 @@ This is the dawn of documentation-driven development.
 
 ## TL;DR
 
-If you've heard of RAG, Sirno is human-readable RAG that evolves naturally along with the project,
+If you've heard of *RAG*, Sirno is *human-readable RAG* that evolves naturally along with the project,
 avoiding cache invalidation, infamously one of the two major headaches in computer science
 (followed by naming variables, and off-by-one errors).
 
-If you've heard of harness engineering,
+If you've heard of *literate programming*, Sirno gives you the same unified view of design and implementation,
+but less invasive and plays well with pre-existing codebases,
+because Sirno doesn't actually require them to be in the same file;
+it merely adds comments and git-friendly textual trackers in the codebase.
+
+If you've heard of *hardware-software co-design*, Sirno push forward the agenda of *documentation-codebase co-design*.
+There are plenty of tools that try to generate a knowledge base "out of" a codebase,
+but we envision that the code should actively help the documentation.
+Instead of extracting a digest out of a codebase once and for all,
+Sirno facilitates documentation and codebase co-evolution, in a holistic workspace.
+
+If you've heard of *harness engineering*,
 Sirno is a documentation harness that keeps design readable, connected, and resilient to drift.
 No more vibe-coded slop that only the author can understand -- or should we say not even the author can understand?
 
-If you've heard of {spec/test/intent}-driven development,
-Sirno believe in all of them, and integrate these ideas and just consider them documentations of different aspects.
+If you've heard of *{spec/test/intent}-driven development*,
+Sirno believes in all of them, and integrates these ideas and just considers them documentations of different aspects.
 Details should be so abundant that the codebase can be trivially recovered from the documentation alone.
 
-This is what we call documentation-driven development. Any novelty should be contained in the documentation itself.
+This is what we call *documentation-driven development*. Any novelty should be contained in the documentation itself.
 Documentation should be able to choose its own form and representation.
 If a program is the best form for expressing an algorithm or even a particular design idea, then so be it.
 
