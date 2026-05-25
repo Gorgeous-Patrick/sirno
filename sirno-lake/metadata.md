@@ -24,8 +24,16 @@ Every *entry* has a YAML metadata block.
 | `meta.ripple.lake` | direction list | Defines how waterline *tide* follows a structural relation. |
 | `meta.ripple.frost` | direction list | Defines how frostline *tide* follows a structural relation. |
 
+The `meta-type` entry groups the `meta.type` discriminator values:
+
+| Value | Value entry | Valid carriers |
+|---|---|---|
+| `intrinsic` | `meta-type-intrinsic` | `name` and `desc`. |
+| `structural` | `meta-type-structural` | Configured structural relation entries. |
+
 The `name` and `desc` *entries* define the required fields
-and carry `meta.type: "intrinsic"`.
+and belong to `meta-type-intrinsic`.
+Configured structural relation entries belong to `meta-type-structural`.
 
 Frozen reasons are:
 
@@ -97,6 +105,8 @@ Unconfigured list-valued metadata fields remain visible as check warnings.
 
 - belongs (to):
   - [sirno-lake](sirno-lake.md)
-- belongs (from): (none)
+- belongs (from):
+  - [meta](meta.md)
+  - [meta-type](meta-type.md)
 
 > **Sirno generated links end.**

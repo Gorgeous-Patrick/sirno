@@ -5,6 +5,7 @@ category:
   - concept
 belongs:
   - structural
+  - meta-type-structural
 prerequisite:
   - structural
 meta.type: "structural"
@@ -69,6 +70,7 @@ Create a new `belongs` target only when the split creates a real new review boun
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [meta-type-structural](meta-type-structural.md)
   - [structural](structural.md)
 - belongs (from): (none)
 

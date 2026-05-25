@@ -7,12 +7,18 @@ category:
   - concept
 belongs:
   - category
+  - metadata
 prerequisite:
   - category
 ---
 
 `meta` classifies *entries* that define the project's principles, vocabulary,
 and Sirno-facing documentation method.
+
+This entry names a category target.
+It is separate from the `meta` mapping in entry metadata
+and from the `meta.type` marker entries.
+The `metadata` and `meta-type` entries document those schema pieces.
 
 An *entry* is `meta` because it documents how this project should be understood and developed.
 The property of being usable as a category target is carried by `category`.
@@ -55,6 +61,7 @@ and to *entries* about implementation commitments.
 
 - belongs (to):
   - [category](category.md)
+  - [metadata](metadata.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

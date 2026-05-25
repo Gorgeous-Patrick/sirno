@@ -7,6 +7,7 @@ category:
   - concept
 belongs:
   - structural
+  - meta-type-structural
 prerequisite:
   - structural
 meta.type: "structural"
@@ -55,6 +56,7 @@ The category field is most useful when it tells the reader what kind of object t
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [meta-type-structural](meta-type-structural.md)
   - [structural](structural.md)
 - belongs (from):
   - [concept](concept.md)

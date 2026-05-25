@@ -5,6 +5,7 @@ category:
   - concept
 belongs:
   - structural
+  - meta-type-structural
 prerequisite:
   - structural
   - refinement
@@ -61,6 +62,7 @@ The prose should explain the combined responsibility so a future reader can tell
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [meta-type-structural](meta-type-structural.md)
   - [structural](structural.md)
 - belongs (from): (none)
 
