@@ -1170,7 +1170,8 @@ Body.
 ---
 name: Belongs
 desc: A structural link relation.
-meta.lake.to: true
+meta.type: \"structural\"
+meta.ripple.lake: [\"to\"]
 ---
 
 Body.

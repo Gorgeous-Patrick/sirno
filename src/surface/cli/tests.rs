@@ -58,8 +58,9 @@ fn write_empty_relation_entry(docs: &Path, id: &str, name: &str) {
 ---
 name: {name}
 desc: A structural link relation.
-meta.lake: false
-meta.frost: false
+meta.type: \"structural\"
+meta.ripple.lake: []
+meta.ripple.frost: []
 ---
 
 Body.
@@ -76,7 +77,8 @@ fn write_belongs_relation_entry(docs: &Path) {
 ---
 name: Belongs
 desc: A structural link relation.
-meta.lake.to: true
+meta.type: \"structural\"
+meta.ripple.lake: [\"to\"]
 ---
 
 Body.

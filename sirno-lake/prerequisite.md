@@ -7,9 +7,9 @@ belongs:
   - structural
 prerequisite:
   - structural
-meta.lake.to: true
-meta.lake.from: true
-meta.frost.from: true
+meta.type: "structural"
+meta.ripple.lake: ["to", "from"]
+meta.ripple.frost: ["from"]
 ---
 
 `prerequisite` records a knowledge dependency from an *entry*
@@ -37,7 +37,7 @@ Use `category` for kind.
 Use `belongs` for review locality.
 Use `refines` when the current *entry* makes a broader design claim more concrete.
 
-This entry's `meta.lake.*` and `meta.frost.*` fields use direct `to` and `from` edges
+This entry's `meta.ripple.lake` and `meta.ripple.frost` lists use direct `to` and `from` edges
 for *tide* review workitems.
 It does not use clique expansion,
 because a knowledge dependency is directional.

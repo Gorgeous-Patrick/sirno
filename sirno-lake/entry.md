@@ -31,6 +31,8 @@ so the final `.md` filename stays inside common component limits.
 
 Each *entry* has a YAML metadata block and a prose body.
 The required metadata fields are `name` and `desc`.
+The `name` and `desc` *entries* define those fields
+with `meta.type: "intrinsic"`.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 The active structural link relation set is configured in `Sirno.toml`.
 The `meta.frozen` field stores protection reasons such as `reviewed` and `managed`.

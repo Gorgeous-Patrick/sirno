@@ -32,7 +32,7 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.
 # `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.
 # render = true writes generated footer links.
-# Tide policy lives in the relation entry's meta.lake.* and meta.frost.* fields.
+# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.
 # Omitted render values are false.
 
 [structural.category]

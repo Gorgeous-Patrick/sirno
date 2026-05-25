@@ -64,7 +64,7 @@ pub struct EntryDirectoryReport {
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
-    /// Check that each configured link relation has a matching entry with tide policy.
+    /// Check that each configured link relation has a matching structural entry.
     pub structural_inhabitance: bool,
     /// Configured link relations and generated footer settings.
     pub structural: StructuralSettings,
@@ -2339,7 +2339,11 @@ mod tests {
 
     fn write_structural_field_entries_with_meta(root: &Path, fields: &[&str], meta: bool) {
         for field in fields {
-            let meta = if meta { "meta.lake: false\nmeta.frost: false\n" } else { "" };
+            let meta = if meta {
+                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.frost: []\n"
+            } else {
+                ""
+            };
             write_entry(
                 root,
                 &format!("{field}.md"),
@@ -3048,8 +3052,10 @@ Body.
         let paths = entry_directory(&root).init().unwrap();
         let report = entry_directory(&root).check(CheckMode::Review).unwrap();
 
-        assert_eq!(paths.len(), 4);
+        assert_eq!(paths.len(), 6);
         assert!(root.join("concept.md").exists());
+        assert!(root.join("name.md").exists());
+        assert!(root.join("desc.md").exists());
         assert!(report.is_clean());
     }
 
@@ -3645,8 +3651,8 @@ Body.
         let report = entry_directory(&root).generate_links(&settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 7);
-        assert_eq!(report.changed_paths().len(), 7);
+        assert_eq!(report.entry_count(), 9);
+        assert_eq!(report.changed_paths().len(), 9);
         assert!(concept.contains(crate::render::BEGIN_LINKS_GUARD));
         assert!(concept.contains("\n---\n\n> **Sirno generated links begin."));
         assert!(concept.contains("- kind (to): (none)"));
@@ -3735,8 +3741,8 @@ Body.
         let report = entry_directory(&root).check_generated_links(&settings).unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 4);
-        assert_eq!(report.changed_paths().len(), 4);
+        assert_eq!(report.entry_count(), 6);
+        assert_eq!(report.changed_paths().len(), 6);
         assert!(!concept.contains(crate::render::BEGIN_LINKS_GUARD));
 
         entry_directory(&root).generate_links(&settings).unwrap();
@@ -3755,8 +3761,8 @@ Body.
         let report = entry_directory(&root).delete_generated_links().unwrap();
         let concept = fs::read_to_string(root.join("concept.md")).unwrap();
 
-        assert_eq!(report.entry_count(), 4);
-        assert_eq!(report.changed_paths().len(), 4);
+        assert_eq!(report.entry_count(), 6);
+        assert_eq!(report.changed_paths().len(), 6);
         assert!(!concept.contains(crate::render::BEGIN_LINKS_GUARD));
     }
 
@@ -3768,7 +3774,7 @@ Body.
 
         let report = entry_directory(&root).delete_generated_links().unwrap();
 
-        assert_eq!(report.entry_count(), 4);
+        assert_eq!(report.entry_count(), 6);
         assert!(report.changed_paths().is_empty());
     }
 

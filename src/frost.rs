@@ -1008,7 +1008,7 @@ mod tests {
     use super::*;
     use std::fs;
 
-    use crate::entry::FrozenMarker;
+    use crate::entry::{EntryMetaType, FrozenMarker};
     use crate::lake::EntryDirectoryWritePolicy;
     use crate::render::GeneratedLinkBody;
     use crate::structural::{StructuralEdgeIndex, StructuralSettings};
@@ -1022,7 +1022,27 @@ mod tests {
         let entries = frost.read_all_entries().unwrap();
         let ids = entries.iter().map(|entry| entry.id.as_str()).collect::<Vec<_>>();
 
-        assert_eq!(ids, ["category", "concept", "meta", "narrative"]);
+        assert_eq!(ids, ["category", "concept", "desc", "meta", "name", "narrative"]);
+        assert_eq!(
+            entries
+                .iter()
+                .find(|entry| entry.id.as_str() == "name")
+                .unwrap()
+                .metadata
+                .meta
+                .entry_type,
+            Some(EntryMetaType::Intrinsic)
+        );
+        assert_eq!(
+            entries
+                .iter()
+                .find(|entry| entry.id.as_str() == "desc")
+                .unwrap()
+                .metadata
+                .meta
+                .entry_type,
+            Some(EntryMetaType::Intrinsic)
+        );
         assert!(frost.check_current(CheckMode::Review).unwrap().is_clean());
     }
 
@@ -1030,9 +1050,10 @@ mod tests {
     fn put_and_read_entry_round_trips_metadata_and_body() {
         let temp = tempfile::tempdir().unwrap();
         let mut frost = SirnoFrost::open(temp.path()).unwrap();
-        let mut metadata = EntryMetadata::new("Witness", "Repository evidence.").unwrap();
+        let mut metadata = EntryMetadata::new("Name", "Intrinsic metadata field.").unwrap();
+        metadata.meta.entry_type = Some(EntryMetaType::Intrinsic);
         metadata.push_structural_target("topic", EntryAddress::new("concept").unwrap());
-        let entry = Entry::new(EntryAddress::new("witness").unwrap(), metadata, "Body.\n");
+        let entry = Entry::new(EntryAddress::new("name").unwrap(), metadata, "Body.\n");
 
         frost.put_entry(&entry).unwrap();
         let read = frost.read_entry(&entry.id).unwrap().unwrap();

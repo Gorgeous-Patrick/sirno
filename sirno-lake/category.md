@@ -9,8 +9,9 @@ belongs:
   - structural
 prerequisite:
   - structural
-meta.lake: false
-meta.frost: false
+meta.type: "structural"
+meta.ripple.lake: []
+meta.ripple.frost: []
 ---
 
 `category` classifies an *entry* by other *entries*.

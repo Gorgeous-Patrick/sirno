@@ -26,7 +26,7 @@ The canonical comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry address.`
 - `Canonical entry-address capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Require each configured link relation to have a matching entry with Tide metadata during checks.`
+- `Require each configured link relation to have a matching structural relation entry during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`
 - `Show tutorial text when frost commit is blocked by open tide workitems.`
@@ -39,7 +39,7 @@ The canonical comments are:
 - `Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.`
 - `` `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors. ``
 - `render = true writes generated footer links.`
-- `Tide policy lives in the relation entry's meta.lake.* and meta.frost.* fields.`
+- `Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.`
 - `Omitted render values are false.`
 
 This list is the canonical source for the strings.

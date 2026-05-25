@@ -271,7 +271,7 @@ impl StructuralTideSettings {
 /// Ordered link relation settings.
 ///
 /// Config parsing fills relation order and render policy from `Sirno.toml`.
-/// Tide callers merge `meta.lake.*` and `meta.frost.*` from relation entries before workitems.
+/// Tide callers merge `meta.ripple.lake` and `meta.ripple.frost` from relation entries.
 pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
 
 /// Configured link relations and effective edge policy.
@@ -331,8 +331,9 @@ impl StructuralSettings {
     pub fn with_tide_policies_from_entries(&self, entries: &[Entry]) -> Self {
         let policies = entries
             .iter()
-            .filter_map(|entry| {
-                entry.metadata.meta.tide.map(|policy| (entry.id.as_str().to_owned(), policy))
+            .filter(|entry| entry.metadata.meta.is_structural_relation())
+            .map(|entry| {
+                (entry.id.as_str().to_owned(), entry.metadata.meta.tide.unwrap_or_default())
             })
             .collect::<BTreeMap<_, _>>();
         let fields = self
@@ -454,7 +455,7 @@ impl StructuralEdgeIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entry::EntryMetadata;
+    use crate::entry::{EntryMetaType, EntryMetadata};
 
     #[test]
     fn renames_structural_setting_field_in_place() {
@@ -482,6 +483,7 @@ mod tests {
             StructuralFieldSettings::render_only(true, true, false),
         )]);
         let mut metadata = EntryMetadata::new("Belongs", "A relation.").unwrap();
+        metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::new(
             StructuralRippleSettings::new(true, false),
             StructuralRippleSettings::new(true, true),

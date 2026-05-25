@@ -18,8 +18,11 @@ pub const NAME_FIELD: &str = "name";
 pub const DESC_FIELD: &str = "desc";
 pub const META_FIELD: &str = "meta";
 pub const FROZEN_FIELD: &str = "frozen";
-pub const META_LAKE_FIELD: &str = "meta.lake";
-pub const META_FROST_FIELD: &str = "meta.frost";
+pub const META_TYPE_FIELD: &str = "meta.type";
+pub const META_RIPPLE_LAKE_FIELD: &str = "meta.ripple.lake";
+pub const META_RIPPLE_FROST_FIELD: &str = "meta.ripple.frost";
+pub const STRUCTURAL_META_TYPE: &str = "structural";
+pub const INTRINSIC_META_TYPE: &str = "intrinsic";
 
 // sirno:witness:entry:begin
 /// One Sirno entry.
@@ -84,6 +87,20 @@ impl Entry {
     /// The entries are normal entries.
     /// Later operations do not privilege them.
     pub fn default_seed_entries() -> Result<Vec<Self>, EntryParseError> {
+        // sirno:witness:name:begin
+        let mut name =
+            EntryMetadata::new("Name", "The required plain-string title field for entries.")?;
+        name.meta.entry_type = Some(EntryMetaType::Intrinsic);
+        // sirno:witness:name:end
+
+        // sirno:witness:desc:begin
+        let mut desc = EntryMetadata::new(
+            "Description",
+            "The required plain-string summary field for entries.",
+        )?;
+        desc.meta.entry_type = Some(EntryMetaType::Intrinsic);
+        // sirno:witness:desc:end
+
         // sirno:witness:category:begin
         let category =
             EntryMetadata::new("Category", "An entry that other entries can be categorized by.")?;
@@ -106,6 +123,16 @@ impl Entry {
         // sirno:witness:narrative:end
 
         Ok(vec![
+            Self::new(
+                seed_id("name"),
+                name,
+                "The required `name` metadata field gives an entry its reader-facing title.\n",
+            ),
+            Self::new(
+                seed_id("desc"),
+                desc,
+                "The required `desc` metadata field gives an entry its compact summary.\n",
+            ),
             Self::new(
                 seed_id("category"),
                 category,
@@ -190,7 +217,8 @@ impl EntryMetadata {
             return Err(EntryParseError::TopLevelFrozenMarker);
         }
         let mut meta = take_entry_meta(&mut mapping)?;
-        meta.tide = take_flat_structural_tide_settings(&mut mapping)?;
+        meta.entry_type = take_flat_meta_type(&mut mapping)?;
+        meta.tide = take_flat_structural_tide_settings(&mut mapping, meta.entry_type)?;
         let structural = take_structural_fields(mapping)?;
 
         Ok(Self { name, desc, meta, structural })
@@ -309,6 +337,8 @@ impl EntryMetadata {
 pub struct EntryMeta {
     /// Freeze reasons declaring that this Sirno Lake entry file is protected.
     pub frozen: Option<FrozenMarker>,
+    /// Entry role for Sirno-managed flat metadata.
+    pub entry_type: Option<EntryMetaType>,
     /// Tide policy for a structural relation defined by this entry.
     pub tide: Option<StructuralTideSettings>,
 }
@@ -316,8 +346,28 @@ pub struct EntryMeta {
 impl EntryMeta {
     /// Return whether no managed metadata is set.
     pub fn is_empty(&self) -> bool {
-        self.frozen.is_none() && self.tide.is_none()
+        self.frozen.is_none() && self.entry_type.is_none() && self.tide.is_none()
     }
+
+    /// Return true when this entry declares a structural-relation type.
+    pub fn is_structural_relation(&self) -> bool {
+        self.entry_type == Some(EntryMetaType::Structural)
+    }
+
+    /// Return true when this entry declares an intrinsic metadata-field type.
+    pub fn is_intrinsic_field(&self) -> bool {
+        self.entry_type == Some(EntryMetaType::Intrinsic)
+    }
+}
+
+/// Sirno-managed entry type stored in the flat `meta.type` field.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EntryMetaType {
+    /// Entry defines one configured structural relation.
+    Structural,
+    /// Entry defines one intrinsic Sirno metadata field.
+    Intrinsic,
 }
 
 /// Protection reasons stored in the canonical `meta.frozen` metadata field.
@@ -557,7 +607,7 @@ fn take_entry_meta(mapping: &mut Mapping) -> Result<EntryMeta, EntryParseError> 
         return Err(EntryParseError::UnknownMetaField(field));
     }
 
-    Ok(EntryMeta { frozen, tide: None })
+    Ok(EntryMeta { frozen, entry_type: None, tide: None })
 }
 
 fn parse_id_list(field: String, value: Value) -> Result<Vec<EntryAddress>, EntryParseError> {
@@ -583,8 +633,19 @@ fn take_meta_frozen_marker(mapping: &mut Mapping) -> Result<Option<FrozenMarker>
     parse_frozen_marker_value(value).map(Some)
 }
 
+fn take_flat_meta_type(mapping: &mut Mapping) -> Result<Option<EntryMetaType>, EntryParseError> {
+    let Some(value) = mapping.shift_remove(Value::String(META_TYPE_FIELD.to_owned())) else {
+        return Ok(None);
+    };
+    match value {
+        | Value::String(raw) if raw == STRUCTURAL_META_TYPE => Ok(Some(EntryMetaType::Structural)),
+        | Value::String(raw) if raw == INTRINSIC_META_TYPE => Ok(Some(EntryMetaType::Intrinsic)),
+        | _ => Err(EntryParseError::InvalidMetaType),
+    }
+}
+
 fn take_flat_structural_tide_settings(
-    mapping: &mut Mapping,
+    mapping: &mut Mapping, entry_type: Option<EntryMetaType>,
 ) -> Result<Option<StructuralTideSettings>, EntryParseError> {
     let keys = mapping
         .keys()
@@ -598,47 +659,58 @@ fn take_flat_structural_tide_settings(
         let value = mapping
             .shift_remove(Value::String(field.clone()))
             .expect("metadata key was collected from this mapping");
-        parse_flat_structural_tide_field(&mut settings, &field, value)?;
+        parse_flat_structural_tide_field(&mut settings, &field, value, entry_type)?;
     }
     Ok(settings)
 }
 
 fn parse_flat_structural_tide_field(
     settings: &mut Option<StructuralTideSettings>, field: &str, value: Value,
+    entry_type: Option<EntryMetaType>,
 ) -> Result<(), EntryParseError> {
     let meta_field =
         field.strip_prefix("meta.").expect("flat structural tide field has meta prefix");
     let parts = meta_field.split('.').collect::<Vec<_>>();
     match parts.as_slice() {
-        | ["lake"] | ["frost"] => {
-            if parse_tide_bool_field(field, value)? {
-                return Err(EntryParseError::InvalidStructuralTideField(field.to_owned()));
+        | ["ripple", line @ ("lake" | "frost")] => {
+            if entry_type != Some(EntryMetaType::Structural) {
+                return Err(EntryParseError::StructuralTideWithoutType(field.to_owned()));
+            }
+            for direction in parse_tide_direction_list_field(field, value)? {
+                set_structural_tide_setting(
+                    settings.get_or_insert_with(StructuralTideSettings::default),
+                    line,
+                    direction,
+                    true,
+                );
             }
             settings.get_or_insert_with(StructuralTideSettings::default);
-            Ok(())
-        }
-        | [line @ ("lake" | "frost"), direction] => {
-            let enabled = parse_tide_bool_field(field, value)?;
-            let direction = direction
-                .parse::<StructuralEdgeDirection>()
-                .map_err(|_| EntryParseError::UnknownMetaField(meta_field.to_owned()))?;
-            set_structural_tide_setting(
-                settings.get_or_insert_with(StructuralTideSettings::default),
-                line,
-                direction,
-                enabled,
-            );
             Ok(())
         }
         | _ => Err(EntryParseError::UnknownMetaField(meta_field.to_owned())),
     }
 }
 
-fn parse_tide_bool_field(field: &str, value: Value) -> Result<bool, EntryParseError> {
-    match value {
-        | Value::Bool(enabled) => Ok(enabled),
-        | _ => Err(EntryParseError::InvalidStructuralTideField(field.to_owned())),
+fn parse_tide_direction_list_field(
+    field: &str, value: Value,
+) -> Result<Vec<StructuralEdgeDirection>, EntryParseError> {
+    let Value::Sequence(values) = value else {
+        return Err(EntryParseError::InvalidStructuralTideField(field.to_owned()));
+    };
+    let mut directions = Vec::new();
+    for value in values {
+        let Value::String(raw) = value else {
+            return Err(EntryParseError::InvalidStructuralTideField(field.to_owned()));
+        };
+        let direction = raw
+            .parse::<StructuralEdgeDirection>()
+            .map_err(|_| EntryParseError::InvalidStructuralTideField(field.to_owned()))?;
+        if directions.contains(&direction) {
+            return Err(EntryParseError::InvalidStructuralTideField(field.to_owned()));
+        }
+        directions.push(direction);
     }
+    Ok(directions)
 }
 
 fn set_structural_tide_setting(
@@ -725,6 +797,9 @@ fn render_entry_meta(out: &mut String, meta: &EntryMeta) {
         out.push_str("meta:\n");
         render_meta_frozen_marker(out, marker);
     }
+    if let Some(entry_type) = meta.entry_type {
+        render_flat_meta_type(out, entry_type);
+    }
     if let Some(tide) = &meta.tide {
         render_flat_structural_tide_settings(out, tide);
     }
@@ -742,12 +817,17 @@ fn render_meta_frozen_marker(out: &mut String, marker: &FrozenMarker) {
     }
 }
 
+fn render_flat_meta_type(out: &mut String, entry_type: EntryMetaType) {
+    out.push_str(META_TYPE_FIELD);
+    out.push_str(": ");
+    out.push_str(match entry_type {
+        | EntryMetaType::Structural => "\"structural\"",
+        | EntryMetaType::Intrinsic => "\"intrinsic\"",
+    });
+    out.push('\n');
+}
+
 fn render_flat_structural_tide_settings(out: &mut String, settings: &StructuralTideSettings) {
-    if settings.is_empty() {
-        out.push_str("meta.lake: false\n");
-        out.push_str("meta.frost: false\n");
-        return;
-    }
     render_flat_structural_tide_line(
         out,
         "lake",
@@ -767,15 +847,22 @@ fn render_flat_structural_tide_settings(out: &mut String, settings: &StructuralT
 fn render_flat_structural_tide_line(
     out: &mut String, line: &str, to: bool, from: bool, clique: bool,
 ) {
+    out.push_str("meta.ripple.");
+    out.push_str(line);
+    out.push_str(": [");
+    let mut first = true;
     for (direction, enabled) in [("to", to), ("from", from), ("clique", clique)] {
         if enabled {
-            out.push_str("meta.");
-            out.push_str(line);
-            out.push('.');
+            if !first {
+                out.push_str(", ");
+            }
+            first = false;
+            out.push('"');
             out.push_str(direction);
-            out.push_str(": true\n");
+            out.push('"');
         }
     }
+    out.push_str("]\n");
 }
 
 fn render_yaml_scalar(value: &str) -> Result<String, EntryRenderError> {
@@ -813,6 +900,12 @@ pub enum EntryParseError {
     /// A managed meta field is not supported.
     #[error("unknown Sirno-managed metadata field `meta.{0}`")]
     UnknownMetaField(String),
+    /// The flat meta type field has an invalid value.
+    #[error("metadata field `meta.type` must be \"structural\" or \"intrinsic\"")]
+    InvalidMetaType,
+    /// Structural tide metadata requires the structural meta type.
+    #[error("metadata field `{0}` requires `meta.type: \"structural\"`")]
+    StructuralTideWithoutType(String),
     /// A required field is absent.
     #[error("missing required metadata field `{0}`")]
     MissingField(&'static str),
@@ -843,7 +936,7 @@ pub enum EntryParseError {
     #[error("metadata field `meta.frozen` must be a non-empty list of reviewed or managed reasons")]
     InvalidFrozenMarker,
     /// A flat tide metadata field has an invalid value.
-    #[error("metadata field `{0}` must be a boolean tide setting")]
+    #[error("metadata field `{0}` must be a list of to, from, and clique tide directions")]
     InvalidStructuralTideField(String),
     /// The old top-level frozen field is no longer valid.
     #[error("metadata field `frozen` moved to `meta.frozen`")]
@@ -1165,10 +1258,9 @@ Body.
 ---
 name: Belongs
 desc: A structural relation.
-meta.lake.to: true
-meta.lake.from: true
-meta.lake.clique: true
-meta.frost.from: true
+meta.type: \"structural\"
+meta.ripple.lake: [\"to\", \"from\", \"clique\"]
+meta.ripple.frost: [\"from\"]
 ---
 
 Body.
@@ -1190,19 +1282,73 @@ Body.
     #[test]
     fn renders_empty_structural_tide_settings() {
         let mut metadata = EntryMetadata::new("Category", "A structural relation.").unwrap();
+        metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::default());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
         let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
 
-        assert!(rendered.contains("meta.lake: false\nmeta.frost: false\n"));
+        assert!(
+            rendered.contains(
+                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.frost: []\n"
+            )
+        );
         assert_eq!(reparsed.metadata.meta.tide, Some(StructuralTideSettings::default()));
+    }
+
+    #[test]
+    fn parses_structural_type_without_tide_settings() {
+        let source = "\
+---
+name: Category
+desc: A structural relation.
+meta.type: \"structural\"
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+
+        assert_eq!(entry.metadata.meta.entry_type, Some(EntryMetaType::Structural));
+        assert_eq!(entry.metadata.meta.tide, None);
+    }
+
+    #[test]
+    fn parses_intrinsic_meta_type() {
+        let source = "\
+---
+name: Name
+desc: A required metadata field.
+meta.type: \"intrinsic\"
+---
+
+Body.
+";
+
+        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+
+        assert_eq!(entry.metadata.meta.entry_type, Some(EntryMetaType::Intrinsic));
+        assert!(entry.metadata.meta.is_intrinsic_field());
+        assert_eq!(entry.metadata.meta.tide, None);
+    }
+
+    #[test]
+    fn renders_intrinsic_meta_type() {
+        let mut metadata = EntryMetadata::new("Name", "A required metadata field.").unwrap();
+        metadata.meta.entry_type = Some(EntryMetaType::Intrinsic);
+        let entry = Entry::new(entry_id(), metadata, "Body.\n");
+
+        let rendered = entry.to_markdown().unwrap();
+
+        assert!(rendered.contains("meta.type: \"intrinsic\"\n"));
     }
 
     #[test]
     fn renders_structural_tide_settings() {
         let mut metadata = EntryMetadata::new("Belongs", "A structural relation.").unwrap();
+        metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::new(
             crate::structural::StructuralRippleSettings::new(true, false),
             crate::structural::StructuralRippleSettings::new(true, true),
@@ -1214,10 +1360,8 @@ Body.
 
         assert!(rendered.contains(
             "\
-meta.lake.to: true
-meta.lake.from: true
-meta.lake.clique: true
-meta.frost.from: true
+meta.ripple.lake: [\"to\", \"from\", \"clique\"]
+meta.ripple.frost: [\"from\"]
 "
         ));
     }
@@ -1296,20 +1440,122 @@ meta:
     }
 
     #[test]
-    fn rejects_non_boolean_flat_tide_field() {
+    fn rejects_old_dotted_tide_field() {
         let source = "\
 ---
 name: Bad
 desc: Bad tide metadata.
-meta.lake.to: \"yes\"
+meta.ripple.lake.to: true
 ---
 ";
 
         let error = Entry::from_markdown(entry_id(), source).unwrap_err();
 
         assert!(
-            matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.lake.to")
+            matches!(error, EntryParseError::UnknownMetaField(field) if field == "ripple.lake.to")
         );
+    }
+
+    #[test]
+    fn rejects_old_flat_tide_field() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.type: \"structural\"
+meta.lake: [\"to\"]
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "lake"));
+    }
+
+    #[test]
+    fn rejects_non_list_flat_tide_field() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.type: \"structural\"
+meta.ripple.lake: true
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(
+            matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.ripple.lake")
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_flat_tide_direction() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.type: \"structural\"
+meta.ripple.lake: [\"around\"]
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(
+            matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.ripple.lake")
+        );
+    }
+
+    #[test]
+    fn rejects_tide_field_without_structural_type() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.ripple.lake: [\"to\"]
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(
+            matches!(error, EntryParseError::StructuralTideWithoutType(field) if field == "meta.ripple.lake")
+        );
+    }
+
+    #[test]
+    fn rejects_tide_field_with_intrinsic_type() {
+        let source = "\
+---
+name: Bad
+desc: Bad tide metadata.
+meta.type: \"intrinsic\"
+meta.ripple.lake: [\"to\"]
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(
+            matches!(error, EntryParseError::StructuralTideWithoutType(field) if field == "meta.ripple.lake")
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_flat_meta_type() {
+        let source = "\
+---
+name: Bad
+desc: Bad type metadata.
+meta.type: \"concept\"
+---
+";
+
+        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+
+        assert!(matches!(error, EntryParseError::InvalidMetaType));
     }
 
     #[test]

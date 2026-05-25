@@ -15,8 +15,9 @@ use crate::surface::cli::tui::{
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
 use crate::{
-    CheckMode, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings, EntryMetadata,
-    StructuralRippleSettings, StructuralSettings, StructuralTideSettings,
+    CheckMode, DESC_FIELD, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings,
+    EntryMetaType, EntryMetadata, NAME_FIELD, StructuralRippleSettings, StructuralSettings,
+    StructuralTideSettings,
 };
 
 const CATEGORY_FIELD: &str = "category";
@@ -24,7 +25,25 @@ const BELONGS_FIELD: &str = "belongs";
 const PREREQUISITE_FIELD: &str = "prerequisite";
 
 // sirno:witness:utility-commands:begin
-const DEFAULT_ENTRIES: [DefaultEntrySpec; 8] = [
+const DEFAULT_ENTRIES: [DefaultEntrySpec; 10] = [
+    DefaultEntrySpec {
+        id: NAME_FIELD,
+        name: "Name",
+        desc: "The required plain-string title field for entries.",
+        category: &["meta", "concept"],
+        belongs: &[],
+        prerequisite: &[],
+        body: "The required `name` metadata field gives an entry its reader-facing title.\n",
+    },
+    DefaultEntrySpec {
+        id: DESC_FIELD,
+        name: "Description",
+        desc: "The required plain-string summary field for entries.",
+        category: &["meta", "concept"],
+        belongs: &[],
+        prerequisite: &[],
+        body: "The required `desc` metadata field gives an entry its compact summary.\n",
+    },
     DefaultEntrySpec {
         id: "category",
         name: "Category",
@@ -291,7 +310,10 @@ struct DefaultEntrySpec {
 impl DefaultEntrySpec {
     fn entry(self, structural: &StructuralSettings) -> Result<Entry, CommandError> {
         let mut metadata = EntryMetadata::new(self.name, self.desc)?;
-        if structural.contains_field(self.id) {
+        if matches!(self.id, NAME_FIELD | DESC_FIELD) {
+            metadata.meta.entry_type = Some(EntryMetaType::Intrinsic);
+        } else if structural.contains_field(self.id) {
+            metadata.meta.entry_type = Some(EntryMetaType::Structural);
             metadata.meta.tide = default_structural_tide_settings(self.id);
         }
         self.set_targets(&mut metadata, structural, CATEGORY_FIELD, self.category);
@@ -436,6 +458,15 @@ mod tests {
         assert!(tide.from.lake);
         assert!(tide.from.frost);
         assert!(tide.clique.lake);
+    }
+
+    #[test]
+    fn intrinsic_default_entries_set_intrinsic_meta_type() {
+        let name = spec(NAME_FIELD).entry(&StructuralSettings::default()).unwrap();
+        let desc = spec(DESC_FIELD).entry(&StructuralSettings::default()).unwrap();
+
+        assert_eq!(name.metadata.meta.entry_type, Some(EntryMetaType::Intrinsic));
+        assert_eq!(desc.metadata.meta.entry_type, Some(EntryMetaType::Intrinsic));
     }
 
     #[test]

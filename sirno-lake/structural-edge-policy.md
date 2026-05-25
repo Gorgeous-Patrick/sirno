@@ -20,8 +20,9 @@ The subtable may define `to`, `from`, and `clique` edge policies with `render = 
 Absent render values are false.
 
 The relation entry defines how Sirno Tide follows that relation.
-It writes tide policy in flat `meta.lake.*` and `meta.frost.*` fields.
-The `to`, `from`, and `clique` suffixes enable each waterline or frostline direction.
+It declares `meta.type: "structural"`.
+It writes tide policy in flat `meta.ripple.lake` and `meta.ripple.frost` lists.
+The `to`, `from`, and `clique` values enable each waterline or frostline direction.
 Absent tide values are false.
 
 ```toml
@@ -35,9 +36,9 @@ from = { render = true }
 ```
 
 ```yaml
-meta.lake.to: true
-meta.lake.from: true
-meta.frost.from: true
+meta.type: "structural"
+meta.ripple.lake: ["to", "from"]
+meta.ripple.frost: ["from"]
 ```
 
 `to` follows outgoing metadata targets.
@@ -66,7 +67,8 @@ the target links to its members,
 and each member links to the target and to the other members.
 
 Changing `Sirno.toml` alters presentation.
-Changing a relation entry's `meta.lake.*` or `meta.frost.*` fields alters tide review obligations.
+Changing a structural relation entry's `meta.ripple.lake` or `meta.ripple.frost` lists
+alters tide review obligations.
 
 ---
 

@@ -69,7 +69,7 @@ pub struct CheckSettings {
     /// Check generated footer freshness.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub render: Option<bool>,
-    /// Check that each configured link relation has a matching entry with tide policy.
+    /// Check that each configured link relation has a matching structural entry.
     #[serde(rename = "structural-inhabitance", skip_serializing_if = "Option::is_none")]
     pub structural_inhabitance: Option<bool>,
 }
@@ -80,7 +80,7 @@ impl CheckSettings {
         self.render.unwrap_or(true)
     }
 
-    /// Return whether configured link relations must have matching entries with tide policy.
+    /// Return whether configured link relations must have matching structural entries.
     pub fn structural_inhabitance_enabled(&self) -> bool {
         self.structural_inhabitance.unwrap_or(true)
     }
@@ -770,7 +770,7 @@ impl ConfigRenderer {
                 self.push_field(
                     "structural-inhabitance",
                     &structural_inhabitance,
-                    "Require each configured link relation to have a matching entry with Tide metadata during checks.",
+                    "Require each configured link relation to have a matching structural relation entry during checks.",
                 )?;
             }
             // sirno:witness:project-config-comments:end
@@ -862,7 +862,8 @@ impl ConfigRenderer {
                 "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
                 "`to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.",
                 "render = true writes generated footer links.",
-                "Tide policy lives in the relation entry's meta.lake.* and meta.frost.* fields.",
+                "Tide policy lives in structural relation entry meta.ripple.lake \
+                 and meta.ripple.frost direction lists.",
                 "Omitted render values are false.",
             ] {
                 self.out.push_str("# ");
@@ -1872,7 +1873,7 @@ delimiters = []
         ));
         assert!(source.contains("# render = true writes generated footer links."));
         assert!(source.contains(
-            "# Tide policy lives in the relation entry's meta.lake.* and meta.frost.* fields."
+            "# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists."
         ));
         assert!(source.contains("# Omitted render values are false."));
         assert_before(&source, "[frost]", "[upstreams.core]");

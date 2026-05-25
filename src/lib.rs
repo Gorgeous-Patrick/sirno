@@ -37,8 +37,8 @@ pub use crate::config::{
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
-    DESC_FIELD, Entry, EntryMeta, EntryMetadata, EntryParseError, EntryStructuralFields,
-    FROZEN_FIELD, FrozenMarker, META_FIELD, NAME_FIELD,
+    DESC_FIELD, Entry, EntryMeta, EntryMetaType, EntryMetadata, EntryParseError,
+    EntryStructuralFields, FROZEN_FIELD, FrozenMarker, META_FIELD, NAME_FIELD,
 };
 pub use crate::freeze::{FreezeError, FrozenPath};
 pub use crate::frost::{FrostError, FrostGcReport, SirnoFrost};

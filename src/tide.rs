@@ -438,8 +438,8 @@ pub enum TideError {
 mod tests {
     use super::*;
     use crate::{
-        EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
-        StructuralTideSettings,
+        EntryMetaType, EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings,
+        StructuralRippleSettings, StructuralTideSettings,
     };
 
     fn id(raw: &str) -> EntryAddress {
@@ -487,6 +487,7 @@ mod tests {
         let mut new = entry("ripple");
         new.metadata.push_structural_target("belongs", id("new-neighbor"));
         let mut relation = entry("belongs");
+        relation.metadata.meta.entry_type = Some(EntryMetaType::Structural);
         relation.metadata.meta.tide = Some(StructuralTideSettings::new(
             StructuralRippleSettings::new(true, false),
             StructuralRippleSettings::default(),

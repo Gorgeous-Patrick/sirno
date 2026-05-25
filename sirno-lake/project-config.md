@@ -106,7 +106,7 @@ Omitting the table or an individual check flag leaves that check enabled.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 `[check].structural-inhabitance` controls whether checks require each configured link relation
-to name an existing *entry* with Tide metadata.
+to name an existing *entry* with `meta.type: "structural"`.
 When a check flag is present,
 the config UI can restore that flag's canonical comment.
 `sirno util config check` reports when the comment is missing.
@@ -142,7 +142,7 @@ Absent values are false.
 `clique` adds separate clique-derived sections through shared targets in that relation.
 
 `render` controls generated footer output.
-Tide policy lives in the relation entry's `meta.lake.*` and `meta.frost.*` fields.
+Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.frost` direction lists.
 
 `Sirno.lock.toml` also records explicit *tide* resolutions when frost is configured.
 Those resolutions are compared against the current ripple fingerprint.

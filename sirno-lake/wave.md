@@ -21,7 +21,7 @@ or both.
 The wave does not store review state.
 It is derived from the current comparison,
 the relation order in `Sirno.toml`,
-and the relation entries' `meta.lake.*` and `meta.frost.*` fields.
+and the relation entries' `meta.ripple.lake` and `meta.ripple.frost` direction lists.
 `Sirno.lock.toml` stores only explicit resolutions for the workitems inside the wave.
 
 When several ripples exist,

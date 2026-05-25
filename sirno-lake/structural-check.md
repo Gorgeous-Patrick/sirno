@@ -17,9 +17,14 @@ Structural checks include required metadata fields, accepted field shapes,
 reference existence, generated footer boundaries,
 and *witness* lookup validity when requested.
 They check references through fields configured by `[structural.FIELD]` subtables.
-Each configured link relation must also name an existing *entry* with Tide metadata.
+Each configured link relation must also name an existing *entry*
+with `meta.type: "structural"`.
 That structural-inhabitance check is controlled by `[check].structural-inhabitance`
 and is enabled when the flag or the whole `[check]` table is absent.
+Entries named `name` or `desc` define Sirno's intrinsic metadata fields.
+When those entries exist,
+they must carry `meta.type: "intrinsic"`.
+An entry with `meta.type: "intrinsic"` must be either `name` or `desc`.
 Category metadata also has a semantic target check.
 Every *entry* used as a `category` target must itself include `category: category`.
 When `category` metadata is present or `[structural.category]` is configured,
@@ -36,10 +41,11 @@ which is enabled by default.
 During editing, dangling structural link targets may warn.
 At an explicit review boundary, dangling references are errors.
 List-valued metadata fields that are absent from `[structural]` always warn.
-Configured link relations with missing *entries* or missing Tide metadata
+Configured link relations with missing *entries* or missing `meta.type: "structural"`
 follow the same edit warning and review error boundary as dangling structural link targets.
-An entry with Tide metadata that is not configured in `Sirno.toml`
+An entry with `meta.type: "structural"` that is not configured in `Sirno.toml`
 also follows that boundary.
+Intrinsic-field `meta.type` diagnostics follow that boundary too.
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
@@ -66,11 +72,16 @@ If an *entry* names a target through configured structural link metadata,
 that target should exist by the time the *lake* is reviewed.
 If `Sirno.toml` configures a link relation,
 the relation name should also exist as the *entry* that documents that relation.
-That relation entry should define Tide metadata,
+That relation entry should define `meta.type: "structural"`,
 even when the relation has no tide behavior.
 `[check].structural-inhabitance` controls that configured-relation entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
+
+Intrinsic metadata field entries keep Sirno's built-in entry shape self-described.
+The checker accepts `meta.type: "intrinsic"` only for the `name` and `desc` entries.
+Those entries are stored and versioned like ordinary entries,
+but their type marker binds them to fields the entry parser always requires.
 
 Category target checks keep kind vocabulary explicit.
 An *entry* that appears in another *entry*'s `category` list is a category target.

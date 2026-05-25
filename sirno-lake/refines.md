@@ -8,9 +8,9 @@ belongs:
 prerequisite:
   - structural
   - refinement
-meta.lake.to: true
-meta.lake.from: true
-meta.frost.from: true
+meta.type: "structural"
+meta.ripple.lake: ["to", "from"]
+meta.ripple.frost: ["from"]
 ---
 
 `refines` records a *refinement* edge from a more specific *entry*
@@ -37,7 +37,7 @@ The more specific *entry* points back to the broader *entry*.
 This makes local work easier:
 from the local *entry*, a reader can climb back toward intent.
 From the broad *entry*, generated or queried metadata can reveal the *entries* that elaborate it.
-This entry's `meta.lake.*` and `meta.frost.*` fields use direct `to` and `from` edges
+This entry's `meta.ripple.lake` and `meta.ripple.frost` lists use direct `to` and `from` edges
 for *tide* review workitems.
 It does not render `refines` generated footer sections by default.
 Only waterline `to` participates in tide review.

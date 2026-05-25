@@ -19,7 +19,7 @@ The frost layer stores canonical metadata and prose without generated footers,
 so the frostline already excludes rendered navigation.
 
 The frostline is the stable side of *wave* derivation.
-When a relation entry's `meta.frost.*` fields enable a frostline direction,
+When a relation entry's `meta.ripple.frost` list enables a frostline direction,
 Sirno reads the changed *entry*'s neighbors from the frostline
 and adds them to the *tide*.
 These are the neighbors that existed *before* the edit.
