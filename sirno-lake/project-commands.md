@@ -131,15 +131,15 @@ and requires the lake to be the current mutable frostline.
 | `sirno render` | Creates or replaces Sirno-owned generated footer regions. |
 | `sirno render -n, --dry` | Reports footer changes without writing files. |
 | `sirno render --dry-run` | Alias for `sirno render --dry`. |
-| `sirno render --override-json JSON` | Uses structural render settings for that run only. |
+| `sirno render --override-json JSON` | Uses `[render.structural]` settings for that run only. |
 | `sirno render delete` | Removes generated footer regions. |
 
 The `sirno check -m, --mode` option selects the check boundary.
 Render commands print changed paths or blocking diagnostics before their summary line.
 Render commands operate on the active lake path.
 
-The override JSON uses link relation and edge names,
-such as `{"belongs":{"to":{"render":true}}}`.
+The override JSON uses link relation names with edge direction lists,
+such as `{"belongs":["to"]}`.
 It does not write `Sirno.toml`.
 
 ---

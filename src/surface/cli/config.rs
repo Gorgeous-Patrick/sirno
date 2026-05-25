@@ -15,10 +15,11 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::error::CommandError;
 use crate::{
-    CheckSettings, ConfigError, FrostSettings, RepoSettings, SirnoConfig, TutorialSettings,
+    CheckSettings, ConfigError, FrostSettings, RenderSettings, RepoSettings, SirnoConfig,
+    TutorialSettings,
 };
 
-const SECTIONS: [ConfigSection; 7] = [
+const SECTIONS: [ConfigSection; 8] = [
     ConfigSection::Lake,
     ConfigSection::Frost,
     ConfigSection::Repo,
@@ -26,6 +27,7 @@ const SECTIONS: [ConfigSection; 7] = [
     ConfigSection::Check,
     ConfigSection::Tutorial,
     ConfigSection::Structural,
+    ConfigSection::Render,
 ];
 
 /// Run the interactive config maintenance UI.
@@ -182,6 +184,7 @@ enum ConfigSection {
     Check,
     Tutorial,
     Structural,
+    Render,
 }
 
 impl ConfigSection {
@@ -194,6 +197,7 @@ impl ConfigSection {
             | "check" => Some(Self::Check),
             | "tutorial" => Some(Self::Tutorial),
             | "structural" => Some(Self::Structural),
+            | "render" => Some(Self::Render),
             | _ => None,
         }
     }
@@ -207,6 +211,7 @@ impl ConfigSection {
             | Self::Check => "[check]",
             | Self::Tutorial => "[tutorial]",
             | Self::Structural => "[structural]",
+            | Self::Render => "[render]",
         }
     }
 }
@@ -274,6 +279,9 @@ fn config_section_rows(
 fn materialize_section(config: &mut SirnoConfig, section: ConfigSection) {
     match section {
         | ConfigSection::Lake | ConfigSection::Witness | ConfigSection::Structural => {}
+        | ConfigSection::Render => {
+            config.render = RenderSettings::default();
+        }
         | ConfigSection::Frost => {
             config.frost.get_or_insert_with(|| FrostSettings::new("sirno-frost"));
         }
@@ -423,6 +431,7 @@ mod tests {
             check: CheckSettings::default(),
             tutorial: None,
             structural: Default::default(),
+            render: Default::default(),
         }
     }
 

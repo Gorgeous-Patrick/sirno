@@ -14,10 +14,11 @@ Structural link policy has two owners.
 
 | Owner | Stored form | Controls |
 |---|---|---|
-| `Sirno.toml` | `[structural.FIELD]` subtables | Relation registration and generated footer rendering. |
+| `Sirno.toml` | `[structural.FIELD].entry` | Relation registration. |
+| `Sirno.toml` | `[render.structural]` lists | Generated footer rendering. |
 | relation entry | `meta.ripple.lake` and `meta.ripple.frost` lists | Sirno Tide review obligations. |
 
-`Sirno.toml` also preserves relation order.
+`Sirno.toml` also preserves relation order in `[structural.FIELD]`.
 The relation entry declares `meta.type: "structural"`.
 
 Both owners use the same edge names:
@@ -28,20 +29,23 @@ Both owners use the same edge names:
 | `from` | Follows incoming sources that name the current *entry*. |
 | `clique` | Follows entries connected through a shared target in that relation. |
 
-In `Sirno.toml`,
-each edge policy may set `render = true`.
+In `Sirno.toml`, `[render.structural]` lists rendered edge directions per relation.
 In relation metadata,
 edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.frost` lists.
 Absent render and tide values are false.
 
 ```toml
 [structural.belongs]
-to = { render = true }
-from = { render = true }
+entry = "belongs"
 
 [structural.refines]
+entry = "refines"
 
 [structural.prerequisite]
+entry = "prerequisite"
+
+[render.structural]
+belongs = ["to", "from"]
 ```
 
 ```yaml

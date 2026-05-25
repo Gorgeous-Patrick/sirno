@@ -59,16 +59,16 @@ impl CheckMode {
         let mut report = CheckReport::new();
         if structural_inhabitance {
             for (field, _) in structural.fields() {
-                let Some(entry) = entries_by_id
-                    .iter()
-                    .find_map(|(id, entry)| (id.as_str() == field).then_some(*entry))
-                else {
+                let relation_entry = structural
+                    .entry_for_field(field)
+                    .expect("configured relation has defining entry");
+                let Some(entry) = entries_by_id.get(relation_entry).copied() else {
                     report.push(CheckDiagnostic {
                         severity,
                         kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
                         entry: None,
                         field: field.to_owned(),
-                        target: None,
+                        target: Some(relation_entry.clone()),
                     });
                     continue;
                 };
@@ -78,7 +78,7 @@ impl CheckMode {
                         kind: CheckDiagnosticKind::MissingStructuralMeta,
                         entry: Some(entry.id.clone()),
                         field: field.to_owned(),
-                        target: None,
+                        target: Some(relation_entry.clone()),
                     });
                 }
             }
@@ -106,8 +106,7 @@ impl CheckMode {
                     target: None,
                 });
             }
-            if entry.metadata.meta.is_structural_relation()
-                && !structural.contains_field(entry.id.as_str())
+            if entry.metadata.meta.is_structural_relation() && !structural.contains_entry(&entry.id)
             {
                 report.push(CheckDiagnostic {
                     severity,
@@ -150,7 +149,9 @@ impl CheckMode {
         report: &mut CheckReport,
     ) {
         let category_id =
-            EntryAddress::new(CATEGORY_FIELD).expect("built-in category entry address is valid");
+            structural.entry_for_field(CATEGORY_FIELD).cloned().unwrap_or_else(|| {
+                EntryAddress::new(CATEGORY_FIELD).expect("built-in category entry address is valid")
+            });
         let category_targets = entries_by_id
             .values()
             .flat_map(|entry| entry.metadata.structural_targets_for(CATEGORY_FIELD))
@@ -258,7 +259,8 @@ impl CheckDiagnostic {
         match self.kind {
             | CheckDiagnosticKind::MissingStructuralFieldEntry => format!(
                 "`Sirno.toml` configures link relation `{}`, but entry `{}` does not exist",
-                self.field, self.field
+                self.field,
+                self.target.as_ref().expect("missing structural field entry diagnostic has target")
             ),
             | CheckDiagnosticKind::MissingStructuralMeta => format!(
                 "`Sirno.toml` configures link relation `{}`, but entry `{}` does not define \
@@ -390,6 +392,20 @@ mod tests {
         topic.metadata.meta.entry_type = Some(EntryMetaType::Structural);
 
         let report = CheckMode::Review.check_entries([&topic], &structural_settings());
+
+        assert!(report.is_clean());
+    }
+
+    #[test]
+    fn structural_inhabitance_uses_configured_relation_entry() {
+        let mut relation = entry("metadata-topic");
+        relation.metadata.meta.entry_type = Some(EntryMetaType::Structural);
+        let settings = StructuralSettings::from_relations([(
+            FIELD_TOPIC,
+            EntryAddress::new("metadata-topic").unwrap(),
+        )]);
+
+        let report = CheckMode::Review.check_entries([&relation], &settings);
 
         assert!(report.is_clean());
     }

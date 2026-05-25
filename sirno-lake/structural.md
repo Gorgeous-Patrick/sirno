@@ -15,8 +15,7 @@ A structural link is an entry-to-entry relation that Sirno reads as project stru
 This repository recommends the `category`, `belongs`, `prerequisite`, and `refines` relations.
 `Sirno.toml` defines the active relation set with `[structural.FIELD]` subtables.
 Each configured `FIELD` is the relation name.
-It should also name the *entry* that documents that relation
-and follow normal *entry* id rules.
+The subtable's `entry` value names the *entry* that documents that relation.
 Configured relations are ordinary *entry* metadata fields today,
 but Sirno treats their values as the graph that powers query, checking,
 generated footer rendering, and tide review worklists.
@@ -37,11 +36,10 @@ Sirno uses that order when rendering configured structural surfaces.
 Humans discover *witness* regions mechanically with `sirno witness ENTRY_ADDRESS --full`.
 Agents use the corresponding MCP witness tool.
 
-Because a configured relation name is also a local *entry* id,
-`sirno entry rename OLD NEW` treats that relation name as part of the rename.
-It rewrites authored metadata keys from `OLD` to `NEW` across the *lake*
-and rewrites `[structural.OLD]` in `Sirno.toml` to `[structural.NEW]`.
-The same operation also rewrites structural link target values that name `OLD`.
+When `sirno entry rename OLD NEW` renames a relation entry,
+it rewrites any `[structural.FIELD].entry = "OLD"` value to `NEW`.
+It does not rename the metadata relation `FIELD`.
+The same operation rewrites structural link target values that name `OLD`.
 
 This *entry* is the review front door for the structural link relation *entries*.
 It gives the relation set one review front door while leaving each relation *entry* free

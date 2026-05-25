@@ -33,14 +33,14 @@ The canonical comments are:
 - `Include first-snapshot bootstrap context in the frost commit tide tutorial.`
 - `Structural link relations.`
 - `Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.`
-- `FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.`
 - `FIELD must be a non-empty single-line metadata key with no comma.`
 - `FIELD cannot be name, desc, meta, or frozen.`
+- `entry names the lake entry that documents the relation.`
 - `Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.`
-- `` `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors. ``
-- `render = true writes generated footer links.`
 - `Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.`
-- `Omitted render values are false.`
+- `Generated-footer structural link render policy.`
+- `Each key names a configured structural relation.`
+- `Values are direction lists: to, from, and clique.`
 
 This list is the canonical source for the strings.
 The Rust config renderer materializes it,

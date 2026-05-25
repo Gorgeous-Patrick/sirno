@@ -15,9 +15,10 @@ use super::OpenTideTutorial;
 use crate::{
     CONFIG_FILE_NAME, CheckMode, CheckSettings, Entry, EntryAddress, EntryDirectory,
     EntryDirectoryCheckSettings, EntryMetadata, EntryQuery, Eterator, FrostError, FrostLockStatus,
-    FrostSettings, LOCK_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, SirnoFrost, SirnoLock,
-    StructuralEdgeDirection, StructuralEdgeSettings, StructuralFieldSettings, StructuralSettings,
-    TideSource, TideStatus, TideWorkitem, TutorialSettings, WitnessRecord, WitnessSpan,
+    FrostSettings, LOCK_FILE_NAME, RenderSettings, RepoMember, RepoSettings, SirnoConfig,
+    SirnoFrost, SirnoLock, StructuralEdgeDirection, StructuralEdgeSettings,
+    StructuralFieldSettings, StructuralRenderSettings, StructuralSettings, TideSource, TideStatus,
+    TideWorkitem, TutorialSettings, WitnessRecord, WitnessSpan,
 };
 
 use super::{
@@ -3697,7 +3698,7 @@ fn sample() {{}}
 }
 
 #[test]
-fn rename_command_updates_structural_field_names_and_config() {
+fn rename_command_updates_structural_relation_entry_config() {
     let temp = tempfile::tempdir().unwrap();
     let config_path = temp.path().join(CONFIG_FILE_NAME);
     let docs = temp.path().join("docs");
@@ -3765,10 +3766,8 @@ Body.
 
     assert!(!docs.join("refines.md").exists());
     assert!(docs.join("prerequisite.md").exists());
-    assert!(reader_source.contains("prerequisite:\n  - concept\n"));
-    assert!(!reader_source.contains("refines:"));
-    assert!(config_source.contains("[structural.prerequisite]"));
-    assert!(!config_source.contains("[structural.refines]"));
+    assert!(reader_source.contains("refines:\n  - concept\n"));
+    assert!(config_source.contains("[structural.refines]\nentry = \"prerequisite\""));
     assert!(checked.is_clean());
 }
 
@@ -4103,7 +4102,7 @@ fn render_accepts_dry_run_aliases() {
 
 #[test]
 fn render_accepts_override_json() {
-    let cli = Cli::parse_from(["sirno", "render", "--override-json", "{\"belongs\":{\"to\":{}}}"]);
+    let cli = Cli::parse_from(["sirno", "render", "--override-json", "{\"belongs\":[\"to\"]}"]);
 
     assert!(matches!(
         cli.command,
@@ -4111,7 +4110,7 @@ fn render_accepts_override_json() {
             override_json: Some(source),
             command: None,
             ..
-        }) if source == "{\"belongs\":{\"to\":{}}}"
+        }) if source == "{\"belongs\":[\"to\"]}"
     ));
 }
 
@@ -4131,8 +4130,14 @@ fn render_override_json_temporarily_replaces_structural_settings() {
     let config = SirnoConfig {
         structural: StructuralSettings::from_fields([(
             "belongs",
-            StructuralFieldSettings::render_only(false, true, false),
+            StructuralFieldSettings::default(),
         )]),
+        render: RenderSettings {
+            structural: StructuralRenderSettings::from_fields([(
+                "belongs",
+                [StructuralEdgeDirection::From].as_slice().iter().copied(),
+            )]),
+        },
         ..SirnoConfig::new("docs")
     };
     config.write_new(&config_path).unwrap();
@@ -4171,7 +4176,7 @@ Body.
         config_path.to_str().unwrap(),
         "render",
         "--override-json",
-        "{\"belongs\":{\"to\":{\"render\":true}}}",
+        "{\"belongs\":[\"to\"]}",
     ])
     .run()
     .unwrap();
@@ -4179,18 +4184,12 @@ Body.
     let alpha = fs::read_to_string(docs.join("alpha.md")).unwrap();
     let beta = fs::read_to_string(docs.join("beta.md")).unwrap();
     let stored = SirnoConfig::from_file(&config_path).unwrap();
-    let belongs = stored
-        .structural
-        .fields()
-        .find(|(field, _)| *field == "belongs")
-        .map(|(_, settings)| settings)
-        .unwrap();
+    let stored_directions = stored.render.structural.directions_for("belongs").unwrap();
 
     assert!(alpha.contains("- belongs (to):\n  - [beta](beta.md)"));
     assert!(!beta.contains("belongs (from)"));
     assert!(!beta.contains("[alpha](alpha.md)"));
-    assert!(!belongs.to.render);
-    assert!(belongs.from.render);
+    assert_eq!(stored_directions, &[StructuralEdgeDirection::From]);
 }
 
 #[test]
@@ -4259,4 +4258,38 @@ fn config_comment_report_prints_summary_last() {
 
     assert_before(&output, "missing: Sirno Lake path.", "1 config comments missing");
     assert!(output.ends_with("1 config comments missing in Sirno.toml\n"));
+}
+
+#[test]
+fn util_structural_sync_discovers_local_structural_entries() {
+    let temp = tempfile::tempdir().unwrap();
+    let config_path = temp.path().join(CONFIG_FILE_NAME);
+    let docs = temp.path().join("docs");
+    SirnoConfig::new("docs").write_new(&config_path).unwrap();
+    fs::create_dir(&docs).unwrap();
+    write_empty_relation_entry(&docs, "belongs", "Belongs");
+    write_empty_relation_entry(&docs, "refines", "Refines");
+
+    let result = SurfaceContext::new(config_path.clone()).config_structural_sync().unwrap();
+    let config = SirnoConfig::from_file(&config_path).unwrap();
+    let source = fs::read_to_string(&config_path).unwrap();
+
+    assert!(result.changed);
+    assert_eq!(result.relations.len(), 2);
+    assert_eq!(
+        config.structural.entry_for_field("belongs"),
+        Some(&EntryAddress::new("belongs").unwrap())
+    );
+    assert!(source.contains("[structural.belongs]\nentry = \"belongs\""));
+    assert!(source.contains("[structural.refines]\nentry = \"refines\""));
+
+    let second = SurfaceContext::new(config_path).config_structural_sync().unwrap();
+    assert!(!second.changed);
+}
+
+#[test]
+fn util_structural_command_parses() {
+    let cli = Cli::parse_from(["sirno", "util", "structural"]);
+
+    assert!(matches!(cli.command, Command::Util { command: UtilCommand::Structural }));
 }

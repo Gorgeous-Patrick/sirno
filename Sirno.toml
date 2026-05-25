@@ -26,21 +26,26 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 [structural]
 # Structural link relations.
 # Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.
-# FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.
 # FIELD must be a non-empty single-line metadata key with no comma.
 # FIELD cannot be name, desc, meta, or frozen.
+# entry names the lake entry that documents the relation.
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.
-# `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.
-# render = true writes generated footer links.
 # Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.
-# Omitted render values are false.
 
 [structural.category]
+entry = "category"
 
 [structural.belongs]
-to = { render = true }
-from = { render = true }
+entry = "belongs"
 
 [structural.refines]
+entry = "refines"
 
 [structural.prerequisite]
+entry = "prerequisite"
+
+[render.structural]
+# Generated-footer structural link render policy.
+# Each key names a configured structural relation.
+# Values are direction lists: to, from, and clique.
+belongs = ["to", "from"]

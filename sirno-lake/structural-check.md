@@ -74,7 +74,7 @@ Metadata target checks keep the graph navigable.
 If an *entry* names a target through configured structural link metadata,
 that target should exist by the time the *lake* is reviewed.
 If `Sirno.toml` configures a link relation,
-the relation name should also exist as the *entry* that documents that relation.
+the configured relation entry should exist.
 That relation entry should define `meta.type: "structural"`,
 even when the relation has no tide behavior.
 `[check].structural-inhabitance` controls that configured-relation entry check.

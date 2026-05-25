@@ -32,8 +32,8 @@ pub use crate::check::{
     CheckDiagnostic, CheckDiagnosticKind, CheckMode, CheckReport, CheckSeverity,
 };
 pub use crate::config::{
-    CONFIG_FILE_NAME, CheckSettings, ConfigError, FrostSettings, LakeSettings, RepoMember,
-    RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
+    CONFIG_FILE_NAME, CheckSettings, ConfigError, FrostSettings, LakeSettings, RenderSettings,
+    RepoMember, RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
@@ -58,8 +58,9 @@ pub use crate::render::{
 };
 pub use crate::structural::{
     StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
-    StructuralEdgeSettings, StructuralFieldMap, StructuralFieldSettings, StructuralRippleSettings,
-    StructuralSettings, StructuralTideSettings,
+    StructuralEdgeSettings, StructuralFieldMap, StructuralFieldSettings, StructuralRelationMap,
+    StructuralRelationSettings, StructuralRenderMap, StructuralRenderSettings,
+    StructuralRippleSettings, StructuralSettings, StructuralTideSettings,
 };
 pub use crate::tide::{
     Tide, TideError, TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,

@@ -50,6 +50,11 @@ They also include structural vocabulary such as `structural`, `belongs`, `refine
 and `prerequisite`.
 The entry utility accepts `--lake-path` and rejects `--frost-path`.
 
+`sirno util structural` discovers project-local entries with `meta.type: "structural"`.
+It syncs each discovered entry into `Sirno.toml` as `[structural.FIELD].entry`,
+using the entry address as both `FIELD` and `entry`.
+It accepts `--lake-path` and rejects `--frost-path`.
+
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.
 `sirno util skills check` reports whether installed wrappers match those bundled constants.

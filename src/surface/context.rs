@@ -18,10 +18,11 @@ use crate::surface::dto::{
     QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
     QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult,
     StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState, StatusFrost,
-    StatusFrostState, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
-    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
+    StatusFrostState, StatusResult, StatusTide, StructuralConfigRecord, StructuralConfigSyncResult,
+    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
+    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
+    WitnessResult,
 };
 use crate::surface::error::{CommandError, OpenTideTutorial};
 use crate::surface::output::{
@@ -32,8 +33,9 @@ use crate::{
     CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath, EntryDirectory,
     EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryMetadata,
     EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig, SirnoFrost, SirnoLock,
-    StructuralSettings, Tide, TideStatus, TutorialSettings, UpstreamCrystallizeReport,
-    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    StructuralRenderSettings, StructuralSettings, Tide, TideStatus, TutorialSettings,
+    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
+    WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -346,7 +348,7 @@ impl SurfaceContext {
     ) -> Result<EntryRenameResult, CommandError> {
         let renamed_config = if self.config_path.exists() {
             let mut config = SirnoConfig::from_file(&self.config_path)?;
-            if config.structural.rename_field(&old_id, &new_id) {
+            if config.structural.rename_entry_reference(&old_id, &new_id) {
                 config.validate_for_file(&self.config_path)?;
                 Some(config)
             } else {
@@ -668,6 +670,62 @@ impl SurfaceContext {
         })
     }
     // sirno:witness:project-config-comments:end
+
+    /// Discover project-local structural entries and sync `Sirno.toml` relation sections.
+    pub fn config_structural_sync(&self) -> Result<StructuralConfigSyncResult, CommandError> {
+        let mut config = SirnoConfig::from_file(&self.config_path)?;
+        let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        settings.render = false;
+        settings.structural_inhabitance = false;
+        settings.witness = None;
+        let report =
+            EntryDirectory::new(&lake_path).check_with_settings(CheckMode::Edit, &settings)?;
+        if report.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(lake_path).into());
+        }
+
+        let mut records = Vec::new();
+        let mut changed = false;
+        for entry in report.entries() {
+            if !entry.metadata.meta.is_structural_relation() || entry.id.as_str().contains('.') {
+                continue;
+            }
+            let field = entry.id.as_str().to_owned();
+            let row_changed = config.structural.set_relation_entry(field.clone(), entry.id.clone());
+            changed |= row_changed;
+            records.push(StructuralConfigRecord {
+                field,
+                entry: entry.id.to_string(),
+                changed: row_changed,
+            });
+        }
+        if changed {
+            config.write(&self.config_path)?;
+        }
+
+        let count = records.len();
+        let message = if changed {
+            format!(
+                "updated structural config in {} from {count} discovered {}",
+                self.config_path.display(),
+                plural(count, "relation", "relations")
+            )
+        } else {
+            format!(
+                "structural config already matches {count} discovered {}",
+                plural(count, "relation", "relations")
+            )
+        };
+
+        Ok(StructuralConfigSyncResult {
+            ok: true,
+            changed,
+            config_path: display_path(&self.config_path),
+            relations: records,
+            message,
+        })
+    }
 
     /// List artifacts owned by one entry.
     pub fn entry_artifact_list(
@@ -1027,11 +1085,16 @@ impl SurfaceContext {
                 render: config.check.render_enabled(),
             },
             structural_fields: config
-                .structural
+                .effective_structural_settings()
                 .with_tide_policies_from_entries(report.entries())
                 .fields()
                 .map(|(field, settings)| StructuralFieldStatus {
                     field: field.to_owned(),
+                    entry: config
+                        .structural
+                        .entry_for_field(field)
+                        .expect("effective relation has configured entry")
+                        .to_string(),
                     to: StructuralEdgeStatus::from_settings(&settings.to),
                     from: StructuralEdgeStatus::from_settings(&settings.from),
                     clique: StructuralEdgeStatus::from_settings(&settings.clique),
@@ -1824,7 +1887,13 @@ fn default_repo_name(config_path: &Path) -> OsString {
 fn apply_structural_override_json(
     settings: &mut StructuralSettings, override_json: &str,
 ) -> Result<(), CommandError> {
-    *settings = serde_json::from_str(override_json)?;
+    let render: StructuralRenderSettings = serde_json::from_str(override_json)?;
+    for (field, _) in render.fields() {
+        if !settings.contains_field(field) {
+            return Err(CommandError::UnconfiguredStructuralField(field.to_owned()));
+        }
+    }
+    *settings = settings.with_render_settings(&render);
     Ok(())
 }
 
@@ -1856,7 +1925,7 @@ fn entry_directory_check_settings(
     EntryDirectoryCheckSettings {
         render: config.check.render_enabled(),
         structural_inhabitance: config.check.structural_inhabitance_enabled(),
-        structural: config.structural.clone(),
+        structural: config.effective_structural_settings(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
     }
@@ -1984,6 +2053,10 @@ fn structural_targets_by_target(
         targets_by_field.entry(target.field).or_default().push(target.target);
     }
     Ok(targets_by_field)
+}
+
+fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
+    if count == 1 { singular } else { plural }
 }
 
 fn tide_selection_matches(request: &TideResolveRequest, status: &TideStatus) -> bool {

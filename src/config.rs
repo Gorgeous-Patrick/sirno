@@ -17,7 +17,7 @@ use indexmap::IndexMap;
 
 use crate::entry::{DESC_FIELD, FROZEN_FIELD, META_FIELD, NAME_FIELD};
 use crate::identifier::EntryAtom;
-use crate::structural::{StructuralEdgeSettings, StructuralSettings};
+use crate::structural::{StructuralRenderSettings, StructuralSettings};
 
 /// Canonical Sirno project config filename.
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
@@ -87,6 +87,21 @@ impl CheckSettings {
 
     fn has_explicit_flags(&self) -> bool {
         self.render.is_some() || self.structural_inhabitance.is_some()
+    }
+}
+
+/// Generated content render settings.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct RenderSettings {
+    /// Structural link directions rendered in generated footers.
+    pub structural: StructuralRenderSettings,
+}
+
+impl RenderSettings {
+    /// Return true when no render policy is configured.
+    pub fn is_empty(&self) -> bool {
+        self.structural.is_empty()
     }
 }
 
@@ -460,7 +475,8 @@ impl WitnessSettings {
 /// `witness` controls the delimiter syntax for repository witness blocks.
 /// `check` controls optional structural check families.
 /// `tutorial`, when present, enables tutorial output for recoverable command failures.
-/// `structural` controls structural link relations and generated-link footer content.
+/// `structural` registers structural link relations and their defining entries.
+/// `render` controls generated-link footer content.
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -485,9 +501,12 @@ pub struct SirnoConfig {
     /// Optional tutorial output settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tutorial: Option<TutorialSettings>,
-    /// Structural link metadata and generated-link settings.
+    /// Structural link metadata relation settings.
     #[serde(default)]
     pub structural: StructuralSettings,
+    /// Generated content render settings.
+    #[serde(default, skip_serializing_if = "RenderSettings::is_empty")]
+    pub render: RenderSettings,
 }
 // sirno:witness:project-config:end
 
@@ -504,6 +523,7 @@ impl SirnoConfig {
             check: CheckSettings::default(),
             tutorial: None,
             structural: StructuralSettings::default(),
+            render: RenderSettings::default(),
         }
     }
     // sirno:witness:project-config:end
@@ -656,6 +676,7 @@ impl SirnoConfig {
             upstream.validate(domain)?;
         }
         self.validate_structural_fields()?;
+        self.validate_render_settings()?;
         self.witness.validate()?;
         if self.frost.is_some() {
             let lake = self.resolve_lake(config_path);
@@ -681,6 +702,30 @@ impl SirnoConfig {
             }
         }
         Ok(())
+    }
+
+    fn validate_render_settings(&self) -> Result<(), ConfigError> {
+        for (field, directions) in self.render.structural.fields() {
+            if !self.structural.contains_field(field) {
+                return Err(ConfigError::RenderStructuralField(field.to_owned()));
+            }
+            let mut seen = Vec::new();
+            for direction in directions {
+                if seen.contains(direction) {
+                    return Err(ConfigError::DuplicateRenderStructuralDirection {
+                        field: field.to_owned(),
+                        direction: direction.to_string(),
+                    });
+                }
+                seen.push(*direction);
+            }
+        }
+        Ok(())
+    }
+
+    /// Return structural settings with generated-footer render policy applied.
+    pub fn effective_structural_settings(&self) -> StructuralSettings {
+        self.structural.with_render_settings(&self.render.structural)
     }
 
     fn to_toml(&self) -> Result<String, ConfigError> {
@@ -803,6 +848,11 @@ impl ConfigRenderer {
         self.push_structural_fields(&config.structural)?;
         // sirno:witness:project-config-comments:end
 
+        if !config.render.is_empty() {
+            self.out.push('\n');
+            self.push_render_settings(&config.render)?;
+        }
+
         Ok(())
     }
 
@@ -851,41 +901,48 @@ impl ConfigRenderer {
     fn push_structural_fields(
         &mut self, structural: &StructuralSettings,
     ) -> Result<(), toml::ser::Error> {
-        let mut fields = structural.fields().peekable();
+        let mut fields = structural.relations().peekable();
         if fields.peek().is_some() {
             for comment in [
                 "Structural link relations.",
                 "Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.",
-                "FIELD must name the lake entry that documents the relation and follow normal entry-atom rules.",
                 "FIELD must be a non-empty single-line metadata key with no comma.",
                 "FIELD cannot be name, desc, meta, or frozen.",
+                "entry names the lake entry that documents the relation.",
                 "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
-                "`to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors.",
-                "render = true writes generated footer links.",
                 "Tide policy lives in structural relation entry meta.ripple.lake \
                  and meta.ripple.frost direction lists.",
-                "Omitted render values are false.",
             ] {
                 self.out.push_str("# ");
                 self.out.push_str(comment);
                 self.out.push('\n');
             }
         }
-        for (field, settings) in fields {
+        for (field, entry) in fields {
             self.out.push('\n');
             self.push_table(&format!("structural.{field}"));
-            self.push_structural_edge("to", &settings.to)?;
-            self.push_structural_edge("from", &settings.from)?;
-            self.push_structural_edge("clique", &settings.clique)?;
+            self.push_bare_field("entry", entry)?;
         }
         Ok(())
     }
 
-    fn push_structural_edge(
-        &mut self, name: &str, settings: &StructuralEdgeSettings,
-    ) -> Result<(), toml::ser::Error> {
-        if settings.render {
-            self.push_bare_field(name, settings)?;
+    fn push_render_settings(&mut self, render: &RenderSettings) -> Result<(), toml::ser::Error> {
+        let mut fields = render.structural.fields().peekable();
+        if fields.peek().is_none() {
+            return Ok(());
+        }
+        self.push_table("render.structural");
+        for comment in [
+            "Generated-footer structural link render policy.",
+            "Each key names a configured structural relation.",
+            "Values are direction lists: to, from, and clique.",
+        ] {
+            self.out.push_str("# ");
+            self.out.push_str(comment);
+            self.out.push('\n');
+        }
+        for (field, directions) in fields {
+            self.push_bare_field(field, directions)?;
         }
         Ok(())
     }
@@ -979,6 +1036,17 @@ pub enum ConfigError {
     /// A link relation name is reserved for Sirno-managed metadata.
     #[error("link relation name is reserved for Sirno metadata: {0}")]
     ReservedStructuralField(String),
+    /// A rendered structural relation is not configured.
+    #[error("render.structural `{0}` must name a configured link relation")]
+    RenderStructuralField(String),
+    /// A rendered structural direction is listed more than once.
+    #[error("render.structural `{field}` repeats direction `{direction}`")]
+    DuplicateRenderStructuralDirection {
+        /// Link relation name.
+        field: String,
+        /// Repeated direction label.
+        direction: String,
+    },
     /// A witness delimiter regex is empty.
     #[error("{field} at index {index} must not be empty")]
     WitnessRegex {
@@ -1108,6 +1176,7 @@ path = "docs"
         assert!(config.check.structural_inhabitance_enabled());
         assert_eq!(config.tutorial, None);
         assert_eq!(config.structural, StructuralSettings::default());
+        assert_eq!(config.render, RenderSettings::default());
     }
 
     #[test]
@@ -1321,70 +1390,94 @@ delimiters = []
 [lake]
 path = "docs"
 
-[structural]
-kind = { to = { render = true } }
-area = { to = { render = true }, from = { render = true }, clique = { render = true } }
-parent = { from = { render = true } }
+[structural.kind]
+entry = "kind-entry"
+
+[structural.area]
+entry = "area"
+
+[structural.parent]
+entry = "parent"
+
+[render.structural]
+kind = ["to"]
+area = ["to", "from", "clique"]
+parent = ["from"]
 "#,
         );
 
         assert_eq!(
             config.structural,
-            StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::structural::StructuralFieldSettings::render_only(true, false, false),
-                ),
-                (
-                    "area",
-                    crate::structural::StructuralFieldSettings::new(
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                    ),
-                ),
-                (
-                    "parent",
-                    crate::structural::StructuralFieldSettings::render_only(false, true, false),
-                ),
+            StructuralSettings::from_relations([
+                ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
+                ("area", crate::EntryAddress::new("area").unwrap()),
+                ("parent", crate::EntryAddress::new("parent").unwrap()),
             ])
         );
+        assert_eq!(
+            config.render.structural,
+            crate::StructuralRenderSettings::from_fields([
+                ("kind", [crate::StructuralEdgeDirection::To].as_slice().iter().copied()),
+                (
+                    "area",
+                    [
+                        crate::StructuralEdgeDirection::To,
+                        crate::StructuralEdgeDirection::From,
+                        crate::StructuralEdgeDirection::Clique,
+                    ]
+                    .as_slice()
+                    .iter()
+                    .copied(),
+                ),
+                ("parent", [crate::StructuralEdgeDirection::From].as_slice().iter().copied()),
+            ])
+        );
+        let effective = config.effective_structural_settings();
+        let effective_fields = effective.fields().collect::<Vec<_>>();
+        assert!(effective_fields[0].1.to.render);
+        assert!(effective_fields[1].1.from.render);
+        assert!(effective_fields[1].1.clique.render);
+        assert!(effective_fields[2].1.from.render);
     }
 
     #[test]
-    fn rejects_structural_ripple_settings_in_config() {
+    fn rejects_old_structural_edge_settings_in_config() {
         let error = toml::from_str::<SirnoConfig>(&config_source(
             r#"
 [lake]
 path = "docs"
 
 [structural.topic]
-to = { ripple = { lake = true } }
+entry = "topic"
+to = { render = true }
 "#,
         ))
         .unwrap_err();
 
-        assert!(error.to_string().contains("unknown field `ripple`"));
+        assert!(error.to_string().contains("unknown field `to`"));
     }
 
     #[test]
-    fn structural_edge_fields_default_to_false() {
+    fn structural_relations_default_to_no_rendering() {
         let config = parse_config(
             r#"
 [lake]
 path = "docs"
 
 [structural.topic]
+entry = "topic"
 "#,
         );
 
         assert_eq!(
             config.structural,
-            StructuralSettings::from_fields([(
+            StructuralSettings::from_relations([(
                 "topic",
-                crate::structural::StructuralFieldSettings::default(),
+                crate::EntryAddress::new("topic").unwrap()
             )])
         );
+        assert_eq!(config.render, RenderSettings::default());
+        assert!(!config.effective_structural_settings().fields().next().unwrap().1.to.render);
     }
 
     #[test]
@@ -1395,26 +1488,28 @@ path = "docs"
 path = "docs"
 
 [structural.kind]
-to = { render = true }
+entry = "kind"
 
 [structural.topic]
-clique = { render = true }
+entry = "topic-entry"
+
+[render.structural]
+kind = ["to"]
+topic = ["clique"]
 "#,
         );
 
         assert_eq!(
             config.structural,
-            StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::structural::StructuralFieldSettings::render_only(true, false, false),
-                ),
-                (
-                    "topic",
-                    crate::structural::StructuralFieldSettings::render_only(false, false, true),
-                ),
+            StructuralSettings::from_relations([
+                ("kind", crate::EntryAddress::new("kind").unwrap()),
+                ("topic", crate::EntryAddress::new("topic-entry").unwrap()),
             ])
         );
+        let effective = config.effective_structural_settings();
+        let effective_fields = effective.fields().collect::<Vec<_>>();
+        assert!(effective_fields[0].1.to.render);
+        assert!(effective_fields[1].1.clique.render);
     }
 
     #[test]
@@ -1424,10 +1519,19 @@ clique = { render = true }
 [lake]
 path = "docs"
 
-[structural]
-zeta = { to = { render = true } }
-alpha = { from = { render = true } }
-middle = { clique = { render = true } }
+[structural.zeta]
+entry = "zeta"
+
+[structural.alpha]
+entry = "alpha"
+
+[structural.middle]
+entry = "middle"
+
+[render.structural]
+zeta = ["to"]
+alpha = ["from"]
+middle = ["clique"]
 "#,
         );
 
@@ -1796,21 +1900,33 @@ delimiters = []
                 frost_commit_tide: true,
                 frost_bootstrap_tide: false,
             }),
-            structural: StructuralSettings::from_fields([
-                (
-                    "kind",
-                    crate::structural::StructuralFieldSettings::render_only(true, true, false),
-                ),
-                (
-                    "area",
-                    crate::structural::StructuralFieldSettings::new(
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                        crate::structural::StructuralEdgeSettings::render_only(true),
-                    ),
-                ),
-                ("parent", crate::structural::StructuralFieldSettings::default()),
+            structural: StructuralSettings::from_relations([
+                ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
+                ("area", crate::EntryAddress::new("area").unwrap()),
+                ("parent", crate::EntryAddress::new("parent").unwrap()),
             ]),
+            render: RenderSettings {
+                structural: crate::StructuralRenderSettings::from_fields([
+                    (
+                        "kind",
+                        [crate::StructuralEdgeDirection::To, crate::StructuralEdgeDirection::From]
+                            .as_slice()
+                            .iter()
+                            .copied(),
+                    ),
+                    (
+                        "area",
+                        [
+                            crate::StructuralEdgeDirection::To,
+                            crate::StructuralEdgeDirection::From,
+                            crate::StructuralEdgeDirection::Clique,
+                        ]
+                        .as_slice()
+                        .iter()
+                        .copied(),
+                    ),
+                ]),
+            },
         };
 
         let source = config.to_toml().unwrap();
@@ -1858,37 +1974,33 @@ delimiters = []
         assert!(source.contains(
             "# Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure."
         ));
-        assert!(source.contains(
-            "# FIELD must name the lake entry that documents the relation and follow normal entry-atom rules."
-        ));
         assert!(
             source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
         );
         assert!(source.contains("# FIELD cannot be name, desc, meta, or frozen."));
+        assert!(source.contains("# entry names the lake entry that documents the relation."));
         assert!(source.contains(
             "# Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review."
         ));
         assert!(source.contains(
-            "# `to` follows outgoing targets, `from` incoming sources, and `clique` shared-target neighbors."
-        ));
-        assert!(source.contains("# render = true writes generated footer links."));
-        assert!(source.contains(
             "# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists."
         ));
-        assert!(source.contains("# Omitted render values are false."));
+        assert!(source.contains("[render.structural]"));
+        assert!(source.contains("# Generated-footer structural link render policy."));
+        assert!(source.contains("# Each key names a configured structural relation."));
+        assert!(source.contains("# Values are direction lists: to, from, and clique."));
         assert_before(&source, "[frost]", "[upstreams.core]");
         assert_before(&source, "[upstreams.core]", "[repo]");
         assert_before(&source, "[tutorial]", "[structural]");
+        assert_before(&source, "[structural.parent]", "[render.structural]");
         assert_eq!(source.matches("# Structural link relations.").count(), 1);
         assert_before(&source, "# Structural link relations", "[structural.kind]");
-        assert!(
-            source
-                .contains("[structural.kind]\nto = { render = true }\nfrom = { render = true }\n")
-        );
-        assert!(source.contains(
-            "[structural.area]\nto = { render = true }\nfrom = { render = true }\nclique = { render = true }\n"
-        ));
-        assert!(source.contains("[structural.parent]\n"));
+        assert!(source.contains("[structural.kind]\nentry = \"kind-entry\"\n"));
+        assert!(source.contains("[structural.area]\nentry = \"area\"\n"));
+        assert!(source.contains("[structural.parent]\nentry = \"parent\"\n"));
+        assert!(source.contains("[render.structural]\n"));
+        assert!(source.contains("kind = [\"to\", \"from\"]"));
+        assert!(source.contains("area = [\"to\", \"from\", \"clique\"]"));
         assert!(!source.contains("kind = {"));
         assert!(!source.contains("area = {"));
         assert!(!source.contains("parent = {"));

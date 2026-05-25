@@ -83,6 +83,32 @@ pub struct ConfigCommentResult {
     pub message: String,
 }
 
+/// One structural relation discovered from project-local entries.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StructuralConfigRecord {
+    /// Metadata relation name.
+    pub field: String,
+    /// Entry configured for the relation.
+    pub entry: String,
+    /// Whether this run changed the config row.
+    pub changed: bool,
+}
+
+/// Result of syncing configured structural relations from local entries.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StructuralConfigSyncResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Whether `Sirno.toml` changed.
+    pub changed: bool,
+    /// Checked config path.
+    pub config_path: String,
+    /// Discovered structural relation rows.
+    pub relations: Vec<StructuralConfigRecord>,
+    /// Human-readable summary.
+    pub message: String,
+}
+
 /// Request to add or replace one upstream declaration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpstreamAddRequest {
@@ -953,6 +979,8 @@ impl StructuralEdgeStatus {
 pub struct StructuralFieldStatus {
     /// Link relation name.
     pub field: String,
+    /// Entry that defines the relation.
+    pub entry: String,
     /// Outgoing edge settings.
     pub to: StructuralEdgeStatus,
     /// Incoming edge settings.

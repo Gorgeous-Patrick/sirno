@@ -336,7 +336,7 @@ enum TopLevelLakeCommand {
         /// Report rendered-footer changes without writing files.
         #[arg(short = 'n', long, visible_alias = "dry-run")]
         dry: bool,
-        /// JSON structural link render settings used instead of the configured settings for this run.
+        /// JSON render.structural settings used instead of the configured settings for this run.
         #[arg(long = "override-json", value_name = "JSON")]
         override_json: Option<String>,
         /// Render command.
@@ -798,6 +798,10 @@ enum UtilCommand {
         #[command(subcommand)]
         command: Option<EntryUtilityCommand>,
     },
+    // sirno:witness:utility-commands:end
+    // sirno:witness:utility-commands:begin
+    /// Sync Sirno.toml structural relations from local structural entries.
+    Structural,
     // sirno:witness:utility-commands:end
     /// Generate a shell completion script.
     Completion {
@@ -2287,6 +2291,19 @@ impl UtilCommand {
                     return Err(CommandError::FrostPathRequiresCheck);
                 }
                 command.unwrap_or(EntryUtilityCommand::Tui).run(config_path, lake_path)
+            }
+            | UtilCommand::Structural => {
+                if frost_path.is_some() {
+                    return Err(CommandError::FrostPathRequiresCheck);
+                }
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+                    .config_structural_sync()?;
+                println!("{}", result.message);
+                for relation in result.relations {
+                    let status = if relation.changed { "updated" } else { "ok" };
+                    println!("{} = {} ({status})", relation.field, relation.entry);
+                }
+                Ok(ExitCode::SUCCESS)
             }
             | UtilCommand::Completion { shell } => {
                 if frost_path.is_some() {

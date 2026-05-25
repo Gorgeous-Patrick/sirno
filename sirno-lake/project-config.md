@@ -132,18 +132,21 @@ Each link relation is written as a `[structural.FIELD]` subtable.
 
 | Part | Rule |
 |---|---|
-| `FIELD` | Names the relation and should name the *entry* that documents it. |
-| field shape | Uses normal *entry atom* rules for a non-empty single-line metadata key. |
+| `FIELD` | Names the metadata relation. |
+| field shape | Uses a non-empty single-line metadata key. |
 | reserved names | `FIELD` must not contain a comma or be `name`, `desc`, or `frozen`. |
-| relation entry | Checks can require a matching *entry* with `meta.type: "structural"`. |
-| edge policies | The subtable may define `to`, `from`, and `clique` policies. |
-| `render = true` | Enables generated footer output for one edge policy. |
-| absent values | Mean false. |
+| `entry` | Names the *entry* that documents the relation. |
+| relation entry | Checks can require that *entry* to define `meta.type: "structural"`. |
 | key order | Records user-authored project structure and is preserved by rewrites. |
 
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 When `[check].structural-inhabitance` is enabled,
-checks report configured link relations without matching *entries*.
+checks report configured relation entries that are missing or not structural.
+
+`[render.structural]` controls generated footer output.
+Each key names a configured structural relation.
+Each value is a list of rendered edge directions.
+Absent relations render no generated footer groups.
 
 | Edge | Generated relation |
 |---|---|
@@ -151,7 +154,6 @@ checks report configured link relations without matching *entries*.
 | `from` | Links from the *entry* to *entries* that name it as a metadata target. |
 | `clique` | Adds separate sections through shared targets in that relation. |
 
-`render` controls generated footer output.
 Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.frost` direction lists.
 
 `Sirno.lock.toml` also records explicit *tide* resolutions when frost is configured.
