@@ -11,45 +11,31 @@ prerequisite:
 
 Several design areas are reserved for later refinement.
 
-The `locked` field may later define how *entries* or generated regions resist accidental edits.
+Reserved areas are concrete:
 
-Long-term version retention policy is reserved for later design.
-The core model already treats versions as `eter` snapshots.
-Future work decides which snapshots Sirno keeps by default,
-which snapshots can be named,
-and how review interfaces expose them.
-
-The *transform* names are now `actualize` and `internalize`.
-Future work may add command support for those names where the CLI still exposes older surfaces.
-
-Lake dependency management now has initial vocabulary:
-*entry domains*, *entry addresses*, and *lake sheaves*.
-Future work should define resolution rules, symlink materialization,
-and version selection without making entry naming carry all dependency policy.
+- `locked` may define how *entries*, metadata fields, or generated regions resist accidental edits.
+  That design needs a clear ownership model before it becomes part of the schema.
+- Version retention should define which `eter` snapshots Sirno keeps by default,
+  which snapshots can be named,
+  and how review interfaces expose them.
+- Lake dependency management should refine *entry domain* resolution,
+  symlink materialization,
+  and upstream version selection without making entry names carry all dependency policy.
+- Future editing interfaces may provide a direct GUI or Obsidian-style experience.
+  They should preserve the existing ownership rules:
+  metadata is structural,
+  generated footer regions are Sirno-owned,
+  and prose outside generated regions remains user-owned.
 
 Future work should remain explicit without becoming speculative architecture.
 The current design is useful because its core is small:
 *entries*, metadata, structural links, generated footers, forms, *transforms*, checks, and *witnesses*.
 New features should preserve that clarity.
 
-The `locked` field is one example.
-It may eventually protect *entries*,
-metadata fields,
-or generated regions that a project treats as controlled.
-That design needs a clear ownership model before it becomes part of the schema.
-Until then, leaving the field reserved is safer than accepting vague lock behavior.
-
-Version retention is another example.
 `eter` provides history, snapshots, retirement, and garbage collection.
 `sirno frost gc` provides a latest-snapshot collection policy for frost rows and artifact bytes.
 Sirno still needs long-term policy for which historical snapshots stay live.
 That policy should preserve reviewable *lake* states without making *entry* metadata harder to read.
-
-The *transform* names may also evolve.
-The current names are compact and memorable,
-but they should remain subordinate to the model they describe.
-If the project learns a clearer vocabulary,
-*entries* and manuals can internalize that vocabulary deliberately.
 
 ---
 

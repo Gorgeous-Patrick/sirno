@@ -32,10 +32,7 @@ Command entries describe shared operations exposed through those adapters.
 - `utility-commands` defines local operator utilities such as config, entry defaults, skills, and MCP startup.
 - `mcp-interface` defines MCP resources, tool names, JSON behavior, and adapter ownership.
 
-A lightweight GUI or Obsidian extension may later provide a direct editing experience.
-Future interfaces should keep the same ownership rules:
-metadata is structural, generated footer regions are Sirno-owned,
-and prose outside generated regions remains user-owned.
+Future editing surfaces belong in `future-work` until they have a stable adapter model.
 
 ---
 

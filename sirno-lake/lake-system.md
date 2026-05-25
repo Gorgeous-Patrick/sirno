@@ -19,6 +19,12 @@ in the local lake view that readers and tools can inspect.
 A lake system is the operational group.
 A *lake sheaf* is the resolved composition model for the addressable view.
 
+| Term | Role |
+|---|---|
+| Lake system | The operational group: current project plus declared upstream lakes. |
+| Lake sheaf | The resolved addressable view built from local and upstream lakelets. |
+| Glacier | A crystallized upstream snapshot materialized under the local lake view. |
+
 ---
 
 > **Sirno generated links begin. Do not edit this section.**

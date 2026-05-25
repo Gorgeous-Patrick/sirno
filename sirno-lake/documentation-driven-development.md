@@ -63,7 +63,7 @@ Agents act inside what was approved.
 When the design has to change,
 the *lake* changes first,
 the agreement is renewed,
-and complexity stays managable as the project grows.
+and complexity stays manageable as the project grows.
 
 ---
 
