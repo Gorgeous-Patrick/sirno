@@ -12,18 +12,27 @@ prerequisite:
 
 Structural link policy has two owners.
 
-`Sirno.toml` registers structural relations,
-preserves their order,
-and chooses which edge directions render in generated footers.
-Each relation is registered by a `[structural.FIELD]` subtable.
-The subtable may define `to`, `from`, and `clique` edge policies with `render = true`.
-Absent render values are false.
+| Owner | Stored form | Controls |
+|---|---|---|
+| `Sirno.toml` | `[structural.FIELD]` subtables | Relation registration and generated footer rendering. |
+| relation entry | `meta.ripple.lake` and `meta.ripple.frost` lists | Sirno Tide review obligations. |
 
-The relation entry defines how Sirno Tide follows that relation.
-It declares `meta.type: "structural"`.
-It writes tide policy in flat `meta.ripple.lake` and `meta.ripple.frost` lists.
-The `to`, `from`, and `clique` values enable each waterline or frostline direction.
-Absent tide values are false.
+`Sirno.toml` also preserves relation order.
+The relation entry declares `meta.type: "structural"`.
+
+Both owners use the same edge names:
+
+| Edge | Meaning |
+|---|---|
+| `to` | Follows outgoing metadata targets. |
+| `from` | Follows incoming sources that name the current *entry*. |
+| `clique` | Follows entries connected through a shared target in that relation. |
+
+In `Sirno.toml`,
+each edge policy may set `render = true`.
+In relation metadata,
+edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.frost` lists.
+Absent render and tide values are false.
 
 ```toml
 [structural.belongs]
@@ -41,9 +50,6 @@ meta.ripple.lake: ["to", "from"]
 meta.ripple.frost: ["from"]
 ```
 
-`to` follows outgoing metadata targets.
-`from` follows incoming sources that name the current *entry*.
-`clique` follows entries connected through a shared target in that relation.
 `prerequisite` and `refines` use direct `to` and `from` edges without clique expansion,
 because both relations are directional.
 They do not render generated footer sections by default.
@@ -65,10 +71,6 @@ Frostline clique is disabled because former peer groups usually mean a deliberat
 The clique semantics are the same for rendering and tide generation:
 the target links to its members,
 and each member links to the target and to the other members.
-
-Changing `Sirno.toml` alters presentation.
-Changing a structural relation entry's `meta.ripple.lake` or `meta.ripple.frost` lists
-alters tide review obligations.
 
 ---
 

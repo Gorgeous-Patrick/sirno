@@ -21,6 +21,19 @@ The sentinels are human-visible Markdown block quotes.
 The generated list is separated from both sentinels by blank lines.
 That shape keeps Markdown renderers from nesting the closing sentinel under the list.
 
+The schematic shape is:
+
+```text
+[optional horizontal divider]
+> begin generated footer marker
+
+- relation (edge):
+  - linked entry
+- relation (edge): (none)
+
+> end generated footer marker
+```
+
 When Sirno appends a *generated footer* to a non-empty body,
 it inserts a horizontal divider immediately before the generated region
 unless the body already ends with one.

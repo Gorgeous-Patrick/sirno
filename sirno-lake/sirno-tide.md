@@ -36,6 +36,19 @@ so a later change to the same *ripple* reopens it.
 *Infer resolution* closes obligations whose *neighbor* also changed in the same edit.
 A clear *tide* gates the next frost commit.
 
+```mermaid
+flowchart LR
+    waterline([waterline])
+    frostline([frostline])
+    ripple([ripple])
+    wave([wave])
+    tide([tide])
+    resolution([tide resolution])
+    waterline --> ripple
+    frostline --> ripple
+    ripple --> wave --> tide --> resolution
+```
+
 These entries form one review neighborhood.
 Read them together when changing how edits become review obligations.
 

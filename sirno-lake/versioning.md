@@ -45,6 +45,15 @@ and it must not be placed where lake discovery can treat it as *entries*.
 It contains one `[frost]` table with `status`, `generation`, `version`,
 and an optional `mutable` flag.
 
+The operational lifecycle is:
+
+1. Initialize frost storage with `sirno frost init [PATH]`.
+2. Commit the editable lake with `sirno commit` after checks and tide review pass.
+3. Checkout a frozen version to materialize historical lake files and artifacts.
+4. Use `--unsafe-mutable` only when a historical checkout should become editable.
+5. Restore by checking out a version and committing that lake as a new current snapshot.
+6. Run `sirno frost gc` to keep the latest snapshot and collect unreachable storage.
+
 `sirno frost init [PATH]` configures the *frost* path and records empty version `0`.
 The first *frost* commit creates the first frozen snapshot.
 If active *tide* policy is configured,
