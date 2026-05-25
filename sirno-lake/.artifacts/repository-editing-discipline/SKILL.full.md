@@ -75,6 +75,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    then update public prose from those entries.
    Use the repository's own documentation-writing method when one exists;
    otherwise fall back to `sirno://skills/design-doc-writer`.
+   Use paragraphs, bullets, numbered steps, tables, or simple diagrams
+   according to what makes the design easiest for a human co-worker to scan and review.
 
 ## Validation
 

@@ -31,6 +31,7 @@ Its reusable habits are reader evaluation,
 conceptual ordering,
 declarative precision,
 positive definitions,
+reader-aware bullets and diagrams,
 and whole-document coherence.
 A design document should explain the system through ordered concepts and exact terms.
 It should define a term before using it to state a rule,
@@ -43,6 +44,8 @@ It uses an impersonal voice without becoming bureaucratic.
 It avoids motivational framing, rhetoric, and defensive rebuttal.
 It states the positive rule first when documenting a constraint,
 and uses definition by negation only when it prevents a likely confusion.
+It uses bullets, numbered steps, tables, or simple diagrams when those forms make
+structure easier for a human co-worker to scan and review.
 
 The artifact at `.artifacts/design-doc-writer-skill/SKILL.full.md`
 is the canonical source for the MCP resource

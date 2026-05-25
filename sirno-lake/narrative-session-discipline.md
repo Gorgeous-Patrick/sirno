@@ -59,6 +59,9 @@ and leave an aftertaste the reader can reuse.
 
 Materialize when the route should guide future onboarding or review.
 The artifact is a narrative entry built by the serializer contract; see `narrative-serializer`.
+Use prose paragraphs for continuity,
+bullets or numbered steps for route structure,
+and simple diagrams when they make the path easier for a human reader to inspect.
 After materializing, run `sirno_lake_render` and `sirno_lake_check` in edit mode.
 Finish by naming the artifact, the entry address, and the main sequencing choice,
 and confirm the route preserves pull, a clean first bite, and an aftertaste.

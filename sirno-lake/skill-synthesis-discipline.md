@@ -44,6 +44,7 @@ default to `sirno://skills/design-doc-writer` from `design-doc-writer-skill`.
 Their reusable content is reader evaluation,
 conceptual ordering,
 declarative precision,
+reader-aware bullets and diagrams,
 and whole-document coherence.
 They do not become skill sources unless the Sirno skill roster adds them.
 They may own full MCP resource artifacts without rendering installed Sirno wrappers.

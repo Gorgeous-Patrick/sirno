@@ -81,6 +81,7 @@ read the whole design document,
 order sections by conceptual dependency and scope,
 write declarative, dry, precise prose,
 prefer positive definitions over defensive framing,
+use bullets or simple diagrams when they improve structural reading,
 and evaluate the result as a reader before and after editing.
 It also owns `.artifacts/design-doc-writer-skill/SKILL.full.md`,
 copied exactly from `.agents/skills/design-doc-writer/SKILL.md`.

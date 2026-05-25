@@ -58,8 +58,9 @@ Add `witness:` only when repository evidence exists.
 
 ## Entry Body Shape
 
-Use prose paragraphs by default.
-Use bullets only when they make the route easier to scan.
+Use prose paragraphs for continuity.
+Use bullets or numbered steps when they make the route easier to scan.
+Use a simple diagram when it makes the path easier for a human reader to inspect.
 
 The body should answer:
 

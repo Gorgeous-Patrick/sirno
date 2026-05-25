@@ -59,6 +59,8 @@ Only add repository members when those paths are intended witness surfaces.
 Sync long-form public documentation from the entries that name its design claims.
 Use the repository's own documentation-writing method when one exists;
 otherwise fall back to `sirno://skills/design-doc-writer`.
+Choose paragraphs, bullets, tables, numbered steps, or simple diagrams according to
+what makes the design easiest for a human co-worker to scan and review.
 
 Validate at the review boundary.
 Run `sirno_lake_render` after lake metadata changes,

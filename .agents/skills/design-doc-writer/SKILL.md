@@ -21,6 +21,7 @@ Use this skill for structure and prose when the repository has no stronger local
 
 Before and after any edit, evaluate the document as a reader:
 - Is the structure clear and logically ordered?
+- Would bullets, numbered steps, tables, or a simple diagram make the structure easier to scan?
 - Does the prose read like it was written by a knowledgeable practitioner?
 - Are there redundant or overlapping sections that should be merged or reordered?
 - Does each paragraph introduce one concept, state its properties, and stop?
@@ -50,6 +51,9 @@ Move local details near the concept they constrain.
 Prefer direct definitions over defensive framing.
 State the positive rule first when documenting a constraint.
 Use definition by negation only when a nearby confusion is likely.
+Use bullets, numbered steps, tables, or simple diagrams when those forms make
+relationships, alternatives, checks, or workflows easier to understand.
+Keep every visual form readable to the human co-worker who must review it.
 
 ## Workflow
 

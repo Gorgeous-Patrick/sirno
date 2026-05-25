@@ -49,8 +49,9 @@ in an expandable and self-explanatory shape.
 The Markdown body is the default,
 but it is not the ceiling.
 Including program, configuration, or diagram artifacts inside an *entry* is always acceptable.
+A careful bullet list is often the clearest shape for alternatives, checks, or command surfaces.
 When a slice of code expresses an algorithm more clearly than prose,
-the code — or its core slice — belongs inside the *entry*.
+the code, or its core slice, belongs inside the *entry*.
 A state diagram, a small grammar, a typed shape, a fixture:
 choose whichever representation lowers the cognitive burden.
 The *repository* still owns running code,

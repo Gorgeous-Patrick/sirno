@@ -94,6 +94,9 @@ On completion, the entry becomes the canonical statement of the design fact.
 State the fact directly.
 Keep the body small enough to read in place and durable enough to survive
 the edit that made it useful.
+Use paragraphs for continuous claims.
+Use bullets, numbered steps, tables, or simple diagrams when the fact is easier to scan
+as an inventory, workflow, comparison, or relationship.
 Prefer positive definition over defensive negation.
 Attach `category`, `belongs`, `prerequisite`, and `refines` only when they improve
 navigation, review, or accountability.

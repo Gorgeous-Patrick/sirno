@@ -60,6 +60,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 4. Write and connect the entry.
    State the fact directly and keep the body compact.
+   Use paragraphs for continuous claims.
+   Use bullets, numbered steps, tables, or simple diagrams
+   when they make inventories, workflows, comparisons, or relationships easier to scan.
    Attach link relations only when they improve navigation, review, or accountability.
    When repository evidence already exists,
    add or refine a precise witness block around the smallest stable region that supports the entry.

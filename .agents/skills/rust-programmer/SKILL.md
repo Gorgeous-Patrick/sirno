@@ -10,11 +10,9 @@ description: >-
 
 ## Inline Documentation
 
-Inline Rust documentation is the canonical documentation source for this repository.
 Use `//!` module docs and `///` item docs.
 Keep key understandings, new findings, invariants, and design rationale close to the relevant code.
 Write `/// Note: ` to explain why unusual design choices or compromises exist.
-Do not rely on a standalone `docs/` tree as the canonical source.
 
 Actively write documentation for the program.
 Make sure all public APIs are documented.

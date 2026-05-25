@@ -24,6 +24,9 @@ Prefer direct definitions over defensive framing.
 - Avoid prose that reads like a rebuttal, disclaimer, or argument with an imaginary reviewer.
 - When documenting a constraint, state the positive rule first, then the consequence if needed.
 
+Use bullets, numbered steps, tables, or simple diagrams when they make structure easier to scan.
+Keep each visual form aware of the human co-worker who must read and review it.
+
 ### Sirno Lake
 
 The authoritative project design lives in `sirno-lake/`.

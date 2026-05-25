@@ -53,6 +53,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    the body is glossary-thin, defining a term without carrying design pressure;
    the body is backlog-thin, naming a work item rather than durable design knowledge;
    the framing leads with defensive negation instead of positive definition;
+   an inventory, workflow, comparison, or relationship is buried in prose
+   that bullets, steps, tables, or a simple diagram would make easier to scan;
    another entry already covers the same material;
    the entry's role does not match its configured category, belongs, or refines edges;
    or the entry sits outside a structural neighborhood that its peers all join.

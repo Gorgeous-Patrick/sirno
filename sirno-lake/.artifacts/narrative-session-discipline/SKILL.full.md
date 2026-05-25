@@ -115,6 +115,9 @@ The entry body should state:
 - the phrase, handle, or entry id the reader should carry forward
 
 Keep the body short enough to read in place.
+Use paragraphs for continuity.
+Use bullets or numbered steps for route structure.
+Use simple diagrams when they make the path easier for a human reader to inspect.
 Point to entries that carry durable detail instead of copying their contents.
 Do not include private chat transcript unless the user explicitly asks.
 

@@ -39,6 +39,11 @@ An *entry* should be small enough to read in place
 and durable enough to survive the edit that made it useful.
 It may name a concept, structural link relation, refinement, invariant,
 implementation commitment, or narrative route.
+Choose the body shape for the reader.
+Use paragraphs for continuous claims,
+bullets for inventories, alternatives, checks, or workflows,
+and simple diagrams when relationships are clearer as a picture.
+The structure should help a human co-worker understand and review the entry.
 
 Use `category` for kind.
 A category target must itself be categorized by `category`.

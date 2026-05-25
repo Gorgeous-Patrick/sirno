@@ -59,6 +59,8 @@ correct the artifact or wrapper, never the lake.
 4. Render full resources.
    The full resource operationalizes its discipline plus the shared method it depends on.
    Add nothing the lake does not commit.
+   Preserve shared documentation habits such as reader-aware bullets, diagrams,
+   conceptual ordering, and declarative precision when the full resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,
    absent evidence, and design changes that must be internalized into the lake.
    Defer project configuration maintenance to the editor skill rather than copying its checklist.
