@@ -24,15 +24,22 @@ and whether that section's comments match Sirno's canonical renderer.
 `sirno util config check` runs the non-interactive comment check without writing the file.
 `sirno util config fix` runs the non-interactive rewrite through that renderer.
 
-`[lake].path` names the lake path.
-`[frost].path` optionally names the frost path.
-`[upstreams.DOMAIN]` optionally declares one Git-backed upstream lake.
-`[repo].members` optionally lists *repository* paths or globs scanned for *witness* blocks.
-`[witness]` configures the delimiter regexes used to find *witness* blocks.
-`[tutorial]` optionally enables extra CLI tutorial text for recoverable command failures.
-Relative paths are resolved from the directory that contains `Sirno.toml`.
-The CLI `--lake-path PATH` option can override `[lake].path` for one command.
-The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
+The main fields are:
+
+| Field | Meaning |
+|---|---|
+| `[lake].path` | Names the lake path. |
+| `[frost].path` | Optionally names the frost path. |
+| `[upstreams.DOMAIN]` | Optionally declares one Git-backed upstream lake. |
+| `[repo].members` | Lists *repository* paths or globs scanned for *witness* blocks. |
+| `[witness]` | Configures the delimiter regexes used to find *witness* blocks. |
+| `[tutorial]` | Enables extra CLI tutorial text for recoverable command failures. |
+
+Path selection follows three rules:
+
+- Relative paths are resolved from the directory that contains `Sirno.toml`.
+- The CLI `--lake-path PATH` option can override `[lake].path` for one command.
+- The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
 
 `[upstreams.DOMAIN]` declares an upstream lake crystallized into a glacier under `DOMAIN`.
 `DOMAIN` is an *entry atom* and becomes the glacier *entry address* prefix.
@@ -122,24 +129,27 @@ Removing the table silences all tutorial text.
 
 `[structural]` controls which metadata fields define structural link relations.
 Each link relation is written as a `[structural.FIELD]` subtable.
-The field name is the relation name.
-It should also name the *entry* that documents that relation
-and follow normal *entry atom* rules.
+
+| Part | Rule |
+|---|---|
+| `FIELD` | Names the relation and should name the *entry* that documents it. |
+| field shape | Uses normal *entry atom* rules for a non-empty single-line metadata key. |
+| reserved names | `FIELD` must not contain a comma or be `name`, `desc`, or `frozen`. |
+| relation entry | Checks can require a matching *entry* with `meta.type: "structural"`. |
+| edge policies | The subtable may define `to`, `from`, and `clique` policies. |
+| `render = true` | Enables generated footer output for one edge policy. |
+| absent values | Mean false. |
+| key order | Records user-authored project structure and is preserved by rewrites. |
+
+This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 When `[check].structural-inhabitance` is enabled,
 checks report configured link relations without matching *entries*.
-It must be a non-empty single-line metadata key,
-must not contain a comma,
-and must not be `name`, `desc`, or `frozen`.
-The subtable may define `to`, `from`, and `clique` edge policies for rendering.
-This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
-The key order is user-authored project structure.
-Sirno preserves that order when it rewrites `Sirno.toml`.
-Each edge policy may set `render = true`.
-Absent values are false.
 
-`to` links from the *entry* to metadata targets.
-`from` links from the *entry* to *entries* that name it as a metadata target.
-`clique` adds separate clique-derived sections through shared targets in that relation.
+| Edge | Generated relation |
+|---|---|
+| `to` | Links from the *entry* to metadata targets. |
+| `from` | Links from the *entry* to *entries* that name it as a metadata target. |
+| `clique` | Adds separate sections through shared targets in that relation. |
 
 `render` controls generated footer output.
 Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.frost` direction lists.

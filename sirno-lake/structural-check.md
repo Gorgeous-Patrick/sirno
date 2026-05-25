@@ -13,20 +13,22 @@ prerequisite:
 
 Sirno checks structure.
 
-Structural checks include required metadata fields, accepted field shapes,
-reference existence, generated footer boundaries,
-and *witness* lookup validity when requested.
-They check references through fields configured by `[structural.FIELD]` subtables.
-Each configured link relation must also name an existing *entry*
-with `meta.type: "structural"`.
-That structural-inhabitance check is controlled by `[check].structural-inhabitance`
-and is enabled when the flag or the whole `[check]` table is absent.
-Entries named `name` or `desc` define Sirno's intrinsic metadata fields.
-When those entries exist,
-they must carry `meta.type: "intrinsic"`.
-An entry with `meta.type: "intrinsic"` must be either `name` or `desc`.
-Category metadata also has a semantic target check.
-Every *entry* used as a `category` target must itself include `category: category`.
+Structural checks cover these areas:
+
+| Area | What it validates |
+|---|---|
+| metadata shape | Required fields and accepted field shapes. |
+| structural targets | References through fields configured by `[structural.FIELD]`. |
+| relation entries | Configured relations have entries with `meta.type: "structural"`. |
+| intrinsic entries | `name` and `desc` carry `meta.type: "intrinsic"` when present. |
+| intrinsic markers | Only `name` and `desc` carry `meta.type: "intrinsic"`. |
+| category targets | Entries used as category targets include `category: category`. |
+| generated footers | Sirno-owned footer boundaries and freshness. |
+| witnesses | Configured witness lookup validity when requested. |
+
+The structural-inhabitance check is controlled by `[check].structural-inhabitance`.
+It is enabled when the flag or the whole `[check]` table is absent.
+
 When `category` metadata is present or `[structural.category]` is configured,
 checks warn if the `category` *entry* is missing.
 When `[repo].members` is configured,
@@ -38,14 +40,15 @@ Sentinel shape is always checked.
 Freshness is controlled by `[check].render`,
 which is enabled by default.
 
-During editing, dangling structural link targets may warn.
-At an explicit review boundary, dangling references are errors.
-List-valued metadata fields that are absent from `[structural]` always warn.
-Configured link relations with missing *entries* or missing `meta.type: "structural"`
-follow the same edit warning and review error boundary as dangling structural link targets.
-An entry with `meta.type: "structural"` that is not configured in `Sirno.toml`
-also follows that boundary.
-Intrinsic-field `meta.type` diagnostics follow that boundary too.
+Edit and review modes use different severity boundaries:
+
+| Diagnostic | Edit mode | Review mode |
+|---|---|---|
+| dangling structural link target | warning | error |
+| list-valued metadata absent from `[structural]` | warning | warning |
+| missing configured relation entry or type | warning | error |
+| structural entry not configured in `Sirno.toml` | warning | error |
+| intrinsic-field `meta.type` mismatch | warning | error |
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.

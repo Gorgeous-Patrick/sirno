@@ -12,32 +12,43 @@ prerequisite:
 Metadata is the exact schema that carries Sirno structure.
 
 Every *entry* has a YAML metadata block.
-The required fields are `name` and `desc`,
-both plain strings.
-The `name` and `desc` *entries* define those required fields
+
+| Field | Shape | Meaning |
+|---|---|---|
+| `name` | plain string | Required title. |
+| `desc` | plain string | Required description. |
+| `meta` | mapping | Optional Sirno-managed metadata. |
+| `meta.frozen` | non-empty reason list | Declares that the lake *entry* is protected. |
+| `meta.type: "intrinsic"` | scalar marker | Marks `name` or `desc` as a built-in metadata field. |
+| `meta.type: "structural"` | scalar marker | Marks a configured structural relation definition. |
+| `meta.ripple.lake` | direction list | Defines how waterline *tide* follows a structural relation. |
+| `meta.ripple.frost` | direction list | Defines how frostline *tide* follows a structural relation. |
+
+The `name` and `desc` *entries* define the required fields
 and carry `meta.type: "intrinsic"`.
 
-`meta` is optional Sirno-managed metadata.
-It is a mapping.
-`meta.frozen` declares that the lake *entry* is protected.
-It is a non-empty list of protection reasons when present.
-`reviewed` means the entry matches the current frost snapshot.
+Frozen reasons are:
+
+| Reason | Meaning |
+|---|---|
+| `reviewed` | The entry matches the current frost snapshot. |
+| `managed` | Crystallization owns the entry content. |
+
 The frost layer accepts reviewed entries only while their committed form still matches that snapshot.
-`managed` means crystallization owns the entry content.
-An entry may carry both reasons.
-`meta.type: "intrinsic"` marks an entry as one of Sirno's built-in metadata fields.
-The valid intrinsic field entries are `name` and `desc`.
-`meta.type: "structural"` marks an entry as a configured structural relation definition.
-Flat `meta.ripple.lake` and `meta.ripple.frost` lists then define how *tide* follows that relation.
-They are present only on entries that define configured structural link relations.
+An entry may carry both frozen reasons.
+
+Ripple fields are present only on entries that define configured structural link relations.
 Their `to`, `from`, and `clique` values enable waterline or frostline review workitems.
 Empty `meta.ripple.lake` and `meta.ripple.frost` lists mean the relation has no tide behavior.
 
 Configured structural link relations are optional.
 This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
-They are always lists when present,
-and their values are *entry addresses*.
-An empty list is a present empty field.
+They follow three rules:
+
+- They are always lists when present.
+- Their values are *entry addresses*.
+- An empty list is a present empty field.
+
 Their relation order is user-authored metadata.
 Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
 

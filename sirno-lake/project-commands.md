@@ -12,93 +12,135 @@ prerequisite:
 Project commands operate on the configured project, active lake, optional frost path,
 and generated footer state.
 
+## Status
+
 `sirno status` and `sirno st` summarize the configured project as an operational dashboard.
-Status reports the config path, lake path, entry count, optional typed frost state,
-structural link relation count, review-mode lake check, active tide summary,
-and frost commit readiness.
+Status reports:
+
+- config path;
+- lake path;
+- entry count;
+- optional typed frost state;
+- structural link relation count;
+- review-mode lake check;
+- active tide summary;
+- frost commit readiness.
+
 CLI status keeps structural policy collapsed.
 MCP status returns the effective typed structural link policy,
 including rendered directions from config and tide directions from relation entries.
 
-`sirno init` opens an interactive setup flow.
-It asks which setup parts to run, asks for default paths when no path flag supplies them,
+## Setup
+
+| Command | Behavior |
+|---|---|
+| `sirno init` | Opens an interactive setup flow. |
+| `sirno init --all` | Runs full setup without prompts. |
+| `sirno lake init [PATH]` | Creates config and seed entries without frost. |
+| `sirno frost init [PATH]` | Configures frost and records empty version `0`. |
+
+Interactive init asks which setup parts to run,
+asks for default paths when no path flag supplies them,
 asks whether installed wrappers should be linked into Claude skills,
-shows the init plan, and applies it after confirmation.
+shows the init plan,
+and applies it after confirmation.
 
-`sirno init --all` creates a Sirno config, ordinary seed entries,
-an empty frost version `0`, and packaged skill wrappers without prompts.
-By default, it names paths from the directory that contains `Sirno.toml`:
-`<repo>-lake` for the lake path and `<repo>-frost` for the frost path.
+Full setup creates a Sirno config,
+ordinary seed entries,
+an empty frost version `0`,
+and packaged skill wrappers.
+Default paths are derived from the directory that contains `Sirno.toml`:
 
-`sirno init --lake PATH` chooses a non-default lake path.
-`sirno init --frost PATH` chooses a non-default frost path.
-`sirno init --no-lake`, `--no-frost`, and `--no-skills`
-skip their corresponding setup parts.
-`sirno init --claude-skills` creates `.claude/skills/sirno-*` links
-to the installed `.agents/skills/sirno-*` package directories.
+- `<repo>-lake` for the lake path;
+- `<repo>-frost` for the frost path.
+
+Setup flags:
+
+| Flag | Behavior |
+|---|---|
+| `--lake PATH` | Chooses a non-default lake path. |
+| `--frost PATH` | Chooses a non-default frost path. |
+| `--no-lake` | Skips lake setup. |
+| `--no-frost` | Skips frost setup. |
+| `--no-skills` | Skips packaged skill wrappers. |
+| `--claude-skills` | Links `.claude/skills/sirno-*` to installed wrappers. |
+
 The config is still written when another selected setup part needs it.
-When a setup part is skipped, its path option is not accepted.
+When a setup part is skipped,
+its path option is not accepted.
 
-`sirno lake init [PATH]` creates a Sirno config and ordinary seed entries without configuring frost.
-`sirno lake move PATH` changes the configured lake path
-and renames the current lake directory on the filesystem.
-`sirno lake mv PATH` is its short form.
-`sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
+## Storage Movement
 
-`sirno frost init [PATH]` configures the frost path and records empty version `0`.
-`sirno frost move PATH` changes the configured frost path
-and renames the current frost path on the filesystem.
-`sirno frost mv PATH` is its short form.
-`sirno move frost PATH` and `sirno mv frost PATH` select the same path move.
+| Command | Behavior |
+|---|---|
+| `sirno lake move PATH` | Changes `[lake].path` and renames the lake directory. |
+| `sirno lake mv PATH` | Short form of `sirno lake move PATH`. |
+| `sirno move lake PATH` | Top-level wrapper for the same lake move. |
+| `sirno mv lake PATH` | Short top-level wrapper for the same lake move. |
+| `sirno frost move PATH` | Changes `[frost].path` and renames the frost path. |
+| `sirno frost mv PATH` | Short form of `sirno frost move PATH`. |
+| `sirno move frost PATH` | Top-level wrapper for the same frost move. |
+| `sirno mv frost PATH` | Short top-level wrapper for the same frost move. |
+
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
 
-`sirno commit` freezes the current lake
-and writes the resulting current snapshot reference to `Sirno.lock.toml`.
-`sirno frost commit` is its grouped form.
-It fails while open tide workitems remain.
+## Frost
+
+| Command | Behavior |
+|---|---|
+| `sirno commit` | Freezes the current lake and updates `Sirno.lock.toml`. |
+| `sirno frost commit` | Grouped form of `sirno commit`. |
+| `sirno commit --unsafe-resolve-all` | Bypasses open tide workitems for the current commit. |
+| `sirno checkout --latest` | Materializes the latest version as a mutable lake. |
+| `sirno defrost` | Shorthand for `sirno checkout --latest`. |
+| `sirno checkout VERSION` | Materializes one older version into the lake. |
+| `sirno frost checkout` | Grouped checkout command. |
+| `sirno frost defrost` | Grouped latest shortcut. |
+| `sirno frost gc` | Garbage-collects unreachable private frost data. |
+
+Frost commit fails while open tide workitems remain.
 When `[tutorial]` is present,
 this failure can include tutorial text controlled by `[tutorial].frost_commit_tide`
 and `[tutorial].frost_bootstrap_tide`.
-`sirno commit --unsafe-resolve-all` bypasses that gate for the current commit.
 
-`sirno checkout --latest` materializes the latest version as a mutable lake.
-`sirno defrost` is shorthand for `sirno checkout --latest`.
-`sirno checkout VERSION` materializes one older version into the lake.
-The grouped checkout command is `sirno frost checkout`.
-The grouped latest shortcut is `sirno frost defrost`.
 Version checkout is immutable unless `--unsafe-mutable` is supplied.
-`sirno frost gc` garbage-collects private `eter` rows and artifact bytes
-unreachable from the latest frost snapshot.
+Frost GC removes private `eter` rows and artifact bytes unreachable from the latest snapshot.
 It updates the stored GC generation
 and requires the lake to be the current mutable frostline.
 
-`sirno upstream add DOMAIN --git SOURCE (--branch NAME | --tag NAME | --rev COMMIT)`
-declares a Git-backed upstream lake and crystallizes it into a glacier.
+## Upstreams
+
+| Command | Behavior |
+|---|---|
+| `sirno upstream add DOMAIN --git SOURCE ...` | Declares and crystallizes a Git upstream lake. |
+| `sirno upstream remove DOMAIN` | Removes the declaration and managed glacier content. |
+| `sirno upstream crystallize [DOMAIN]` | Crystallizes upstreams into glaciers. |
+| `sirno upstream crystallize [DOMAIN] --locked` | Uses only existing locks and cache mirrors. |
+| `sirno upstream update [DOMAIN]` | Refreshes upstream locks and glacier content. |
+| `sirno upstream status` | Reports upstream lock, cache, glacier, and drift state. |
+
+`sirno upstream add` accepts exactly one of `--branch NAME`, `--tag NAME`, or `--rev COMMIT`.
 `--project PATH` selects a directory inside the Git tree that contains `Sirno.toml`.
-`sirno upstream remove DOMAIN` removes the declaration and managed glacier content.
-`sirno upstream crystallize [DOMAIN] [--locked]` crystallizes upstreams into glaciers.
-`--locked` uses only existing lock records and cache mirrors.
-`sirno upstream update [DOMAIN]` refreshes upstream locks and glacier content.
-`sirno upstream status` reports missing locks, stale locks, cache misses,
-missing glaciers,
-and glacier drift.
 
-`sirno check` checks the active lake.
-The `-m, --mode` option selects the check boundary.
+## Check And Render
 
-`sirno render` creates or replaces Sirno-owned generated footer regions.
-`sirno render -n, --dry` reports generated footer regions that would change without writing files.
-`--dry-run` is an alias for `--dry`.
+| Command | Behavior |
+|---|---|
+| `sirno check` | Checks the active lake. |
+| `sirno render` | Creates or replaces Sirno-owned generated footer regions. |
+| `sirno render -n, --dry` | Reports footer changes without writing files. |
+| `sirno render --dry-run` | Alias for `sirno render --dry`. |
+| `sirno render --override-json JSON` | Uses structural render settings for that run only. |
+| `sirno render delete` | Removes generated footer regions. |
+
+The `sirno check -m, --mode` option selects the check boundary.
 Render commands print changed paths or blocking diagnostics before their summary line.
+Render commands operate on the active lake path.
 
-`sirno render --override-json JSON` uses JSON structural render settings for that run,
-instead of the configured settings.
-The JSON uses link relation and edge names,
+The override JSON uses link relation and edge names,
 such as `{"belongs":{"to":{"render":true}}}`.
 It does not write `Sirno.toml`.
-`sirno render delete` removes generated footer regions.
-Render commands operate on the active lake path.
 
 ---
 
