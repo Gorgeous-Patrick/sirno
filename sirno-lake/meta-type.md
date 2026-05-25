@@ -16,15 +16,15 @@ It is optional for ordinary entries.
 When present,
 it tells Sirno that the entry defines a schema-level role rather than only project prose.
 
-The current values are:
+The current values are documented by their role entries:
 
-| Value | Meaning |
-|---|---|
-| `intrinsic` | The entry defines a required built-in metadata field. |
-| `structural` | The entry defines a configured structural link relation. |
+| Value | Role entry | Meaning |
+|---|---|---|
+| `intrinsic` | `intrinsic` | The entry defines a required built-in metadata field. |
+| `structural` | `structural` | The entry defines a configured structural link relation. |
 
-The value entries document the allowed carriers for each marker.
-They keep the compact metadata table readable while giving each role a stable review target.
+The role entries document the allowed carriers for each marker.
+They keep the compact metadata table readable while giving each marker a stable review target.
 
 ---
 
@@ -33,7 +33,7 @@ They keep the compact metadata table readable while giving each role a stable re
 - belongs (to):
   - [metadata](metadata.md)
 - belongs (from):
-  - [meta-type-intrinsic](meta-type-intrinsic.md)
-  - [meta-type-structural](meta-type-structural.md)
+  - [intrinsic](intrinsic.md)
+  - [structural](structural.md)
 
 > **Sirno generated links end.**

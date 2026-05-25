@@ -26,14 +26,14 @@ Every *entry* has a YAML metadata block.
 
 The `meta-type` entry groups the `meta.type` discriminator values:
 
-| Value | Value entry | Valid carriers |
+| Value | Role entry | Valid carriers |
 |---|---|---|
-| `intrinsic` | `meta-type-intrinsic` | `name` and `desc`. |
-| `structural` | `meta-type-structural` | Configured structural relation entries. |
+| `intrinsic` | `intrinsic` | `name` and `desc`. |
+| `structural` | `structural` | Configured structural relation entries. |
 
 The `name` and `desc` *entries* define the required fields
-and belong to `meta-type-intrinsic`.
-Configured structural relation entries belong to `meta-type-structural`.
+and belong to `intrinsic`.
+Configured structural relation entries belong to `structural`.
 
 Frozen reasons are:
 

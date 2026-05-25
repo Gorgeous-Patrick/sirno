@@ -5,6 +5,7 @@ category:
   - concept
 belongs:
   - sirno
+  - meta-type
 prerequisite:
   - metadata
 ---
@@ -19,9 +20,14 @@ and follow normal *entry* id rules.
 Configured relations are ordinary *entry* metadata fields today,
 but Sirno treats their values as the graph that powers query, checking,
 generated footer rendering, and tide review worklists.
-The relation entry defines Tide behavior after declaring `meta.type: "structural"`.
+
+`meta.type: "structural"` marks an *entry* as the definition of one configured relation.
+The matching relation entry documents that relation's meaning
+and carries its Tide policy in `meta.ripple.lake` and `meta.ripple.frost`.
+The marker lets checks confirm that every configured relation has a documented owner.
+It also keeps relation behavior local to the relation entry,
+so rendering policy can live in config while review policy stays in the lake.
 `Sirno.toml` defines relation order and generated-footer rendering.
-The `meta-type-structural` entry groups the relation entries by that marker.
 
 Structural links refer to *entries* by path.
 They are list-valued and may name several targets.
@@ -49,6 +55,7 @@ The active relation set and rendered directions are defined by `Sirno.toml`.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [meta-type](meta-type.md)
   - [sirno](sirno.md)
 - belongs (from):
   - [belongs](belongs.md)

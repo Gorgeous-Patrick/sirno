@@ -5,7 +5,6 @@ category:
   - concept
 belongs:
   - structural
-  - meta-type-structural
 prerequisite:
   - structural
 meta.type: "structural"
@@ -50,7 +49,6 @@ Waterline and frostline `from` catch entries that currently or formerly depend o
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [meta-type-structural](meta-type-structural.md)
   - [structural](structural.md)
 - belongs (from): (none)
 

@@ -6,7 +6,7 @@ category:
   - meta
   - concept
 belongs:
-  - meta-type-intrinsic
+  - intrinsic
 ---
 
 `desc` is the required metadata field that gives an *entry* its compact summary.
@@ -23,7 +23,7 @@ and human review routes where opening the full entry would be too much.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [meta-type-intrinsic](meta-type-intrinsic.md)
+  - [intrinsic](intrinsic.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

@@ -1,5 +1,5 @@
 ---
-name: Intrinsic Metadata Type
+name: Intrinsic
 desc: The meta.type value for entries that define required built-in metadata fields.
 category:
   - concept

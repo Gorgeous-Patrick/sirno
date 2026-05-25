@@ -6,7 +6,7 @@ category:
   - meta
   - concept
 belongs:
-  - meta-type-intrinsic
+  - intrinsic
 ---
 
 `name` is the required metadata field that gives an *entry* its reader-facing title.
@@ -23,7 +23,7 @@ The `name` field is the human label for that address.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [meta-type-intrinsic](meta-type-intrinsic.md)
+  - [intrinsic](intrinsic.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
