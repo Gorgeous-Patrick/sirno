@@ -1,19 +1,18 @@
 ---
 name: Lakelet
-desc: A lake namespace used as an entry-domain surface.
+desc: A folder-backed namespace surface for an entry domain.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake-namespace
 prerequisite:
   - entry-domain
   - entry-address-resolution
 ---
 
-A *lakelet* is a namespace inside a lake.
+A *lakelet* is the folder-backed namespace surface for an *entry domain*.
 
-A lakelet is a domain feature.
-It gives a folder-backed entry-address prefix to a group of entries.
+A lakelet gives a group of entries a shared entry-address prefix.
 For example, `lake/core/design.md` places `design` inside the `core.` lakelet
 and gives it entry address `core.design`.
 Nested domains can also be lakelets.
@@ -32,7 +31,7 @@ Both use ordinary entry-address resolution through their domain.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake-namespace](lake-namespace.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

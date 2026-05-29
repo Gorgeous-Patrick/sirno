@@ -8,7 +8,7 @@ belongs:
 prerequisite:
   - project-config
   - sirno-lock
-  - entry-domain
+  - lake-namespace
 ---
 
 An *upstream lake* is a Git-backed Sirno project declared by the current project.

@@ -1,16 +1,17 @@
 ---
 name: Entry Domain
-desc: An entry atom prefix that maps to a lake folder.
+desc: A non-final entry-address atom used as a namespace prefix.
 category:
   - concept
 belongs:
   - entry-address-resolution
+  - lake-namespace
 prerequisite:
   - entry-atom
   - sirno-lake
 ---
 
-An *entry domain* is an entry atom used as an address prefix.
+An *entry domain* is a non-final *entry atom* used as an address prefix.
 
 A domain atom maps to one folder inside a *lake*.
 Nested domains form nested folders.
@@ -27,9 +28,10 @@ An *entry domain* is an address space, not the identity of one *entry*.
 A domain can contain entries and other domains.
 It lets a project group entries by origin, subject, module, or dependency boundary
 without making that grouping part of the entry's durable identity.
-A domain folder is a lakelet.
-An upstream declaration can claim the same domain namespace,
-so Sirno rejects unmanaged local files before crystallizing an upstream lake into a glacier there.
+
+A domain folder is a *lakelet*.
+The domain supplies the namespace name.
+The lakelet supplies the storage surface.
 
 Use domain atoms as lowercase ASCII kebab-case by default.
 Keep them short and stable.
@@ -43,6 +45,7 @@ or making a composed lake easier to navigate.
 
 - belongs (to):
   - [entry-address-resolution](entry-address-resolution.md)
+  - [lake-namespace](lake-namespace.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

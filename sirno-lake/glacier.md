@@ -4,6 +4,7 @@ desc: A managed lakelet formed by crystallizing an upstream lake.
 category:
   - concept
 belongs:
+  - lake-namespace
   - sirno-upstream
 prerequisite:
   - upstream-lake
@@ -29,6 +30,7 @@ unless they are already managed by crystallization.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [lake-namespace](lake-namespace.md)
   - [sirno-upstream](sirno-upstream.md)
 - belongs (from): (none)
 

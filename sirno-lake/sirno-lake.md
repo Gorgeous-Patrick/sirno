@@ -39,24 +39,9 @@ The atom is filename-like by definition.
 Lowercase kebab-case is a convention for readable *lakes*, not a validation boundary.
 The `.` character separates *entry address* segments.
 An *entry address* joins *entry domains* and a local atom into a lookup form.
-Domain segments map to folders in the *lake*.
-Several paths may resolve to the same *entry* in a composed lake.
-The leading-dot path form `.<id>` is reserved for Sirno built-in functionality.
-Project entries and dependency domains use ordinary `<id>` path segments.
-
-A *lakelet* is a namespace inside the *lake*.
-Creating `lake/core/design.md` creates the `core.` lakelet domain
-and the `core.design` entry address.
-Creating `lake/core/runtime/scheduler.md` creates the nested `core.runtime.` lakelet domain
-and the `core.runtime.scheduler` entry address.
-A *local lakelet* is project-managed.
-A *glacier* is formed by crystallizing an upstream lake into a managed lakelet.
-
-A *lake sheaf* is the resolved composition of multiple lakes.
-It resolves lakelets into one addressable entry surface before dependency domains link back
-to the resolved entries.
-That model resolves diamond dependencies without making dependency versioning part
-of the entry naming syntax.
+The *lake namespace* model explains how domains map to lake folders,
+how lakelets own those folders,
+and how a composed lake resolves them into one addressable surface.
 
 *Sirno Upstream* is the subsystem for declaring *upstream lakes*
 and crystallizing them into the current lake as glaciers.
@@ -114,8 +99,7 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (from):
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
-  - [lakelet](lakelet.md)
-  - [local-lakelet](local-lakelet.md)
+  - [lake-namespace](lake-namespace.md)
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)

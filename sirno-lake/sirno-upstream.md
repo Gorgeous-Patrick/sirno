@@ -8,7 +8,7 @@ belongs:
 prerequisite:
   - project-config
   - sirno-lock
-  - entry-domain
+  - lake-namespace
 ---
 
 *Sirno Upstream* is the subsystem for declaring Git-backed upstream lakes,

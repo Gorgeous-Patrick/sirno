@@ -4,10 +4,11 @@ desc: A resolved view that glues multiple lakes into one addressable entry surfa
 category:
   - concept
 belongs:
+  - lake-namespace
   - sirno-upstream
 prerequisite:
+  - lake-namespace
   - entry-address
-  - sirno-lake
 ---
 
 A *lake sheaf* is the resolved view of a top-level *lake* and its lakelets.
@@ -33,6 +34,7 @@ Version selection is separate future design.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
+  - [lake-namespace](lake-namespace.md)
   - [sirno-upstream](sirno-upstream.md)
 - belongs (from): (none)
 

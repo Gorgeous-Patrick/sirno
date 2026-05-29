@@ -1,10 +1,10 @@
 ---
 name: Local Lakelet
-desc: An implicit project-owned lake folder used as an entry domain.
+desc: A project-owned editable lakelet.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake-namespace
 prerequisite:
   - lakelet
   - sirno-anchor
@@ -35,7 +35,7 @@ There is no separate lakelet baseline.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-lake](sirno-lake.md)
+  - [lake-namespace](lake-namespace.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
