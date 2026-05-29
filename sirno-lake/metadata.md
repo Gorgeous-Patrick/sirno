@@ -22,7 +22,7 @@ Every *entry* has a YAML metadata block.
 | `meta.type: "intrinsic"` | scalar marker | Marks `name` or `desc` as a built-in metadata field. |
 | `meta.type: "structural"` | scalar marker | Marks a configured structural relation definition. |
 | `meta.ripple.lake` | direction list | Defines how waterline *tide* follows a structural relation. |
-| `meta.ripple.frost` | direction list | Defines how frostline *tide* follows a structural relation. |
+| `meta.ripple.frost` | direction list | Defines how Anchor-side *tide* follows a structural relation. |
 
 The `meta-type` entry groups the `meta.type` discriminator values:
 
@@ -39,15 +39,16 @@ Frozen reasons are:
 
 | Reason | Meaning |
 |---|---|
-| `reviewed` | The entry matches the current frost snapshot. |
+| `reviewed` | Deprecated Frost reason for an entry that matched the current snapshot. |
 | `managed` | Crystallization owns the entry content. |
 
-The frost layer accepts reviewed entries only while their committed form still matches that snapshot.
-An entry may carry both frozen reasons.
+The `reviewed` reason belongs to the deprecated Frost design.
+An entry may carry both frozen reasons while compatibility remains.
 
 Ripple fields are present only on entries that define configured structural link relations.
-Their `to`, `from`, and `clique` values enable waterline or frostline review workitems.
+Their `to`, `from`, and `clique` values enable waterline or Anchor-side review workitems.
 Empty `meta.ripple.lake` and `meta.ripple.frost` lists mean the relation has no tide behavior.
+`meta.ripple.frost` is the temporary spelling for Anchor-side review policy.
 
 Configured structural link relations are optional.
 This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
@@ -58,7 +59,7 @@ They follow three rules:
 - An empty list is a present empty field.
 
 Their relation order is user-authored metadata.
-Sirno preserves it when parsing, rendering, and moving *entries* through Sirno Frost.
+Sirno preserves it when parsing, rendering, and moving *entries*.
 
 Operational structure is formed only from metadata.
 Prose links may help readers and external tools,

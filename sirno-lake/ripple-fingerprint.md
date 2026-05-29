@@ -3,22 +3,21 @@ name: Ripple Fingerprint
 desc: The delta hash that scopes a tide resolution to one exact ripple state.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
   - ripple
 prerequisite:
   - ripple
 ---
 
-A *ripple fingerprint* is a short hash of one *ripple*'s delta.
-Sirno renders the *entry*'s frostline form and waterline form to canonical Markdown,
-labels each side,
+A *ripple fingerprint* is a `sha256:` hash of one *ripple*'s delta.
+Sirno labels the Anchor side and the waterline side,
+uses each side's canonical entry fingerprint when present,
 treats an absent side as a fixed placeholder,
-and folds the joined text through a 64-bit FNV-1a hash.
-The result is sixteen hex digits.
+and hashes the joined text.
 
 The fingerprint identifies *what changed*, not the moment of change.
-Two edits that produce identical frostline and waterline forms share a fingerprint.
+Two edits that produce identical Anchor and waterline fingerprints share a ripple fingerprint.
 Any change to either side produces a different fingerprint.
 
 The fingerprint is what makes a *tide resolution* precise.

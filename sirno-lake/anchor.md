@@ -1,7 +1,8 @@
 ---
 name: Anchor
-desc: The proposed Git-backed accepted baseline that replaces Frost snapshots.
+desc: The Git-backed accepted baseline that replaces Frost snapshots.
 category:
+  - implemented
   - proposal
   - concept
 belongs:
@@ -18,7 +19,7 @@ refines:
   - versioning
 ---
 
-Anchor is the proposed accepted-baseline subsystem that replaces Frost.
+Anchor is the accepted-baseline subsystem that replaces Frost.
 
 Anchor records the reviewed Sirno Lake state as tracked semantic fingerprints.
 It does not store history, snapshots, or old entry bodies.
@@ -173,6 +174,28 @@ requires every open workitem to be covered by valid reviews,
 writes a new `.sirno/anchor.toml`,
 and removes `.sirno/tide.toml`.
 
+## Implementation Status
+
+The first Anchor implementation provides `.sirno/anchor.toml`,
+entry and artifact-tree fingerprints,
+`sirno anchor status`,
+`sirno anchor check`,
+and `sirno anchor update`.
+Tide compares the waterline against Anchor when the Anchor file exists.
+If Anchor is absent, Tide treats the current lake as added against an empty baseline.
+
+Temporary compatibility surfaces remain while Tide is actualized:
+
+- review resolutions still use the existing `Sirno.lock.toml` Tide table;
+- structural relation entries still spell the baseline-side policy as `meta.ripple.frost`;
+- merge drivers for `.sirno/anchor.toml`, `.sirno/tide.toml`, and `.sirno/lock.toml`
+  are not installed yet.
+
+These surfaces are implementation debt, not new design direction.
+The target design remains tracked `.sirno/anchor.toml`,
+tracked active `.sirno/tide.toml`,
+and tracked dependency-only `.sirno/lock.toml`.
+
 ## Tide Model
 
 The waterline is the current Sirno Lake.
@@ -229,6 +252,7 @@ or redesigned as part of Anchor actualization.
   - [interfaces](interfaces.md)
   - [sirno-lake](sirno-lake.md)
   - [storage](storage.md)
-- belongs (from): (none)
+- belongs (from):
+  - [sirno-tide](sirno-tide.md)
 
 > **Sirno generated links end.**

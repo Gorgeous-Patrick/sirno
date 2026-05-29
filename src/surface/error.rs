@@ -6,9 +6,9 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::{
-    ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError, EntryAtomError,
-    EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, TideError, UpstreamError,
-    WitnessError,
+    AnchorError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
+    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, TideError,
+    UpstreamError, WitnessError,
 };
 
 /// Error raised while running the CLI.
@@ -184,6 +184,21 @@ pub enum CommandError {
         "generated-footer filtering cannot be combined with `rg --pre`; use `--with-generated-footer`"
     )]
     RgPreprocessorConflict,
+    /// Anchor update requires all current tide workitems to be reviewed.
+    #[error("anchor update blocked by {open_workitems} open tide workitems")]
+    AnchorUpdateOpenTide {
+        /// Number of open workitems.
+        open_workitems: usize,
+    },
+    /// An empty generated lock file could not be removed.
+    #[error("failed to remove empty lock file {path}")]
+    RemoveEmptyLock {
+        /// Lock path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// Ripgrep generated-footer preprocessor received an unexpected argument shape.
     #[error("rg generated-footer preprocessor expects one path argument")]
     RgPreprocessorArgumentCount,
@@ -226,6 +241,9 @@ pub enum CommandError {
     /// Config-backed command failed.
     #[error(transparent)]
     Config(#[from] ConfigError),
+    /// Anchor-backed command failed.
+    #[error(transparent)]
+    Anchor(#[from] AnchorError),
     /// Lock-backed command failed.
     #[error(transparent)]
     Lock(#[from] LockError),

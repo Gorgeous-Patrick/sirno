@@ -1,9 +1,9 @@
 ---
 name: Tide
-desc: The frost-based worklist of review obligations for lake edits.
+desc: The Anchor-based worklist of review obligations for lake edits.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
   - sirno-tide
 prerequisite:
@@ -12,7 +12,7 @@ prerequisite:
 
 A *tide* is the dependency-based review worklist for the current lake.
 It compares the *waterline*, the current lake,
-against the *frostline*, the latest frost snapshot.
+against Anchor, the accepted baseline.
 
 Every changed *entry* is a *ripple*.
 For each *ripple*, Sirno reads the relation entries' tide policies
@@ -21,12 +21,12 @@ The *tide* is the union of those open obligations.
 
 ```mermaid
 flowchart LR
-    frostline([frostline])
+    anchor([anchor])
     waterline([waterline])
     ripple([ripple])
     wave([wave])
     tide([tide])
-    frostline --> ripple
+    anchor --> ripple
     waterline --> ripple
     ripple -->|relation tide policy| wave
     wave --> tide
@@ -49,7 +49,7 @@ in the same grouped table,
 and `--show all` includes resolved statuses.
 
 Resolving, reopening, and resetting the worklist,
-the *frost* commit gate,
+the `anchor update` gate,
 and the inference shortcut are *tide resolution* behavior.
 
 ---

@@ -553,7 +553,7 @@ fn tide_sources_label(status: &TideStatus) -> String {
         .iter()
         .map(|source| match source {
             | TideSource::Lake => "lake",
-            | TideSource::Frost => "frost",
+            | TideSource::Anchor => "anchor",
         })
         .collect::<Vec<_>>()
         .join(",")
@@ -635,7 +635,7 @@ mod tests {
         assert_eq!(by_wave[1].cells[1], "tide");
         assert_eq!(by_wave[2].cells[1], "tide");
         assert_eq!(by_wave[2].cells[0], "resolved");
-        assert_eq!(by_wave[2].cells[5], "lake,frost");
+        assert_eq!(by_wave[2].cells[5], "lake,anchor");
     }
 
     #[test]
@@ -736,7 +736,13 @@ mod tests {
     fn tide_statuses() -> Vec<TideStatus> {
         vec![
             status("interfaces", "belongs", "agent-skills", &[TideSource::Lake], false),
-            status("tide", "refines", "agent-skills", &[TideSource::Lake, TideSource::Frost], true),
+            status(
+                "tide",
+                "refines",
+                "agent-skills",
+                &[TideSource::Lake, TideSource::Anchor],
+                true,
+            ),
             status("tide", "belongs", "wave", &[TideSource::Lake], false),
         ]
     }
@@ -745,7 +751,13 @@ mod tests {
         vec![
             status("tide", "belongs", "wave", &[TideSource::Lake], false),
             status("interfaces", "belongs", "agent-skills", &[TideSource::Lake], false),
-            status("tide", "refines", "agent-skills", &[TideSource::Lake, TideSource::Frost], true),
+            status(
+                "tide",
+                "refines",
+                "agent-skills",
+                &[TideSource::Lake, TideSource::Anchor],
+                true,
+            ),
         ]
     }
 

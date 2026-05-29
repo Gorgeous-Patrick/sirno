@@ -14,6 +14,7 @@ This entry records the repository surfaces that implemented Frost before Anchor 
 
 The inventory is deprecated with the Frost design.
 It now records which surfaces were removed and which Frost-named Tide surfaces remain temporary.
+Anchor has taken over the accepted-baseline role.
 
 Removed Frost implementation surfaces:
 
@@ -31,12 +32,13 @@ Removed Frost implementation surfaces:
 | `src/surface/cli/mod.rs` | Removed CLI Frost commands, `--frost-path`, and Frost init prompts. |
 | `src/mcp.rs` | Removed Frost MCP tools and Frost-aware entry path selection. |
 | `src/identifier.rs` | Removed `eter` filesystem-id conversion helpers. |
+| `src/anchor.rs` | Added the tracked accepted-baseline file model that replaces Frost snapshots. |
 
 Temporary Frost-named Tide surfaces remain:
 
 | Surface | Temporary responsibility |
 |---|---|
-| `src/tide.rs` | Still names the accepted side `frostline` until Anchor is actualized. |
+| `src/tide.rs` | Compares the waterline against Anchor but still reads baseline-side policy from Frost-named settings. |
 | `src/entry.rs` | Still parses and renders `meta.ripple.frost` until policy names become Anchor-side. |
 | `src/structural.rs` | Still carries Frost-side structural ripple settings for Tide. |
 | `src/lake.rs` | Still contains read-only checkout warning text and local protection helpers. |

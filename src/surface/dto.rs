@@ -31,6 +31,7 @@ pub enum StructuredOutputFormat {
 
 pub(crate) type QueryOutputFormat = StructuredOutputFormat;
 pub(crate) type TideOutputFormat = StructuredOutputFormat;
+pub(crate) type AnchorOutputFormat = StructuredOutputFormat;
 
 /// Tide status detail selected by command callers.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
@@ -43,6 +44,82 @@ pub enum TideStatusMode {
     Full,
     /// Show full open and resolved workitem statuses.
     All,
+}
+
+/// Anchor drift class for one entry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AnchorDriftKind {
+    /// The entry exists in the lake but not in the anchor.
+    Added,
+    /// The entry exists in both places and has a different fingerprint.
+    Changed,
+    /// The entry exists in the anchor but not in the lake.
+    Deleted,
+}
+
+/// One entry-level difference between the current lake and the anchor.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnchorDriftRecord {
+    /// Entry address.
+    pub id: EntryAddress,
+    /// Drift class.
+    pub kind: AnchorDriftKind,
+}
+
+/// JSON-ready Anchor status result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnchorStatusResult {
+    /// Whether the lake matches the stored anchor.
+    pub ok: bool,
+    /// Whether `.sirno/anchor.toml` exists.
+    pub initialized: bool,
+    /// Anchor file path.
+    pub anchor_path: String,
+    /// Lake path.
+    pub lake_path: String,
+    /// Number of current lake entries.
+    pub entry_count: usize,
+    /// Current entry-level drift.
+    pub drift: Vec<AnchorDriftRecord>,
+    /// Human-readable summary.
+    pub message: String,
+}
+
+/// JSON-ready Anchor check result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnchorCheckResult {
+    /// Whether the anchor exists, parses, and matches the current lake.
+    pub ok: bool,
+    /// Whether `.sirno/anchor.toml` exists.
+    pub initialized: bool,
+    /// Anchor file path.
+    pub anchor_path: String,
+    /// Lake path.
+    pub lake_path: String,
+    /// Number of current lake entries.
+    pub entry_count: usize,
+    /// Current entry-level drift.
+    pub drift: Vec<AnchorDriftRecord>,
+    /// Human-readable summary.
+    pub message: String,
+}
+
+/// JSON-ready Anchor update result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnchorUpdateResult {
+    /// Whether the anchor was written.
+    pub ok: bool,
+    /// Anchor file path.
+    pub anchor_path: String,
+    /// Lake path.
+    pub lake_path: String,
+    /// Number of entries written to the anchor.
+    pub entry_count: usize,
+    /// Number of tide resolutions removed after accepting the lake.
+    pub cleared_tide_resolutions: usize,
+    /// Human-readable summary.
+    pub message: String,
 }
 
 impl TideStatusMode {
@@ -960,7 +1037,7 @@ pub struct StructuralEdgeStatus {
     pub render: bool,
     /// Whether lake-side neighbors create tide workitems.
     pub ripple_lake: bool,
-    /// Whether frost-side neighbors create tide workitems.
+    /// Whether accepted-baseline neighbors create tide workitems.
     pub ripple_frost: bool,
 }
 

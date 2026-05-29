@@ -3,7 +3,7 @@ name: Tide Workitem
 desc: One dependency review obligation in a Sirno Tide.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
   - tide
 prerequisite:
@@ -19,9 +19,9 @@ Sirno does not create a separate workitem id.
 `direction` is `to`, `from`, or `clique`.
 `neighbor` names the *entry* that must be reviewed.
 
-The same tuple can be produced through the waterline, the frostline, or both.
+The same tuple can be produced through the waterline, Anchor, or both.
 Full status output shows one workitem with its source list,
-such as `lake`, `frost`, or both.
+such as `lake`, `anchor`, or both.
 The source list explains why the obligation exists without changing its identity.
 
 Text commands may name a full workitem as comma-separated fields.

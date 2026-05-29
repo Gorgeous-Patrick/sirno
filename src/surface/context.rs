@@ -1,5 +1,6 @@
 //! Typed command execution shared by CLI and tool adapters.
 
+use std::collections::BTreeSet;
 use std::env;
 use std::ffi::OsString;
 use std::fs;
@@ -10,6 +11,7 @@ use std::process::Command as ProcessCommand;
 use indexmap::IndexMap;
 
 use crate::surface::dto::{
+    AnchorCheckResult, AnchorDriftKind, AnchorDriftRecord, AnchorStatusResult, AnchorUpdateResult,
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryFileResult, EntryNewRequest,
     EntryPathsRequest, EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest,
@@ -28,11 +30,12 @@ use crate::surface::output::{
 };
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
-    CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath, EntryDirectory,
-    EntryDirectoryCheckSettings, EntryDirectoryError, EntryMetadata, EntryQuery,
-    EntryStructuralMatcher, SirnoConfig, SirnoLock, StructuralRenderSettings, StructuralSettings,
-    Tide, TideStatus, UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport,
-    VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    AnchorFile, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath,
+    EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
+    EntryMetadata, EntryQuery, EntryStructuralMatcher, SirnoConfig, SirnoLock,
+    StructuralRenderSettings, StructuralSettings, Tide, TideEntrySnapshot, TideStatus,
+    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
+    WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -994,6 +997,97 @@ impl SurfaceContext {
         Ok(RenderResult::from_report(&report, false))
     }
 
+    /// Show the current lake drift against the accepted anchor baseline.
+    pub fn anchor_status(&self) -> Result<AnchorStatusResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let report = context.checked_report(CheckMode::Edit)?;
+        let current = context.anchor_from_report(&report)?;
+        let anchor = AnchorFile::from_file_if_exists(&context.anchor_path)?;
+        let (initialized, drift) = match anchor {
+            | Some(anchor) => (true, anchor_drift(&anchor, &current)?),
+            | None => (false, unanchored_drift(&current)?),
+        };
+        let ok = initialized && drift.is_empty();
+        Ok(AnchorStatusResult {
+            ok,
+            initialized,
+            anchor_path: display_path(&context.anchor_path),
+            lake_path: display_path(report.root()),
+            entry_count: report.entries().len(),
+            drift,
+            message: anchor_status_message(ok, initialized, current.entries.len()),
+        })
+    }
+
+    /// Validate the anchor file and compare it with the current lake.
+    pub fn anchor_check(&self) -> Result<AnchorCheckResult, CommandError> {
+        let status = self.anchor_status()?;
+        let message = if status.ok {
+            format!("anchor check ok in {}", status.anchor_path)
+        } else if status.initialized {
+            format!("anchor check found {} drifted entries", status.drift.len())
+        } else {
+            format!("anchor check found no anchor at {}", status.anchor_path)
+        };
+        Ok(AnchorCheckResult {
+            ok: status.ok,
+            initialized: status.initialized,
+            anchor_path: status.anchor_path,
+            lake_path: status.lake_path,
+            entry_count: status.entry_count,
+            drift: status.drift,
+            message,
+        })
+    }
+
+    /// Accept the current lake as the new anchor baseline.
+    pub fn anchor_update(&self) -> Result<AnchorUpdateResult, CommandError> {
+        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let report = context.checked_report(CheckMode::Review)?;
+        let anchor_exists = context.anchor_path.exists();
+        let mut lock = context.load_lock_or_current()?;
+        if anchor_exists {
+            let tide = context.tide(&lock)?;
+            let open_workitems = tide.open_statuses().count();
+            if open_workitems > 0 {
+                return Err(CommandError::AnchorUpdateOpenTide { open_workitems });
+            }
+        }
+
+        let anchor = context.anchor_from_report(&report)?;
+        anchor.write(&context.anchor_path)?;
+
+        let cleared_tide_resolutions = lock.tide.resolved.len();
+        lock.tide.clear();
+        if lock.upstreams.is_empty() && lock.tide.is_empty() {
+            match fs::remove_file(&context.lock_path) {
+                | Ok(()) => {}
+                | Err(source) if source.kind() == ErrorKind::NotFound => {}
+                | Err(source) => {
+                    return Err(CommandError::RemoveEmptyLock {
+                        path: context.lock_path.clone(),
+                        source,
+                    });
+                }
+            }
+        } else {
+            lock.write(&context.lock_path)?;
+        }
+
+        Ok(AnchorUpdateResult {
+            ok: true,
+            anchor_path: display_path(&context.anchor_path),
+            lake_path: display_path(report.root()),
+            entry_count: anchor.entries.len(),
+            cleared_tide_resolutions,
+            message: format!(
+                "anchored {} entries in {}",
+                anchor.entries.len(),
+                context.anchor_path.display()
+            ),
+        })
+    }
+
     /// Show the current Sirno project status.
     pub fn status(&self) -> Result<StatusResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
@@ -1328,6 +1422,8 @@ fn move_staging_path(source: &Path) -> std::io::Result<PathBuf> {
 
 struct TideContext {
     lock_path: PathBuf,
+    anchor_path: PathBuf,
+    anchor_lake_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
     lake_path: PathBuf,
 }
@@ -1337,6 +1433,8 @@ impl TideContext {
         let config = SirnoConfig::from_file(config_path)?;
         Ok(Self {
             lock_path: SirnoLock::path_for_config(config_path),
+            anchor_path: AnchorFile::path_for_config(config_path),
+            anchor_lake_path: lake_path.map(Path::to_path_buf).unwrap_or(config.lake.path.clone()),
             settings: entry_directory_check_settings(config_path, &config),
             lake_path: resolve_lake_path(lake_path, config_path, &config),
         })
@@ -1346,17 +1444,93 @@ impl TideContext {
         Ok(SirnoLock::from_file_if_exists(&self.lock_path)?.unwrap_or_default())
     }
 
-    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CommandError> {
+    fn checked_report(&self, mode: CheckMode) -> Result<EntryDirectoryReport, CommandError> {
         let mut settings = self.settings.clone();
-        settings.render = false;
-        settings.witness = None;
-        let report =
-            EntryDirectory::new(&self.lake_path).check_with_settings(CheckMode::Edit, &settings)?;
+        if mode != CheckMode::Review {
+            settings.render = false;
+            settings.witness = None;
+        }
+        let report = EntryDirectory::new(&self.lake_path).check_with_settings(mode, &settings)?;
         if report.has_errors() {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.lake_path.clone()).into());
         }
-        let structural = settings.structural.with_tide_policies_from_entries(report.entries());
-        Ok(Tide::from_entries(&[], report.entries(), &structural, &lock.tide.resolved)?)
+        Ok(report)
+    }
+
+    fn anchor_from_report(
+        &self, report: &EntryDirectoryReport,
+    ) -> Result<AnchorFile, CommandError> {
+        let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
+        Ok(AnchorFile::from_report(&self.anchor_lake_path, report, &structural)?)
+    }
+
+    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CommandError> {
+        let report = self.checked_report(CheckMode::Edit)?;
+        let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
+        let anchor = AnchorFile::from_file_if_exists(&self.anchor_path)?;
+        let anchorline = anchor.as_ref().map(anchor_snapshots).transpose()?.unwrap_or_default();
+        let waterline = report
+            .entries()
+            .iter()
+            .map(TideEntrySnapshot::from_entry)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Tide::from_snapshots(&anchorline, &waterline, &structural, &lock.tide.resolved)?)
+    }
+}
+
+fn anchor_snapshots(anchor: &AnchorFile) -> Result<Vec<TideEntrySnapshot>, CommandError> {
+    anchor
+        .entries
+        .iter()
+        .map(|(id, entry)| {
+            let id = EntryAddress::new(id.as_str())?;
+            Ok(TideEntrySnapshot::from_anchor_entry(id, entry)?)
+        })
+        .collect()
+}
+
+fn anchor_drift(
+    anchor: &AnchorFile, current: &AnchorFile,
+) -> Result<Vec<AnchorDriftRecord>, CommandError> {
+    let mut ids = BTreeSet::new();
+    ids.extend(anchor.entries.keys().cloned());
+    ids.extend(current.entries.keys().cloned());
+
+    let mut drift = Vec::new();
+    for id in ids {
+        let kind = match (anchor.entries.get(&id), current.entries.get(&id)) {
+            | (None, Some(_)) => Some(AnchorDriftKind::Added),
+            | (Some(_), None) => Some(AnchorDriftKind::Deleted),
+            | (Some(left), Some(right)) if left != right => Some(AnchorDriftKind::Changed),
+            | (Some(_), Some(_)) | (None, None) => None,
+        };
+        if let Some(kind) = kind {
+            drift.push(AnchorDriftRecord { id: EntryAddress::new(id)?, kind });
+        }
+    }
+    Ok(drift)
+}
+
+fn unanchored_drift(current: &AnchorFile) -> Result<Vec<AnchorDriftRecord>, CommandError> {
+    current
+        .entries
+        .keys()
+        .map(|id| {
+            Ok(AnchorDriftRecord {
+                id: EntryAddress::new(id.as_str())?,
+                kind: AnchorDriftKind::Added,
+            })
+        })
+        .collect()
+}
+
+fn anchor_status_message(ok: bool, initialized: bool, entry_count: usize) -> String {
+    if ok {
+        format!("anchor is current for {entry_count} entries")
+    } else if initialized {
+        "anchor drift detected".to_owned()
+    } else {
+        "anchor is not initialized; run `sirno anchor update`".to_owned()
     }
 }
 

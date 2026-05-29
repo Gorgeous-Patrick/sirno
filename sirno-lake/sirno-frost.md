@@ -181,7 +181,6 @@ and deletion handling in `src/frost.rs`.
   - [entry-freeze](entry-freeze.md)
   - [frost-implementation](frost-implementation.md)
   - [sirno-lock](sirno-lock.md)
-  - [sirno-tide](sirno-tide.md)
   - [versioning](versioning.md)
 
 > **Sirno generated links end.**

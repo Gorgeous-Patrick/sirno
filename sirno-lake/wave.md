@@ -3,7 +3,7 @@ name: Wave
 desc: The set of tide workitems produced by one ripple.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
   - sirno-tide
 prerequisite:
@@ -13,16 +13,17 @@ prerequisite:
 A *wave* is the set of *tide workitems* produced by one *ripple*.
 It is the local review surface around a single changed *entry*.
 
-Sirno builds a wave by comparing one ripple entry across the frostline and waterline,
+Sirno builds a wave by comparing one ripple entry across Anchor and the waterline,
 then applying the configured relation entries' tide policies.
 Each enabled edge direction can add neighbors from the waterline,
-the frostline,
+Anchor,
 or both.
 
 The wave does not store review state.
 It is derived from the current comparison,
 the relation order in `Sirno.toml`,
 and the relation entries' `meta.ripple.lake` and `meta.ripple.frost` direction lists.
+`meta.ripple.frost` is the temporary spelling for Anchor-side review policy.
 `Sirno.lock.toml` stores only explicit resolutions for the workitems inside the wave.
 
 When several ripples exist,

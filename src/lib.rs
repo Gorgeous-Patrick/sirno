@@ -6,6 +6,7 @@
 //! and repository witnesses are discovered by entry address.
 
 pub mod artifact;
+pub mod anchor;
 pub mod check;
 pub mod config;
 pub mod surface;
@@ -22,6 +23,10 @@ pub mod tide;
 pub mod upstream;
 pub mod witness;
 
+pub use crate::anchor::{
+    ANCHOR_FILE_NAME, ANCHOR_SCHEMA, AnchorEntry, AnchorEntryMap, AnchorError, AnchorFile,
+    SIRNO_CONTROL_DIR_NAME,
+};
 pub use crate::artifact::{
     ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath, EntryArtifactPathError,
 };
@@ -58,7 +63,8 @@ pub use crate::structural::{
     StructuralRippleSettings, StructuralSettings, StructuralTideSettings,
 };
 pub use crate::tide::{
-    Tide, TideError, TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,
+    Tide, TideEntrySnapshot, TideError, TideResolution, TideSource, TideStatus, TideWorkitem,
+    TideWorkitemParseError,
 };
 pub use crate::upstream::{
     UpstreamCrystallizeReport, UpstreamError, UpstreamGitCache, UpstreamStatus,

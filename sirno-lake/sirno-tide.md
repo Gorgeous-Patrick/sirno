@@ -1,28 +1,28 @@
 ---
 name: Sirno Tide
-desc: The dependency-review subsystem that compares the waterline against the frostline.
+desc: The dependency-review subsystem that compares the waterline against Anchor.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
-  - sirno-frost
+  - anchor
   - sirno-lake
 prerequisite:
-  - sirno-frost
+  - anchor
   - ripple
   - structural-edge-policy
 refines:
   - versioning
 ---
 
-Sirno Tide is the dependency-review subsystem of a frost-versioned lake.
+Sirno Tide is the dependency-review subsystem of an anchored lake.
 It is the front door for how Sirno turns lake edits into review obligations.
 It is a local refinement of *versioning*,
-parallel to *frost* and *Sirno Lock*.
+parallel to Anchor.
 
 The subsystem rests on one comparison.
 The *waterline* is the current lake.
-The *frostline* is the latest frost snapshot.
+Anchor is the accepted baseline.
 Every *entry* that differs between them is a *ripple*.
 
 The subsystem turns that comparison into work.
@@ -35,18 +35,18 @@ A *tide resolution* records one reviewed obligation
 bound to a *ripple fingerprint*,
 so a later change to the same *ripple* reopens it.
 *Infer resolution* closes obligations whose *neighbor* also changed in the same edit.
-A clear *tide* gates the next frost commit.
+A clear *tide* gates `sirno anchor update` after the first Anchor is initialized.
 
 ```mermaid
 flowchart LR
     waterline([waterline])
-    frostline([frostline])
+    anchor([anchor])
     ripple([ripple])
     wave([wave])
     tide([tide])
     resolution([tide resolution])
     waterline --> ripple
-    frostline --> ripple
+    anchor --> ripple
     ripple --> wave --> tide --> resolution
 ```
 
@@ -58,7 +58,7 @@ Read them together when changing how edits become review obligations.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-frost](sirno-frost.md)
+  - [anchor](anchor.md)
   - [sirno-lake](sirno-lake.md)
 - belongs (from):
   - [ripple](ripple.md)

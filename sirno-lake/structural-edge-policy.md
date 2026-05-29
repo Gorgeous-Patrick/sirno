@@ -32,6 +32,7 @@ Both owners use the same edge names:
 In `Sirno.toml`, `[render.structural]` lists rendered edge directions per relation.
 In relation metadata,
 edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.frost` lists.
+`meta.ripple.frost` is the temporary spelling for Anchor-side review policy.
 Absent render and tide values are false.
 
 ```toml
@@ -63,14 +64,14 @@ Waterline `to` catches the targets named by the ripple after the edit.
 For `belongs`, those targets are current review neighborhoods.
 For `prerequisite`, they are current knowledge dependencies.
 For `refines`, they are current broader entries.
-Frostline `to` is disabled because `to` targets are outgoing metadata on the edited ripple entry itself.
+Anchor-side `to` is disabled because `to` targets are outgoing metadata on the edited ripple entry itself.
 Old outgoing targets were visible where the edit happened,
 so reviewing every removed target would make ordinary retargeting noisy.
-Waterline and frostline `from` are both enabled because incoming neighbors live in other entries.
+Waterline and Anchor-side `from` are both enabled because incoming neighbors live in other entries.
 The editor may not have opened those dependents,
 so the tide should surface both current and former entries that point at the ripple.
 For `belongs`, waterline `clique` surfaces the current review neighborhood around a changed member.
-Frostline clique is disabled because former peer groups usually mean a deliberate neighborhood move.
+Anchor-side clique is disabled because former peer groups usually mean a deliberate neighborhood move.
 
 The clique semantics are the same for rendering and tide generation:
 the target links to its members,

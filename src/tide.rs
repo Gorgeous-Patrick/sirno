@@ -1,6 +1,6 @@
 //! Dependency review worklists for lake edits.
 //!
-//! Tide compares the current lake against the latest frost snapshot.
+//! Tide compares the current lake against the accepted anchor baseline.
 //! It derives review obligations from structural relation entries.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -8,9 +8,11 @@ use std::fmt;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize, de};
+use sha2::Digest;
 use thiserror::Error;
 
-use crate::entry::{Entry, EntryRenderError};
+use crate::anchor::{AnchorEntry, AnchorError, entry_fingerprint};
+use crate::entry::{Entry, EntryMetadata};
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{
@@ -24,8 +26,8 @@ use crate::structural::{
 pub enum TideSource {
     /// The current lake.
     Lake,
-    /// The latest frost snapshot.
-    Frost,
+    /// The accepted anchor baseline.
+    Anchor,
 }
 
 /// One dependency review obligation.
@@ -158,7 +160,7 @@ impl<'de> Deserialize<'de> for TideResolution {
 pub struct TideStatus {
     /// Full workitem tuple.
     pub workitem: TideWorkitem,
-    /// Waterline or frostline sources that produced this workitem.
+    /// Waterline or anchorline sources that produced this workitem.
     pub sources: BTreeSet<TideSource>,
     /// Fingerprint of the ripple delta this status reviews.
     pub fingerprint: String,
@@ -173,38 +175,79 @@ pub struct Tide {
     ripple_ids: BTreeSet<EntryAddress>,
 }
 
+/// Entry information needed to derive Tide without storing full baseline prose.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TideEntrySnapshot {
+    /// Entry address.
+    pub id: EntryAddress,
+    /// Canonical entry fingerprint.
+    pub fingerprint: String,
+    /// Entry shape used for structural edge traversal.
+    pub entry: Entry,
+}
+
+impl TideEntrySnapshot {
+    /// Build a snapshot from a parsed entry.
+    pub fn from_entry(entry: &Entry) -> Result<Self, TideError> {
+        let entry = normalized_entry(entry)?;
+        Ok(Self { id: entry.id.clone(), fingerprint: entry_fingerprint(&entry)?, entry })
+    }
+
+    /// Build a snapshot from one anchor entry record.
+    pub fn from_anchor_entry(id: EntryAddress, record: &AnchorEntry) -> Result<Self, TideError> {
+        let mut metadata = EntryMetadata::new(id.to_string(), "Anchor baseline entry.")?;
+        for (field, targets) in &record.structural {
+            metadata.set_structural_targets(field.clone(), targets.clone());
+        }
+        let entry = Entry::new(id.clone(), metadata, "");
+        Ok(Self { id, fingerprint: record.fingerprint.clone(), entry })
+    }
+}
+
 impl Tide {
-    /// Derive tide state from frostline entries, waterline entries, and persisted resolutions.
+    /// Derive tide state from baseline entries, waterline entries, and persisted resolutions.
     pub fn from_entries(
-        frostline: &[Entry], waterline: &[Entry], settings: &StructuralSettings,
+        anchorline: &[Entry], waterline: &[Entry], settings: &StructuralSettings,
         resolutions: &[TideResolution],
     ) -> Result<Self, TideError> {
-        let frostline = normalized_entries(frostline)?;
-        let waterline = normalized_entries(waterline)?;
-        let frost_by_id = entries_by_id(&frostline);
-        let water_by_id = entries_by_id(&waterline);
+        let anchorline = snapshots_from_entries(anchorline)?;
+        let waterline = snapshots_from_entries(waterline)?;
+        Self::from_snapshots(&anchorline, &waterline, settings, resolutions)
+    }
+
+    /// Derive tide state from compact baseline and waterline snapshots.
+    pub fn from_snapshots(
+        anchorline: &[TideEntrySnapshot], waterline: &[TideEntrySnapshot],
+        settings: &StructuralSettings, resolutions: &[TideResolution],
+    ) -> Result<Self, TideError> {
+        let anchor_by_id = snapshots_by_id(anchorline);
+        let water_by_id = snapshots_by_id(waterline);
         let mut ripple_ids = BTreeSet::new();
 
-        for id in frost_by_id.keys().chain(water_by_id.keys()) {
-            if frost_by_id.get(id) != water_by_id.get(id) {
+        for id in anchor_by_id.keys().chain(water_by_id.keys()) {
+            if anchor_by_id.get(id).map(|snapshot| &snapshot.fingerprint)
+                != water_by_id.get(id).map(|snapshot| &snapshot.fingerprint)
+            {
                 ripple_ids.insert((*id).clone());
             }
         }
 
-        let frost_index = StructuralEdgeIndex::from_entries(&frostline);
-        let water_index = StructuralEdgeIndex::from_entries(&waterline);
+        let anchor_entries = snapshot_entries(anchorline);
+        let water_entries = snapshot_entries(waterline);
+        let anchor_index = StructuralEdgeIndex::from_entries(&anchor_entries);
+        let water_index = StructuralEdgeIndex::from_entries(&water_entries);
         let mut sources_by_workitem = BTreeMap::<TideWorkitem, BTreeSet<TideSource>>::new();
         let mut fingerprint_by_ripple = BTreeMap::<EntryAddress, String>::new();
 
         // sirno:witness:wave:begin
         for ripple in &ripple_ids {
-            let fingerprint = ripple_fingerprint(frost_by_id.get(ripple), water_by_id.get(ripple))?;
+            let fingerprint = ripple_fingerprint(anchor_by_id.get(ripple), water_by_id.get(ripple));
             fingerprint_by_ripple.insert(ripple.clone(), fingerprint);
             for (field, field_settings) in settings.fields() {
                 for direction in StructuralEdgeDirection::ORDER {
                     let edge = field_settings.edge(direction);
                     if edge.ripple.lake
-                        && let Some(entry) = water_by_id.get(ripple)
+                        && let Some(snapshot) = water_by_id.get(ripple)
                     {
                         insert_workitems(
                             &mut sources_by_workitem,
@@ -212,19 +255,19 @@ impl Tide {
                             field,
                             direction,
                             TideSource::Lake,
-                            water_index.edge_targets(field, direction, entry),
+                            water_index.edge_targets(field, direction, &snapshot.entry),
                         )?;
                     }
                     if edge.ripple.frost
-                        && let Some(entry) = frost_by_id.get(ripple)
+                        && let Some(snapshot) = anchor_by_id.get(ripple)
                     {
                         insert_workitems(
                             &mut sources_by_workitem,
                             ripple,
                             field,
                             direction,
-                            TideSource::Frost,
-                            frost_index.edge_targets(field, direction, entry),
+                            TideSource::Anchor,
+                            anchor_index.edge_targets(field, direction, &snapshot.entry),
                         )?;
                     }
                 }
@@ -330,8 +373,8 @@ impl TideResolution {
     }
 }
 
-fn normalized_entries(entries: &[Entry]) -> Result<Vec<Entry>, TideError> {
-    entries.iter().map(normalized_entry).collect()
+fn snapshots_from_entries(entries: &[Entry]) -> Result<Vec<TideEntrySnapshot>, TideError> {
+    entries.iter().map(TideEntrySnapshot::from_entry).collect()
 }
 
 fn normalized_entry(entry: &Entry) -> Result<Entry, TideError> {
@@ -346,8 +389,12 @@ fn strip_trailing_generated_link_divider(body: &str) -> String {
         .unwrap_or_else(|| body.to_owned())
 }
 
-fn entries_by_id(entries: &[Entry]) -> BTreeMap<EntryAddress, &Entry> {
+fn snapshots_by_id(entries: &[TideEntrySnapshot]) -> BTreeMap<EntryAddress, &TideEntrySnapshot> {
     entries.iter().map(|entry| (entry.id.clone(), entry)).collect()
+}
+
+fn snapshot_entries(entries: &[TideEntrySnapshot]) -> Vec<Entry> {
+    entries.iter().map(|snapshot| snapshot.entry.clone()).collect()
 }
 
 fn insert_workitems(
@@ -363,37 +410,24 @@ fn insert_workitems(
 }
 
 fn ripple_fingerprint(
-    frostline: Option<&&Entry>, waterline: Option<&&Entry>,
-) -> Result<String, TideError> {
+    anchorline: Option<&&TideEntrySnapshot>, waterline: Option<&&TideEntrySnapshot>,
+) -> String {
     let mut source = String::new();
-    push_fingerprint_entry(&mut source, "frost", frostline.copied())?;
-    push_fingerprint_entry(&mut source, "lake", waterline.copied())?;
-    Ok(format!("{:016x}", fnv1a64(source.as_bytes())))
+    push_fingerprint_entry(&mut source, "anchor", anchorline.copied());
+    push_fingerprint_entry(&mut source, "lake", waterline.copied());
+    format!("sha256:{:x}", sha2::Sha256::digest(source.as_bytes()))
 }
 
-fn push_fingerprint_entry(
-    out: &mut String, label: &str, entry: Option<&Entry>,
-) -> Result<(), EntryRenderError> {
+fn push_fingerprint_entry(out: &mut String, label: &str, entry: Option<&TideEntrySnapshot>) {
     out.push_str(label);
     out.push('\n');
-    if let Some(entry) = entry {
-        out.push_str(&entry.to_markdown()?);
+    if let Some(snapshot) = entry {
+        out.push_str(&snapshot.fingerprint);
+        out.push('\n');
     } else {
         out.push_str("(absent)\n");
     }
     out.push('\n');
-    Ok(())
-}
-
-fn fnv1a64(bytes: &[u8]) -> u64 {
-    const OFFSET: u64 = 0xcbf29ce484222325;
-    const PRIME: u64 = 0x100000001b3;
-    let mut hash = OFFSET;
-    for byte in bytes {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(PRIME);
-    }
-    hash
 }
 
 fn validate_field(field: &str) -> Result<(), TideWorkitemParseError> {
@@ -423,12 +457,15 @@ pub enum TideWorkitemParseError {
 /// Error raised while deriving tide state.
 #[derive(Debug, Error)]
 pub enum TideError {
+    /// Anchor canonicalization failed.
+    #[error(transparent)]
+    Anchor(#[from] AnchorError),
     /// Generated footer boundaries were malformed during normalization.
     #[error(transparent)]
     GeneratedLink(#[from] GeneratedLinkError),
-    /// Entry rendering failed during fingerprinting.
+    /// Entry metadata construction failed during snapshot reconstruction.
     #[error(transparent)]
-    EntryRender(#[from] EntryRenderError),
+    EntryParse(#[from] crate::EntryParseError),
     /// Workitem construction failed.
     #[error(transparent)]
     Workitem(#[from] TideWorkitemParseError),
@@ -454,12 +491,12 @@ mod tests {
         )
     }
 
-    fn belongs_settings(lake: bool, frost: bool) -> StructuralSettings {
+    fn belongs_settings(lake: bool, anchor: bool) -> StructuralSettings {
         StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(
-                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(lake, frost)),
-                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(lake, frost)),
+                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(lake, anchor)),
+                StructuralEdgeSettings::new(false, StructuralRippleSettings::new(lake, anchor)),
                 StructuralEdgeSettings::default(),
             ),
         )])

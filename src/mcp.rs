@@ -423,6 +423,24 @@ impl SirnoMcpServer {
         result(self.context.upstream_status())
     }
 
+    /// Show lake drift against the accepted anchor baseline.
+    #[tool(name = "sirno_anchor_status")]
+    fn anchor_status(&self) -> McpToolResult {
+        result(self.context.anchor_status())
+    }
+
+    /// Validate the accepted anchor baseline.
+    #[tool(name = "sirno_anchor_check")]
+    fn anchor_check(&self) -> McpToolResult {
+        result(self.context.anchor_check())
+    }
+
+    /// Accept the current lake as the new anchor baseline.
+    #[tool(name = "sirno_anchor_update")]
+    fn anchor_update(&self) -> McpToolResult {
+        result(self.context.anchor_update())
+    }
+
     // sirno:witness:tide-commands:begin
     /// Show tide review status.
     #[tool(name = "sirno_tide_status")]
@@ -960,6 +978,9 @@ mod tests {
 
     // sirno:witness:mcp-interface:begin
     const EXPECTED_TOOLS: &[&str] = &[
+        "sirno_anchor_check",
+        "sirno_anchor_status",
+        "sirno_anchor_update",
         "sirno_cwd",
         "sirno_entry_artifact_add",
         "sirno_entry_artifact_list",

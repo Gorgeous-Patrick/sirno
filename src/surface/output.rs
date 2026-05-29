@@ -10,6 +10,7 @@ use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
+    AnchorCheckResult, AnchorDriftKind, AnchorDriftRecord, AnchorStatusResult, AnchorUpdateResult,
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
     QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
 };
@@ -187,6 +188,59 @@ pub(crate) fn print_upstream_crystallize_report(result: &UpstreamCrystallizeRepo
 
 pub(crate) fn print_upstream_status_report(result: &UpstreamStatusReport) {
     anstream::print!("{}", format_upstream_status_report_with_style(result, OutputStyle::Styled));
+}
+
+pub(crate) fn print_anchor_status_result(result: &AnchorStatusResult) {
+    anstream::print!("{}", format_anchor_status_result(result));
+}
+
+pub(crate) fn print_anchor_check_result(result: &AnchorCheckResult) {
+    anstream::print!("{}", format_anchor_check_result(result));
+}
+
+pub(crate) fn print_anchor_update_result(result: &AnchorUpdateResult) {
+    anstream::println!("{}", result.message);
+}
+
+fn format_anchor_status_result(result: &AnchorStatusResult) -> String {
+    let mut output = String::new();
+    if !result.drift.is_empty() {
+        output.push_str(&format_anchor_drift_table(&result.drift));
+    }
+    output.push_str(&result.message);
+    output.push('\n');
+    output
+}
+
+fn format_anchor_check_result(result: &AnchorCheckResult) -> String {
+    let mut output = String::new();
+    if !result.drift.is_empty() {
+        output.push_str(&format_anchor_drift_table(&result.drift));
+    }
+    output.push_str(&result.message);
+    output.push('\n');
+    output
+}
+
+fn format_anchor_drift_table(drift: &[AnchorDriftRecord]) -> String {
+    let rows = drift
+        .iter()
+        .map(|record| vec![record.id.to_string(), anchor_drift_kind_label(record.kind).to_owned()])
+        .collect::<Vec<_>>();
+    format_human_table_with_width_and_style(
+        vec!["entry".to_owned(), "drift".to_owned()],
+        rows,
+        None,
+        OutputStyle::Plain,
+    )
+}
+
+fn anchor_drift_kind_label(kind: AnchorDriftKind) -> &'static str {
+    match kind {
+        | AnchorDriftKind::Added => "added",
+        | AnchorDriftKind::Changed => "changed",
+        | AnchorDriftKind::Deleted => "deleted",
+    }
 }
 
 fn format_upstream_status_report_with_style(

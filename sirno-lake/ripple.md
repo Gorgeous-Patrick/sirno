@@ -3,22 +3,23 @@ name: Ripple
 desc: The named delta between two lake states.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
   - sirno-tide
 prerequisite:
-  - versioning
+  - anchor
+  - waterline
 ---
 
-A *ripple* is the named delta between the frostline and the waterline.
-The frostline is the latest frost snapshot.
+A *ripple* is the named delta between Anchor and the waterline.
+Anchor is the accepted baseline.
 The waterline is the current lake.
 
 A *ripple* exists when an *entry* differs between those two states.
 The difference may be a changed name, description, prose body, or structural link.
 Added and deleted *entries* are ripples too.
 Generated footer regions are ignored,
-because frost stores canonical metadata and prose rather than rendered navigation.
+because Anchor stores canonical fingerprints over metadata and prose rather than rendered navigation.
 
 The term fits the *lake* model.
 A *lake* is the readable body of project knowledge.

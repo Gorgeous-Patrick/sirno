@@ -22,10 +22,10 @@ use thiserror::Error;
 use crate::surface::SurfaceContext;
 use crate::surface::context::{default_config_path, default_lake_path};
 use crate::surface::dto::{
-    ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathsRequest, LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection,
-    QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
-    SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    AnchorOutputFormat, ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest,
+    EntryNewRequest, EntryPathsRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
+    PathSelection, QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun,
+    RgRequest, SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
     TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
     UpstreamCrystallizeRequest,
 };
@@ -33,6 +33,7 @@ use crate::surface::error::CommandError;
 use crate::surface::output::{
     OutputStyle, format_human_table_semantic_with_width, format_muted_text, format_path_table,
     format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
+    print_anchor_check_result, print_anchor_status_result, print_anchor_update_result,
     print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
     print_lake_check_result, print_query_column_options, print_query_results, print_render_result,
     print_status_result, print_upstream_crystallize_report, print_upstream_status_report,
@@ -109,6 +110,12 @@ enum Command {
         /// Upstream command.
         #[command(subcommand)]
         command: UpstreamCommand,
+    },
+    /// Manage the accepted lake baseline.
+    Anchor {
+        /// Anchor command.
+        #[command(subcommand)]
+        command: AnchorCommand,
     },
     /// Manage dependency review worklists for lake edits.
     // sirno:witness:tide-commands:begin
@@ -605,6 +612,29 @@ enum TideCommand {
 }
 // sirno:witness:tide:end
 
+/// Supported Anchor commands.
+#[derive(Debug, Subcommand)]
+enum AnchorCommand {
+    /// Show lake drift against `.sirno/anchor.toml`.
+    Status {
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<AnchorOutputFormat>,
+    },
+    /// Validate `.sirno/anchor.toml` and compare it with the lake.
+    Check {
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<AnchorOutputFormat>,
+    },
+    /// Accept the current lake as the new anchor baseline.
+    Update {
+        /// Output format.
+        #[arg(short = 'o', long, value_enum)]
+        format: Option<AnchorOutputFormat>,
+    },
+}
+
 /// Human grouping for tide status output.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
 enum TideStatusGrouping {
@@ -826,6 +856,7 @@ impl Cli {
             | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Upstream { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Anchor { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Tide { command } => {
                 // sirno:witness:tide-commands:begin
                 command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
@@ -1360,6 +1391,38 @@ fn entry_atom(raw: &str) -> Result<EntryAtom, CommandError> {
     Ok(EntryAtom::new(raw)?)
 }
 
+impl AnchorCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
+        match self {
+            | Self::Status { format } => {
+                let result = context.anchor_status()?;
+                match format.unwrap_or_default() {
+                    | AnchorOutputFormat::Json => print_json(&result)?,
+                    | AnchorOutputFormat::Human => print_anchor_status_result(&result),
+                }
+                Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+            }
+            | Self::Check { format } => {
+                let result = context.anchor_check()?;
+                match format.unwrap_or_default() {
+                    | AnchorOutputFormat::Json => print_json(&result)?,
+                    | AnchorOutputFormat::Human => print_anchor_check_result(&result),
+                }
+                Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
+            }
+            | Self::Update { format } => {
+                let result = context.anchor_update()?;
+                match format.unwrap_or_default() {
+                    | AnchorOutputFormat::Json => print_json(&result)?,
+                    | AnchorOutputFormat::Human => print_anchor_update_result(&result),
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+    }
+}
+
 impl TideCommand {
     fn run(
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
@@ -1879,7 +1942,7 @@ fn tide_sources_label(status: &TideStatus) -> String {
         .iter()
         .map(|source| match source {
             | TideSource::Lake => "lake",
-            | TideSource::Frost => "frost",
+            | TideSource::Anchor => "anchor",
         })
         .collect::<Vec<_>>()
         .join(",")
