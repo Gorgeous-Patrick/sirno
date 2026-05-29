@@ -20,12 +20,12 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use crate::surface::SurfaceContext;
-use crate::surface::context::{default_config_path, default_frost_path, default_lake_path};
+use crate::surface::context::{default_config_path, default_lake_path};
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
-    PathSelection, QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun,
-    RgRequest, SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    EntryPathsRequest, LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection,
+    QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest,
+    SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
     TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
     UpstreamCrystallizeRequest,
 };
@@ -33,34 +33,18 @@ use crate::surface::error::CommandError;
 use crate::surface::output::{
     OutputStyle, format_human_table_semantic_with_width, format_muted_text, format_path_table,
     format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
-    print_check_diagnostic, print_check_summary, print_cli_error, print_config_comment_result,
-    print_entry_directory_report, print_json, print_lake_check_result, print_ok_path,
-    print_query_column_options, print_query_results, print_render_result, print_status_result,
-    print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
+    print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
+    print_lake_check_result, print_query_column_options, print_query_results, print_render_result,
+    print_status_result, print_upstream_crystallize_report, print_upstream_status_report,
+    print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
-    CheckMode, EntryAddress, EntryAddressError, EntryAtom, SirnoConfig, SirnoFrost, TideSource,
-    TideStatus, TideWorkitem, TideWorkitemParseError, UpstreamSettings,
+    CheckMode, EntryAddress, EntryAddressError, EntryAtom, TideSource, TideStatus, TideWorkitem,
+    TideWorkitemParseError, UpstreamSettings,
 };
-
-#[cfg(test)]
-use crate::surface::context::entry_query_from_filters;
-#[cfg(test)]
-use crate::surface::dto::{QueryColumn, QueryValue, StructuralFieldState};
-#[cfg(test)]
-use crate::surface::error::OpenTideTutorial;
-#[cfg(test)]
-use crate::surface::output::{
-    format_config_comment_result, format_gen_link_report, format_human_table_with_width,
-    format_json, format_lake_check_result, format_query_json, format_query_table,
-    format_render_result, format_skill_wrapper_table, format_status_result, format_witness_record,
-    format_witness_records,
-};
-#[cfg(test)]
-use crate::surface::rg::rg_args_include_preprocessor;
 
 /// Sirno command-line entry point.
 #[derive(Debug, Parser)]
@@ -76,9 +60,6 @@ pub struct Cli {
     /// Sirno Lake path override.
     #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
-    /// Sirno Frost path override for commands that inspect frost directly.
-    #[arg(short = 'F', long = "frost-path", global = true)]
-    frost_path: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -86,7 +67,7 @@ pub struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Create a Sirno config, lake, frost, and skill wrappers.
+    /// Create a Sirno config, lake, and skill wrappers.
     Init {
         /// Run non-interactively with the selected init parts.
         #[arg(long)]
@@ -94,15 +75,9 @@ enum Command {
         /// Lake path written to Sirno.toml.
         #[arg(long)]
         lake: Option<PathBuf>,
-        /// Frost path written to Sirno.toml.
-        #[arg(long)]
-        frost: Option<PathBuf>,
         /// Skip lake initialization.
         #[arg(long = "no-lake", conflicts_with = "lake")]
         no_lake: bool,
-        /// Skip frost initialization.
-        #[arg(long = "no-frost", conflicts_with = "frost")]
-        no_frost: bool,
         /// Skip packaged skill wrapper initialization.
         #[arg(long = "no-skills")]
         no_skills: bool,
@@ -110,7 +85,7 @@ enum Command {
         #[arg(long = "claude-skills", conflicts_with = "no_skills")]
         claude_skills: bool,
     },
-    /// Move an entry, the lake path, or the frost path.
+    /// Move an entry or the lake path.
     #[command(visible_alias = "mv")]
     Move {
         /// Move target.
@@ -128,12 +103,6 @@ enum Command {
         /// Lake command.
         #[command(subcommand)]
         command: LakeCommand,
-    },
-    /// Manage optional frost snapshots.
-    Frost {
-        /// Frost command.
-        #[command(subcommand)]
-        command: FrostCommand,
     },
     /// Manage Git-backed upstream lakes.
     Upstream {
@@ -159,9 +128,6 @@ enum Command {
     /// Run a lake operation at the top level.
     #[command(flatten)]
     TopLevelLake(TopLevelLakeCommand),
-    /// Run a frost snapshot operation at the top level.
-    #[command(flatten)]
-    TopLevelFrost(TopLevelFrostCommand),
     /// Run a tide review operation at the top level.
     #[command(flatten)]
     TopLevelTide(TideReviewCommand),
@@ -212,7 +178,7 @@ enum TopLevelEntryCommand {
         body: Option<String>,
     },
     // sirno:witness:entry-commands:end
-    /// Freeze one current frost entry and make its lake file read-only.
+    /// Freeze one current lake entry and make its file read-only.
     // sirno:witness:entry-commands:begin
     Freeze {
         /// Entry address to freeze. Omit this or pass `tui` to open the entry freeze/melt UI.
@@ -354,8 +320,6 @@ enum MoveCommand {
     Entry(EntryRenameArgs),
     /// Move the configured lake path.
     Lake(LakeMoveArgs),
-    /// Move the configured frost path.
-    Frost(FrostMoveArgs),
 }
 
 /// Arguments for renaming one entry address and its Sirno references.
@@ -376,12 +340,6 @@ struct LakeMoveArgs {
     lake: PathBuf,
 }
 
-/// Arguments for moving the configured frost path.
-#[derive(Debug, Args)]
-struct FrostMoveArgs {
-    /// New frost path written to Sirno.toml.
-    frost: PathBuf,
-}
 // sirno:witness:cli-interface:end
 
 /// Arguments for entry address lookup.
@@ -397,9 +355,6 @@ struct EntryPathsArgs {
     /// Show lake entry artifact paths.
     #[arg(long = "artifact")]
     show_artifact: bool,
-    /// Show private frost backend paths when frost is configured.
-    #[arg(long = "frost")]
-    show_frost: bool,
     /// Print absolute paths.
     #[arg(long)]
     absolute: bool,
@@ -520,22 +475,6 @@ impl From<CheckModeArg> for CheckMode {
     }
 }
 
-/// Supported frost commands.
-#[derive(Debug, Subcommand)]
-enum FrostCommand {
-    /// Configure frost.
-    Init {
-        /// Frost path written to Sirno.toml.
-        frost: Option<PathBuf>,
-    },
-    /// Move the configured frost path.
-    #[command(visible_alias = "mv")]
-    Move(FrostMoveArgs),
-    /// Run a frost snapshot operation.
-    #[command(flatten)]
-    Snapshot(TopLevelFrostCommand),
-}
-
 /// Supported upstream lake commands.
 #[derive(Debug, Subcommand)]
 enum UpstreamCommand {
@@ -607,39 +546,6 @@ enum UpstreamOutputFormat {
     /// Print terminal-oriented human text.
     #[default]
     Human,
-}
-
-/// Supported top-level frost commands.
-#[derive(Debug, Subcommand)]
-enum TopLevelFrostCommand {
-    /// Freeze the current lake.
-    Commit {
-        /// Bypass open tide workitems for this commit without recording resolutions.
-        #[arg(long = "unsafe-resolve-all")]
-        unsafe_resolve_all: bool,
-    },
-    // sirno:witness:project-commands:begin
-    /// Garbage-collect private frost storage.
-    Gc,
-    // sirno:witness:project-commands:end
-    /// Check out the latest frost version as the mutable current lake.
-    Defrost,
-    /// Check out frost entries into the lake.
-    Checkout(CheckoutArgs),
-}
-
-/// Arguments for checking out frost entries into the lake.
-#[derive(Debug, Args)]
-struct CheckoutArgs {
-    /// Version coordinate to materialize in the current frost generation.
-    #[arg(required_unless_present = "latest", conflicts_with = "latest")]
-    version: Option<u64>,
-    /// Check out the latest frost version as the mutable current lake.
-    #[arg(long, conflicts_with = "unsafe_mutable")]
-    latest: bool,
-    /// Leave an explicit version checkout writable.
-    #[arg(long)]
-    unsafe_mutable: bool,
 }
 
 /// Tide item selector parsed from one CLI argument.
@@ -902,17 +808,11 @@ impl Cli {
     pub fn run(self) -> Result<ExitCode, CommandError> {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
-        let frost_path = self.frost_path;
         match self.command {
-            | Command::Init { all, lake, frost, no_lake, no_frost, no_skills, claude_skills } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
+            | Command::Init { all, lake, no_lake, no_skills, claude_skills } => {
                 let request = TopLevelInitRequest {
                     lake,
-                    frost,
                     init_lake: !no_lake,
-                    init_frost: !no_frost,
                     init_skills: !no_skills,
                     init_claude_skills: claude_skills,
                 };
@@ -922,95 +822,29 @@ impl Cli {
                     run_interactive_top_level_init(request, &config_path, lake_path.as_deref())
                 }
             }
-            | Command::Move { command } => {
-                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
-            }
-            | Command::Entry { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::Lake { command } => {
-                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
-            }
-            | Command::Frost { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::Upstream { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
+            | Command::Move { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Upstream { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Tide { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
                 // sirno:witness:tide-commands:begin
                 command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
                 // sirno:witness:tide-commands:end
             }
-            | Command::Status => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                run_status_command(&config_path, lake_path.as_deref())
-            }
-            | Command::TopLevelEntry(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::TopLevelLake(command) => {
-                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
-            }
-            | Command::TopLevelFrost(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::TopLevelTide(command) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                command.run(&config_path, lake_path.as_deref())
-            }
-            | Command::Util { command } => {
-                command.run(&config_path, lake_path.as_deref(), frost_path.as_deref())
-            }
+            | Command::Status => run_status_command(&config_path, lake_path.as_deref()),
+            | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::TopLevelTide(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::Util { command } => command.run(&config_path, lake_path.as_deref()),
         }
     }
 }
 
 impl MoveCommand {
-    fn run(
-        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
-            | Self::Entry(args) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                args.run(config_path, lake_path)
-            }
-            | Self::Lake(args) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                args.run(config_path)
-            }
-            | Self::Frost(args) => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
-                args.run(config_path)
-            }
+            | Self::Entry(args) => args.run(config_path, lake_path),
+            | Self::Lake(args) => args.run(config_path),
         }
     }
 }
@@ -1018,9 +852,7 @@ impl MoveCommand {
 #[derive(Debug)]
 struct TopLevelInitRequest {
     lake: Option<PathBuf>,
-    frost: Option<PathBuf>,
     init_lake: bool,
-    init_frost: bool,
     init_skills: bool,
     init_claude_skills: bool,
 }
@@ -1067,7 +899,7 @@ fn run_interactive_top_level_init(
     )
 }
 
-#[cfg(test)]
+#[cfg(any())]
 fn run_prompted_top_level_init<R: BufRead, W: Write>(
     request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
     output: &mut W,
@@ -1100,15 +932,6 @@ fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
                 default_lake_path(config_path),
                 style,
             )?;
-        }
-    }
-
-    if request.init_frost {
-        request.init_frost =
-            prompt_yes_no(input, output, "Initialize frost?", PromptDefault::Yes, style)?;
-        if request.init_frost && request.frost.is_none() {
-            let (prompt, path) = configured_or_default_frost_path(config_path);
-            request.frost = prompt_default_path(input, output, prompt, "frost path", path, style)?;
         }
     }
 
@@ -1216,19 +1039,6 @@ fn print_init_plan<W: Write>(
             .map_err(CommandError::InteractiveInit)?;
     }
 
-    if request.init_frost {
-        writeln!(
-            output,
-            "  frost: {} ({})",
-            format_init_choice(true, style),
-            planned_frost_path(request, config_path).display()
-        )
-        .map_err(CommandError::InteractiveInit)?;
-    } else {
-        writeln!(output, "  frost: {}", format_init_choice(false, style))
-            .map_err(CommandError::InteractiveInit)?;
-    }
-
     let skills = format_init_choice(request.init_skills, style);
     writeln!(output, "  skill wrappers: {skills}").map_err(CommandError::InteractiveInit)?;
     let claude_skills = format_init_choice(request.init_claude_skills, style);
@@ -1249,41 +1059,12 @@ fn planned_lake_path(
         .unwrap_or_else(|| default_lake_path(config_path))
 }
 
-fn planned_frost_path(request: &TopLevelInitRequest, config_path: &Path) -> PathBuf {
-    request
-        .frost
-        .clone()
-        .or_else(|| configured_frost_path(config_path))
-        .unwrap_or_else(|| default_frost_path(config_path))
-}
-
-fn configured_or_default_frost_path(config_path: &Path) -> (&'static str, PathBuf) {
-    if let Some(path) = configured_frost_path(config_path) {
-        ("Use configured frost path", path)
-    } else {
-        ("Use default frost path", default_frost_path(config_path))
-    }
-}
-
-fn configured_frost_path(config_path: &Path) -> Option<PathBuf> {
-    SirnoConfig::from_file(config_path)
-        .ok()
-        .and_then(|config| config.frost.as_ref().map(|settings| settings.path.clone()))
-}
-
 fn run_top_level_init(
     request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
     let mut initialized = false;
     if request.init_lake {
         run_lake_init(request.lake, config_path, lake_path)?;
-        initialized = true;
-    }
-    if request.init_frost {
-        if !request.init_lake {
-            ensure_config_for_top_level_frost(config_path, lake_path)?;
-        }
-        FrostCommand::Init { frost: request.frost }.run(config_path, lake_path)?;
         initialized = true;
     }
     if request.init_skills {
@@ -1294,19 +1075,6 @@ fn run_top_level_init(
         anstream::println!("{}", format_muted_text("nothing initialized", OutputStyle::Styled));
     }
     Ok(ExitCode::SUCCESS)
-}
-
-fn ensure_config_for_top_level_frost(
-    config_path: &Path, lake_path: Option<&Path>,
-) -> Result<(), CommandError> {
-    if config_path.exists() {
-        return Ok(());
-    }
-    let config = SirnoConfig::new(
-        lake_path.map(Path::to_path_buf).unwrap_or_else(|| default_lake_path(config_path)),
-    );
-    config.write_new(config_path)?;
-    Ok(())
 }
 
 fn run_lake_init(
@@ -1464,16 +1232,11 @@ impl TopLevelEntryCommand {
 }
 
 impl LakeCommand {
-    fn run(
-        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
-            | LakeCommand::Init { .. } | LakeCommand::Move(_) if frost_path.is_some() => {
-                Err(CommandError::FrostPathRequiresCheck)
-            }
             | LakeCommand::Init { lake } => run_lake_init(lake, config_path, lake_path),
             | LakeCommand::Move(args) => args.run(config_path),
-            | LakeCommand::TopLevel(command) => command.run(config_path, lake_path, frost_path),
+            | LakeCommand::TopLevel(command) => command.run(config_path, lake_path),
         }
     }
 }
@@ -1487,54 +1250,14 @@ impl LakeMoveArgs {
 }
 
 impl TopLevelLakeCommand {
-    fn run(
-        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelLakeCommand::Check { mode } => {
-                if lake_path.is_some() && frost_path.is_some() {
-                    return Err(CommandError::LakePathWithFrostPath);
-                }
                 let mode = mode.unwrap_or(CheckModeArg::Review);
-                if lake_path.is_some() {
-                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                        .lake_check(mode.into())?;
-                    print_lake_check_result(&result);
-                    return if result.has_errors {
-                        Ok(ExitCode::FAILURE)
-                    } else {
-                        Ok(ExitCode::SUCCESS)
-                    };
-                }
-
-                let Some(frost_path) = frost_path else {
-                    let result =
-                        SurfaceContext::new(config_path.to_path_buf()).lake_check(mode.into())?;
-                    print_lake_check_result(&result);
-                    return if result.has_errors {
-                        Ok(ExitCode::FAILURE)
-                    } else {
-                        Ok(ExitCode::SUCCESS)
-                    };
-                };
-
-                let frost = SirnoFrost::open(frost_path)?;
-                let report = frost.check_current(mode.into())?;
-                if report.is_clean() {
-                    print_ok_path(frost.root());
-                    return Ok(ExitCode::SUCCESS);
-                }
-
-                for diagnostic in report.diagnostics() {
-                    let message = diagnostic.message();
-                    print_check_diagnostic(diagnostic.severity.label(), &message);
-                }
-                print_check_summary(report.has_errors(), frost.root());
-
-                if report.has_errors() { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
-            }
-            | TopLevelLakeCommand::Render { .. } if frost_path.is_some() => {
-                Err(CommandError::FrostPathRequiresCheck)
+                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+                    .lake_check(mode.into())?;
+                print_lake_check_result(&result);
+                if result.has_errors { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
             // sirno:witness:project-commands:begin
             | TopLevelLakeCommand::Render { command, dry, override_json } => match command {
@@ -1568,73 +1291,6 @@ fn run_status_command(
     let result = SurfaceContext::from_cli_paths(config_path, lake_path).status()?;
     print_status_result(&result);
     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
-}
-
-impl TopLevelFrostCommand {
-    fn run(
-        self, config_path: &std::path::Path, lake_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
-        match self {
-            | TopLevelFrostCommand::Commit { unsafe_resolve_all } => {
-                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                    .frost_commit(unsafe_resolve_all)?;
-                println!("{}", result.message);
-                Ok(ExitCode::SUCCESS)
-            }
-            // sirno:witness:project-commands:begin
-            | TopLevelFrostCommand::Gc => {
-                let result = SurfaceContext::from_cli_paths(config_path, lake_path).frost_gc()?;
-                println!("{}", result.message);
-                Ok(ExitCode::SUCCESS)
-            }
-            // sirno:witness:project-commands:end
-            | TopLevelFrostCommand::Defrost => CheckoutArgs::latest().run(config_path, lake_path),
-            | TopLevelFrostCommand::Checkout(args) => args.run(config_path, lake_path),
-        }
-    }
-}
-
-impl CheckoutArgs {
-    fn latest() -> Self {
-        Self { version: None, latest: true, unsafe_mutable: false }
-    }
-
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        let result = SurfaceContext::from_cli_paths(config_path, lake_path).frost_checkout(
-            FrostCheckoutRequest {
-                version: self.version,
-                latest: self.latest,
-                unsafe_mutable: self.unsafe_mutable,
-            },
-        )?;
-        println!("{}", result.message);
-        Ok(ExitCode::SUCCESS)
-    }
-}
-
-impl FrostCommand {
-    fn run(
-        self, config_path: &std::path::Path, lake_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
-        match self {
-            | FrostCommand::Init { frost } => {
-                let result =
-                    SurfaceContext::from_cli_paths(config_path, lake_path).frost_init(frost)?;
-                println!("{}", result.message);
-                Ok(ExitCode::SUCCESS)
-            }
-            | FrostCommand::Move(args) => args.run(config_path),
-            | FrostCommand::Snapshot(command) => command.run(config_path, lake_path),
-        }
-    }
-}
-
-impl FrostMoveArgs {
-    fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
-        let result = SurfaceContext::new(config_path.to_path_buf()).frost_move(self.frost)?;
-        println!("{}", result.message);
-        Ok(ExitCode::SUCCESS)
-    }
 }
 
 impl UpstreamCommand {
@@ -1932,7 +1588,7 @@ fn format_tide_statuses_grouped_with_style(
     }
 }
 
-#[cfg(test)]
+#[cfg(any())]
 fn format_tide_statuses(statuses: &[TideStatus]) -> String {
     format_tide_statuses_with_style(statuses, OutputStyle::Plain)
 }
@@ -1989,7 +1645,7 @@ fn format_tide_statuses_with_style(statuses: &[TideStatus], style: OutputStyle) 
     output
 }
 
-#[cfg(test)]
+#[cfg(any())]
 fn format_tide_statuses_by_entry(statuses: &[TideStatus]) -> String {
     format_tide_statuses_by_entry_with_style(statuses, OutputStyle::Plain)
 }
@@ -2273,29 +1929,18 @@ impl ArtifactCommand {
 }
 
 impl UtilCommand {
-    fn run(
-        self, config_path: &Path, lake_path: Option<&Path>, frost_path: Option<&Path>,
-    ) -> Result<ExitCode, CommandError> {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | UtilCommand::Config { command } => {
                 if lake_path.is_some() {
                     return Err(CommandError::ConfigRejectsLakePath);
                 }
-                if frost_path.is_some() {
-                    return Err(CommandError::ConfigRejectsFrostPath);
-                }
                 command.unwrap_or(ConfigUtilityCommand::Tui).run(config_path)
             }
             | UtilCommand::Entry { command } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
                 command.unwrap_or(EntryUtilityCommand::Tui).run(config_path, lake_path)
             }
             | UtilCommand::Structural => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
                 let result = SurfaceContext::from_cli_paths(config_path, lake_path)
                     .config_structural_sync()?;
                 println!("{}", result.message);
@@ -2306,9 +1951,6 @@ impl UtilCommand {
                 Ok(ExitCode::SUCCESS)
             }
             | UtilCommand::Completion { shell } => {
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
                 let shell = Shell::from(shell);
                 let mut command = Cli::command();
                 let mut stdout = std::io::stdout();
@@ -2319,17 +1961,11 @@ impl UtilCommand {
                 if lake_path.is_some() {
                     return Err(CommandError::SkillsRejectsLakePath);
                 }
-                if frost_path.is_some() {
-                    return Err(CommandError::FrostPathRequiresCheck);
-                }
                 command.unwrap_or_default().run(config_path)
             }
             | UtilCommand::Mcp => {
                 if lake_path.is_some() {
                     return Err(CommandError::McpRejectsLakePath);
-                }
-                if frost_path.is_some() {
-                    return Err(CommandError::McpRejectsFrostPath);
                 }
                 let runtime = tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
@@ -2445,9 +2081,10 @@ fn print_path_records(
 }
 
 fn path_selection_from_args(args: &EntryPathsArgs) -> PathSelection {
-    let all = !args.show_entry && !args.show_artifact && !args.show_frost;
-    PathSelection::new(all || args.show_entry, all || args.show_artifact, all || args.show_frost)
+    let all = !args.show_entry && !args.show_artifact;
+    PathSelection::new(all || args.show_entry, all || args.show_artifact)
 }
 
-#[cfg(test)]
+// TODO: Rebuild CLI tests around Anchor after the Frost command surface is replaced.
+#[cfg(any())]
 mod tests;

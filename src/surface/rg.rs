@@ -18,6 +18,7 @@ pub(crate) fn rg_args_to_strings(args: Vec<OsString>) -> Result<Vec<String>, Com
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn rg_args_include_preprocessor(args: &[OsString]) -> bool {
     args.iter()
         .filter_map(|arg| arg.to_str())

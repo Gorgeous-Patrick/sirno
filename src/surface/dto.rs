@@ -989,36 +989,6 @@ pub struct StructuralFieldStatus {
     pub clique: StructuralEdgeStatus,
 }
 
-/// Current lock state of a configured Frost store.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum StatusFrostState {
-    /// No Sirno lock exists for the configured Frost path.
-    Unlocked,
-    /// The public lake is the current editable Frost version.
-    Current,
-    /// The public lake materializes a selected Frost version.
-    CheckedOut,
-}
-
-/// Typed Frost status for the current project.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StatusFrost {
-    /// Configured Frost path.
-    pub path: String,
-    /// Current public-lake state relative to Frost.
-    pub state: StatusFrostState,
-    /// Frost version when a lock names one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<u64>,
-    /// Frost generation when a lock names one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub generation: Option<u64>,
-    /// Whether the public lake is writable as a Frost checkout.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutable: Option<bool>,
-}
-
 /// Check policy used by project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusCheckPolicy {
@@ -1058,42 +1028,6 @@ impl StatusTide {
     }
 }
 
-/// Commit readiness for the configured project.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum StatusCommitState {
-    /// A Frost commit can proceed.
-    Ready,
-    /// A Frost commit is blocked by one or more project states.
-    Blocked,
-    /// Frost commits are unavailable because Frost is not configured.
-    Unavailable,
-}
-
-/// Specific project state that blocks a Frost commit.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum StatusCommitBlocker {
-    /// Review-mode lake checks currently report errors.
-    LakeCheck,
-    /// The active Tide has open workitems.
-    Tide,
-    /// The public lake is an immutable Frost checkout.
-    ImmutableCheckout,
-}
-
-/// Commit readiness summary for project status.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StatusCommit {
-    /// Whether a Frost commit can proceed.
-    pub ready: bool,
-    /// Human-independent readiness state.
-    pub state: StatusCommitState,
-    /// States that block a commit.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub blockers: Vec<StatusCommitBlocker>,
-}
-
 /// JSON-ready project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusResult {
@@ -1105,101 +1039,15 @@ pub struct StatusResult {
     pub lake_path: String,
     /// Number of parsed entries.
     pub entry_count: usize,
-    /// Optional typed Frost status.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub frost: Option<StatusFrost>,
     /// Status check policy.
     pub check_policy: StatusCheckPolicy,
     /// Configured link relation summaries.
     pub structural_fields: Vec<StructuralFieldStatus>,
-    /// Tide summary when Frost is configured and the lake can be compared.
+    /// Tide summary when the lake can be compared against the active review baseline.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tide: Option<StatusTide>,
-    /// Frost commit readiness.
-    pub commit: StatusCommit,
     /// Review-mode check result.
     pub check: LakeCheckResult,
-}
-
-/// Result of initializing frost.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FrostInitResult {
-    /// Whether the command completed successfully.
-    pub ok: bool,
-    /// Configured frost path.
-    pub frost_path: String,
-    /// Current frost version after initialization.
-    pub version: u64,
-    /// Concise human-readable summary.
-    pub message: String,
-}
-
-/// Result of committing a frost snapshot.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FrostCommitResult {
-    /// Whether the command completed successfully.
-    pub ok: bool,
-    /// New frost version.
-    pub version: u64,
-    /// Lake path committed to frost.
-    pub lake_path: String,
-    /// Concise human-readable summary.
-    pub message: String,
-}
-
-/// Result of garbage-collecting frost storage.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FrostGcResult {
-    /// Whether the command completed successfully.
-    pub ok: bool,
-    /// Configured frost path.
-    pub frost_path: String,
-    /// GC generation before collection.
-    pub before_generation: u64,
-    /// Frost version before collection.
-    pub before_version: u64,
-    /// GC generation after collection.
-    pub after_generation: u64,
-    /// Frost version after collection.
-    pub after_version: u64,
-    /// Artifact byte files removed from frost storage.
-    pub artifact_files_removed: usize,
-    /// Empty artifact directories removed from frost storage.
-    pub artifact_directories_removed: usize,
-    /// Whether storage was physically collected.
-    pub collected: bool,
-    /// Concise human-readable summary.
-    pub message: String,
-}
-
-/// Frost checkout request.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FrostCheckoutRequest {
-    /// Explicit frost version to check out.
-    pub version: Option<u64>,
-    /// Check out the latest frost version as mutable current lake.
-    #[serde(default)]
-    pub latest: bool,
-    /// Leave an explicit version checkout writable.
-    #[serde(default)]
-    pub unsafe_mutable: bool,
-}
-
-/// Result of checking out a frost snapshot.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FrostCheckoutResult {
-    /// Whether the command completed successfully.
-    pub ok: bool,
-    /// Checked-out frost version.
-    pub version: u64,
-    /// Lake path written by checkout.
-    pub lake_path: String,
-    /// Number of entries written.
-    pub entry_count: usize,
-    /// Mutable or immutable lake state after checkout.
-    pub state: String,
-    /// Concise human-readable summary.
-    pub message: String,
 }
 
 /// Tide workitem selection by exact workitems or neighbor ids.
@@ -1255,18 +1103,17 @@ pub struct TideStatusResult {
 pub struct PathSelection {
     pub(crate) entry: bool,
     pub(crate) artifact: bool,
-    pub(crate) frost: bool,
 }
 
 impl PathSelection {
-    /// Select entry, artifact, and frost paths.
+    /// Select entry and artifact paths.
     pub fn all() -> Self {
-        Self { entry: true, artifact: true, frost: true }
+        Self { entry: true, artifact: true }
     }
 
     /// Build an explicit path-class selection.
-    pub fn new(entry: bool, artifact: bool, frost: bool) -> Self {
-        Self { entry, artifact, frost }
+    pub fn new(entry: bool, artifact: bool) -> Self {
+        Self { entry, artifact }
     }
 }
 

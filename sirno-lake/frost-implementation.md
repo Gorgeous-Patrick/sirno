@@ -1,6 +1,6 @@
 ---
 name: Frost Implementation Inventory
-desc: A deprecated inventory of repository surfaces that currently implement Frost.
+desc: A deprecated inventory of repository surfaces that implemented Frost.
 category:
   - deprecated
   - concept
@@ -10,37 +10,41 @@ prerequisite:
   - sirno-frost
 ---
 
-This entry records the current repository surfaces that implement Frost before Anchor replaces it.
+This entry records the repository surfaces that implemented Frost before Anchor replaces it.
 
 The inventory is deprecated with the Frost design.
-It exists so removal work can start from a named map instead of a fresh repository search.
+It now records which surfaces were removed and which Frost-named Tide surfaces remain temporary.
 
-Current Frost implementation surfaces include:
+Removed Frost implementation surfaces:
 
 | Surface | Frost responsibility |
 |---|---|
-| `Cargo.toml` | Declares the `eter` dependency. |
-| `Sirno.toml` | Configures `[frost]` and current frost-side Tide policy comments. |
-| `README.md` | Documents the public Frost workflow. |
-| `src/frost.rs` | Implements the `SirnoFrost` facade, `eter` storage, snapshots, artifacts, GC, commit, and checkout. |
-| `src/config.rs` | Parses and renders Frost config, tutorial settings, and path validation. |
-| `src/lock.rs` | Stores Frost snapshot and checkout state in `Sirno.lock.toml`. |
-| `src/surface/context.rs` | Wires Frost commands, status, Tide loading, commit gates, and checkout state. |
-| `src/surface/dto.rs` | Defines Frost status, commit, GC, checkout, and structural policy DTOs. |
-| `src/surface/output.rs` | Renders Frost and commit readiness in status output. |
-| `src/surface/error.rs` | Defines Frost command errors and open-Tide tutorial text. |
-| `src/surface/cli/mod.rs` | Defines CLI Frost commands, `--frost-path`, init prompts, and terminal output. |
-| `src/mcp.rs` | Exposes Frost MCP tools and Frost-aware entry path selection. |
-| `src/tide.rs` | Compares waterline entries against the frostline and emits Frost-side workitem sources. |
-| `src/entry.rs` | Parses and renders `meta.ripple.frost` and reviewed frozen reasons. |
-| `src/structural.rs` | Carries Frost-side structural ripple settings. |
-| `src/lake.rs` | Applies read-only checkout warnings, freeze markers, and protected artifact-tree behavior. |
-| `src/freeze.rs` | Provides local filesystem protection used by Frost checkout and entry freeze. |
-| `src/artifact.rs` | Defines artifact path rules used by Frost artifact storage. |
-| `src/identifier.rs` | Converts entry ids to `eter` filesystem ids. |
+| `Cargo.toml` and `Cargo.lock` | Removed the direct `eter` dependency. |
+| `Sirno.toml` | Removed `[frost]` project configuration. |
+| `src/frost.rs` | Removed the `SirnoFrost` facade, private storage, snapshots, artifacts, GC, commit, and checkout. |
+| `src/config.rs` | Removed Frost config parsing, rendering, and path validation. |
+| `src/lock.rs` | Removed Frost snapshot and checkout state from `Sirno.lock.toml`. |
+| `src/surface/context.rs` | Removed Frost commands, status output, commit gates, and checkout state. |
+| `src/surface/dto.rs` | Removed Frost status, commit, GC, and checkout DTOs. |
+| `src/surface/output.rs` | Removed Frost and commit readiness from status output. |
+| `src/surface/error.rs` | Removed Frost command errors and open-Tide tutorial errors. |
+| `src/surface/cli/mod.rs` | Removed CLI Frost commands, `--frost-path`, and Frost init prompts. |
+| `src/mcp.rs` | Removed Frost MCP tools and Frost-aware entry path selection. |
+| `src/identifier.rs` | Removed `eter` filesystem-id conversion helpers. |
 
-The existing `sirno-frost` witness blocks cover the core facade and storage path in `src/frost.rs`.
-Other surfaces are named here as removal and replacement targets for Anchor actualization.
+Temporary Frost-named Tide surfaces remain:
+
+| Surface | Temporary responsibility |
+|---|---|
+| `src/tide.rs` | Still names the accepted side `frostline` until Anchor is actualized. |
+| `src/entry.rs` | Still parses and renders `meta.ripple.frost` until policy names become Anchor-side. |
+| `src/structural.rs` | Still carries Frost-side structural ripple settings for Tide. |
+| `src/lake.rs` | Still contains read-only checkout warning text and local protection helpers. |
+| `src/freeze.rs` | Still provides local filesystem protection used by entry freeze and upstream protection. |
+| `src/artifact.rs` | Still documents artifact path determinism with an old Frost reference. |
+
+The deleted `src/frost.rs` witness blocks covered the core facade and storage path.
+Anchor actualization should replace the remaining Frost-named Tide policy language.
 
 ---
 

@@ -13,9 +13,8 @@ It is *nominal* because each design *object* is named first by an entry id.
 - *Lake*: a queryable, misty collection of Markdown *entries*.
 - *Entry*: a named design object whose id acts as a symbol.
 - *Witness*: a link from a design claim back to the code, tests, config files, or assets it describes.
-- *Frost*: history for frozen *lake* snapshots.
-- *Tide*: the design review worklist between *frost* commits,
-  preventing locally reasonable changes from freezing into suboptimal global design.
+- *Tide*: the design review worklist for structural ripples across the *lake*,
+  preventing locally reasonable changes from settling into suboptimal global design.
 
 This is the dawn of documentation-driven development.
 <!-- sirno:witness:readme:end -->
@@ -117,7 +116,6 @@ sirno init
 which opens an interactive setup plan. The full plan creates:
 
 - a *lake* (documentation directory)
-- a *frost* (history store)
 - `Sirno.toml` (project level configuration)
 - `Sirno.lock.toml` (project state management; don't edit or delete this)
 - a few wrapper skills that teach your agent how to talk to the MCP server
@@ -165,7 +163,7 @@ and inspect it with `sirno_entry_witness`.
 Start a *lake* of your own:
 
 ```sh
-sirno init                                   # choose config, lake, frost, skills
+sirno init                                   # choose config, lake, skills
 sirno new architecture --name "Architecture" \
   --desc "How the system is structured"      # create one entry
 sirno check --mode edit                      # check while editing; dangling refs are warnings
@@ -175,20 +173,10 @@ Edit the generated Markdown under the lake path, then re-run `check`.
 Add a `sirno:witness:architecture:begin` and `sirno:witness:architecture:end` block in code
 to link evidence back to the entry.
 
-*Frost* is the history layer for the *lake*: the lake stays mutable while you draft,
-while *frost* keeps the frozen snapshots you commit, stored separately over `eter`.
-`Sirno.lock.toml` records whether the *lake* is current or pinned to a frozen version.
-
-```sh
-sirno commit                                 # freeze the current lake into a new frost version
-sirno checkout <version>                     # materialize a past frost version (read-only)
-sirno defrost                                # check the latest version back out as writable
-```
-
-*Tide* is the design review worklist between *frost* commits.
+*Tide* is the design review worklist for structural ripples.
 Editing one entry ripples to its structural neighbors;
-*tide* tracks those as workitems you resolve before the next commit,
-so locally reasonable changes do not freeze into suboptimal design.
+*tide* tracks those as workitems you resolve while reviewing a design edit,
+so locally reasonable changes do not settle into suboptimal design.
 
 ```sh
 sirno tide status                            # entry ids that still need review
@@ -200,7 +188,7 @@ sirno reset                                  # clear all tide resolutions
 Explore an existing lake; this repository keeps its current design source in `sirno-lake/`:
 
 ```sh
-sirno status                                 # project, tide, and commit readiness
+sirno status                                 # project, check, and tide summary
 sirno check --mode review                    # review boundary; dangling refs are errors
 sirno query --columns id,desc                # list entry ids and desc as a table
 sirno query --has category=meta              # filter by structural link target
@@ -286,7 +274,7 @@ I am new to Sirno. Ask about my background and goals. Guide me through the entri
 Sirno currently provides a Rust library, both CLI and MCP for Markdown entry storage,
 project configuration, structural checks, generated footers,
 querying, lake-local ripgrep search, witness lookup over `mosaika`, entry freezing,
-and optional frost snapshots over `eter`.
+and Tide review tracking.
 
 Future interfaces may add lightweight GUI, or Obsidian integration.
 

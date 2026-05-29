@@ -15,13 +15,11 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::error::CommandError;
 use crate::{
-    CheckSettings, ConfigError, FrostSettings, RenderSettings, RepoSettings, SirnoConfig,
-    TutorialSettings,
+    CheckSettings, ConfigError, RenderSettings, RepoSettings, SirnoConfig, TutorialSettings,
 };
 
-const SECTIONS: [ConfigSection; 8] = [
+const SECTIONS: [ConfigSection; 7] = [
     ConfigSection::Lake,
-    ConfigSection::Frost,
     ConfigSection::Repo,
     ConfigSection::Witness,
     ConfigSection::Check,
@@ -178,7 +176,6 @@ struct ConfigSectionRow {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum ConfigSection {
     Lake,
-    Frost,
     Repo,
     Witness,
     Check,
@@ -191,7 +188,6 @@ impl ConfigSection {
     fn from_name(name: &str) -> Option<Self> {
         match name {
             | "lake" => Some(Self::Lake),
-            | "frost" => Some(Self::Frost),
             | "repo" => Some(Self::Repo),
             | "witness" => Some(Self::Witness),
             | "check" => Some(Self::Check),
@@ -205,7 +201,6 @@ impl ConfigSection {
     fn label(self) -> &'static str {
         match self {
             | Self::Lake => "[lake]",
-            | Self::Frost => "[frost]",
             | Self::Repo => "[repo]",
             | Self::Witness => "[witness]",
             | Self::Check => "[check]",
@@ -281,9 +276,6 @@ fn materialize_section(config: &mut SirnoConfig, section: ConfigSection) {
         | ConfigSection::Lake | ConfigSection::Witness | ConfigSection::Structural => {}
         | ConfigSection::Render => {
             config.render = RenderSettings::default();
-        }
-        | ConfigSection::Frost => {
-            config.frost.get_or_insert_with(|| FrostSettings::new("sirno-frost"));
         }
         | ConfigSection::Repo => {
             config.repo.get_or_insert_with(|| RepoSettings { members: Vec::new() });
@@ -424,7 +416,6 @@ mod tests {
     fn config() -> SirnoConfig {
         SirnoConfig {
             lake: LakeSettings::new("docs"),
-            frost: None,
             upstreams: Default::default(),
             repo: None,
             witness: WitnessSettings { delimiters: Vec::new() },

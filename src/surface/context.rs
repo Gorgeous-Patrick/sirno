@@ -12,30 +12,27 @@ use indexmap::IndexMap;
 use crate::surface::dto::{
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
     ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryFileResult, EntryNewRequest,
-    EntryPathsRequest, EntryReadResult, EntryRenameResult, FrostCheckoutRequest,
-    FrostCheckoutResult, FrostCommitResult, FrostGcResult, FrostInitResult, LakeCheckResult,
-    LakeInitRequest, LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord,
-    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
-    QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult,
-    StatusCheckPolicy, StatusCommit, StatusCommitBlocker, StatusCommitState, StatusFrost,
-    StatusFrostState, StatusResult, StatusTide, StructuralConfigRecord, StructuralConfigSyncResult,
+    EntryPathsRequest, EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest,
+    LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord, QueryColumn,
+    QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
+    RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy,
+    StatusResult, StatusTide, StructuralConfigRecord, StructuralConfigSyncResult,
     StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
     StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
     TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
     WitnessResult,
 };
-use crate::surface::error::{CommandError, OpenTideTutorial};
+use crate::surface::error::CommandError;
 use crate::surface::output::{
     diagnostics_from_entry_report, display_path, display_paths, output_path, query_result_rows,
 };
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath, EntryDirectory,
-    EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryWritePolicy, EntryMetadata,
-    EntryQuery, EntryStructuralMatcher, Eterator, FrostLock, SirnoConfig, SirnoFrost, SirnoLock,
-    StructuralRenderSettings, StructuralSettings, Tide, TideStatus, TutorialSettings,
-    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
-    WitnessCheckSettings, WitnessRecord,
+    EntryDirectoryCheckSettings, EntryDirectoryError, EntryMetadata, EntryQuery,
+    EntryStructuralMatcher, SirnoConfig, SirnoLock, StructuralRenderSettings, StructuralSettings,
+    Tide, TideStatus, UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport,
+    VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -212,18 +209,6 @@ impl SurfaceContext {
                 ));
             }
         }
-        if request.selection.frost
-            && let Some(frost) = config.resolve_frost(&self.config_path)
-        {
-            records.push(PathRecord::new(
-                "frost-entry",
-                output_path(
-                    SirnoFrost::entry_storage_path(&frost, &request.id)?,
-                    request.absolute,
-                )?,
-            ));
-        }
-
         Ok(records)
     }
 
@@ -380,15 +365,11 @@ impl SurfaceContext {
         })
     }
 
-    /// Freeze one current frost entry and make its lake file read-only.
+    /// Freeze one current lake entry and make its file read-only.
     pub fn entry_freeze(&self, id: EntryAddress) -> Result<EntryFileResult, CommandError> {
-        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
-        context.reject_immutable_checkout()?;
-        let directory = context.lake();
-        let entry = directory.read_entry(&id)?;
-        let artifacts = directory.read_entry_artifacts(&id)?;
-        let frost = SirnoFrost::open(&context.frost_path)?;
-        frost.ensure_entry_bundle_current(&entry, &artifacts)?;
+        let (lake, _) = resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let directory = EntryDirectory::new(&lake);
+        directory.read_entry(&id)?;
         let path = directory.freeze_entry(&id)?;
         Ok(EntryFileResult {
             ok: true,
@@ -422,7 +403,7 @@ impl SurfaceContext {
         Ok(local_protection_result(report.root(), report.paths(), dry_run, "clear"))
     }
 
-    /// Reapply Sirno local filesystem protection from frozen metadata and checkout state.
+    /// Reapply Sirno local filesystem protection from frozen metadata.
     pub fn entry_freeze_fix_all(
         &self, dry_run: bool,
     ) -> Result<LocalProtectionResult, CommandError> {
@@ -432,17 +413,8 @@ impl SurfaceContext {
         settings.render = false;
         settings.witness = None;
         let lock_path = SirnoLock::path_for_config(&self.config_path);
-        let protect_checkout = config.resolve_frost(&self.config_path).is_some()
-            && SirnoLock::from_file_if_exists(lock_path)?.is_some_and(|lock| {
-                lock.frost.as_ref().is_some_and(|frost| {
-                    frost.is_checked_out() && !frost.is_unsafe_mutable_checkout()
-                })
-            });
-        let report = EntryDirectory::new(&lake).fix_local_protection(
-            &settings,
-            protect_checkout,
-            dry_run,
-        )?;
+        let _lock = SirnoLock::from_file_if_exists(lock_path)?;
+        let report = EntryDirectory::new(&lake).fix_local_protection(&settings, false, dry_run)?;
         Ok(local_protection_result(report.root(), report.paths(), dry_run, "repair"))
     }
 
@@ -1025,61 +997,24 @@ impl SurfaceContext {
     /// Show the current Sirno project status.
     pub fn status(&self) -> Result<StatusResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
-        let frost = config.resolve_frost(&self.config_path);
-        let lock_path = SirnoLock::path_for_config(&self.config_path);
-        let lock = if frost.is_some() || !config.upstreams.is_empty() {
-            SirnoLock::from_file_if_exists(&lock_path)?
-        } else {
-            None
-        };
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report =
             EntryDirectory::new(&lake).check_with_settings(CheckMode::Review, &settings)?;
         let check = LakeCheckResult::from_report(&report);
-        let mut blockers = Vec::new();
-        if check.has_errors {
-            blockers.push(StatusCommitBlocker::LakeCheck);
-        }
-        if lock.as_ref().is_some_and(|lock| {
-            lock.frost
-                .as_ref()
-                .is_some_and(|frost| frost.is_checked_out() && !frost.is_unsafe_mutable_checkout())
-        }) {
-            blockers.push(StatusCommitBlocker::ImmutableCheckout);
-        }
-        let tide = if frost.is_some() && !check.has_errors {
+        let tide = if !check.has_errors {
             let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
             let lock = tide_context.load_lock_or_current()?;
             let tide = tide_context.tide(&lock)?;
-            let status = StatusTide::from_tide(&tide);
-            if !status.clear {
-                blockers.push(StatusCommitBlocker::Tide);
-            }
-            Some(status)
+            Some(StatusTide::from_tide(&tide))
         } else {
             None
         };
-        let commit = if frost.is_none() {
-            StatusCommit {
-                ready: false,
-                state: StatusCommitState::Unavailable,
-                blockers: Vec::new(),
-            }
-        } else if blockers.is_empty() {
-            StatusCommit { ready: true, state: StatusCommitState::Ready, blockers }
-        } else {
-            StatusCommit { ready: false, state: StatusCommitState::Blocked, blockers }
-        };
-        let ok = check.ok && !matches!(commit.state, StatusCommitState::Blocked);
         Ok(StatusResult {
-            ok,
+            ok: check.ok,
             config_path: display_path(&self.config_path),
             lake_path: display_path(report.root()),
             entry_count: report.entries().len(),
-            frost: frost
-                .as_ref()
-                .map(|path| status_frost_from_lock(display_path(path), lock.as_ref())),
             check_policy: StatusCheckPolicy {
                 mode: CheckMode::Review,
                 render: config.check.render_enabled(),
@@ -1101,220 +1036,7 @@ impl SurfaceContext {
                 })
                 .collect(),
             tide,
-            commit,
             check,
-        })
-    }
-
-    /// Configure Sirno Frost.
-    pub fn frost_init(&self, frost: Option<PathBuf>) -> Result<FrostInitResult, CommandError> {
-        let config = SirnoConfig::from_file(&self.config_path)?;
-        let existing_frost = config.frost.as_ref().map(|settings| settings.path.clone());
-        let frost = frost
-            .or_else(|| existing_frost.clone())
-            .unwrap_or_else(|| default_frost_path(&self.config_path));
-        if let Some(existing_frost) = existing_frost
-            && existing_frost != frost
-        {
-            return Err(CommandError::FrostAlreadyConfigured(existing_frost));
-        }
-
-        let needs_config_write = config.frost.is_none();
-        let config = if needs_config_write { config.with_frost(frost) } else { config };
-        config.validate_for_file(&self.config_path)?;
-
-        let frost_path = config.resolve_frost(&self.config_path).expect("frost path configured");
-        let frost = SirnoFrost::open(&frost_path)?;
-        let version = frost.current_snapshot()?;
-        if needs_config_write {
-            config.write(&self.config_path)?;
-        }
-        SirnoLock::current(version).write(SirnoLock::path_for_config(&self.config_path))?;
-        Ok(FrostInitResult {
-            ok: true,
-            frost_path: display_path(&frost_path),
-            version: version.version(),
-            message: format!(
-                "initialized frost {} at version {}",
-                frost_path.display(),
-                version.version()
-            ),
-        })
-    }
-
-    /// Move the configured frost path.
-    pub fn frost_move(&self, frost: PathBuf) -> Result<MovePathResult, CommandError> {
-        let config = SirnoConfig::from_file(&self.config_path)?;
-        let Some(old_frost) = config.resolve_frost(&self.config_path) else {
-            return Err(CommandError::FrostNotConfigured);
-        };
-        let config = config.with_frost(frost);
-        config.validate_for_file(&self.config_path)?;
-        let new_frost = config.resolve_frost(&self.config_path).expect("frost path configured");
-        let moved = move_configured_path_and_write_config(
-            &old_frost,
-            &new_frost,
-            &config,
-            &self.config_path,
-        )?;
-        Ok(MovePathResult {
-            ok: true,
-            moved,
-            old_path: display_path(&old_frost),
-            new_path: display_path(&new_frost),
-            message: format!("moved frost {} to {}", old_frost.display(), new_frost.display()),
-        })
-    }
-
-    /// Freeze the current lake.
-    pub fn frost_commit(
-        &self, unsafe_resolve_all: bool,
-    ) -> Result<FrostCommitResult, CommandError> {
-        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
-        context.reject_immutable_checkout()?;
-        if !unsafe_resolve_all {
-            let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-            let lock = tide_context.load_lock_or_current()?;
-            let tide = tide_context.tide(&lock)?;
-            if !tide.is_clear() {
-                return Err(CommandError::OpenTide {
-                    count: tide.open_statuses().count(),
-                    tutorial: OpenTideTutorial::new(
-                        context.tutorial,
-                        lock.frost
-                            .as_ref()
-                            .is_some_and(|frost| frost.version == Eterator::EMPTY.version()),
-                    ),
-                });
-            }
-        }
-        let mut frost = SirnoFrost::open(&context.frost_path)?;
-        let version = frost.commit_entry_directory(&context.lake_path, &context.settings)?;
-        context.lake().set_writable(&context.settings)?;
-        let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
-        lock.frost = Some(FrostLock::current(version));
-        lock.tide.clear();
-        lock.write(&context.lock_path)?;
-        Ok(FrostCommitResult {
-            ok: true,
-            version: version.version(),
-            lake_path: display_path(&context.lake_path),
-            message: format!(
-                "froze version {} from {}",
-                version.version(),
-                context.lake_path.display()
-            ),
-        })
-    }
-
-    /// Garbage-collect private frost storage.
-    pub fn frost_gc(&self) -> Result<FrostGcResult, CommandError> {
-        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
-        context.reject_checked_out_for_gc()?;
-        let mut frost = SirnoFrost::open(&context.frost_path)?;
-        let report = frost.gc_current_snapshot()?;
-        let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?
-            .unwrap_or_else(|| SirnoLock::current(report.before));
-        lock.frost = Some(FrostLock::current(report.after));
-        lock.write(&context.lock_path)?;
-        let message = if report.collected() {
-            format!(
-                "garbage collected frost {}; kept version {} at generation {} (removed {} artifact files and {} artifact directories)",
-                context.frost_path.display(),
-                report.after.version(),
-                report.after.generation.number(),
-                report.artifact_files_removed,
-                report.artifact_directories_removed
-            )
-        } else {
-            format!(
-                "frost {} had no collectible rows or artifact files; kept version {} at generation {}",
-                context.frost_path.display(),
-                report.after.version(),
-                report.after.generation.number()
-            )
-        };
-        Ok(FrostGcResult {
-            ok: true,
-            frost_path: display_path(&context.frost_path),
-            before_generation: report.before.generation.number(),
-            before_version: report.before.version(),
-            after_generation: report.after.generation.number(),
-            after_version: report.after.version(),
-            artifact_files_removed: report.artifact_files_removed,
-            artifact_directories_removed: report.artifact_directories_removed,
-            collected: report.collected(),
-            message,
-        })
-    }
-
-    /// Check out frost entries into the lake.
-    pub fn frost_checkout(
-        &self, request: FrostCheckoutRequest,
-    ) -> Result<FrostCheckoutResult, CommandError> {
-        let context = FrostContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let frost = SirnoFrost::open(&context.frost_path)?;
-        let snapshot = if request.latest {
-            frost.current_snapshot()?
-        } else {
-            let Some(version) = request.version else {
-                return Err(CommandError::MissingFrostCheckoutTarget);
-            };
-            frost.snapshot_for_version(frost_version(version)?)?
-        };
-        if snapshot.version() == Eterator::EMPTY.version() {
-            return Err(CommandError::InvalidFrostVersion(snapshot.version()));
-        }
-        let paths = frost.checkout_entry_directory(
-            snapshot,
-            &context.lake_path,
-            EntryDirectoryWritePolicy::ReplaceDirectory { ignore: context.settings.ignore.clone() },
-        )?;
-        if request.latest || request.unsafe_mutable {
-            context.lake().set_writable(&context.settings)?;
-        } else {
-            context.lake().add_readonly_checkout_warnings(&paths)?;
-            context.lake().set_readonly(&context.settings)?;
-        }
-        if request.latest {
-            let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
-            lock.frost = Some(FrostLock::current(snapshot));
-            lock.write(&context.lock_path)?;
-        } else {
-            let mut lock = SirnoLock::from_file_if_exists(&context.lock_path)?.unwrap_or_default();
-            lock.frost = Some(FrostLock::checked_out(snapshot, request.unsafe_mutable));
-            lock.write(&context.lock_path)?;
-        }
-        let state = if request.latest {
-            "mutable"
-        } else if request.unsafe_mutable {
-            "unsafe mutable"
-        } else {
-            "immutable"
-        };
-        Ok(FrostCheckoutResult {
-            ok: true,
-            version: snapshot.version(),
-            lake_path: display_path(&context.lake_path),
-            entry_count: paths.len(),
-            state: state.to_owned(),
-            message: format!(
-                "checked out {}frost version {} into {} ({} entries, {})",
-                if request.latest { "latest " } else { "" },
-                snapshot.version(),
-                context.lake_path.display(),
-                paths.len(),
-                state
-            ),
-        })
-    }
-
-    /// Check out the latest frost version as the mutable current lake.
-    pub fn frost_defrost(&self) -> Result<FrostCheckoutResult, CommandError> {
-        self.frost_checkout(FrostCheckoutRequest {
-            version: None,
-            latest: true,
-            unsafe_mutable: false,
         })
     }
 
@@ -1604,74 +1326,16 @@ fn move_staging_path(source: &Path) -> std::io::Result<PathBuf> {
     ))
 }
 
-struct FrostContext {
-    frost_path: PathBuf,
-    lock_path: PathBuf,
-    settings: EntryDirectoryCheckSettings,
-    lake_path: PathBuf,
-    tutorial: Option<TutorialSettings>,
-}
-
 struct TideContext {
-    frost_path: PathBuf,
     lock_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
     lake_path: PathBuf,
-}
-
-impl FrostContext {
-    fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CommandError> {
-        let config = SirnoConfig::from_file(config_path)?;
-        let Some(frost_path) = config.resolve_frost(config_path) else {
-            return Err(CommandError::FrostNotConfigured);
-        };
-        Ok(Self {
-            frost_path,
-            lock_path: SirnoLock::path_for_config(config_path),
-            settings: entry_directory_check_settings(config_path, &config),
-            lake_path: resolve_lake_path(lake_path, config_path, &config),
-            tutorial: config.tutorial,
-        })
-    }
-
-    fn lake(&self) -> EntryDirectory {
-        EntryDirectory::new(&self.lake_path)
-    }
-
-    fn reject_immutable_checkout(&self) -> Result<(), CommandError> {
-        let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
-            return Ok(());
-        };
-        if let Some(frost) = &lock.frost
-            && frost.is_checked_out()
-            && !frost.is_unsafe_mutable_checkout()
-        {
-            return Err(CommandError::ImmutableFrostCheckout(frost.version));
-        }
-        Ok(())
-    }
-
-    fn reject_checked_out_for_gc(&self) -> Result<(), CommandError> {
-        let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
-            return Ok(());
-        };
-        if let Some(frost) = &lock.frost
-            && frost.is_checked_out()
-        {
-            return Err(CommandError::FrostGcRequiresCurrentLake(frost.version));
-        }
-        Ok(())
-    }
 }
 
 impl TideContext {
     fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
-        let Some(frost_path) = config.resolve_frost(config_path) else {
-            return Err(CommandError::FrostNotConfigured);
-        };
         Ok(Self {
-            frost_path,
             lock_path: SirnoLock::path_for_config(config_path),
             settings: entry_directory_check_settings(config_path, &config),
             lake_path: resolve_lake_path(lake_path, config_path, &config),
@@ -1679,16 +1343,10 @@ impl TideContext {
     }
 
     fn load_lock_or_current(&self) -> Result<SirnoLock, CommandError> {
-        let Some(lock) = SirnoLock::from_file_if_exists(&self.lock_path)? else {
-            let frost = SirnoFrost::open(&self.frost_path)?;
-            return Ok(SirnoLock::current(frost.current_snapshot()?));
-        };
-        Ok(lock)
+        Ok(SirnoLock::from_file_if_exists(&self.lock_path)?.unwrap_or_default())
     }
 
     fn tide(&self, lock: &SirnoLock) -> Result<Tide, CommandError> {
-        let frost = SirnoFrost::open(&self.frost_path)?;
-        let frostline = frost.read_all_entries_at_snapshot(frost.current_snapshot()?)?;
         let mut settings = self.settings.clone();
         settings.render = false;
         settings.witness = None;
@@ -1698,7 +1356,7 @@ impl TideContext {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.lake_path.clone()).into());
         }
         let structural = settings.structural.with_tide_policies_from_entries(report.entries());
-        Ok(Tide::from_entries(&frostline, report.entries(), &structural, &lock.tide.resolved)?)
+        Ok(Tide::from_entries(&[], report.entries(), &structural, &lock.tide.resolved)?)
     }
 }
 
@@ -1847,23 +1505,12 @@ fn symlink_skill_directory(source: &Path, target: &Path) -> std::io::Result<()> 
     std::os::windows::fs::symlink_dir(source, target)
 }
 
-fn frost_version(version: u64) -> Result<Eterator, CommandError> {
-    if version == Eterator::EMPTY.version() {
-        return Err(CommandError::InvalidFrostVersion(version));
-    }
-    Ok(Eterator(version))
-}
-
 pub(crate) fn default_config_path() -> PathBuf {
     PathBuf::from(CONFIG_FILE_NAME)
 }
 
 pub(crate) fn default_lake_path(config_path: &Path) -> PathBuf {
     default_repo_path(config_path, "lake")
-}
-
-pub(crate) fn default_frost_path(config_path: &Path) -> PathBuf {
-    default_repo_path(config_path, "frost")
 }
 
 fn default_repo_path(config_path: &Path, suffix: &str) -> PathBuf {
@@ -1928,31 +1575,6 @@ fn entry_directory_check_settings(
         structural: config.effective_structural_settings(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
-    }
-}
-
-fn status_frost_from_lock(path: String, lock: Option<&SirnoLock>) -> StatusFrost {
-    let Some(frost) = lock.and_then(|lock| lock.frost.as_ref()) else {
-        return StatusFrost {
-            path,
-            state: StatusFrostState::Unlocked,
-            version: None,
-            generation: None,
-            mutable: None,
-        };
-    };
-    let state = if frost.is_checked_out() {
-        StatusFrostState::CheckedOut
-    } else {
-        StatusFrostState::Current
-    };
-    let mutable = if frost.is_checked_out() { frost.is_unsafe_mutable_checkout() } else { true };
-    StatusFrost {
-        path,
-        state,
-        version: Some(frost.version),
-        generation: Some(frost.generation),
-        mutable: Some(mutable),
     }
 }
 

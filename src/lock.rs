@@ -1,4 +1,4 @@
-//! Project-local lock state for frost, upstream lakes, and tide.
+//! Project-local lock state for upstream lakes and tide.
 //!
 //! `Sirno.toml` configures paths and policy.
 //! `Sirno.lock.toml` records generated project state represented by the lake.
@@ -9,7 +9,6 @@ use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use eter::{Eterator, GcGeneration, SnapshotRef};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -29,16 +28,10 @@ const LOCK_FILE_HEADER: &str = "\
 ";
 
 /// Project-local generated state.
-///
-/// Invariant: when `frost` is present,
-/// `frost.generation` and `frost.version` name the `eter` snapshot represented by the lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // sirno:witness:sirno-lock:begin
 pub struct SirnoLock {
-    /// Current lake state relative to frost.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub frost: Option<FrostLock>,
     /// Resolved upstream lake commits.
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub upstreams: UpstreamLockMap,
@@ -52,28 +45,6 @@ pub struct SirnoLock {
 pub type UpstreamLockMap = IndexMap<EntryAtom, UpstreamLock>;
 
 impl SirnoLock {
-    /// Construct a lock for the current editable lake.
-    // sirno:witness:sirno-lock:begin
-    pub fn current(snapshot: SnapshotRef) -> Self {
-        Self {
-            frost: Some(FrostLock::current(snapshot)),
-            upstreams: UpstreamLockMap::new(),
-            tide: TideLock::default(),
-        }
-    }
-    // sirno:witness:sirno-lock:end
-
-    /// Construct a lock for a checked-out frost snapshot.
-    // sirno:witness:sirno-lock:begin
-    pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
-        Self {
-            frost: Some(FrostLock::checked_out(snapshot, mutable)),
-            upstreams: UpstreamLockMap::new(),
-            tide: TideLock::default(),
-        }
-    }
-    // sirno:witness:sirno-lock:end
-
     /// Resolve the lock path next to the config file.
     pub fn path_for_config(config_path: impl AsRef<Path>) -> PathBuf {
         config_path.as_ref().parent().unwrap_or_else(|| Path::new(".")).join(LOCK_FILE_NAME)
@@ -141,12 +112,6 @@ impl SirnoLock {
 
     // sirno:witness:sirno-lock:begin
     fn validate(&self) -> Result<(), LockError> {
-        if let Some(frost) = &self.frost {
-            frost.validate()?;
-        }
-        if self.frost.is_none() && !self.tide.is_empty() {
-            return Err(LockError::TideWithoutFrost);
-        }
         for (domain, upstream) in &self.upstreams {
             upstream.validate(domain)?;
         }
@@ -177,7 +142,7 @@ impl SirnoLock {
 
 impl Default for SirnoLock {
     fn default() -> Self {
-        Self { frost: None, upstreams: UpstreamLockMap::new(), tide: TideLock::default() }
+        Self { upstreams: UpstreamLockMap::new(), tide: TideLock::default() }
     }
 }
 
@@ -275,95 +240,6 @@ impl TideLock {
     }
 }
 
-/// Frost state recorded in `Sirno.lock.toml`.
-///
-/// Invariant: `mutable` is true only for checked-out snapshots created with `--unsafe-mutable`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-// sirno:witness:versioning:begin
-pub struct FrostLock {
-    /// lake status relative to the configured frost path.
-    pub status: FrostLockStatus,
-    /// GC generation for the represented snapshot.
-    pub generation: u64,
-    /// Raw `Eterator` coordinate represented by the lake.
-    pub version: u64,
-    /// Whether a checked-out frozen snapshot was intentionally left writable.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub mutable: bool,
-}
-// sirno:witness:versioning:end
-
-impl FrostLock {
-    /// Construct state for the current editable lake.
-    // sirno:witness:versioning:begin
-    pub fn current(snapshot: SnapshotRef) -> Self {
-        Self {
-            status: FrostLockStatus::Current,
-            generation: snapshot.generation.number(),
-            version: snapshot.version(),
-            mutable: false,
-        }
-    }
-    // sirno:witness:versioning:end
-
-    /// Construct state for a checked-out frost snapshot.
-    // sirno:witness:versioning:begin
-    pub fn checked_out(snapshot: SnapshotRef, mutable: bool) -> Self {
-        Self {
-            status: FrostLockStatus::CheckedOut,
-            generation: snapshot.generation.number(),
-            version: snapshot.version(),
-            mutable,
-        }
-    }
-    // sirno:witness:versioning:end
-
-    /// Return the stored snapshot reference.
-    // sirno:witness:versioning:begin
-    pub fn snapshot_ref(&self) -> SnapshotRef {
-        SnapshotRef::new(GcGeneration(self.generation), Eterator(self.version))
-    }
-    // sirno:witness:versioning:end
-
-    /// Returns true when the lake is a frost checkout.
-    // sirno:witness:versioning:begin
-    pub fn is_checked_out(&self) -> bool {
-        self.status == FrostLockStatus::CheckedOut
-    }
-
-    /// Returns true when the lake is a writable historical checkout.
-    pub fn is_unsafe_mutable_checkout(&self) -> bool {
-        self.is_checked_out() && self.mutable
-    }
-    // sirno:witness:versioning:end
-
-    // sirno:witness:versioning:begin
-    fn validate(&self) -> Result<(), LockError> {
-        if self.status == FrostLockStatus::Current && self.mutable {
-            return Err(LockError::CurrentMutable);
-        }
-        Ok(())
-    }
-    // sirno:witness:versioning:end
-}
-
-/// lake status relative to frost.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-// sirno:witness:versioning:begin
-pub enum FrostLockStatus {
-    /// The lake is the current editable version.
-    Current,
-    /// The lake is a materialized frozen snapshot.
-    CheckedOut,
-}
-// sirno:witness:versioning:end
-
-fn is_false(value: &bool) -> bool {
-    !*value
-}
-
 /// Error raised by Sirno lock operations.
 #[derive(Debug, Error)]
 pub enum LockError {
@@ -388,12 +264,6 @@ pub enum LockError {
     /// The lock file could not be rendered.
     #[error("failed to render lock file")]
     Render(#[source] toml::ser::Error),
-    /// Current lake state must be editable.
-    #[error("current frost state cannot be marked mutable")]
-    CurrentMutable,
-    /// Tide state requires frost state.
-    #[error("tide lock state requires frost state")]
-    TideWithoutFrost,
     /// An upstream Git source is empty.
     #[error("locked upstream `{0}` git source must not be empty")]
     UpstreamGitSource(EntryAtom),
@@ -439,8 +309,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn renders_current_frost_lock() {
-        let lock = SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(7)));
+    fn renders_empty_lock() {
+        let lock = SirnoLock::default();
         let rendered = lock.to_toml().unwrap();
 
         assert_eq!(
@@ -449,10 +319,6 @@ mod tests {
 # This file is generated and managed by Sirno.
 # Do not edit it by hand.
 
-[frost]
-status = \"current\"
-generation = 0
-version = 7
 "
         );
     }
@@ -465,30 +331,9 @@ version = 7
     }
 
     #[test]
-    fn renders_mutable_checkout_lock() {
-        let lock = SirnoLock::checked_out(SnapshotRef::new(GcGeneration(2), Eterator(3)), true);
-        let rendered = lock.to_toml().unwrap();
-
-        assert_eq!(
-            rendered,
-            "\
-# This file is generated and managed by Sirno.
-# Do not edit it by hand.
-
-[frost]
-status = \"checked-out\"
-generation = 2
-version = 3
-mutable = true
-"
-        );
-    }
-
-    #[test]
-    fn renders_upstream_lock_without_frost() {
+    fn renders_upstream_lock() {
         let settings = UpstreamSettings::branch("../core.git", "main");
         let lock = SirnoLock {
-            frost: None,
             upstreams: UpstreamLockMap::from([(
                 EntryAtom::new("core").unwrap(),
                 UpstreamLock::new(&settings, PathBuf::from("docs"), "0123456789abcdef"),
@@ -507,7 +352,7 @@ mutable = true
     }
 
     #[test]
-    fn rejects_mutable_current_lock() {
+    fn rejects_frost_lock_state() {
         let error = toml::from_str::<SirnoLock>(
             r#"
 [frost]
@@ -517,28 +362,37 @@ version = 3
 mutable = true
 "#,
         )
-        .unwrap()
-        .validate()
         .unwrap_err();
 
-        assert!(matches!(error, LockError::CurrentMutable));
+        assert!(error.to_string().contains("unknown field"));
     }
 
     #[test]
     fn lock_write_replaces_existing_file() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(LOCK_FILE_NAME);
-        SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(1)))
-            .write(&path)
-            .unwrap();
+        let settings = UpstreamSettings::branch("../core.git", "main");
+        let first = SirnoLock {
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "1"),
+            )]),
+            tide: TideLock::default(),
+        };
+        first.write(&path).unwrap();
 
-        SirnoLock::current(SnapshotRef::new(GcGeneration::INITIAL, Eterator(2)))
-            .write(&path)
-            .unwrap();
+        let second = SirnoLock {
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "2"),
+            )]),
+            tide: TideLock::default(),
+        };
+        second.write(&path).unwrap();
 
         let rendered = fs::read_to_string(&path).unwrap();
-        assert!(rendered.contains("version = 2"));
-        assert!(!rendered.contains("version = 1"));
+        assert!(rendered.contains("commit = \"2\""));
+        assert!(!rendered.contains("commit = \"1\""));
         let paths = fs::read_dir(temp.path()).unwrap().count();
         assert_eq!(paths, 1);
     }

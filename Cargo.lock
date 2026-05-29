@@ -491,20 +491,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eter"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40daa6f3c6d1ea2c03c70cf69adb6b2869e8402d9bcb28a5a003c2c34f1eb11b"
-dependencies = [
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror 2.0.18",
- "toml",
- "tracing",
-]
-
-[[package]]
 name = "euclid"
 version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1686,7 +1672,6 @@ dependencies = [
  "clap",
  "clap_complete",
  "comfy-table",
- "eter",
  "glob",
  "indexmap",
  "libc",

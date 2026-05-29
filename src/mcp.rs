@@ -26,9 +26,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathsRequest, FrostCheckoutRequest, LakeInitRequest, PathSelection, QueryColumn,
-    QueryColumnSelection, QueryColumns, QueryRequest, RgRequest, StructuralFieldState,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
+    EntryPathsRequest, LakeInitRequest, PathSelection, QueryColumn, QueryColumnSelection,
+    QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
+    StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
     TideSelectionRequest, TideStatusMode, UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
 use crate::{
@@ -248,7 +248,7 @@ impl SirnoMcpServer {
         )
     }
 
-    /// Freeze one current frost entry and make its lake file read-only.
+    /// Freeze one current lake entry and make its file read-only.
     #[tool(name = "sirno_entry_freeze")]
     fn entry_freeze(
         &self, Parameters(params): Parameters<EntryAddressOnlyParams>,
@@ -265,7 +265,7 @@ impl SirnoMcpServer {
     /// Show filesystem paths related to one entry.
     #[tool(name = "sirno_entry_path")]
     fn entry_paths(&self, Parameters(params): Parameters<EntryPathsParams>) -> McpToolResult {
-        let selection = path_selection(params.entry, params.artifact, params.frost);
+        let selection = path_selection(params.entry, params.artifact);
         let request = EntryPathsRequest::new(
             entry_address(params.id)?,
             selection,
@@ -423,40 +423,6 @@ impl SirnoMcpServer {
         result(self.context.upstream_status())
     }
 
-    /// Configure frost.
-    #[tool(name = "sirno_frost_init")]
-    fn frost_init(&self, Parameters(params): Parameters<FrostInitParams>) -> McpToolResult {
-        result(self.context.frost_init(params.frost))
-    }
-
-    /// Move the configured frost path.
-    #[tool(name = "sirno_frost_move")]
-    fn frost_move(&self, Parameters(params): Parameters<FrostMoveParams>) -> McpToolResult {
-        result(self.context.frost_move(params.frost))
-    }
-
-    /// Freeze the current lake.
-    #[tool(name = "sirno_frost_commit")]
-    fn frost_commit(&self, Parameters(params): Parameters<FrostCommitParams>) -> McpToolResult {
-        result(self.context.frost_commit(params.unsafe_resolve_all))
-    }
-
-    /// Check out frost entries into the lake.
-    #[tool(name = "sirno_frost_checkout")]
-    fn frost_checkout(&self, Parameters(params): Parameters<FrostCheckoutParams>) -> McpToolResult {
-        result(self.context.frost_checkout(FrostCheckoutRequest {
-            version: params.version,
-            latest: params.latest,
-            unsafe_mutable: params.unsafe_mutable,
-        }))
-    }
-
-    /// Check out the latest frost version as the mutable current lake.
-    #[tool(name = "sirno_frost_defrost")]
-    fn frost_defrost(&self) -> McpToolResult {
-        result(self.context.frost_defrost())
-    }
-
     // sirno:witness:tide-commands:begin
     /// Show tide review status.
     #[tool(name = "sirno_tide_status")]
@@ -510,17 +476,10 @@ fn entry_atoms(raw: Vec<String>) -> Result<Vec<EntryAtom>, String> {
     raw.into_iter().map(entry_atom).collect()
 }
 
-fn path_selection(
-    entry: Option<bool>, artifact: Option<bool>, frost: Option<bool>,
-) -> PathSelection {
+fn path_selection(entry: Option<bool>, artifact: Option<bool>) -> PathSelection {
     let entry = entry.unwrap_or(false);
     let artifact = artifact.unwrap_or(false);
-    let frost = frost.unwrap_or(false);
-    if !entry && !artifact && !frost {
-        PathSelection::all()
-    } else {
-        PathSelection::new(entry, artifact, frost)
-    }
+    if !entry && !artifact { PathSelection::all() } else { PathSelection::new(entry, artifact) }
 }
 
 // sirno:witness:mcp-interface:begin
@@ -596,7 +555,6 @@ struct EntryPathsParams {
     id: String,
     entry: Option<bool>,
     artifact: Option<bool>,
-    frost: Option<bool>,
     absolute: Option<bool>,
 }
 
@@ -816,31 +774,6 @@ struct LakeRenderParams {
     dry: bool,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct FrostInitParams {
-    frost: Option<PathBuf>,
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct FrostMoveParams {
-    frost: PathBuf,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct FrostCommitParams {
-    #[serde(default)]
-    unsafe_resolve_all: bool,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct FrostCheckoutParams {
-    version: Option<u64>,
-    #[serde(default)]
-    latest: bool,
-    #[serde(default)]
-    unsafe_mutable: bool,
-}
-
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct UpstreamAddParams {
     /// Glacier domain used as the crystallized entry-address prefix.
@@ -1041,11 +974,6 @@ mod tests {
         "sirno_entry_rename",
         "sirno_entry_rg",
         "sirno_entry_witness",
-        "sirno_frost_checkout",
-        "sirno_frost_commit",
-        "sirno_frost_defrost",
-        "sirno_frost_init",
-        "sirno_frost_move",
         "sirno_lake_check",
         "sirno_lake_init",
         "sirno_lake_move",
@@ -1134,7 +1062,7 @@ Body.
                     StructuralEdgeSettings::default(),
                 ),
             )]),
-            ..SirnoConfig::new("docs").with_frost("sirno-frost")
+            ..SirnoConfig::new("docs")
         };
         config.write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
@@ -1178,7 +1106,6 @@ Body.
 ",
         )
         .unwrap();
-        SurfaceContext::new(&config_path).frost_commit(true).unwrap();
         fs::write(
             docs.join("alpha.md"),
             "\
@@ -1469,7 +1396,6 @@ Changed body.
         assert_eq!(status["ok"], true);
         assert_eq!(status["entry_count"], 1);
         assert_eq!(status["check_policy"]["mode"], "review");
-        assert_eq!(status["commit"]["state"], "unavailable");
         assert!(status.get("frost").is_none());
 
         let cwd = client

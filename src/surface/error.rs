@@ -1,97 +1,19 @@
 //! Error types for command execution and presentation.
 
 use std::ffi::OsString;
-use std::fmt;
 use std::path::PathBuf;
 
 use thiserror::Error;
 
 use crate::{
     ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError, EntryAtomError,
-    EntryDirectoryError, EntryParseError, FrostError, GeneratedLinkError, LockError, TideError,
-    TutorialSettings, UpstreamError, WitnessError,
+    EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, TideError, UpstreamError,
+    WitnessError,
 };
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct OpenTideTutorial {
-    pub(crate) frost_commit_tide: bool,
-    pub(crate) frost_bootstrap_tide: bool,
-    pub(crate) bootstrap: bool,
-}
-
-impl OpenTideTutorial {
-    pub(crate) fn new(settings: Option<TutorialSettings>, bootstrap: bool) -> Self {
-        let Some(settings) = settings else {
-            return Self { frost_commit_tide: false, frost_bootstrap_tide: false, bootstrap };
-        };
-        Self {
-            frost_commit_tide: settings.frost_commit_tide,
-            frost_bootstrap_tide: settings.frost_bootstrap_tide,
-            bootstrap,
-        }
-    }
-}
-
-impl fmt::Display for OpenTideTutorial {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if !self.frost_commit_tide {
-            return Ok(());
-        }
-
-        writeln!(formatter)?;
-        writeln!(formatter)?;
-        writeln!(formatter, "Tutorial:")?;
-        writeln!(
-            formatter,
-            "A tide is the review worklist for differences between the waterline and frostline.",
-        )?;
-        if self.bootstrap && self.frost_bootstrap_tide {
-            writeln!(
-                formatter,
-                "This frost path is still at empty version 0, so the first commit compares",
-            )?;
-            writeln!(formatter, "the full lake to an empty frostline.")?;
-        }
-        writeln!(formatter, "Inspect the work with `sirno tide status`.")?;
-        writeln!(formatter, "Resolve reviewed work with `sirno resolve ...`,",)?;
-        writeln!(
-            formatter,
-            "or choose the current lake as the baseline with `sirno commit --unsafe-resolve-all`.",
-        )?;
-        write!(formatter, "Remove `[tutorial]` from Sirno.toml, or set tutorial knobs to false,",)?;
-        write!(formatter, " to silence tutorial text.")
-    }
-}
 
 /// Error raised while running the CLI.
 #[derive(Debug, Error)]
 pub enum CommandError {
-    /// Sirno Frost has already been configured at another path.
-    #[error("frost is already configured at {0}")]
-    FrostAlreadyConfigured(PathBuf),
-    /// Sirno Frost is required for a frost command but is not configured.
-    #[error("frost is not configured; run `sirno frost init` first")]
-    FrostNotConfigured,
-    /// Immutable frost checkouts cannot be committed.
-    #[error("frost version {0} is checked out immutably; use checkout --unsafe-mutable first")]
-    ImmutableFrostCheckout(u64),
-    /// Frost commit requires all tide workitems to be resolved.
-    #[error("tide has {count} open workitems; run `sirno tide status`{tutorial}")]
-    OpenTide {
-        /// Number of open tide workitems.
-        count: usize,
-        /// Optional tutorial text controlled by Sirno.toml.
-        tutorial: OpenTideTutorial,
-    },
-    /// Empty frost cannot be checked out as a version.
-    #[error("frost version {0} is not a check-outable snapshot")]
-    InvalidFrostVersion(u64),
-    /// Frost checkout needs one target selector.
-    #[error("frost checkout requires `latest` or `version`")]
-    MissingFrostCheckoutTarget,
-    /// Frost garbage collection must preserve the current editable frostline.
-    #[error("frost gc requires the current mutable lake; version {0} is checked out")]
-    FrostGcRequiresCurrentLake(u64),
     /// An artifact source path did not have a file name for the default artifact path.
     #[error("artifact source has no file name: {0}")]
     ArtifactSourceHasNoFileName(PathBuf),
@@ -174,24 +96,12 @@ pub enum CommandError {
     /// Witness lookup requires an existing entry address.
     #[error("entry `{0}` does not exist")]
     MissingWitnessEntry(EntryAddress),
-    /// Lake path override does not apply to checking a frost path directly.
-    #[error("`--lake-path` cannot be used with `check --frost-path`")]
-    LakePathWithFrostPath,
-    /// Frost path override applies only to direct frost checks.
-    #[error("`--frost-path` only applies to `sirno check`")]
-    FrostPathRequiresCheck,
     /// The MCP server selects its project only through the config path.
     #[error("`--lake-path` cannot be used with `sirno util mcp`; configure the lake in Sirno.toml")]
     McpRejectsLakePath,
-    /// The MCP server selects its project only through the config path.
-    #[error("`--frost-path` cannot be used with `sirno util mcp`; use `--config` only")]
-    McpRejectsFrostPath,
     /// The config utility only inspects the config file.
     #[error("`--lake-path` cannot be used with `sirno util config`; use `--config` only")]
     ConfigRejectsLakePath,
-    /// The config utility only inspects the config file.
-    #[error("`--frost-path` cannot be used with `sirno util config`; use `--config` only")]
-    ConfigRejectsFrostPath,
     /// The terminal UI failed.
     #[error("terminal UI failed")]
     TerminalUi(#[source] std::io::Error),
@@ -319,9 +229,6 @@ pub enum CommandError {
     /// Lock-backed command failed.
     #[error(transparent)]
     Lock(#[from] LockError),
-    /// Sirno-Frost-backed command failed.
-    #[error(transparent)]
-    Frost(#[from] FrostError),
     /// Witness lookup failed.
     #[error(transparent)]
     Witness(#[from] WitnessError),

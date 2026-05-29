@@ -11,7 +11,6 @@ pub mod config;
 pub mod surface;
 pub mod entry;
 pub mod freeze;
-pub mod frost;
 pub mod identifier;
 pub mod lake;
 pub mod lock;
@@ -23,8 +22,6 @@ pub mod tide;
 pub mod upstream;
 pub mod witness;
 
-pub use eter::{Eterator, GcGeneration, SnapshotRef};
-
 pub use crate::artifact::{
     ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath, EntryArtifactPathError,
 };
@@ -32,8 +29,8 @@ pub use crate::check::{
     CheckDiagnostic, CheckDiagnosticKind, CheckMode, CheckReport, CheckSeverity,
 };
 pub use crate::config::{
-    CONFIG_FILE_NAME, CheckSettings, ConfigError, FrostSettings, LakeSettings, RenderSettings,
-    RepoMember, RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
+    CONFIG_FILE_NAME, CheckSettings, ConfigError, LakeSettings, RenderSettings, RepoMember,
+    RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
@@ -41,7 +38,6 @@ pub use crate::entry::{
     EntryStructuralFields, FROZEN_FIELD, FrozenMarker, META_FIELD, NAME_FIELD,
 };
 pub use crate::freeze::{FreezeError, FrozenPath};
-pub use crate::frost::{FrostError, FrostGcReport, SirnoFrost};
 pub use crate::identifier::{EntryAddress, EntryAddressError, EntryAtom, EntryAtomError};
 pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
@@ -49,8 +45,7 @@ pub use crate::lake::{
     GlacierReport,
 };
 pub use crate::lock::{
-    FrostLock, FrostLockStatus, LOCK_FILE_NAME, LockError, SirnoLock, TideLock, UpstreamLock,
-    UpstreamLockMap,
+    LOCK_FILE_NAME, LockError, SirnoLock, TideLock, UpstreamLock, UpstreamLockMap,
 };
 pub use crate::query::{EntryQuery, EntryStructuralMatcher, EntryTextTerm, VagueEntryQuery};
 pub use crate::render::{

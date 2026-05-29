@@ -11,8 +11,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
     ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
-    QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord,
-    StatusCommitBlocker, StatusCommitState, StatusFrost, StatusFrostState, StatusResult,
+    QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
 };
 use crate::surface::error::CommandError;
 use crate::{
@@ -232,6 +231,7 @@ fn upstream_status_state_label(state: UpstreamStatusState) -> &'static str {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_status_result(result: &StatusResult) -> String {
     format_status_result_with_style(result, OutputStyle::Plain)
 }
@@ -240,14 +240,6 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
     let mut output = String::new();
     output.push_str(&format!("config: {}\n", result.config_path));
     output.push_str(&format!("lake: {} ({} entries)\n", result.lake_path, result.entry_count));
-    if let Some(frost) = &result.frost {
-        output.push_str(&format!("frost: {}\n", status_frost_label(frost, style)));
-    } else {
-        output.push_str(&format!(
-            "frost: {}\n",
-            style_text("(not configured)", SemanticStyle::Muted, style)
-        ));
-    }
     output.push_str(&format!(
         "structure: {} configured {}\n",
         result.structural_fields.len(),
@@ -287,65 +279,7 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
             ));
         }
     }
-    output.push_str(&format!("commit: {}\n", status_commit_label(result, style)));
     output
-}
-
-fn status_frost_label(frost: &StatusFrost, style: OutputStyle) -> String {
-    match frost.state {
-        | StatusFrostState::Unlocked => {
-            format!("{} ({})", frost.path, style_text("unlocked", SemanticStyle::Muted, style))
-        }
-        | StatusFrostState::Current => {
-            let version = frost.version.map(|version| format!("v{version}")).unwrap_or_default();
-            format!(
-                "{} ({})",
-                frost.path,
-                style_text(&format!("current {version}"), SemanticStyle::Success, style)
-            )
-        }
-        | StatusFrostState::CheckedOut => {
-            let version = frost.version.map(|version| format!("v{version}")).unwrap_or_default();
-            let mutable =
-                if frost.mutable.unwrap_or(false) { ", unsafe mutable" } else { ", immutable" };
-            format!(
-                "{} ({})",
-                frost.path,
-                style_text(
-                    &format!("checked-out {version}{mutable}"),
-                    SemanticStyle::Warning,
-                    style,
-                )
-            )
-        }
-    }
-}
-
-fn status_commit_label(result: &StatusResult, style: OutputStyle) -> String {
-    match result.commit.state {
-        | StatusCommitState::Ready => style_text("ready", SemanticStyle::Success, style),
-        | StatusCommitState::Unavailable => {
-            style_text("unavailable; frost not configured", SemanticStyle::Muted, style)
-        }
-        | StatusCommitState::Blocked => {
-            let detail = result
-                .commit
-                .blockers
-                .iter()
-                .map(commit_blocker_label)
-                .collect::<Vec<_>>()
-                .join("; ");
-            style_text(&format!("blocked; {detail}"), SemanticStyle::Warning, style)
-        }
-    }
-}
-
-fn commit_blocker_label(blocker: &StatusCommitBlocker) -> &'static str {
-    match blocker {
-        | StatusCommitBlocker::LakeCheck => "fix lake check",
-        | StatusCommitBlocker::Tide => "run `sirno tide status`",
-        | StatusCommitBlocker::ImmutableCheckout => "checkout is immutable",
-    }
 }
 
 fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
@@ -357,6 +291,7 @@ pub(crate) fn print_lake_check_result(result: &LakeCheckResult) {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_lake_check_result(result: &LakeCheckResult) -> String {
     format_lake_check_result_with_style(result, OutputStyle::Plain)
 }
@@ -388,6 +323,7 @@ pub(crate) fn print_render_result(result: &RenderResult) {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_render_result(result: &RenderResult) -> String {
     format_render_result_with_style(result, OutputStyle::Plain)
 }
@@ -408,6 +344,7 @@ pub(crate) fn print_config_comment_result(result: &ConfigCommentResult) {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_config_comment_result(result: &ConfigCommentResult) -> String {
     format_config_comment_result_with_style(result, OutputStyle::Plain)
 }
@@ -528,6 +465,7 @@ pub(crate) fn format_path_table(records: &[PathRecord]) -> String {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_skill_wrapper_table(records: &[SkillWrapperRecord]) -> String {
     format_skill_wrapper_table_with_style(records, OutputStyle::Plain)
 }
@@ -630,6 +568,7 @@ fn format_human_table_with_style<'a>(
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn format_human_table_with_width(
     headers: Vec<String>, rows: Vec<Vec<String>>, width: Option<u16>,
 ) -> String {
@@ -805,21 +744,6 @@ fn entry_directory_report_summary(report: &EntryDirectoryReport, style: OutputSt
 
 pub(crate) fn print_ok_path(path: &Path) {
     anstream::println!("{}", format_ok_line(&path.display().to_string(), OutputStyle::Styled));
-}
-
-pub(crate) fn print_check_diagnostic(severity: &str, message: &str) {
-    let style = OutputStyle::Styled;
-    anstream::println!("{}: {message}", styled_diagnostic_severity(severity, style));
-}
-
-pub(crate) fn print_check_summary(has_errors: bool, root: &Path) {
-    let style = OutputStyle::Styled;
-    let label = if has_errors {
-        style_text("failed", SemanticStyle::Error, style)
-    } else {
-        style_text("warnings", SemanticStyle::Warning, style)
-    };
-    anstream::println!("check: {label} in {}", root.display());
 }
 
 fn format_ok_line(location: &str, style: OutputStyle) -> String {

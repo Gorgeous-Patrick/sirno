@@ -8,7 +8,6 @@ use std::fmt::{Display, Formatter};
 use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
 
-use eter::filesystem::{FilesystemEntryId, FilesystemError};
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use thiserror::Error;
@@ -16,8 +15,6 @@ use thiserror::Error;
 // sirno:witness:entry:begin
 /// Maximum byte length for an entry atom before the `.md` extension is added.
 pub const ENTRY_ATOM_MAX_BYTES: usize = 252;
-
-const RESERVED_STORAGE_ENTRY_ATOM: &str = "Eter.lock.toml";
 
 /// Dot-free segment of one Sirno entry address.
 ///
@@ -42,11 +39,6 @@ impl EntryAtom {
         &self.0
     }
 
-    /// Convert this atom into the filesystem-safe identifier used by `eter`.
-    pub fn to_filesystem_id(&self) -> Result<FilesystemEntryId, FilesystemError> {
-        FilesystemEntryId::new(self.as_str())
-    }
-
     // sirno:witness:entry:begin
     fn validate(raw: &str) -> Result<(), EntryAtomError> {
         if raw.is_empty() {
@@ -68,9 +60,7 @@ impl EntryAtom {
             return Err(EntryAtomError::ReservedDot(raw.to_owned()));
         }
 
-        if raw.eq_ignore_ascii_case(RESERVED_STORAGE_ENTRY_ATOM)
-            || windows_device_name(raw).is_some()
-        {
+        if windows_device_name(raw).is_some() {
             return Err(EntryAtomError::ReservedFilename(raw.to_owned()));
         }
 
@@ -156,14 +146,6 @@ impl TryFrom<&str> for EntryAtom {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::new(value)
-    }
-}
-
-impl TryFrom<FilesystemEntryId> for EntryAtom {
-    type Error = EntryAtomError;
-
-    fn try_from(value: FilesystemEntryId) -> Result<Self, Self::Error> {
-        Self::new(value.as_str())
     }
 }
 
@@ -281,11 +263,6 @@ impl EntryAddress {
     // sirno:witness:lakelet:end
     // sirno:witness:entry-address-resolution:end
 
-    /// Convert this address into the filesystem-safe identifier used by `eter`.
-    pub fn to_filesystem_id(&self) -> Result<FilesystemEntryId, FilesystemError> {
-        FilesystemEntryId::new(self.as_str())
-    }
-
     fn from_segments(segments: Vec<EntryAtom>) -> Self {
         let path = segments.iter().map(EntryAtom::as_str).collect::<Vec<_>>().join(".");
         Self(SmolStr::new(path))
@@ -353,14 +330,6 @@ impl TryFrom<&str> for EntryAddress {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::new(value)
-    }
-}
-
-impl TryFrom<FilesystemEntryId> for EntryAddress {
-    type Error = EntryAddressError;
-
-    fn try_from(value: FilesystemEntryId) -> Result<Self, Self::Error> {
-        Self::new(value.as_str())
     }
 }
 

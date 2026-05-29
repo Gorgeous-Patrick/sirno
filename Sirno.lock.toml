@@ -1,11 +1,6 @@
 # This file is generated and managed by Sirno.
 # Do not edit it by hand.
 
-[frost]
-status = "current"
-generation = 1
-version = 2
-
 [[tide.resolved]]
 ripple = "actualization-discipline"
 field = "belongs"

@@ -2,7 +2,7 @@
 //!
 //! A repository is Sirno-managed when it contains `Sirno.toml`.
 //! The config names the Sirno Lake.
-//! It may also opt into repository witness members and Sirno Frost.
+//! It may also opt into repository witness members.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -165,23 +165,6 @@ impl LakeSettings {
             }
         }
         Ok(())
-    }
-}
-
-/// Configured Sirno Frost settings.
-///
-/// Invariant: `path` points to the private `eter` storage used by Sirno Frost.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct FrostSettings {
-    /// Configured Sirno Frost path.
-    pub path: PathBuf,
-}
-
-impl FrostSettings {
-    /// Construct Sirno Frost settings from a root path.
-    pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self { path: path.into() }
     }
 }
 
@@ -469,7 +452,6 @@ impl WitnessSettings {
 /// Sirno project configuration.
 ///
 /// `lake.path` points to the configured lake path.
-/// `frost.path`, when present, points to the configured frost path.
 /// `lake.ignore` contains paths relative to the lake root that Sirno skips.
 /// `repo.members`, when present, contains relative member paths or globs for witness lookup.
 /// `witness` controls the delimiter syntax for repository witness blocks.
@@ -484,9 +466,6 @@ impl WitnessSettings {
 pub struct SirnoConfig {
     /// Configured Sirno Lake settings.
     pub lake: LakeSettings,
-    /// Configured frost settings.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub frost: Option<FrostSettings>,
     /// Configured upstream lakes.
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub upstreams: UpstreamSettingsMap,
@@ -516,7 +495,6 @@ impl SirnoConfig {
     pub fn new(lake: impl Into<PathBuf>) -> Self {
         Self {
             lake: LakeSettings::new(lake),
-            frost: None,
             upstreams: UpstreamSettingsMap::new(),
             repo: None,
             witness: WitnessSettings::standard(),
@@ -531,12 +509,6 @@ impl SirnoConfig {
     /// Return this config with a configured Sirno Lake path.
     pub fn with_lake(mut self, lake: impl Into<PathBuf>) -> Self {
         self.lake.path = lake.into();
-        self
-    }
-
-    /// Return this config with a configured frost path.
-    pub fn with_frost(mut self, frost: impl Into<PathBuf>) -> Self {
-        self.frost = Some(FrostSettings::new(frost));
         self
     }
 
@@ -656,18 +628,11 @@ impl SirnoConfig {
         Self::resolve_config_relative(config_path.as_ref(), &self.lake.path)
     }
 
-    /// Resolve the frost path relative to a config file path when configured.
-    pub fn resolve_frost(&self, config_path: impl AsRef<Path>) -> Option<PathBuf> {
-        self.frost
-            .as_ref()
-            .map(|frost| Self::resolve_config_relative(config_path.as_ref(), &frost.path))
-    }
     // sirno:witness:project-config:end
 
     /// Validate this config as it would be used from a specific config file path.
     // sirno:witness:project-config:begin
-    pub fn validate_for_file(&self, config_path: impl AsRef<Path>) -> Result<(), ConfigError> {
-        let config_path = config_path.as_ref();
+    pub fn validate_for_file(&self, _config_path: impl AsRef<Path>) -> Result<(), ConfigError> {
         self.lake.validate()?;
         if let Some(repo) = &self.repo {
             repo.validate()?;
@@ -678,13 +643,6 @@ impl SirnoConfig {
         self.validate_structural_fields()?;
         self.validate_render_settings()?;
         self.witness.validate()?;
-        if self.frost.is_some() {
-            let lake = self.resolve_lake(config_path);
-            let frost = self.resolve_frost(config_path).expect("frost path exists after is_some");
-            if lake == frost || frost.starts_with(&lake) || lake.starts_with(&frost) {
-                return Err(ConfigError::FrostLakePath { lake, frost });
-            }
-        }
         Ok(())
     }
 
@@ -768,14 +726,6 @@ impl ConfigRenderer {
             )?;
         }
         // sirno:witness:project-config-comments:end
-
-        if let Some(frost) = &config.frost {
-            self.out.push('\n');
-            self.push_table("frost");
-            // sirno:witness:project-config-comments:begin
-            self.push_field("path", &frost.path, "frost path, kept outside the lake.")?;
-            // sirno:witness:project-config-comments:end
-        }
 
         if !config.upstreams.is_empty() {
             self.out.push('\n');
@@ -1082,14 +1032,6 @@ pub enum ConfigError {
         /// Zero-based delimiter pair index.
         index: usize,
     },
-    /// The frost path overlaps the lake path.
-    #[error("frost path must be separate from lake path: lake={lake} frost={frost}")]
-    FrostLakePath {
-        /// Resolved lake path.
-        lake: PathBuf,
-        /// Resolved frost path.
-        frost: PathBuf,
-    },
     /// An upstream Git source is empty.
     #[error("upstream `{0}` git source must not be empty")]
     UpstreamGitSource(EntryAtom),
@@ -1166,7 +1108,6 @@ path = "docs"
         );
 
         assert_eq!(config.lake.path, PathBuf::from("docs"));
-        assert_eq!(config.frost, None);
         assert!(config.upstreams.is_empty());
         assert!(config.lake.ignore.is_empty());
         assert_eq!(config.repo, None);
@@ -1180,8 +1121,9 @@ path = "docs"
     }
 
     #[test]
-    fn parses_frost_settings() {
-        let config = parse_config(
+    fn rejects_frost_settings() {
+        let error = SirnoConfig::from_source(
+            Path::new("Sirno.toml"),
             r#"
 [lake]
 path = "docs"
@@ -1189,9 +1131,10 @@ path = "docs"
 [frost]
 path = "sirno-frost"
 "#,
-        );
+        )
+        .unwrap_err();
 
-        assert_eq!(config.frost, Some(FrostSettings { path: PathBuf::from("sirno-frost") }));
+        assert!(error.to_string().contains("unknown field"));
     }
 
     #[test]
@@ -1590,11 +1533,6 @@ path = "docs"
         let config_path = Path::new("/tmp/project/Sirno.toml");
 
         assert_eq!(config.resolve_lake(config_path), PathBuf::from("/tmp/project/docs"));
-        assert_eq!(config.resolve_frost(config_path), None);
-        assert_eq!(
-            config.with_frost("sirno-frost").resolve_frost(config_path),
-            Some(PathBuf::from("/tmp/project/sirno-frost"))
-        );
     }
 
     #[test]
@@ -1891,7 +1829,6 @@ delimiters = []
                 path: PathBuf::from("docs"),
                 ignore: vec![PathBuf::from(".obsidian")],
             },
-            frost: Some(FrostSettings::new("sirno-frost")),
             upstreams,
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
@@ -1935,7 +1872,7 @@ delimiters = []
         assert_eq!(read, config);
         assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Paths in lake that Sirno skips"));
-        assert!(source.contains("# frost path"));
+        assert!(!source.contains("[frost]"));
         assert!(source.contains("[upstreams.core]"));
         assert!(source.contains(
             "# Git-backed upstream lake crystallized into a glacier under this entry domain."
@@ -1989,7 +1926,6 @@ delimiters = []
         assert!(source.contains("# Generated-footer structural link render policy."));
         assert!(source.contains("# Each key names a configured structural relation."));
         assert!(source.contains("# Values are direction lists: to, from, and clique."));
-        assert_before(&source, "[frost]", "[upstreams.core]");
         assert_before(&source, "[upstreams.core]", "[repo]");
         assert_before(&source, "[tutorial]", "[structural]");
         assert_before(&source, "[structural.parent]", "[render.structural]");
@@ -2025,7 +1961,7 @@ delimiters = []
     }
 
     #[test]
-    fn rejects_frost_path_inside_lake() {
+    fn rejects_frost_table() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
         fs::write(
@@ -2044,6 +1980,6 @@ path = "docs/frost"
 
         let error = SirnoConfig::from_file(&path).unwrap_err();
 
-        assert!(matches!(error, ConfigError::FrostLakePath { .. }));
+        assert!(error.to_string().contains("unknown field"));
     }
 }

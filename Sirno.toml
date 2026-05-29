@@ -4,10 +4,6 @@ path = "sirno-lake"
 # Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.
 ignore = [".obsidian"]
 
-[frost]
-# frost path, kept outside the lake.
-path = "sirno-frost"
-
 [repo]
 # Repository files, directories, or globs scanned for witness blocks.
 members = ["src", "README.md"]
