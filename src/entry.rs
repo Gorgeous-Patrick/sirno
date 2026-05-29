@@ -20,7 +20,7 @@ pub const META_FIELD: &str = "meta";
 pub const FROZEN_FIELD: &str = "frozen";
 pub const META_TYPE_FIELD: &str = "meta.type";
 pub const META_RIPPLE_LAKE_FIELD: &str = "meta.ripple.lake";
-pub const META_RIPPLE_FROST_FIELD: &str = "meta.ripple.frost";
+pub const META_RIPPLE_ANCHOR_FIELD: &str = "meta.ripple.anchor";
 pub const STRUCTURAL_META_TYPE: &str = "structural";
 pub const INTRINSIC_META_TYPE: &str = "intrinsic";
 
@@ -435,7 +435,7 @@ impl FrozenMarker {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FrozenReason {
-    /// The entry matches the current frost snapshot.
+    /// The entry matches the accepted anchor.
     Reviewed,
     /// The entry is owned by crystallization.
     Managed,
@@ -672,7 +672,7 @@ fn parse_flat_structural_tide_field(
         field.strip_prefix("meta.").expect("flat structural tide field has meta prefix");
     let parts = meta_field.split('.').collect::<Vec<_>>();
     match parts.as_slice() {
-        | ["ripple", line @ ("lake" | "frost")] => {
+        | ["ripple", line @ ("lake" | "anchor")] => {
             if entry_type != Some(EntryMetaType::Structural) {
                 return Err(EntryParseError::StructuralTideWithoutType(field.to_owned()));
             }
@@ -724,7 +724,7 @@ fn set_structural_tide_setting(
     };
     match line {
         | "lake" => ripple.lake = enabled,
-        | "frost" => ripple.frost = enabled,
+        | "anchor" => ripple.anchor = enabled,
         | _ => unreachable!("line was parsed before setting tide value"),
     }
 }
@@ -837,10 +837,10 @@ fn render_flat_structural_tide_settings(out: &mut String, settings: &StructuralT
     );
     render_flat_structural_tide_line(
         out,
-        "frost",
-        settings.to.frost,
-        settings.from.frost,
-        settings.clique.frost,
+        "anchor",
+        settings.to.anchor,
+        settings.from.anchor,
+        settings.clique.anchor,
     );
 }
 
@@ -1260,7 +1260,7 @@ name: Belongs
 desc: A structural relation.
 meta.type: \"structural\"
 meta.ripple.lake: [\"to\", \"from\", \"clique\"]
-meta.ripple.frost: [\"from\"]
+meta.ripple.anchor: [\"from\"]
 ---
 
 Body.
@@ -1291,7 +1291,7 @@ Body.
 
         assert!(
             rendered.contains(
-                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.frost: []\n"
+                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.anchor: []\n"
             )
         );
         assert_eq!(reparsed.metadata.meta.tide, Some(StructuralTideSettings::default()));
@@ -1361,7 +1361,7 @@ Body.
         assert!(rendered.contains(
             "\
 meta.ripple.lake: [\"to\", \"from\", \"clique\"]
-meta.ripple.frost: [\"from\"]
+meta.ripple.anchor: [\"from\"]
 "
         ));
     }

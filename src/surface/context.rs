@@ -1468,13 +1468,14 @@ impl TideContext {
         let report = self.checked_report(CheckMode::Edit)?;
         let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
         let anchor = AnchorFile::from_file_if_exists(&self.anchor_path)?;
-        let anchorline = anchor.as_ref().map(anchor_snapshots).transpose()?.unwrap_or_default();
+        let anchor_snapshots =
+            anchor.as_ref().map(anchor_snapshots).transpose()?.unwrap_or_default();
         let waterline = report
             .entries()
             .iter()
             .map(TideEntrySnapshot::from_entry)
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Tide::from_snapshots(&anchorline, &waterline, &structural, &lock.tide.resolved)?)
+        Ok(Tide::from_snapshots(&anchor_snapshots, &waterline, &structural, &lock.tide.resolved)?)
     }
 }
 

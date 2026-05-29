@@ -160,7 +160,7 @@ impl<'de> Deserialize<'de> for TideResolution {
 pub struct TideStatus {
     /// Full workitem tuple.
     pub workitem: TideWorkitem,
-    /// Waterline or anchorline sources that produced this workitem.
+    /// Waterline or Anchor sources that produced this workitem.
     pub sources: BTreeSet<TideSource>,
     /// Fingerprint of the ripple delta this status reviews.
     pub fingerprint: String,
@@ -207,20 +207,20 @@ impl TideEntrySnapshot {
 impl Tide {
     /// Derive tide state from baseline entries, waterline entries, and persisted resolutions.
     pub fn from_entries(
-        anchorline: &[Entry], waterline: &[Entry], settings: &StructuralSettings,
+        anchor: &[Entry], waterline: &[Entry], settings: &StructuralSettings,
         resolutions: &[TideResolution],
     ) -> Result<Self, TideError> {
-        let anchorline = snapshots_from_entries(anchorline)?;
+        let anchor = snapshots_from_entries(anchor)?;
         let waterline = snapshots_from_entries(waterline)?;
-        Self::from_snapshots(&anchorline, &waterline, settings, resolutions)
+        Self::from_snapshots(&anchor, &waterline, settings, resolutions)
     }
 
     /// Derive tide state from compact baseline and waterline snapshots.
     pub fn from_snapshots(
-        anchorline: &[TideEntrySnapshot], waterline: &[TideEntrySnapshot],
+        anchor: &[TideEntrySnapshot], waterline: &[TideEntrySnapshot],
         settings: &StructuralSettings, resolutions: &[TideResolution],
     ) -> Result<Self, TideError> {
-        let anchor_by_id = snapshots_by_id(anchorline);
+        let anchor_by_id = snapshots_by_id(anchor);
         let water_by_id = snapshots_by_id(waterline);
         let mut ripple_ids = BTreeSet::new();
 
@@ -232,7 +232,7 @@ impl Tide {
             }
         }
 
-        let anchor_entries = snapshot_entries(anchorline);
+        let anchor_entries = snapshot_entries(anchor);
         let water_entries = snapshot_entries(waterline);
         let anchor_index = StructuralEdgeIndex::from_entries(&anchor_entries);
         let water_index = StructuralEdgeIndex::from_entries(&water_entries);
@@ -258,7 +258,7 @@ impl Tide {
                             water_index.edge_targets(field, direction, &snapshot.entry),
                         )?;
                     }
-                    if edge.ripple.frost
+                    if edge.ripple.anchor
                         && let Some(snapshot) = anchor_by_id.get(ripple)
                     {
                         insert_workitems(
@@ -410,10 +410,10 @@ fn insert_workitems(
 }
 
 fn ripple_fingerprint(
-    anchorline: Option<&&TideEntrySnapshot>, waterline: Option<&&TideEntrySnapshot>,
+    anchor: Option<&&TideEntrySnapshot>, waterline: Option<&&TideEntrySnapshot>,
 ) -> String {
     let mut source = String::new();
-    push_fingerprint_entry(&mut source, "anchor", anchorline.copied());
+    push_fingerprint_entry(&mut source, "anchor", anchor.copied());
     push_fingerprint_entry(&mut source, "lake", waterline.copied());
     format!("sha256:{:x}", sha2::Sha256::digest(source.as_bytes()))
 }

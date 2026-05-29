@@ -456,7 +456,7 @@ mod tests {
         let tide = full.metadata.meta.tide.unwrap();
         assert!(tide.to.lake);
         assert!(tide.from.lake);
-        assert!(tide.from.frost);
+        assert!(tide.from.anchor);
         assert!(tide.clique.lake);
     }
 

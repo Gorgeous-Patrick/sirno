@@ -30,7 +30,7 @@ use crate::structural::{StructuralEdgeIndex, StructuralSettings};
 use crate::witness::{WitnessCheckSettings, WitnessError};
 
 const READONLY_CHECKOUT_WARNING: &str = "\
-> This file is a read-only Sirno Frost checkout.
+> This file is a read-only Sirno managed checkout.
 > Do not edit it by hand.
 
 ";
@@ -837,7 +837,7 @@ impl EntryDirectory {
 
     /// Reapply local protection from frozen metadata and checkout state.
     ///
-    /// `protect_checkout` selects the whole lake for an immutable frost checkout.
+    /// `protect_checkout` selects the whole lake for an immutable managed checkout.
     /// Otherwise, only entries carrying `frozen` reasons and their artifact trees are protected.
     /// Ignored paths are left untouched.
     pub fn fix_local_protection(
@@ -2333,7 +2333,7 @@ mod tests {
     fn write_structural_field_entries_with_meta(root: &Path, fields: &[&str], meta: bool) {
         for field in fields {
             let meta = if meta {
-                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.frost: []\n"
+                "meta.type: \"structural\"\nmeta.ripple.lake: []\nmeta.ripple.anchor: []\n"
             } else {
                 ""
             };
@@ -3624,7 +3624,7 @@ Body.
         let checked = entry_directory(&root).check(CheckMode::Review).unwrap();
 
         assert!(source.contains(
-            "\n---\n\n> This file is a read-only Sirno Frost checkout.\n\
+            "\n---\n\n> This file is a read-only Sirno managed checkout.\n\
              > Do not edit it by hand.\n\nBody.\n"
         ));
         assert_eq!(checked.entries()[0].metadata, entry.metadata);

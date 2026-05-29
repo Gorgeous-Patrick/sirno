@@ -111,16 +111,16 @@ impl RenderSettings {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TutorialSettings {
-    /// Show tutorial text when frost commit is blocked by open tide workitems.
-    pub frost_commit_tide: bool,
-    /// Include first-snapshot bootstrap context in the frost commit tide tutorial.
-    pub frost_bootstrap_tide: bool,
+    /// Show tutorial text when anchor update is blocked by open tide workitems.
+    pub anchor_update_tide: bool,
+    /// Include first-anchor bootstrap context in the anchor update tide tutorial.
+    pub anchor_bootstrap_tide: bool,
 }
 
 impl TutorialSettings {
     /// Construct tutorial settings with every current tutorial enabled.
     pub fn all() -> Self {
-        Self { frost_commit_tide: true, frost_bootstrap_tide: true }
+        Self { anchor_update_tide: true, anchor_bootstrap_tide: true }
     }
 }
 
@@ -780,14 +780,14 @@ impl ConfigRenderer {
             );
             self.out.push_str("# Remove this table to keep CLI errors terse.\n");
             self.push_field(
-                "frost_commit_tide",
-                &tutorial.frost_commit_tide,
-                "Show tutorial text when frost commit is blocked by open tide workitems.",
+                "anchor_update_tide",
+                &tutorial.anchor_update_tide,
+                "Show tutorial text when anchor update is blocked by open tide workitems.",
             )?;
             self.push_field(
-                "frost_bootstrap_tide",
-                &tutorial.frost_bootstrap_tide,
-                "Include first-snapshot bootstrap context in the frost commit tide tutorial.",
+                "anchor_bootstrap_tide",
+                &tutorial.anchor_bootstrap_tide,
+                "Include first-anchor bootstrap context in the anchor update tide tutorial.",
             )?;
             // sirno:witness:project-config-comments:end
         }
@@ -861,7 +861,7 @@ impl ConfigRenderer {
                 "entry names the lake entry that documents the relation.",
                 "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
                 "Tide policy lives in structural relation entry meta.ripple.lake \
-                 and meta.ripple.frost direction lists.",
+                 and meta.ripple.anchor direction lists.",
             ] {
                 self.out.push_str("# ");
                 self.out.push_str(comment);
@@ -1121,15 +1121,15 @@ path = "docs"
     }
 
     #[test]
-    fn rejects_frost_settings() {
+    fn rejects_anchor_settings() {
         let error = SirnoConfig::from_source(
             Path::new("Sirno.toml"),
             r#"
 [lake]
 path = "docs"
 
-[frost]
-path = "sirno-frost"
+[anchor]
+path = ".sirno/anchor.toml"
 "#,
         )
         .unwrap_err();
@@ -1228,15 +1228,15 @@ path = "docs"
 path = "docs"
 
 [tutorial]
-frost_commit_tide = false
-frost_bootstrap_tide = true
+anchor_update_tide = false
+anchor_bootstrap_tide = true
 "#,
         );
 
         assert_eq!(default_tutorial.tutorial, Some(TutorialSettings::all()));
         assert_eq!(
             selected_tutorial.tutorial,
-            Some(TutorialSettings { frost_commit_tide: false, frost_bootstrap_tide: true })
+            Some(TutorialSettings { anchor_update_tide: false, anchor_bootstrap_tide: true })
         );
     }
 
@@ -1834,8 +1834,8 @@ delimiters = []
             witness: test_witness_syntax(),
             check: CheckSettings { render: Some(false), structural_inhabitance: Some(false) },
             tutorial: Some(TutorialSettings {
-                frost_commit_tide: true,
-                frost_bootstrap_tide: false,
+                anchor_update_tide: true,
+                anchor_bootstrap_tide: false,
             }),
             structural: StructuralSettings::from_relations([
                 ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
@@ -1872,7 +1872,7 @@ delimiters = []
         assert_eq!(read, config);
         assert!(source.contains("# Sirno Lake path"));
         assert!(source.contains("# Paths in lake that Sirno skips"));
-        assert!(!source.contains("[frost]"));
+        assert!(!source.contains("[anchor]"));
         assert!(source.contains("[upstreams.core]"));
         assert!(source.contains(
             "# Git-backed upstream lake crystallized into a glacier under this entry domain."
@@ -1896,16 +1896,14 @@ delimiters = []
             "# Presence of this table enables tutorial text for recoverable command failures."
         ));
         assert!(source.contains("# Remove this table to keep CLI errors terse."));
-        assert!(
-            source.contains(
-                "# Show tutorial text when frost commit is blocked by open tide workitems."
-            )
-        );
         assert!(source.contains(
-            "# Include first-snapshot bootstrap context in the frost commit tide tutorial."
+            "# Show tutorial text when anchor update is blocked by open tide workitems."
         ));
-        assert!(source.contains("frost_commit_tide = true"));
-        assert!(source.contains("frost_bootstrap_tide = false"));
+        assert!(source.contains(
+            "# Include first-anchor bootstrap context in the anchor update tide tutorial."
+        ));
+        assert!(source.contains("anchor_update_tide = true"));
+        assert!(source.contains("anchor_bootstrap_tide = false"));
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural link relations."));
         assert!(source.contains(
@@ -1920,7 +1918,7 @@ delimiters = []
             "# Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review."
         ));
         assert!(source.contains(
-            "# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists."
+            "# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.anchor direction lists."
         ));
         assert!(source.contains("[render.structural]"));
         assert!(source.contains("# Generated-footer structural link render policy."));
@@ -1961,7 +1959,7 @@ delimiters = []
     }
 
     #[test]
-    fn rejects_frost_table() {
+    fn rejects_anchor_table() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(CONFIG_FILE_NAME);
         fs::write(
@@ -1971,8 +1969,8 @@ delimiters = []
 [lake]
 path = "docs"
 
-[frost]
-path = "docs/frost"
+[anchor]
+path = ".sirno/anchor.toml"
 "#,
             ),
         )

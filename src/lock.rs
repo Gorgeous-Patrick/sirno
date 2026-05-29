@@ -352,14 +352,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_frost_lock_state() {
+    fn rejects_anchor_lock_state() {
         let error = toml::from_str::<SirnoLock>(
             r#"
-[frost]
-status = "current"
-generation = 0
-version = 3
-mutable = true
+[anchor]
+path = ".sirno/anchor.toml"
 "#,
         )
         .unwrap_err();

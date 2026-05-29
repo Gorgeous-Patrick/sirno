@@ -2147,7 +2147,3 @@ fn path_selection_from_args(args: &EntryPathsArgs) -> PathSelection {
     let all = !args.show_entry && !args.show_artifact;
     PathSelection::new(all || args.show_entry, all || args.show_artifact)
 }
-
-// TODO: Rebuild CLI tests around Anchor after the Frost command surface is replaced.
-#[cfg(any())]
-mod tests;

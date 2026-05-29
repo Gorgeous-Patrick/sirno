@@ -26,7 +26,7 @@ end = '(?m)^[ \t]*<!--[ \t]*sirno:witness:([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+):end
 # FIELD cannot be name, desc, meta, or frozen.
 # entry names the lake entry that documents the relation.
 # Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.
-# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.
+# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.anchor direction lists.
 
 [structural.category]
 entry = "category"

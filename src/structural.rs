@@ -26,21 +26,21 @@ pub struct StructuralRippleSettings {
     /// Include waterline neighbors in tide workitems.
     #[serde(skip_serializing_if = "is_false")]
     pub lake: bool,
-    /// Include frostline neighbors in tide workitems.
+    /// Include Anchor-side neighbors in tide workitems.
     #[serde(skip_serializing_if = "is_false")]
-    pub frost: bool,
+    pub anchor: bool,
 }
 // sirno:witness:structural-edge-policy:end
 
 impl StructuralRippleSettings {
     /// Construct ripple settings from explicit source flags.
-    pub fn new(lake: bool, frost: bool) -> Self {
-        Self { lake, frost }
+    pub fn new(lake: bool, anchor: bool) -> Self {
+        Self { lake, anchor }
     }
 
     /// Returns true when no ripple source is enabled.
     pub fn is_empty(&self) -> bool {
-        !self.lake && !self.frost
+        !self.lake && !self.anchor
     }
 }
 
@@ -97,8 +97,8 @@ impl StructuralEdgeSettings {
     }
 
     /// Construct an edge used for rendering and selected ripple sources.
-    pub fn render_and_ripple(render: bool, lake: bool, frost: bool) -> Self {
-        Self::new(render, StructuralRippleSettings::new(lake, frost))
+    pub fn render_and_ripple(render: bool, lake: bool, anchor: bool) -> Self {
+        Self::new(render, StructuralRippleSettings::new(lake, anchor))
     }
 }
 // sirno:witness:structural-edge-policy:end
@@ -112,8 +112,8 @@ impl fmt::Display for StructuralEdgeSettings {
         if self.ripple.lake {
             parts.push("ripple.lake=true");
         }
-        if self.ripple.frost {
-            parts.push("ripple.frost=true");
+        if self.ripple.anchor {
+            parts.push("ripple.anchor=true");
         }
         if parts.is_empty() {
             write!(formatter, "none")
@@ -236,7 +236,7 @@ fn is_default<T: Default + PartialEq>(value: &T) -> bool {
 
 /// Tide policy authored by the entry that defines one structural relation.
 ///
-/// Invariant: each direction stores waterline and frostline participation only.
+/// Invariant: each direction stores waterline and Anchor-side participation only.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 // sirno:witness:structural-edge-policy:begin
@@ -272,7 +272,7 @@ impl StructuralTideSettings {
 ///
 /// Config parsing fills relation order and relation entries from `Sirno.toml`.
 /// Render callers merge generated-footer policy from `[render.structural]`.
-/// Tide callers merge `meta.ripple.lake` and `meta.ripple.frost` from relation entries.
+/// Tide callers merge `meta.ripple.lake` and `meta.ripple.anchor` from relation entries.
 pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
 
 /// Ordered configured structural relation entries.
@@ -714,9 +714,9 @@ mod tests {
         assert!(field_settings.to.render);
         assert!(field_settings.from.render);
         assert!(field_settings.to.ripple.lake);
-        assert!(!field_settings.to.ripple.frost);
+        assert!(!field_settings.to.ripple.anchor);
         assert!(field_settings.from.ripple.lake);
-        assert!(field_settings.from.ripple.frost);
+        assert!(field_settings.from.ripple.anchor);
         assert!(!field_settings.clique.ripple.lake);
     }
 

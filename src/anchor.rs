@@ -258,7 +258,7 @@ fn structural_fields_for_anchor(
         .filter(|(_, field_settings)| {
             StructuralEdgeDirection::ORDER
                 .iter()
-                .any(|direction| field_settings.edge(*direction).ripple.frost)
+                .any(|direction| field_settings.edge(*direction).ripple.anchor)
         })
         .filter_map(|(field, _)| {
             entry

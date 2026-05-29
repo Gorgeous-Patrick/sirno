@@ -1417,7 +1417,7 @@ Changed body.
         assert_eq!(status["ok"], true);
         assert_eq!(status["entry_count"], 1);
         assert_eq!(status["check_policy"]["mode"], "review");
-        assert!(status.get("frost").is_none());
+        assert!(status.get("anchor").is_none());
 
         let cwd = client
             .peer()

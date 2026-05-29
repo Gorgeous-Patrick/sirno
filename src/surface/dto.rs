@@ -1038,7 +1038,7 @@ pub struct StructuralEdgeStatus {
     /// Whether lake-side neighbors create tide workitems.
     pub ripple_lake: bool,
     /// Whether accepted-baseline neighbors create tide workitems.
-    pub ripple_frost: bool,
+    pub ripple_anchor: bool,
 }
 
 impl StructuralEdgeStatus {
@@ -1046,7 +1046,7 @@ impl StructuralEdgeStatus {
         Self {
             render: settings.render,
             ripple_lake: settings.ripple.lake,
-            ripple_frost: settings.ripple.frost,
+            ripple_anchor: settings.ripple.anchor,
         }
     }
 }
