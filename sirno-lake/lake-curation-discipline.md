@@ -1,6 +1,6 @@
 ---
 name: Lake Curation Discipline
-desc: The agent procedure for auditing an existing Sirno-managed lake and acting on approved trim, fold, and witness-binding decisions.
+desc: The agent procedure for auditing and curating an existing Sirno-managed lake.
 category:
   - meta
 belongs:
@@ -26,8 +26,7 @@ or witness alignment.
 
 Map the project first.
 Read repository instructions and `Sirno.toml`.
-Call `sirno_status` to surface the lake path, frost state, tide blockers,
-and pending review entries.
+Call `sirno_status` to surface the lake path, tide blockers, and pending review entries.
 Run `sirno_entry_query` to enumerate the lake.
 Read the narrative routes first:
 introduction, methodology, the README entry,
@@ -102,8 +101,7 @@ walk workitems with `sirno_tide_status`
 and resolve them with `sirno_tide_resolve` or `sirno_tide_unresolve`
 once the curation pass is otherwise complete.
 If the current checkout is frozen or an entry is immutable,
-use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
-instead of forcing a write.
+use `sirno_entry_melt` instead of forcing a write.
 
 Stage narrowly.
 One logical change per commit.

@@ -41,7 +41,6 @@ The *tide* is the active worklist created from all current ripples.
 - belongs (to):
   - [sirno-tide](sirno-tide.md)
 - belongs (from):
-  - [frostline](frostline.md)
   - [ripple-fingerprint](ripple-fingerprint.md)
   - [waterline](waterline.md)
 

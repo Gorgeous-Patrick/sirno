@@ -37,6 +37,7 @@ Projects reuse those mirrors across lake systems.
 
 - belongs (to):
   - [sirno-upstream](sirno-upstream.md)
-- belongs (from): (none)
+- belongs (from):
+  - [sirno-lock](sirno-lock.md)
 
 > **Sirno generated links end.**

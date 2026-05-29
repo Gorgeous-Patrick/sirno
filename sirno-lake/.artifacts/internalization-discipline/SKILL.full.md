@@ -35,7 +35,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
-   Call `sirno_status` to surface the lake path, frost state, tide blockers,
+   Call `sirno_status` to surface the lake path, tide blockers,
    and pending review entries.
    Query the active lake with `sirno_entry_query` to locate the candidate neighborhood.
    Read frozen entries before declaring an observation new.
@@ -87,7 +87,7 @@ walk workitems with `sirno_tide_status`,
 then use `sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
 If the current checkout is frozen or an entry is immutable,
 surface the proposed change to the user for double review,
-then use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
+then use `sirno_entry_melt`
 once the user agrees.
 
 If a check is blocked, report the blocker and still validate entry parsing,

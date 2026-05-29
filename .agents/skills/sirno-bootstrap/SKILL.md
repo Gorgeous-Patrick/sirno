@@ -62,8 +62,7 @@ Nothing is placed on `PATH`, so there is nothing to uninstall.
 Skip if `Sirno.toml` already exists (the Sirno source repository is already initialized).
 
 Otherwise run `sirno init` in the project root.
-It creates the lake, the frost store, `Sirno.toml`, `Sirno.lock.toml`,
-and the packaged skill wrappers together.
+It creates the lake, `Sirno.toml`, and the packaged skill wrappers together.
 
 ### 4. Register the MCP server
 
@@ -109,7 +108,7 @@ sirno status
 sirno check --mode review
 ```
 
-`sirno status` should report the project and frost state.
+`sirno status` should report the project and lake state.
 `sirno check --mode review` should end with `ok: <lake-path>`.
 After the agent reloads, the Sirno MCP tools and `sirno://skills/*` resources should be reachable.
 
@@ -121,7 +120,7 @@ State the revert path when reporting completion:
   or delete the stdio entry from the MCP config file.
 - Uninstall the binary: `cargo uninstall sirno`.
   Nothing to uninstall if the `cargo run --` path was used.
-- `sirno init` artifacts (`Sirno.toml`, `Sirno.lock.toml`, lake, frost, wrappers)
+- `sirno init` artifacts (`Sirno.toml`, lake, wrappers)
   are only created when step 3 ran; they are normal version-controlled files to revert with git.
 
 ## Reporting

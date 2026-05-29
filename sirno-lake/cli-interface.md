@@ -29,27 +29,24 @@ should spell Sirno operations as MCP tools when the agent performs them.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured lake
 for commands that read or write the active lake.
-The global `-F, --frost-path PATH` option selects a frost path for direct frost checks.
 
 Common command aliases keep terminal use compact:
-`q` for `query`, `st` for `status`, `w` or `wit` for `witness`,
-and `defrost` for latest frost checkout.
+`q` for `query`, `st` for `status`, and `w` or `wit` for `witness`.
 
 Entry commands live under `sirno entry`.
 Selected common entry operations also have top-level wrappers.
 Storage-wide lake operations also live under `sirno lake`.
 Entry artifact operations also have the top-level `sirno artifact` form.
-Frost operations also live under `sirno frost`.
+Anchor operations live under `sirno anchor`.
 
 When a selected top-level command delegates to a group,
 the grouped spelling uses the same subcommands and aliases.
 For example, `sirno query`, `sirno q`, `sirno entry query`, and `sirno entry q`
 select the same entry operation.
 
-Top-level `sirno move` groups the three mutation moves:
+Top-level `sirno move` groups mutation moves:
 `sirno move entry OLD_ENTRY_ADDRESS NEW_ENTRY_ADDRESS`,
-`sirno move lake PATH`,
-and `sirno move frost PATH`.
+and `sirno move lake PATH`.
 `sirno mv ...` is its short form.
 Each wrapper delegates to the corresponding grouped move command.
 

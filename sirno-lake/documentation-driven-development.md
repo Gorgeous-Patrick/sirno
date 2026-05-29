@@ -1,6 +1,6 @@
 ---
 name: Documentation-Driven Development
-desc: Sirno's working bet that durable design lives in human-reviewed lake entries that bind future agent and human work.
+desc: Sirno's bet that durable design lives in reviewed lake entries.
 category:
   - meta
   - narrative
@@ -38,7 +38,7 @@ That move is not free.
 It demands re-understanding.
 In a more familiar word, we need to learn.
 The *waterline* moves,
-the *frostline* reopens dependent review through *tide*,
+the *anchor baseline* reopens dependent review through *tide*,
 and the project pays the cognitive cost of the change once,
 deliberately,
 instead of accruing it as silent drift.

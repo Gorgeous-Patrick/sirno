@@ -34,7 +34,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
-   Call `sirno_status` to surface the lake path, frost state, tide blockers,
+   Call `sirno_status` to surface the lake path, tide blockers,
    and pending review entries.
    Query the active lake with `sirno_entry_query`,
    then read the few entries that govern the requested work.
@@ -59,8 +59,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
    create the exact entry for that claim through the internalizer skill.
 
 4. Keep adjacent surfaces aligned.
-   Prefer MCP tools such as `sirno_lake_move`, `sirno_frost_*`, and `sirno_entry_artifact_*`
-   for routine lake, frost, and artifact moves.
+   Prefer MCP tools such as `sirno_lake_move`, `sirno_anchor_status`, `sirno_anchor_check`,
+   `sirno_anchor_update`, and `sirno_entry_artifact_*`
+   for routine lake movement, Anchor checks, Anchor updates, and artifact moves.
    Use manual `Sirno.toml` edits only for schema or comment work the MCP tools cannot express.
    Treat long-form documents outside the configured lake as repository material.
    Render or rewrite them from the entries that name their design claims.
@@ -77,7 +78,7 @@ walk workitems with `sirno_tide_status`,
 then use `sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
 If the current checkout is frozen or an entry is immutable,
 surface the proposed change to the user for double review,
-then use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
+then use `sirno_entry_melt`
 once the user agrees.
 
 If a check is blocked, report the blocker and still validate entry parsing,

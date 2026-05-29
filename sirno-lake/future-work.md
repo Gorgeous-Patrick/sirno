@@ -15,8 +15,8 @@ Reserved areas are concrete:
 
 - `locked` may define how *entries*, metadata fields, or generated regions resist accidental edits.
   That design needs a clear ownership model before it becomes part of the schema.
-- Version retention should define which `eter` snapshots Sirno keeps by default,
-  which snapshots can be named,
+- Review receipt archival should define which accepted review records are kept,
+  which records can be named,
   and how review interfaces expose them.
 - Lake dependency management should refine *entry domain* resolution,
   symlink materialization,
@@ -32,9 +32,8 @@ The current design is useful because its core is small:
 *entries*, metadata, structural links, generated footers, forms, *transforms*, checks, and *witnesses*.
 New features should preserve that clarity.
 
-`eter` provides history, snapshots, retirement, and garbage collection.
-`sirno frost gc` provides a latest-snapshot collection policy for frost rows and artifact bytes.
-Sirno still needs long-term policy for which historical snapshots stay live.
+Git provides history and retention.
+Sirno still needs long-term policy for optional review receipt archives.
 That policy should preserve reviewable *lake* states without making *entry* metadata harder to read.
 
 ---

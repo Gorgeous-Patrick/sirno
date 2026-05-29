@@ -42,7 +42,7 @@ it marks information the user wants treated with care.
 Read frozen entries before declaring an observation new.
 If internalization seems to require a frozen entry to change,
 surface the proposed change to the user for double review
-before melting it with `sirno_entry_melt` through the project's frost workflow,
+before melting it with `sirno_entry_melt`,
 rather than writing a parallel entry past it.
 
 Map the project first.
@@ -52,8 +52,7 @@ Bind the MCP server to the repository root through `sirno_cwd` when needed.
 Read repository instructions and `Sirno.toml`.
 If `Sirno.toml` is missing, report that the repository is not Sirno-managed
 and prompt the user to start with `sirno init`.
-Call `sirno_status` to surface the lake path, frost state, tide blockers,
-and pending review entries.
+Call `sirno_status` to surface the lake path, tide blockers, and pending review entries.
 Query the active lake with `sirno_entry_query` to locate the candidate neighborhood
 for the durable fact.
 
@@ -75,7 +74,7 @@ Choose the entry handle.
 Existing entries are authoritative for the claims they already record.
 A frozen entry that already names the fact remains user-reviewed truth;
 surface any proposed revision to the user for double review
-before melting it through the project's frost workflow,
+before melting it with `sirno_entry_melt`,
 rather than writing a parallel entry past it.
 Read candidate entries and walk `belongs`, `prerequisite`, and `refines`
 to find the closest existing neighbor.
@@ -129,8 +128,7 @@ walk workitems with `sirno_tide_status`,
 then use `sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
 If the current checkout is frozen or an entry is immutable, never force a write.
 Surface the proposed change to the user for double review,
-then use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
-once the user agrees.
+then use `sirno_entry_melt` once the user agrees.
 If a check is blocked, report the blocker and still validate entry parsing,
 metadata references, and witness output as far as the tools allow.
 

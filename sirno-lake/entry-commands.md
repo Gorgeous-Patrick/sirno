@@ -40,11 +40,10 @@ Authored prose outside generated footer regions remains user-owned.
 Its default output includes:
 
 - the lake Markdown entry file path;
-- the lake `.artifacts/<entry-address>/` tree;
-- the private frost entry root when frost is configured.
+- the lake `.artifacts/<entry-address>/` tree.
 
 It excludes repository witness paths.
-The `--entry`, `--artifact`, and `--frost` flags select one or more path classes.
+The `--entry` and `--artifact` flags select one or more path classes.
 The `--absolute` flag prints absolute paths.
 The `-o, --format` option selects `human`, `json`, or `paths`.
 
@@ -68,7 +67,7 @@ Artifact mutation commands refuse to change artifacts owned by a frozen entry.
 
 | Command | Behavior |
 |---|---|
-| `sirno freeze ENTRY_ADDRESS` | Verifies current frost, adds `reviewed`, and protects files. |
+| `sirno freeze ENTRY_ADDRESS` | Adds `reviewed` and protects files. |
 | `sirno melt ENTRY_ADDRESS` | Removes the `reviewed` frozen reason. |
 | `sirno unfreeze ENTRY_ADDRESS` | Alias for `sirno melt ENTRY_ADDRESS`. |
 | `sirno entry freeze` | Grouped form. |
@@ -94,7 +93,7 @@ The freeze and melt TUI keys are:
 All-project protection commands are explicit:
 
 - `sirno melt --unsafe-all` clears all Sirno local protection in the active lake.
-- `sirno freeze --fix-all` reapplies local protection from `meta.frozen` reasons and frost state.
+- `sirno freeze --fix-all` reapplies local protection from `meta.frozen` reasons.
 - `--dry-run` reports selected paths for either all-project operation.
 
 `sirno melt --unsafe-all` does not edit metadata or delete files.

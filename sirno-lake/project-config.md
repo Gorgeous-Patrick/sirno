@@ -14,7 +14,6 @@ prerequisite:
 The file configures the lake
 and the operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
-frost,
 and *upstream lakes*.
 Generated config files include concise comments that describe how each written field is used.
 `sirno util config` and `sirno util config tui` open an interactive terminal UI
@@ -29,7 +28,6 @@ The main fields are:
 | Field | Meaning |
 |---|---|
 | `[lake].path` | Names the lake path. |
-| `[frost].path` | Optionally names the frost path. |
 | `[upstreams.DOMAIN]` | Optionally declares one Git-backed upstream lake. |
 | `[repo].members` | Lists *repository* paths or globs scanned for *witness* blocks. |
 | `[witness]` | Configures the delimiter regexes used to find *witness* blocks. |
@@ -39,7 +37,7 @@ Path selection follows three rules:
 
 - Relative paths are resolved from the directory that contains `Sirno.toml`.
 - The CLI `--lake-path PATH` option can override `[lake].path` for one command.
-- The CLI `-F, --frost-path PATH` option selects a frost path for one direct frost check.
+- Sirno control files live in `.sirno/` next to `Sirno.toml`.
 
 `[upstreams.DOMAIN]` declares an upstream lake crystallized into a glacier under `DOMAIN`.
 `DOMAIN` is an *entry atom* and becomes the glacier *entry address* prefix.
@@ -53,38 +51,36 @@ Every declared upstream is included by crystallization.
 The glacier domain shares its lake path with implicit local lakelets,
 so unmanaged files under `lake/DOMAIN/` block the declaration from being crystallized.
 
-A project can use Sirno without configured repo members or frost.
+The Anchor baseline is not configured in `Sirno.toml`.
+It lives at `.sirno/anchor.toml`.
+`sirno anchor update` creates or replaces it after the lake passes review.
+
+A project can use Sirno without configured repo members or upstreams.
 `sirno init` opens an interactive setup flow for the config, lake,
-frost path, and packaged skill wrappers.
+and packaged skill wrappers.
 `sirno init --all` runs the full setup without prompts.
 `sirno init --claude-skills` also links installed wrappers into `.claude/skills`.
 Its default paths are derived from the directory that contains `Sirno.toml`:
-`<repo>-lake` for `[lake].path` and `<repo>-frost` for `[frost].path`.
+`<repo>-lake` for `[lake].path`.
 `sirno init --lake PATH` chooses a non-default lake path.
-`sirno init --frost PATH` chooses a non-default frost path.
-`sirno init --no-lake`, `--no-frost`, and `--no-skills`
+`sirno init --no-lake` and `--no-skills`
 skip their corresponding setup parts.
 `--claude-skills` is available only when packaged skill wrappers are selected.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
-`sirno lake init [PATH]` creates the config and lake without configuring frost.
+`sirno lake init [PATH]` creates the config and lake.
 `sirno lake move PATH` changes `[lake].path` and renames the lake directory.
 `sirno lake mv PATH` is its short form.
-`sirno frost init [PATH]` adds the frost config and records empty version `0`.
-`sirno frost move PATH` changes `[frost].path` and renames the frost path.
-`sirno frost mv PATH` is its short form.
-`sirno move lake PATH` and `sirno move frost PATH`
-select the same path moves from the top-level move group.
+`sirno move lake PATH` selects the same path move from the top-level move group.
 `sirno mv ...` is the short form for those wrappers.
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
 
-`Sirno.lock.toml` records the lake's *frost* state when frost is configured
-and the resolved upstream state when upstream lakes are configured.
+`Sirno.lock.toml` records the resolved upstream state when upstream lakes are configured.
 It lives next to `Sirno.toml`.
-The lock says whether the lake is current
-or checked out to a frozen version.
 It also pins each upstream to the exact Git commit crystallized into the glacier.
+Anchor state belongs in `.sirno/anchor.toml`.
+Temporary Tide resolutions may still use `Sirno.lock.toml` until `.sirno/tide.toml` is actualized.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,
@@ -123,8 +119,8 @@ the config UI can restore that flag's canonical comment.
 The table is absent by default.
 When the table is present,
 Sirno shows enabled tutorials after matching recoverable command failures.
-`[tutorial].frost_commit_tide` explains a frost commit blocked by open *tide* workitems.
-`[tutorial].frost_bootstrap_tide` adds first-snapshot context to that tutorial.
+`[tutorial].anchor_update_tide` explains an anchor update blocked by open *tide* workitems.
+`[tutorial].anchor_bootstrap_tide` adds first-anchor context to that tutorial.
 Removing the table silences all tutorial text.
 
 `[structural]` controls which metadata fields define structural link relations.
@@ -154,11 +150,11 @@ Absent relations render no generated footer groups.
 | `from` | Links from the *entry* to *entries* that name it as a metadata target. |
 | `clique` | Adds separate sections through shared targets in that relation. |
 
-Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.frost` direction lists.
+Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.anchor` direction lists.
 
-`Sirno.lock.toml` also records explicit *tide* resolutions when frost is configured.
+`Sirno.lock.toml` temporarily records explicit *tide* resolutions.
 Those resolutions are compared against the current ripple fingerprint.
-They are cleared after a successful frost commit.
+They are cleared after a successful anchor update.
 
 ---
 

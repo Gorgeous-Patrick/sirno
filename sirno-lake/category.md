@@ -11,7 +11,7 @@ prerequisite:
   - structural
 meta.type: "structural"
 meta.ripple.lake: []
-meta.ripple.frost: []
+meta.ripple.anchor: []
 ---
 
 `category` classifies an *entry* by other *entries*.

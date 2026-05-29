@@ -16,9 +16,8 @@ It is the canonical design source for a Sirno-managed project.
 It contains compact Markdown *entries* with exact metadata,
 and may contain lake-owned *entry artifacts* attached to those *entries*.
 
-When *frost* is configured,
-the *lake* is versioned through a separate `eter` *frost* path,
-so one *lake* version names one immutable entry and artifact set.
+Anchor records the accepted baseline for the *lake*.
+Git versions the *lake* and Anchor file together.
 
 `repo` is the *repository*.
 It contains source, tests, configuration, generated files, assets, README files,

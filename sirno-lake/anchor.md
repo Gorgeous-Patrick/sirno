@@ -1,6 +1,6 @@
 ---
 name: Anchor
-desc: The Git-backed accepted baseline that replaces Frost snapshots.
+desc: The Git-backed accepted baseline for Sirno Lake review.
 category:
   - implemented
   - proposal
@@ -19,7 +19,7 @@ refines:
   - versioning
 ---
 
-Anchor is the accepted-baseline subsystem that replaces Frost.
+Anchor is the accepted-baseline subsystem for a Sirno Lake.
 
 Anchor records the reviewed Sirno Lake state as tracked semantic fingerprints.
 It does not store history, snapshots, or old entry bodies.
@@ -107,7 +107,7 @@ reviewer = "arctic"
 reviewed_at = "2026-05-26T14:30:00Z"
 
 [[reviews.reaches]]
-ripple = "sirno-frost"
+ripple = "storage"
 ripple_fingerprint = "sha256:..."
 field = "belongs"
 direction = "from"
@@ -131,7 +131,7 @@ A later explicit archive or export command may preserve review receipts when a p
 ## Lock File
 
 `.sirno/lock.toml` records shared pins for external inputs.
-After Frost is removed, it does not store Anchor state or Tide reviews.
+It does not store Anchor state or Tide reviews.
 
 ```toml
 schema = 1
@@ -184,10 +184,10 @@ and `sirno anchor update`.
 Tide compares the waterline against Anchor when the Anchor file exists.
 If Anchor is absent, Tide treats the current lake as added against an empty baseline.
 
-Temporary compatibility surfaces remain while Tide is actualized:
+Temporary implementation surfaces remain while Tide is actualized:
 
 - review resolutions still use the existing `Sirno.lock.toml` Tide table;
-- structural relation entries still spell the baseline-side policy as `meta.ripple.frost`;
+- structural relation entries spell the baseline-side policy as `meta.ripple.anchor`;
 - merge drivers for `.sirno/anchor.toml`, `.sirno/tide.toml`, and `.sirno/lock.toml`
   are not installed yet.
 
@@ -203,7 +203,7 @@ Anchor is the accepted baseline.
 A ripple is any entry-level delta between Anchor and the waterline.
 Tide derives review workitems from those ripples and the configured structural policies.
 
-Structural relation entries should rename `meta.ripple.frost` to `meta.ripple.anchor`.
+Structural relation entries spell the baseline-side policy as `meta.ripple.anchor`.
 Waterline edges follow the current entry graph.
 Anchor edges follow the accepted entry graph stored in `.sirno/anchor.toml`.
 The policy shape stays the same:
@@ -218,7 +218,7 @@ Tide stores active review status.
 Sirno should install merge drivers for the tracked control files:
 
 ```gitattributes
-.sirno/anchor.toml merge=sirno-anchor
+.sirno/anchor.toml merge=anchor
 .sirno/tide.toml merge=sirno-tide
 .sirno/lock.toml merge=sirno-lock
 ```
@@ -228,20 +228,20 @@ They should drop reviews they cannot prove still match current fingerprints,
 letting Tide reopen those obligations.
 This makes rebases and merges conservative without leaving conflict markers in Sirno control files.
 
-## Frost Replacement
+## Removed Snapshot Storage
 
-Anchor removes these Frost responsibilities from Sirno:
+Anchor keeps these responsibilities out of Sirno:
 
-- private `eter` storage;
-- Frost commits;
-- Frost checkouts and defrost;
-- Frost garbage collection;
-- Frost-backed entry freeze checks;
-- Frost snapshot coordinates in lock state.
+- private snapshot storage;
+- snapshot commits;
+- snapshot checkouts;
+- snapshot garbage collection;
+- Anchor-backed entry freeze checks;
+- snapshot coordinates in lock state.
 
 Entry-owned artifacts stay part of the lake state through owner artifact-tree fingerprints.
 Upstream glaciers may still use managed local protection,
-but the manual `reviewed` freeze reason belongs to the Frost design and should be removed
+but the manual `reviewed` freeze reason belongs to the old snapshot design and should be removed
 or redesigned as part of Anchor actualization.
 
 ---
@@ -253,6 +253,9 @@ or redesigned as part of Anchor actualization.
   - [sirno-lake](sirno-lake.md)
   - [storage](storage.md)
 - belongs (from):
+  - [entry-artifact](entry-artifact.md)
+  - [sirno-lock](sirno-lock.md)
   - [sirno-tide](sirno-tide.md)
+  - [versioning](versioning.md)
 
 > **Sirno generated links end.**

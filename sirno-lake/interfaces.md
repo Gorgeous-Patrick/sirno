@@ -15,7 +15,7 @@ It owns typed request and result data before each adapter renders text, JSON, or
 
 The CLI is the human operational interface.
 It initializes projects, manages entries, checks structure, renders generated links,
-maintains optional frost snapshots, and reviews active tide work.
+maintains Anchor baselines, and reviews active tide work.
 
 The MCP interface is the agent-facing project interface.
 It exposes stable grouped project tools and lake-owned skill resources.
@@ -26,7 +26,7 @@ CLI and MCP entries describe adapters.
 Command entries describe shared operations exposed through those adapters.
 
 - `cli-interface` defines command spelling, aliases, global path selection, and output conventions.
-- `project-commands` defines project setup, lake movement, frost snapshots, checks, and rendering.
+- `project-commands` defines project setup, lake movement, Anchor, checks, and rendering.
 - `entry-commands` defines entry creation, paths, artifacts, freezing, queries, ripgrep, and witnesses.
 - `tide-commands` defines dependency review status and resolution commands.
 - `utility-commands` defines local operator utilities such as config, entry defaults, skills, and MCP startup.

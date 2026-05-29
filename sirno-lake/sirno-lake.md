@@ -30,9 +30,8 @@ and recreates the parent path before placing the moved *lake* at `PATH`.
 The *lake* is the human-readable intermediate representation:
 text first, structured enough for tools,
 and compact enough for humans and agents to inspect locally.
-When frost is configured,
-its frozen state is versioned through a separate `eter` *frost* path,
-so one version names one immutable set of *entries*.
+Anchor records the accepted baseline for the *lake*.
+Git versions the *lake* and Anchor file together.
 
 Each *entry* is an ordinary Markdown file with a YAML metadata block and prose body.
 The filename stem is the local *entry atom*.
@@ -79,9 +78,8 @@ The graph is intentionally small:
 classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 The `meta.frozen` field stores protection reasons.
-`reviewed` protects a current frost-backed lake *entry*
-and checks it with its artifact tree against the frost snapshot before commit.
 `managed` protects content owned by crystallization.
+`reviewed` is an older manual protection reason and remains deprecated.
 
 The *lake* is also a collaboration boundary.
 A person can edit an *entry* directly.
@@ -91,8 +89,7 @@ An editor can use *generated footers* to expose navigation.
 All of those forms use the same filenames and metadata.
 
 The *lake* is a working form.
-Direct edits become frozen versions only when frost is configured
-and Sirno freezes the *lake* into the *frost* path.
+Direct edits become accepted design only after review and `sirno anchor update`.
 
 Some files under a *lake* root may belong to adjacent tools.
 `[lake].ignore` lists paths relative to the *lake* root.
@@ -126,5 +123,6 @@ and where implementation evidence should be found when that evidence exists.
   - [sirno-tide](sirno-tide.md)
   - [sirno-upstream](sirno-upstream.md)
   - [structural-check](structural-check.md)
+  - [versioning](versioning.md)
 
 > **Sirno generated links end.**

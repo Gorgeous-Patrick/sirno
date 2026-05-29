@@ -16,7 +16,7 @@ Structural link policy has two owners.
 |---|---|---|
 | `Sirno.toml` | `[structural.FIELD].entry` | Relation registration. |
 | `Sirno.toml` | `[render.structural]` lists | Generated footer rendering. |
-| relation entry | `meta.ripple.lake` and `meta.ripple.frost` lists | Sirno Tide review obligations. |
+| relation entry | `meta.ripple.lake` and `meta.ripple.anchor` lists | Sirno Tide review obligations. |
 
 `Sirno.toml` also preserves relation order in `[structural.FIELD]`.
 The relation entry declares `meta.type: "structural"`.
@@ -31,8 +31,7 @@ Both owners use the same edge names:
 
 In `Sirno.toml`, `[render.structural]` lists rendered edge directions per relation.
 In relation metadata,
-edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.frost` lists.
-`meta.ripple.frost` is the temporary spelling for Anchor-side review policy.
+edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.anchor` lists.
 Absent render and tide values are false.
 
 ```toml
@@ -52,7 +51,7 @@ belongs = ["to", "from"]
 ```yaml
 meta.type: "structural"
 meta.ripple.lake: ["to", "from"]
-meta.ripple.frost: ["from"]
+meta.ripple.anchor: ["from"]
 ```
 
 `prerequisite` and `refines` use direct `to` and `from` edges without clique expansion,

@@ -28,13 +28,13 @@ glossing each word with an `It is X because` clause:
 and *nominal* because each design object is named first by an *entry* id.
 
 A short feature list follows, each item led by a Sirno term:
-*lake*, *entry*, *witness*, *frost*, and *tide*.
+*lake*, *entry*, *witness*, *anchor*, and *tide*.
 The list says the *lake* is queryable and misty,
 an *entry* is a named design object whose id acts as a symbol,
 a *witness* links a design claim back to the code, tests, config files, or assets it describes,
-*frost* keeps history for frozen *lake* snapshots,
-and *Tide* is the design review worklist between *frost* commits
-that keeps locally reasonable changes from freezing into suboptimal design.
+*anchor* records the accepted baseline,
+and *Tide* is the design review worklist between Anchor updates
+that keeps locally reasonable changes from becoming unreviewed design.
 
 The definition closes with one deliberate line:
 `This is the dawn of documentation-driven development.`
@@ -87,8 +87,7 @@ A collapsible `Setup Sirno and Quick Start` section holds the concrete commands.
 It is one witnessed nice bit because it demonstrates Sirno's dual audience in a single place.
 The section installs with `cargo install sirno`,
 then `sirno init`, which opens an interactive setup plan.
-The full plan creates the *lake*, the *frost* store, `Sirno.toml`,
-`Sirno.lock.toml`, and the packaged skill wrappers together.
+The full plan creates the *lake*, `Sirno.toml`, and the packaged skill wrappers together.
 It can also link those wrappers into `.claude/skills` for Claude Code.
 
 It then splits by reader:
@@ -96,7 +95,7 @@ It then splits by reader:
 - *For LLM: in MCP* registers the stdio MCP server,
   with explicit lines for Codex, Claude Code, and a raw MCP config file.
 - *For Human: in CLI* walks `init`, `new`, and `check`,
-  the *frost* cycle of `commit`, `checkout`, and `defrost`,
+  the *anchor* commands of `status`, `check`, and `update`,
   the *tide* worklist of `status`, `resolve`, and `reset`,
   and read-only exploration commands ending with `sirno witness readme --full`,
   so the README shows how it witnesses its own intention.
@@ -129,7 +128,7 @@ It demonstrates four principles, each its own witnessed block:
 The README ends with an honest `Status` section.
 It is witnessed because it is a verifiable claim about what Sirno provides today:
 a Rust library with both CLI and MCP for entry storage, configuration, structural checks,
-generated footers, querying, lake-local search, witness lookup, freezing, and optional *frost* snapshots,
+generated footers, querying, lake-local search, witness lookup, freezing, and Anchor baselines,
 with only a lightweight GUI or Obsidian integration named as future work.
 Witnessing this section keeps the README from overpromising as the project grows.
 

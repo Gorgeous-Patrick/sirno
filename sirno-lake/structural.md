@@ -22,7 +22,7 @@ generated footer rendering, and tide review worklists.
 
 `meta.type: "structural"` marks an *entry* as the definition of one configured relation.
 The matching relation entry documents that relation's meaning
-and carries its Tide policy in `meta.ripple.lake` and `meta.ripple.frost`.
+and carries its Tide policy in `meta.ripple.lake` and `meta.ripple.anchor`.
 The marker lets checks confirm that every configured relation has a documented owner.
 It also keeps relation behavior local to the relation entry,
 so rendering policy can live in config while review policy stays in the lake.

@@ -35,7 +35,7 @@ does not write `Sirno.toml`,
 and exits with failure when comments are missing.
 `sirno util config fix` runs the non-interactive comment repair.
 It rewrites `Sirno.toml` through the canonical config renderer when comments are missing.
-Config utility commands reject `--lake-path` and `--frost-path`.
+Config utility commands reject `--lake-path`.
 
 `sirno util entry` and `sirno util entry tui` open an interactive terminal UI
 for common entry defaults.
@@ -48,12 +48,12 @@ The entry defaults include category vocabulary such as `category`, `meta`, `conc
 and `narrative`.
 They also include structural vocabulary such as `structural`, `belongs`, `refines`,
 and `prerequisite`.
-The entry utility accepts `--lake-path` and rejects `--frost-path`.
+The entry utility accepts `--lake-path`.
 
 `sirno util structural` discovers project-local entries with `meta.type: "structural"`.
 It syncs each discovered entry into `Sirno.toml` as `[structural.FIELD].entry`,
 using the entry address as both `FIELD` and `entry`.
-It accepts `--lake-path` and rejects `--frost-path`.
+It accepts `--lake-path`.
 
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.
@@ -69,14 +69,14 @@ The `--claude-skills` option includes `.claude/skills/sirno-*` links in `init`, 
 `list`, and `tui` output.
 Non-interactive skill utility commands print wrapper records as a table,
 followed by a summary line.
-Skill utility commands reject `--lake-path` and `--frost-path`.
+Skill utility commands reject `--lake-path`.
 
 `sirno util mcp --config PATH` starts the MCP server over stdio.
 When `--config` is omitted, the server uses the default `Sirno.toml` path.
 Project tools resolve that config path on each tool call.
 If the config path is relative, the server process current working directory controls the project.
-`sirno util mcp` rejects `--lake-path` and `--frost-path`;
-the configured project selects its lake and optional frost path.
+`sirno util mcp` rejects `--lake-path`;
+the configured project selects its lake.
 
 ---
 

@@ -1,32 +1,21 @@
 ---
 name: Sirno Lock
-desc: The TOML file that records generated project state.
+desc: The TOML file that records generated dependency and review state.
 category:
   - concept
-  - deprecated
+  - implemented
 belongs:
-  - sirno-frost
+  - anchor
+  - upstream-lake
 prerequisite:
-  - sirno-frost
+  - anchor
+  - upstream-lake
 refines:
   - versioning
 ---
 
-`Sirno.lock.toml` records generated project state.
-It is TOML and lives next to `Sirno.toml`.
-It is written when frost or upstream lakes are configured.
-
-When frost is configured,
-the lock contains one `[frost]` table.
-`status = "current"` means the lake represents the current editable *frost* version.
-`status = "checked-out"` means the lake materializes a selected frozen version.
-`sirno checkout --latest` records `status = "current"` and leaves files writable.
-The `generation` and `version` fields store the `eter` `SnapshotRef` for that state.
-`version` is the raw `Eterator` coordinate inside the stored GC generation.
-Frozen reasons are stored in frost snapshots, not in the lock.
-Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
-and renaming it into place.
-A failed write leaves the previous complete lock as the public state.
+`Sirno.lock.toml` records generated project state that must be shared.
+It is TOML and lives next to `Sirno.toml` in the current implementation.
 
 When upstream lakes are configured,
 the lock contains `[upstreams.DOMAIN]` tables.
@@ -40,30 +29,24 @@ When a *tide* is active,
 the lock may also contain explicit tide resolutions.
 Each resolution stores one `(ripple, field, direction, neighbor)` tuple
 and the fingerprint of the ripple entry delta it reviewed.
-Sirno derives open workitems from the current waterline and frostline.
+Sirno derives open workitems from the current waterline and Anchor baseline.
 The lock does not store a separate open worklist.
 
-A normal checkout is immutable.
-Sirno applies local file protection to the lake root,
-managed *entry* files,
-and managed artifact trees.
-It also writes a visible Markdown blockquote at the start of each checked-out *entry* body
-that says the file is read-only and should not be edited by hand.
-`sirno checkout VERSION --unsafe-mutable` leaves the checkout writable
-and records `mutable = true`.
+The target Anchor design moves active review status to `.sirno/tide.toml`
+and keeps `.sirno/lock.toml` for dependency pins only.
+Anchor state belongs in `.sirno/anchor.toml`.
 
-Committing a mutable *lake* writes a new current *frost* version
-and rewrites the lock to `status = "current"`.
-Sirno refuses to commit an immutable checkout.
-Successful commits clear tide resolutions
-and preserve upstream lock records.
+Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
+and renaming it into place.
+A failed write leaves the previous complete lock as the public state.
 
 ---
 
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [sirno-frost](sirno-frost.md)
+  - [anchor](anchor.md)
+  - [upstream-lake](upstream-lake.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**

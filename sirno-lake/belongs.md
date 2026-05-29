@@ -9,7 +9,7 @@ prerequisite:
   - structural
 meta.type: "structural"
 meta.ripple.lake: ["to", "from", "clique"]
-meta.ripple.frost: ["from"]
+meta.ripple.anchor: ["from"]
 ---
 
 `belongs` places an *entry* in a named review neighborhood.
@@ -39,16 +39,16 @@ A target should help navigation, review, or accountability.
 A loose browsing tag should not become structural link metadata.
 
 Generated `belongs` links preserve direct target and source links.
-This entry's `meta.ripple.lake` and `meta.ripple.frost` lists make Tide use waterline `to`,
-waterline and frostline `from`,
+This entry's `meta.ripple.lake` and `meta.ripple.anchor` lists make Tide use waterline `to`,
+waterline and anchor baseline `from`,
 and waterline `clique`.
 Waterline `to` is enough because neighborhood targets are outgoing metadata on the edited entry.
 Old neighborhood targets were visible where the edit happened.
-Requiring frostline `to` review would make ordinary neighborhood retargeting noisy.
-`from` uses both waterline and frostline because member entries live elsewhere.
+Requiring anchor baseline `to` review would make ordinary neighborhood retargeting noisy.
+`from` uses both waterline and anchor baseline because member entries live elsewhere.
 Those current or former members may not be open during the edit.
 Waterline `clique` surfaces the current review neighborhood around a changed member.
-Frostline clique is omitted so former peer groups do not reopen after an intentional move.
+Anchor baseline clique is omitted so former peer groups do not reopen after an intentional move.
 
 This is useful for domains that cut across categories.
 For example, a *lake* neighborhood may include concepts, metadata rules,

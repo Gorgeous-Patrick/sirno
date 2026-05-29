@@ -11,8 +11,8 @@ prerequisite:
 ---
 
 Query selects parsed *entries* from the lake or,
-when frost is configured,
-from one *frost* version.
+when anchor is configured,
+from one *anchor* version.
 
 It reads *entry* paths, metadata, and bodies.
 The *generated footers* are projections for navigation,

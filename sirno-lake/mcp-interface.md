@@ -47,8 +47,7 @@ MCP tool names are stable snake-case names prefixed with `sirno_`:
   `sirno_entry_artifact_rename`, and `sirno_entry_artifact_remove`
 - lake: `sirno_lake_init`, `sirno_lake_move`, `sirno_lake_check`,
   `sirno_lake_render`, and `sirno_lake_render_delete`
-- frost: `sirno_frost_init`, `sirno_frost_move`, `sirno_frost_commit`,
-  `sirno_frost_checkout`, and `sirno_frost_defrost`
+- anchor: `sirno_anchor_status`, `sirno_anchor_check`, and `sirno_anchor_update`
 - tide: `sirno_tide_status`, `sirno_tide_resolve`, `sirno_tide_unresolve`,
   and `sirno_tide_reset`
 
@@ -67,8 +66,7 @@ or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 `sirno_entry_query` omits `columns` to select the default `id` and `name` columns.
 An empty `columns` array returns selectable column names and no records.
 A non-empty `columns` array selects built-in columns and configured link relations.
-`sirno_status` returns typed frost, check-policy, structural-edge,
-tide, and commit-readiness objects.
+`sirno_status` returns typed check-policy, structural-edge, and tide objects.
 `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
 `sirno_entry_witness` accepts `{ id }` by default.
 Default records contain `entry`, `location`, and `body`.

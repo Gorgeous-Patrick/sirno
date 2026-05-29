@@ -27,7 +27,7 @@ so a *belongs* target reached this way is a current review neighborhood.
 
 The waterline has no stored identity.
 It is whatever the lake currently holds.
-Freezing it with a *frost* commit turns the present waterline into the next *frostline*.
+`sirno anchor update` accepts the present waterline as the next *anchor baseline*.
 
 ---
 

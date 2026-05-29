@@ -59,9 +59,9 @@ The footer is derived from metadata.
 Changing a generated link by hand does not change the metadata.
 Changing the metadata and regenerating the footer is the correct path.
 The sentinels make that ownership boundary visible in the *entry* file itself.
-A *frost* commit removes the *generated footer* before writing the *entry* snapshot.
-The frost layer keeps canonical metadata and prose,
-not navigation projections.
+Anchor fingerprints ignore the *generated footer*.
+The accepted baseline keeps canonical metadata and prose,
+not rendered navigation projections.
 
 The `[render.structural]` policy controls which link relations appear.
 

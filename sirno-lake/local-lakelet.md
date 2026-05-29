@@ -7,7 +7,7 @@ belongs:
   - sirno-lake
 prerequisite:
   - lakelet
-  - sirno-frost
+  - anchor
 ---
 
 A *local lakelet* is a project-managed lakelet.
@@ -26,9 +26,9 @@ If `[upstreams.core]` exists,
 then `lake/core/` is a glacier owned by crystallization.
 Sirno rejects crystallization when unmanaged local files already occupy that domain.
 
-Frost stores local lakelet entries in the flattened entry-address form.
-For example, `lake/core/design.md` is stored as `core.design` in the current frost snapshot.
-There is no separate lakelet frost store or lakelet-local snapshot.
+Anchor records local lakelet entries by their flattened entry addresses.
+For example, `lake/core/design.md` is recorded as `core.design`.
+There is no separate lakelet baseline.
 
 ---
 

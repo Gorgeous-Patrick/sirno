@@ -10,7 +10,7 @@ prerequisite:
   - refinement
 meta.type: "structural"
 meta.ripple.lake: ["to", "from"]
-meta.ripple.frost: ["from"]
+meta.ripple.anchor: ["from"]
 ---
 
 `refines` records a *refinement* edge from a more specific *entry*
@@ -37,14 +37,14 @@ The more specific *entry* points back to the broader *entry*.
 This makes local work easier:
 from the local *entry*, a reader can climb back toward intent.
 From the broad *entry*, generated or queried metadata can reveal the *entries* that elaborate it.
-This entry's `meta.ripple.lake` and `meta.ripple.frost` lists use direct `to` and `from` edges
+This entry's `meta.ripple.lake` and `meta.ripple.anchor` lists use direct `to` and `from` edges
 for *tide* review workitems.
 It does not render `refines` generated footer sections by default.
 Only waterline `to` participates in tide review.
 A `to` target is outgoing metadata on the edited ripple entry itself,
 so old broader targets are visible where the edit happens.
-Requiring frostline `to` review would turn ordinary retargeting into review noise.
-`from` uses both waterline and frostline because incoming refinements live on other entries.
+Requiring anchor baseline `to` review would turn ordinary retargeting into review noise.
+`from` uses both waterline and anchor baseline because incoming refinements live on other entries.
 Those dependent entries may not be open during the edit.
 
 Use the nearest broader target that explains the current *entry*'s design pressure.

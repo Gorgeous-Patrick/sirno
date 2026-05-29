@@ -43,8 +43,7 @@ it marks information the user wants treated with care.
 Read frozen entries as part of the design source.
 If actualization seems to require a frozen entry to change,
 surface the proposed change to the user for double review
-before melting it with `sirno_entry_melt`
-or unfreezing the checkout with `sirno_frost_checkout`.
+before melting it with `sirno_entry_melt`.
 
 Map the project first.
 The configured lake and `Sirno.toml` are read as truth;
@@ -53,8 +52,7 @@ Bind the MCP server to the repository root through `sirno_cwd` when needed.
 Read repository instructions and `Sirno.toml`.
 If `Sirno.toml` is missing, report that the repository is not Sirno-managed
 and prompt the user to start with `sirno init`.
-Call `sirno_status` to surface the lake path, frost state, tide blockers,
-and pending review entries.
+Call `sirno_status` to surface the lake path, tide blockers, and pending review entries.
 Query the active lake with `sirno_entry_query`,
 then read the few candidate entries that govern the request.
 Read frozen entries with the same weight as mutable ones;
@@ -91,8 +89,9 @@ Maintain project configuration as part of the same lake-to-repo workflow.
 The lake entries that govern project shape are authoritative;
 `Sirno.toml` is the operational configuration in the repository
 that should remain consistent with them.
-Prefer MCP tools such as `sirno_lake_move`, `sirno_frost_*`, and `sirno_entry_artifact_*`
-for routine lake, frost, and artifact moves.
+Prefer MCP tools such as `sirno_lake_move`, `sirno_anchor_status`, `sirno_anchor_check`,
+`sirno_anchor_update`, and `sirno_entry_artifact_*`
+for routine lake movement, Anchor checks, Anchor updates, and artifact moves.
 Use manual `Sirno.toml` edits only for schema work or comment maintenance the MCP tools
 cannot express,
 then run deterministic config repair when available.
@@ -120,8 +119,7 @@ walk workitems with `sirno_tide_status`,
 then use `sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
 If the current checkout is frozen or an entry is immutable, never force a write.
 Surface the proposed change to the user for double review,
-then use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
-once the user agrees.
+then use `sirno_entry_melt` once the user agrees.
 If a check is blocked, report the blocker and still validate entry parsing,
 metadata references, and witness output as far as the tools allow.
 

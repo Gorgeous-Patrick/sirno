@@ -20,7 +20,6 @@ The canonical comments are:
 
 - `Sirno Lake path, resolved relative to this config file.`
 - `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
-- `frost path, kept outside the lake.`
 - `Git-backed upstream lake crystallized into a glacier under this entry domain.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry address.`
@@ -29,15 +28,15 @@ The canonical comments are:
 - `Require each configured link relation to have a matching structural relation entry during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`
-- `Show tutorial text when frost commit is blocked by open tide workitems.`
-- `Include first-snapshot bootstrap context in the frost commit tide tutorial.`
+- `Show tutorial text when anchor update is blocked by open tide workitems.`
+- `Include first-anchor bootstrap context in the anchor update tide tutorial.`
 - `Structural link relations.`
 - `Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.`
 - `FIELD must be a non-empty single-line metadata key with no comma.`
 - `FIELD cannot be name, desc, meta, or frozen.`
 - `entry names the lake entry that documents the relation.`
 - `Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.`
-- `Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.frost direction lists.`
+- `Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.anchor direction lists.`
 - `Generated-footer structural link render policy.`
 - `Each key names a configured structural relation.`
 - `Values are direction lists: to, from, and clique.`

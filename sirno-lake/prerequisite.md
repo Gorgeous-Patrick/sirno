@@ -9,7 +9,7 @@ prerequisite:
   - structural
 meta.type: "structural"
 meta.ripple.lake: ["to", "from"]
-meta.ripple.frost: ["from"]
+meta.ripple.anchor: ["from"]
 ---
 
 `prerequisite` records a knowledge dependency from an *entry*
@@ -37,12 +37,12 @@ Use `category` for kind.
 Use `belongs` for review locality.
 Use `refines` when the current *entry* makes a broader design claim more concrete.
 
-This entry's `meta.ripple.lake` and `meta.ripple.frost` lists use direct `to` and `from` edges
+This entry's `meta.ripple.lake` and `meta.ripple.anchor` lists use direct `to` and `from` edges
 for *tide* review workitems.
 It does not use clique expansion,
 because a knowledge dependency is directional.
 Waterline `to` catches the dependencies named by the edited *entry*.
-Waterline and frostline `from` catch entries that currently or formerly depend on it.
+Waterline and anchor baseline `from` catch entries that currently or formerly depend on it.
 
 ---
 

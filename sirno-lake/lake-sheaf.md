@@ -22,7 +22,7 @@ Dependency domains then link back to the resolved entries.
 This keeps one composed entry surface even when several dependency paths reach the same lake.
 Local lakelets and glaciers are lakelets.
 Both use the same entry-address resolution
-and are represented in frost by their flattened entry addresses.
+and are represented in anchor by their flattened entry addresses.
 
 The sheaf model names composition, lookup, and consistency.
 It does not choose dependency versions.

@@ -26,8 +26,7 @@ Start every repository edit in the configured lake.
 Read repository instructions, `Sirno.toml`, and the entries that govern the requested work.
 If `Sirno.toml` is missing, report that the repository is not currently Sirno-managed,
 then prompt the user to start with `sirno init`.
-Call `sirno_status` early to surface the lake path, frost state, tide blockers,
-and pending review entries.
+Call `sirno_status` early to surface the lake path, tide blockers, and pending review entries.
 Use `sirno_entry_query` for discovery,
 follow `category`, `belongs`, `prerequisite`, and `refines`,
 and inspect existing evidence with `sirno_entry_witness` before editing repository material.
@@ -50,7 +49,7 @@ Do not create placeholder witnesses.
 When evidence supports a related but different claim, create the exact entry for that claim.
 
 Maintain project configuration as part of the same workflow.
-Prefer MCP tools for routine lake and frost moves.
+Prefer MCP tools for routine lake movement, Anchor checks, and Anchor updates.
 When manual `Sirno.toml` edits are needed, preserve schema comments and path rules from
 `Sirno.toml` and the active project,
 then run deterministic config repair when available.
@@ -70,8 +69,7 @@ If `sirno_status` reports an open tide,
 walk workitems with `sirno_tide_status` and resolve them with
 `sirno_tide_resolve` or `sirno_tide_unresolve` rather than ignoring the blocker.
 If the current checkout is frozen or an entry is immutable,
-use `sirno_frost_checkout`, `sirno_entry_melt`, or the project's frost workflow
-instead of forcing a write.
+use `sirno_entry_melt` instead of forcing a write.
 If checks are blocked, report the blocker and still validate entry parsing,
 metadata references, and witness output as far as the tools allow.
 
