@@ -3,6 +3,7 @@ name: Sirno Tide
 desc: The dependency-review subsystem that compares the waterline against the frostline.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-frost
   - sirno-lake

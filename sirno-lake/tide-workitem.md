@@ -3,6 +3,7 @@ name: Tide Workitem
 desc: One dependency review obligation in a Sirno Tide.
 category:
   - concept
+  - deprecated
 belongs:
   - tide
 prerequisite:

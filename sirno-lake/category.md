@@ -23,7 +23,9 @@ A category target must be usable as a kind,
 and being usable as a kind is itself a documented property.
 The `category` *entry* classifies the *entries* that may be used as category targets.
 A category target should therefore be categorized by `category`.
-This includes `category` itself and the initialized `concept`, `narrative`, and `meta` *entries*.
+This includes `category` itself
+and the initialized `concept`, `narrative`, `meta`, `proposal`, `deprecated`, `implemented`,
+and `uninhabited` *entries*.
 The marker is self-applied, which keeps the category vocabulary closed under its own rule.
 `sirno check` reports a category target that lacks this marker.
 It also warns when category metadata needs the `category` *entry* and that entry is missing.
@@ -35,6 +37,10 @@ An *entry* categorized by `meta` should define the project's principles, vocabul
 An *entry* categorized by `category` may itself be used as a category target.
 An *entry* categorized by `concept` should define a compressed idea.
 An *entry* categorized by `narrative` should record or name a route through concepts.
+An *entry* categorized by `proposal` should describe draft design before acceptance.
+An *entry* categorized by `deprecated` should be read as historical or replacement-bound design.
+An *entry* categorized by `implemented` should be accepted and represented by repository material.
+An *entry* categorized by `uninhabited` should name design space with no current local instances.
 
 Because categories are *entries*,
 their meanings can be documented in the same *lake* they classify.
@@ -58,7 +64,11 @@ The category field is most useful when it tells the reader what kind of object t
   - [structural](structural.md)
 - belongs (from):
   - [concept](concept.md)
+  - [deprecated](deprecated.md)
+  - [implemented](implemented.md)
   - [meta](meta.md)
   - [narrative](narrative.md)
+  - [proposal](proposal.md)
+  - [uninhabited](uninhabited.md)
 
 > **Sirno generated links end.**

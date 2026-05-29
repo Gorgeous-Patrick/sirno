@@ -3,6 +3,7 @@ name: Entry Artifact
 desc: A lake-owned file attached to one entry and versioned with frost.
 category:
   - concept
+  - deprecated
 belongs:
   - entry
   - sirno-frost

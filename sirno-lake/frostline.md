@@ -3,6 +3,7 @@ name: Frostline
 desc: The latest frost snapshot, one side of the ripple comparison.
 category:
   - concept
+  - deprecated
 belongs:
   - ripple
 prerequisite:

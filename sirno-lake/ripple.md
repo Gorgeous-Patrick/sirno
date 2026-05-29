@@ -3,6 +3,7 @@ name: Ripple
 desc: The named delta between two lake states.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-tide
 prerequisite:

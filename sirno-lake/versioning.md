@@ -3,6 +3,7 @@ name: Versioning
 desc: Lake-wide immutable snapshots of Sirno entries through eter.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-frost
 prerequisite:

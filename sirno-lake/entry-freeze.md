@@ -3,6 +3,7 @@ name: Entry Freeze
 desc: A read-only entry marker that protects current frost-backed Markdown.
 category:
   - concept
+  - deprecated
 belongs:
   - entry
   - sirno-frost

@@ -3,6 +3,7 @@ name: Tide Resolution
 desc: A persisted explicit review record and its resolve, reopen, and reset lifecycle.
 category:
   - concept
+  - deprecated
 belongs:
   - tide
 prerequisite:

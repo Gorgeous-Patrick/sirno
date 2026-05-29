@@ -3,6 +3,7 @@ name: Tide
 desc: The frost-based worklist of review obligations for lake edits.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-tide
 prerequisite:

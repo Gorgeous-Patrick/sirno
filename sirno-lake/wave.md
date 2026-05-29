@@ -3,6 +3,7 @@ name: Wave
 desc: The set of tide workitems produced by one ripple.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-tide
 prerequisite:

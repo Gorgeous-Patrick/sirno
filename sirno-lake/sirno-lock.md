@@ -3,6 +3,7 @@ name: Sirno Lock
 desc: The TOML file that records generated project state.
 category:
   - concept
+  - deprecated
 belongs:
   - sirno-frost
 prerequisite:

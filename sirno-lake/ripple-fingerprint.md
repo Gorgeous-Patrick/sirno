@@ -3,6 +3,7 @@ name: Ripple Fingerprint
 desc: The delta hash that scopes a tide resolution to one exact ripple state.
 category:
   - concept
+  - deprecated
 belongs:
   - ripple
 prerequisite:

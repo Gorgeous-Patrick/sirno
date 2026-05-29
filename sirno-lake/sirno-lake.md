@@ -115,6 +115,7 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (to):
   - [form](form.md)
 - belongs (from):
+  - [anchor](anchor.md)
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
   - [lakelet](lakelet.md)
