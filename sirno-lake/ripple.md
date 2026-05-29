@@ -8,12 +8,13 @@ belongs:
   - sirno-tide
 prerequisite:
   - sirno-anchor
-  - waterline
 ---
 
 A *ripple* is the named delta between Anchor and the waterline.
 Anchor is the accepted baseline.
 The waterline is the current lake.
+Sirno reads the waterline from the configured lake path
+and strips generated footer regions before comparison.
 
 A *ripple* exists when an *entry* differs between those two states.
 The difference may be a changed name, description, prose body, or structural link.
@@ -31,7 +32,16 @@ The *ripple* names reviewable difference, not semantic judgment.
 Sirno can show what changed and which configured neighbors must be reviewed.
 It does not decide whether the new design is correct.
 
-A *ripple* produces a *wave* of *tide workitems* through relation-defined tide policies.
+A *ripple fingerprint* is a `sha256:` hash of one *ripple* delta.
+Sirno labels the Anchor side and the waterline side,
+uses each side's canonical entry fingerprint when present,
+treats an absent side as a fixed placeholder,
+and hashes the joined text.
+The fingerprint identifies what changed, not the moment of change.
+It scopes Tide review resolutions to the exact delta a reviewer saw.
+
+A *ripple* produces a wave of *tide workitems* through relation-defined Tide policies.
+The wave is the local review surface around a single changed *entry*.
 The *tide* is the active worklist created from all current ripples.
 
 ---
@@ -40,8 +50,6 @@ The *tide* is the active worklist created from all current ripples.
 
 - belongs (to):
   - [sirno-tide](sirno-tide.md)
-- belongs (from):
-  - [ripple-fingerprint](ripple-fingerprint.md)
-  - [waterline](waterline.md)
+- belongs (from): (none)
 
 > **Sirno generated links end.**

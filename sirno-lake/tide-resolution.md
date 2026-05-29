@@ -8,7 +8,7 @@ belongs:
   - tide
 prerequisite:
   - tide
-  - ripple-fingerprint
+  - ripple
 ---
 
 A *tide resolution* is a recorded statement that one review obligation was met.
@@ -28,11 +28,18 @@ Resolving by *neighbor* id resolves every open *workitem* whose `neighbor` is th
 which reads as "I reviewed this entry and accept it."
 Resolving a full tuple records only that one obligation.
 
+`sirno resolve --infer` resolves every open *workitem* whose `neighbor`
+is itself one of the current *ripple* entries.
+When the neighbor also changed in the same edit session,
+the editor already worked on it directly,
+so inference closes the dependency-review obligation without a manual selector.
+Inferred resolutions are ordinary *tide resolutions*
+and stay bound to the same tuple and *ripple fingerprint*.
+
 `sirno resolve` records review.
 `sirno unresolve` removes matching resolutions,
 and `sirno reopen` is its alias.
-`sirno resolve --infer` applies the mutual-ripple rule;
-see *infer resolution*.
+`sirno resolve --infer` applies the mutual-ripple rule.
 The grouped forms are `sirno tide resolve`, `sirno tide unresolve`,
 and `sirno tide reopen` as an alias of unresolve.
 `sirno tide reset` clears every tide resolution from the lock at once.

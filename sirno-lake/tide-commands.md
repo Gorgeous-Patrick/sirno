@@ -35,7 +35,7 @@ Space resolves the selected row.
 In review-entry summary mode, these keys apply to the selected review entry.
 In wave summary mode, they apply to exact workitems in the selected wave.
 In full mode, they apply to the selected exact workitem.
-`i` runs infer-resolution.
+`i` runs infer resolution.
 `c` refreshes tide state.
 `q` and Esc exit.
 

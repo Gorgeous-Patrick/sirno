@@ -62,7 +62,6 @@ and the inference shortcut are *tide resolution* behavior.
 - belongs (to):
   - [sirno-tide](sirno-tide.md)
 - belongs (from):
-  - [infer-resolution](infer-resolution.md)
   - [tide-resolution](tide-resolution.md)
   - [tide-review-file](tide-review-file.md)
   - [tide-workitem](tide-workitem.md)

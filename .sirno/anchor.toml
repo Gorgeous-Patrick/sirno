@@ -192,17 +192,12 @@ belongs = ["sirno"]
 prerequisite = ["sirno"]
 
 [entries.generated-footer]
-fingerprint = "sha256:d0f5416de810e516d8da86e3806a2a297465d1e47121cf9e41c2de1eb738f713"
+fingerprint = "sha256:286641b2747b1e5d2fd061363dfb098de8c2274e2237f9021d3649e664678988"
 belongs = ["generated-navigation"]
 prerequisite = ["structural"]
 
-[entries.generated-footer-ownership]
-fingerprint = "sha256:06f5d9970ae636d88811323bdc83f74d737e51b667684914f460168248a8f395"
-belongs = ["generated-navigation"]
-prerequisite = ["generated-footer"]
-
 [entries.generated-navigation]
-fingerprint = "sha256:c6d23b8594a628256f0bd6aafc2ee466f806fecd25267c3ed10b9a7ce9e53ddc"
+fingerprint = "sha256:eee792f4e1120e1ffa269bfb34a153a440f566290e5846c28ef78345d4969b41"
 belongs = ["structural"]
 prerequisite = ["generated-footer"]
 
@@ -223,11 +218,6 @@ prerequisite = [
 fingerprint = "sha256:0de43d976c6532bc25d1ee2846aa9e8e7782714ce8427530b6a9b379fc726cad"
 belongs = ["category"]
 prerequisite = ["category"]
-
-[entries.infer-resolution]
-fingerprint = "sha256:73ab7d3e79ff951120415b42f01e9123e5e137f222269d1146437591bb99cc05"
-belongs = ["tide"]
-prerequisite = ["tide-resolution"]
 
 [entries.intent-driven-development]
 fingerprint = "sha256:a796d4c0a7af8a7dc8438b47923163e41e6ec1d359bc62f97b8302b3224f7f9c"
@@ -475,17 +465,9 @@ prerequisite = [
 ]
 
 [entries.ripple]
-fingerprint = "sha256:df33a44c15057cc4b9ae92740100e0a87d570cd4d2f37b5e006ad6b8ddb3bc57"
+fingerprint = "sha256:89d341ae796aace1c67a993cb6b3e0a2e93f2a10a6ff6c9963659423e67dd868"
 belongs = ["sirno-tide"]
-prerequisite = [
-    "sirno-anchor",
-    "waterline",
-]
-
-[entries.ripple-fingerprint]
-fingerprint = "sha256:42eb31d1ef643c30dd45fd5c6f3d2982066fd110b9720f6def60f1b3674588e2"
-belongs = ["ripple"]
-prerequisite = ["ripple"]
+prerequisite = ["sirno-anchor"]
 
 [entries.sirno]
 fingerprint = "sha256:5b3c52b15a46d9154bb1fe5c0e8035ad1f3abd820f17bd8f378345401e8286f8"
@@ -555,7 +537,7 @@ prerequisite = [
 ]
 
 [entries.sirno-witness]
-fingerprint = "sha256:56cbe310f57ef62b342e9d47958ea048aadeb2e13819f8d2710a36e2cce1bf38"
+fingerprint = "sha256:3a6068409c3ab88650f4327f39f489f213143612ef244d1f47e2d07de2c4c22d"
 belongs = ["sirno"]
 prerequisite = [
     "entry",
@@ -619,16 +601,16 @@ belongs = ["sirno-tide"]
 prerequisite = ["sirno-tide"]
 
 [entries.tide-commands]
-fingerprint = "sha256:082a2d287b023d0e7876bc78c2d824c7ac221cbbb216409fb3a997b6e26d0bec"
+fingerprint = "sha256:b3c7531e38208669d930c12dad8e1e88df496242de32bb5a7d86a321e95fd175"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
 [entries.tide-resolution]
-fingerprint = "sha256:6258872d6596229fbef91cc57343b62f16677162630fe66f57654528b2da29cb"
+fingerprint = "sha256:ed9b27e0064ce8965fd1eacd9dba8a9270df8dee9acd14d7ba0c645f9d80a76d"
 belongs = ["tide"]
 prerequisite = [
     "tide",
-    "ripple-fingerprint",
+    "ripple",
 ]
 
 [entries.tide-review-file]
@@ -686,16 +668,6 @@ prerequisite = [
     "sirno-anchor",
 ]
 
-[entries.waterline]
-fingerprint = "sha256:c818ba9708691f07e591d7648c70dda4f0d7f21df9b6c79a413d83cd8fc76ce0"
-belongs = ["ripple"]
-prerequisite = ["ripple"]
-
-[entries.wave]
-fingerprint = "sha256:38af8415f1828a9278275daf2bd03014f0612886b02e775445963df1a57d235b"
-belongs = ["sirno-tide"]
-prerequisite = ["tide"]
-
 [entries.witness-delimiter]
 fingerprint = "sha256:98f8288995194e6c4653793ec7dd64749a64f0c5eb11aa954e33f6c467117e39"
 belongs = ["sirno-witness"]
@@ -707,14 +679,9 @@ belongs = ["sirno-witness"]
 prerequisite = ["witness-lookup"]
 
 [entries.witness-lookup]
-fingerprint = "sha256:12eb79d5797418c19b18b482d5e5ed9f4643d1d64e38b2cdfe1150bf5f5ab0f4"
+fingerprint = "sha256:ec7e07398a1f4518cbbae83bdc00f2c1a27cb4a7d77d2bc3b86a1566ff3d6543"
 belongs = ["sirno-witness"]
 prerequisite = [
     "witness-delimiter",
     "project-config",
 ]
-
-[entries.witness-record]
-fingerprint = "sha256:bd6846b103b3231602595d5a77a7a3505c5c9fc49afde244bb6cdf708f0fcbc9"
-belongs = ["sirno-witness"]
-prerequisite = ["witness-lookup"]

@@ -26,11 +26,11 @@ impl<'a> GeneratedLinkBody<'a> {
     }
 
     /// Validate generated-link guard boundaries.
-    // sirno:witness:generated-footer-ownership:begin
+    // sirno:witness:generated-footer:begin
     pub fn validate(&self) -> Result<(), GeneratedLinkError> {
         self.bounds().map(|_| ())
     }
-    // sirno:witness:generated-footer-ownership:end
+    // sirno:witness:generated-footer:end
 
     /// Returns true when an existing generated-link region differs from `expected`.
     ///
@@ -304,11 +304,11 @@ fn percent_encode_relative_path(path: &Path) -> String {
 }
 
 /// Opening guard for Sirno-owned generated links.
-// sirno:witness:generated-footer-ownership:begin
+// sirno:witness:generated-footer:begin
 pub const BEGIN_LINKS_GUARD: &str = "> **Sirno generated links begin. Do not edit this section.**";
 /// Closing guard for Sirno-owned generated links.
 pub const END_LINKS_GUARD: &str = "> **Sirno generated links end.**";
-// sirno:witness:generated-footer-ownership:end
+// sirno:witness:generated-footer:end
 
 const GENERATED_LINK_DIVIDER: &str = "---";
 
@@ -319,7 +319,7 @@ struct GeneratedLinkBounds {
 }
 
 impl GeneratedLinkBounds {
-    // sirno:witness:generated-footer-ownership:begin
+    // sirno:witness:generated-footer:begin
     fn find(body: &str) -> Result<Option<Self>, GeneratedLinkError> {
         let begin = Self::guard_positions(body, BEGIN_LINKS_GUARD);
         let end = Self::guard_positions(body, END_LINKS_GUARD);
@@ -343,7 +343,7 @@ impl GeneratedLinkBounds {
         let end = end[0] + END_LINKS_GUARD.len();
         Ok(Some(Self { region_start: Self::line_start(body, begin), region_end: end }))
     }
-    // sirno:witness:generated-footer-ownership:end
+    // sirno:witness:generated-footer:end
 
     fn next_line_start(self, body: &str) -> usize {
         body[self.region_end..]

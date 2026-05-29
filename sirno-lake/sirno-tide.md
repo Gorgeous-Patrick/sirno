@@ -63,6 +63,5 @@ Read them together when changing how edits become review obligations.
 - belongs (from):
   - [ripple](ripple.md)
   - [tide](tide.md)
-  - [wave](wave.md)
 
 > **Sirno generated links end.**

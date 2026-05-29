@@ -24,7 +24,6 @@ Reaching for a *witness* block to save information is the wrong tool.
 The *witness* entry is the front door for *repository* evidence.
 Its review neighborhood covers how blocks are marked,
 how they are looked up and renamed,
-how resolved records are shaped,
 and how malformed blocks are reported.
 
 Sirno discovers *witness* status mechanically.
@@ -68,7 +67,7 @@ If the evidence exists but is hard to interpret,
 the *entry* body can explain what a reviewer should look for.
 The *entry address* remains the query key.
 
-How Sirno represents resolved evidence is the *witness record*.
+*Witness lookup* defines how Sirno represents resolved evidence.
 How malformed evidence is reported is *witness integrity*.
 This *entry* stays the front door;
 its neighborhood carries the precise mechanics.
@@ -83,6 +82,5 @@ its neighborhood carries the precise mechanics.
   - [witness-delimiter](witness-delimiter.md)
   - [witness-integrity](witness-integrity.md)
   - [witness-lookup](witness-lookup.md)
-  - [witness-record](witness-record.md)
 
 > **Sirno generated links end.**

@@ -313,7 +313,7 @@ impl WitnessIndex {
 /// Invariant: `entry` is the parsed path captured from the opening delimiter.
 /// `region` identifies the matched block.
 /// `opening` and `closing` identify the delimiter spans.
-// sirno:witness:witness-record:begin
+// sirno:witness:witness-lookup:begin
 #[derive(Clone, Debug, PartialEq, Eq)]
 // sirno:witness:sirno-witness:begin
 pub struct WitnessRecord {
@@ -333,7 +333,7 @@ pub struct WitnessRecord {
     pub body: String,
 }
 // sirno:witness:sirno-witness:end
-// sirno:witness:witness-record:end
+// sirno:witness:witness-lookup:end
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum WitnessDelimiterKind {

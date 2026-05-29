@@ -29,11 +29,25 @@ Generated configs write the standard syntax,
 which accepts `//` line comments and hidden Markdown HTML comments.
 Those standard regexes share one canonical capture for valid *entry addresses*.
 Sirno reads `mosaika` match records into *witness* records keyed by *entry address*.
+One record carries the entry address, repository file path,
+full block region, opening and closing delimiter spans,
+matched opening delimiter text, and full block body.
+The address is parsed from the opening delimiter,
+so a record always names a valid *entry*.
+The body is emitted by `mosaika` and stays owned by the repository artifact;
+Sirno reads it but never authors it.
+
+Record spans are one-based line and column ranges.
+The region span covers the whole block.
+Delimiter spans cover only the sentinels and exclude leading indentation,
+so an indented sentinel still resolves to the comment marker column.
+One *entry* may have several records across files
+because evidence for one claim can live in more than one place.
+`sirno witness ENTRY_ADDRESS --full` prints every record for that address,
+showing every line the block spans and preserving the matched text.
+
 Nested *witness* blocks resolve as separate records,
 because the balanced matcher pairs each closing delimiter with the nearest open delimiter.
-The stored delimiter spans exclude leading indentation.
-Full output displays every line spanned by the matched block
-and preserves the matched text.
 The checker also scans the configured delimiter regexes as individual tokens.
 A delimiter token that is not consumed by a resolved block is reported as an orphan delimiter.
 

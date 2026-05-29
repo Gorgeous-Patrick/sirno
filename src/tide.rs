@@ -239,7 +239,7 @@ impl Tide {
         let mut sources_by_workitem = BTreeMap::<TideWorkitem, BTreeSet<TideSource>>::new();
         let mut fingerprint_by_ripple = BTreeMap::<EntryAddress, String>::new();
 
-        // sirno:witness:wave:begin
+        // sirno:witness:tide:begin
         for ripple in &ripple_ids {
             let fingerprint = ripple_fingerprint(anchor_by_id.get(ripple), water_by_id.get(ripple));
             fingerprint_by_ripple.insert(ripple.clone(), fingerprint);
@@ -273,7 +273,7 @@ impl Tide {
                 }
             }
         }
-        // sirno:witness:wave:end
+        // sirno:witness:tide:end
 
         let mut statuses = sources_by_workitem
             .into_iter()

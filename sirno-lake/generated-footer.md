@@ -12,10 +12,14 @@ prerequisite:
 Sirno may generate and maintain a footer at the bottom of *entries*.
 
 The *generated footer* *entry* is the front door for generated navigation regions.
-Its local refinements define ownership boundaries and link selection policy.
+It defines the ownership boundary.
+*Structural link policy* defines which links appear there.
 
 The footer is bounded by sentinels that state Sirno owns the region.
 Humans and tools should leave that region untouched.
+Render commands create, replace, check, or delete only that guard-bounded region.
+Malformed, missing, duplicated, or reversed sentinels are structural errors.
+Prose outside the generated-link region remains user-owned.
 
 The sentinels are human-visible Markdown block quotes.
 The generated list is separated from both sentinels by blank lines.
