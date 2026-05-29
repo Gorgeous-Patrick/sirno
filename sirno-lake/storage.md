@@ -15,7 +15,7 @@ The lake is the required editable working form.
 It stores flat Markdown *entries* at the *lake* root
 and lake-owned *entry artifacts* under `.artifacts`.
 Configured repo members are optional and enable *witness* lookup.
-Anchor control state lives in `.sirno/anchor.toml` next to `Sirno.toml`.
+Sirno control files live under `.sirno/` next to `Sirno.toml`.
 Git stores history for the lake and control files.
 
 Storage surfaces stay distinct.
@@ -29,6 +29,9 @@ or documents that actualize an *entry* claim.
 
 `Sirno.toml` names configured storage paths and policies.
 `.sirno/anchor.toml` records the accepted baseline.
+The target control-file split also places active Tide reviews in `.sirno/tide.toml`
+and upstream dependency pins in `.sirno/lock.toml`.
+The *Sirno Control Files* entry defines that split.
 The lake, Sirno control files, and *repository* artifacts remain separate surfaces
 with separate ownership rules.
 
@@ -45,6 +48,8 @@ and *repository* evidence.
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [anchor](anchor.md)
+  - [anchor-file](anchor-file.md)
+  - [sirno-anchor](sirno-anchor.md)
+  - [sirno-control-files](sirno-control-files.md)
 
 > **Sirno generated links end.**

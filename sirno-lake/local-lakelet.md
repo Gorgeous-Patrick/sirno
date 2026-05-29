@@ -7,7 +7,7 @@ belongs:
   - sirno-lake
 prerequisite:
   - lakelet
-  - anchor
+  - sirno-anchor
 ---
 
 A *local lakelet* is a project-managed lakelet.

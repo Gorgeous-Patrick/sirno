@@ -112,7 +112,6 @@ and where implementation evidence should be found when that evidence exists.
 - belongs (to):
   - [form](form.md)
 - belongs (from):
-  - [anchor](anchor.md)
   - [design-source-authority](design-source-authority.md)
   - [entry](entry.md)
   - [lakelet](lakelet.md)
@@ -120,6 +119,7 @@ and where implementation evidence should be found when that evidence exists.
   - [metadata](metadata.md)
   - [query](query.md)
   - [refinement](refinement.md)
+  - [sirno-anchor](sirno-anchor.md)
   - [sirno-tide](sirno-tide.md)
   - [sirno-upstream](sirno-upstream.md)
   - [structural-check](structural-check.md)

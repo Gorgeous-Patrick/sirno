@@ -7,7 +7,7 @@ belongs:
   - entry
 prerequisite:
   - entry
-  - anchor
+  - sirno-anchor
 ---
 
 An *entry lifecycle* describes how one lake Markdown *entry* moves through the editable lake.

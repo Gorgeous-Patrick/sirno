@@ -15,7 +15,7 @@ A *tide resolution* is a recorded statement that one review obligation was met.
 It pairs a *tide workitem* tuple `(ripple, field, direction, neighbor)`
 with the *ripple fingerprint* of the delta the reviewer inspected.
 
-Resolutions are the only *tide* state Sirno persists.
+Resolutions are the only *tide* state the current implementation persists.
 They live in `Sirno.lock.toml` under tide state.
 Open *workitems* are never stored;
 Sirno derives them on demand from the current *waterline* and Anchor.
@@ -46,6 +46,13 @@ A clear *tide* gates `sirno anchor update` after Anchor is initialized.
 The first `sirno anchor update` initializes Anchor from the current lake.
 A later update refuses to accept the lake while any open *workitem* remains.
 A successful update clears tide resolutions because the new Anchor makes the prior deltas moot.
+
+The target design moves active review status to `.sirno/tide.toml`.
+That file stores target-first review records:
+one reviewed *entry* can cover several ripples that reached it.
+Anchor update deletes the file after accepting the current waterline.
+The durable accepted record is the new Anchor plus the Git commit,
+not a permanent active-review file.
 
 When `[tutorial]` is configured,
 an update blocked by an open *tide* can print the worklist

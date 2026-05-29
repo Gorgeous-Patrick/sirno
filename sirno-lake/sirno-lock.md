@@ -1,14 +1,14 @@
 ---
 name: Sirno Lock
-desc: The TOML file that records generated dependency and review state.
+desc: The TOML file that records generated dependency state and temporary review state.
 category:
   - concept
   - implemented
 belongs:
-  - anchor
+  - sirno-anchor
   - upstream-lake
 prerequisite:
-  - anchor
+  - sirno-anchor
   - upstream-lake
 refines:
   - versioning
@@ -16,6 +16,7 @@ refines:
 
 `Sirno.lock.toml` records generated project state that must be shared.
 It is TOML and lives next to `Sirno.toml` in the current implementation.
+It is a transitional surface while Anchor and Tide control files are split under `.sirno/`.
 
 When upstream lakes are configured,
 the lock contains `[upstreams.DOMAIN]` tables.
@@ -32,8 +33,8 @@ and the fingerprint of the ripple entry delta it reviewed.
 Sirno derives open workitems from the current waterline and Anchor baseline.
 The lock does not store a separate open worklist.
 
-The target Anchor design moves active review status to `.sirno/tide.toml`
-and keeps `.sirno/lock.toml` for dependency pins only.
+The target control-file split moves active review status to `.sirno/tide.toml`
+and moves dependency pins to `.sirno/lock.toml`.
 Anchor state belongs in `.sirno/anchor.toml`.
 
 Sirno writes the lock by rendering a complete TOML file to a sibling temporary path
@@ -45,7 +46,7 @@ A failed write leaves the previous complete lock as the public state.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [anchor](anchor.md)
+  - [sirno-anchor](sirno-anchor.md)
   - [upstream-lake](upstream-lake.md)
 - belongs (from): (none)
 

@@ -5,10 +5,10 @@ category:
   - concept
   - implemented
 belongs:
-  - anchor
+  - sirno-anchor
   - sirno-lake
 prerequisite:
-  - anchor
+  - sirno-anchor
   - ripple
   - structural-edge-policy
 refines:
@@ -58,7 +58,7 @@ Read them together when changing how edits become review obligations.
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [anchor](anchor.md)
+  - [sirno-anchor](sirno-anchor.md)
   - [sirno-lake](sirno-lake.md)
 - belongs (from):
   - [ripple](ripple.md)

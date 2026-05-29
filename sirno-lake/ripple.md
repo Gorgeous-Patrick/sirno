@@ -7,7 +7,7 @@ category:
 belongs:
   - sirno-tide
 prerequisite:
-  - anchor
+  - sirno-anchor
   - waterline
 ---
 

@@ -41,11 +41,11 @@ Future editing surfaces belong in `future-work` until they have a stable adapter
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
-  - [anchor](anchor.md)
   - [cli-interface](cli-interface.md)
   - [entry-commands](entry-commands.md)
   - [mcp-interface](mcp-interface.md)
   - [project-commands](project-commands.md)
+  - [sirno-anchor](sirno-anchor.md)
   - [tide-commands](tide-commands.md)
   - [utility-commands](utility-commands.md)
 

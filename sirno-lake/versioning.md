@@ -6,10 +6,10 @@ category:
   - implemented
 belongs:
   - sirno-lake
-  - anchor
+  - sirno-anchor
 prerequisite:
   - storage
-  - anchor
+  - sirno-anchor
 ---
 
 Sirno delegates repository history to Git.
@@ -26,6 +26,7 @@ A version of Sirno design is therefore a Git commit that contains:
 - `Sirno.toml`;
 - the Sirno Lake;
 - `.sirno/anchor.toml`;
+- optional active `.sirno/tide.toml` review state;
 - optional `.sirno/lock.toml` or `Sirno.lock.toml` dependency pins.
 
 Anchor is not a history store.
@@ -42,12 +43,15 @@ Entry artifacts are versioned by Git as ordinary files under the lake `.artifact
 Anchor stores an owner artifact-tree fingerprint for entries that own artifacts.
 This lets Tide notice artifact changes without storing artifact bytes in a private Sirno store.
 
+Sirno-owned control files must remain valid TOML across Git operations.
+The *Sirno Control Files* entry defines merge-driver policy for those files.
+
 ---
 
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [anchor](anchor.md)
+  - [sirno-anchor](sirno-anchor.md)
   - [sirno-lake](sirno-lake.md)
 - belongs (from): (none)
 

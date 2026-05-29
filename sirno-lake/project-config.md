@@ -54,6 +54,7 @@ so unmanaged files under `lake/DOMAIN/` block the declaration from being crystal
 The Anchor baseline is not configured in `Sirno.toml`.
 It lives at `.sirno/anchor.toml`.
 `sirno anchor update` creates or replaces it after the lake passes review.
+Other Sirno-owned control state belongs under `.sirno/` in the target design.
 
 A project can use Sirno without configured repo members or upstreams.
 `sirno init` opens an interactive setup flow for the config, lake,
@@ -81,6 +82,7 @@ It lives next to `Sirno.toml`.
 It also pins each upstream to the exact Git commit crystallized into the glacier.
 Anchor state belongs in `.sirno/anchor.toml`.
 Temporary Tide resolutions may still use `Sirno.lock.toml` until `.sirno/tide.toml` is actualized.
+The target lock path is `.sirno/lock.toml`.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,

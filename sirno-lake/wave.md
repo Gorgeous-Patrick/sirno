@@ -23,7 +23,9 @@ The wave does not store review state.
 It is derived from the current comparison,
 the relation order in `Sirno.toml`,
 and the relation entries' `meta.ripple.lake` and `meta.ripple.anchor` direction lists.
-`Sirno.lock.toml` stores only explicit resolutions for the workitems inside the wave.
+The current implementation stores only explicit resolutions for the workitems inside the wave
+in `Sirno.lock.toml`.
+The target design moves that active review state to `.sirno/tide.toml`.
 
 When several ripples exist,
 each ripple produces its own wave.

@@ -6,10 +6,10 @@ category:
   - implemented
 belongs:
   - entry
-  - anchor
+  - sirno-anchor
 prerequisite:
   - entry
-  - anchor
+  - sirno-anchor
 ---
 
 An *entry artifact* is a lake-owned file attached to one *entry*.
@@ -43,8 +43,8 @@ This lets Tide detect artifact changes without copying artifact bytes into Ancho
 > **Sirno generated links begin. Do not edit this section.**
 
 - belongs (to):
-  - [anchor](anchor.md)
   - [entry](entry.md)
+  - [sirno-anchor](sirno-anchor.md)
 - belongs (from): (none)
 
 > **Sirno generated links end.**
