@@ -115,6 +115,9 @@ The entry body should state:
 - the phrase, handle, or entry id the reader should carry forward
 
 Keep the body short enough to read in place.
+Apply semantic locality:
+the route should be understandable in place,
+while linked entries carry the durable detail.
 Use paragraphs for continuity.
 Use bullets or numbered steps for route structure.
 Use simple diagrams when they make the path easier for a human reader to inspect.

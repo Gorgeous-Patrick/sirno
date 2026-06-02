@@ -9,6 +9,7 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - methodology
+  - semantic-locality
   - internalize
   - sirno-witness
 refines:
@@ -91,6 +92,9 @@ Leave generated footer regions untouched.
 Write the entry prose.
 On completion, the entry becomes the canonical statement of the design fact.
 State the fact directly.
+Apply semantic locality:
+the entry should remain meaningful when read without its neighbors,
+and links should help navigation rather than supply the basic semantics.
 Keep the body small enough to read in place and durable enough to survive
 the edit that made it useful.
 Use paragraphs for continuous claims.

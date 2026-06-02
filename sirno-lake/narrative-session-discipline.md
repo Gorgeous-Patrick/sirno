@@ -8,6 +8,7 @@ belongs:
 prerequisite:
   - agent-skills
   - portable-agent-skill-language
+  - semantic-locality
   - interactive-narrative-session
 refines:
   - interactive-narrative-session
@@ -59,6 +60,9 @@ and leave an aftertaste the reader can reuse.
 
 Materialize when the route should guide future onboarding or review.
 The artifact is a narrative entry built by the serializer contract; see `narrative-serializer`.
+Apply semantic locality to the narrative entry:
+the route should be understandable in place,
+while linked entries carry the durable detail.
 Use prose paragraphs for continuity,
 bullets or numbered steps for route structure,
 and simple diagrams when they make the path easier for a human reader to inspect.

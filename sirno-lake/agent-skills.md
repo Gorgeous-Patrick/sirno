@@ -7,6 +7,7 @@ belongs:
   - sirno
 prerequisite:
   - methodology
+  - semantic-locality
 ---
 
 Sirno ships an agent skill set that renders the method into operational procedure.
@@ -65,6 +66,10 @@ The skills share one lake-first rule.
 Any edit to source, tests, generated artifacts, configuration, README files,
 design documents outside the configured lake, or packaged skills begins by reading the relevant
 active-project entries.
+When a skill creates or revises an entry,
+it applies semantic locality:
+the entry body should carry the local meaning,
+while structural links, refinements, and witnesses extend or verify it.
 When the edit changes the design,
 the editor skill updates the configured lake before the repository material becomes the new
 habit.

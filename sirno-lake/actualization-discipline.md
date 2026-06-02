@@ -9,6 +9,7 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - methodology
+  - semantic-locality
   - actualize
   - sirno-witness
   - project-config
@@ -66,6 +67,9 @@ If an existing entry states the right claim, proceed under that entry.
 If a small, intent-driven entry is needed and the durable fact is already clear,
 create or revise the compact entry inline with `sirno_entry_new` before the repository
 change settles.
+Apply semantic locality to any inline entry change.
+The new or revised entry should own its local meaning,
+while implementation entries and witnesses remain narrower evidence or refinement.
 If the work exposes a durable design fact that is not yet named in the lake
 and the fact deserves its own deliberation,
 hand off to the internalizer skill,

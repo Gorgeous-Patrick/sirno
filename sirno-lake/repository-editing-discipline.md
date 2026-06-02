@@ -9,6 +9,7 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - methodology
+  - semantic-locality
   - actualize
   - sirno-witness
   - project-config
@@ -37,6 +38,9 @@ Name or revise the durable design fact before the repository change settles.
 If an entry already states the right claim, keep the code change under that entry.
 If the work reveals a new boundary, invariant, representation, or behavior,
 create or revise the compact entry first.
+Apply semantic locality when creating or revising entries.
+The body should state the local meaning in place,
+and broad entries should not inventory their current implementations.
 Use `category`, `belongs`, `prerequisite`, and `refines` only when they improve navigation,
 review, or accountability.
 Leave generated footer regions untouched.

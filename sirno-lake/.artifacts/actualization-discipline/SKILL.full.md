@@ -45,6 +45,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
    If an existing entry states the right claim, work under that entry.
    If a small entry is needed and the durable fact is clear,
    create or revise it before the repository change settles.
+   Apply semantic locality to any inline entry change:
+   the new or revised entry should own its local meaning,
+   while implementation entries and witnesses remain narrower evidence or refinement.
    If the work exposes a new fact that needs separate deliberation,
    hand off to the internalizer skill and return once the entry exists.
    Leave generated footer regions untouched.

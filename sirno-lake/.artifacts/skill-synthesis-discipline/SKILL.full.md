@@ -59,6 +59,9 @@ correct the artifact or wrapper, never the lake.
 4. Render full resources.
    The full resource operationalizes its discipline plus the shared method it depends on.
    Add nothing the lake does not commit.
+   Include semantic locality when the resource creates, edits, audits, or materializes entries:
+   entries should preserve their own local meaning,
+   and broad entries should not enumerate current implementations.
    Preserve shared documentation habits such as reader-aware bullets, diagrams,
    conceptual ordering, and declarative precision when the full resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,

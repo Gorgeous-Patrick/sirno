@@ -60,6 +60,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 4. Write and connect the entry.
    State the fact directly and keep the body compact.
+   Apply semantic locality:
+   the entry should remain meaningful when read without its neighbors,
+   and links should help navigation rather than supply the basic semantics.
    Use paragraphs for continuous claims.
    Use bullets, numbered steps, tables, or simple diagrams
    when they make inventories, workflows, comparisons, or relationships easier to scan.

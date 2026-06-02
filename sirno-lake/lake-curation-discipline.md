@@ -9,6 +9,7 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - methodology
+  - semantic-locality
   - sirno-witness
 ---
 
@@ -36,9 +37,13 @@ and category conventions before judging any entry against them.
 
 Audit each entry against a rubric.
 An entry should state one durable design fact and stay focused enough to read in place.
+It should satisfy semantic locality:
+the body carries the local meaning,
+while links and witnesses add navigation or evidence.
 Flag an entry as a curation candidate when any of these holds:
 the body is glossary-thin, defining a term without carrying design pressure;
 the body is backlog-thin, naming a work item rather than durable design knowledge;
+the body depends on a linked entry or witness to recover its basic semantics;
 the framing leads with defensive negation instead of positive definition;
 an inventory, workflow, comparison, or relationship is buried in prose
 that bullets, steps, tables, or a simple diagram would make easier to scan;
@@ -78,6 +83,8 @@ or whether to keep a pure review-neighborhood front door.
 Act on the approved items.
 Trim and reframe surviving entries,
 removing duplication and replacing defensive negation with positive definition.
+Move implementation inventories into narrower entries when a broad entry should stay open
+to future implementations.
 Fold thin entries into the front-door entries that already cover them;
 preserve the durable design fact and drop implementation detail that follows from other claims.
 When folding entry A into entry B,

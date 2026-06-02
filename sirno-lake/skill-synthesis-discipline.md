@@ -8,6 +8,7 @@ belongs:
 prerequisite:
   - agent-skills
   - portable-agent-skill-language
+  - semantic-locality
 ---
 
 Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resources
@@ -37,6 +38,10 @@ A `meta` entry named by the active project's Sirno skill roster is a skill sourc
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.
+Semantic locality is one of those cross-cutting methods.
+When a generated skill creates, edits, audits, or materializes entries,
+its procedure should preserve the entry's local meaning
+and avoid making broad entries enumerate current implementations.
 Repository-specific design-document skills or documented prose methods are the first method input
 when Sirno skill work touches design prose.
 If a repository has none,
