@@ -46,6 +46,8 @@ This lets Tide detect artifact changes without copying artifact bytes into Ancho
   - [entry](entry.md)
   - [sirno-anchor](sirno-anchor.md)
 - belongs (from):
+  - [charm](charm.md)
+  - [charm-manifest](charm-manifest.md)
   - [extension-system](extension-system.md)
 
 > **Sirno generated links end.**

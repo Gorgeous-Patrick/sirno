@@ -165,6 +165,7 @@ They are cleared after a successful anchor update.
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
+  - [charm-enablement](charm-enablement.md)
   - [project-config-comments](project-config-comments.md)
 
 > **Sirno generated links end.**

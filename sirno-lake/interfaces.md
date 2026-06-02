@@ -51,12 +51,14 @@ It should change this entry only when the interface-surface model itself changes
 - belongs (to):
   - [sirno](sirno.md)
 - belongs (from):
+  - [charm-and-spell-commands](charm-and-spell-commands.md)
   - [cli-interface](cli-interface.md)
   - [entry-commands](entry-commands.md)
   - [extension-system](extension-system.md)
   - [mcp-interface](mcp-interface.md)
   - [project-commands](project-commands.md)
   - [sirno-anchor](sirno-anchor.md)
+  - [spell-invocation](spell-invocation.md)
   - [tide-commands](tide-commands.md)
   - [utility-commands](utility-commands.md)
 
