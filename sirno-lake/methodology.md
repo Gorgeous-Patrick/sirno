@@ -125,5 +125,6 @@ People and agents keep the meaning alive.
   - [narrative](narrative.md)
 - belongs (from):
   - [development-style](development-style.md)
+  - [semantic-locality](semantic-locality.md)
 
 > **Sirno generated links end.**
