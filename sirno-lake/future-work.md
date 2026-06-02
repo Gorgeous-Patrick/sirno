@@ -21,6 +21,9 @@ Reserved areas are concrete:
 - Lake dependency management should refine *entry domain* resolution,
   symlink materialization,
   and upstream version selection without making entry names carry all dependency policy.
+- The `extension-system` proposal defines executable entry artifacts
+  that can run from Sirno hook points.
+  Hook entries still need to define trigger points, payloads, result contracts, and failure policy.
 - Future editing interfaces may provide a direct GUI or Obsidian-style experience.
   They should preserve the existing ownership rules:
   metadata is structural,
@@ -42,6 +45,7 @@ That policy should preserve reviewable *lake* states without making *entry* meta
 
 - belongs (to):
   - [sirno](sirno.md)
-- belongs (from): (none)
+- belongs (from):
+  - [extension-system](extension-system.md)
 
 > **Sirno generated links end.**
