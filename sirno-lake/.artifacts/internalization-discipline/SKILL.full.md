@@ -31,7 +31,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Workflow
 
-1. Map the project.
+1. Orient to the project.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
@@ -64,8 +64,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    the entry should remain meaningful when read without its neighbors,
    and links should help navigation rather than supply the basic semantics.
    Routes, indexes, rosters, and review front doors may enumerate children
-   when that map is part of the local claim.
-   Label the map so it does not masquerade as the semantic contract.
+   when that list is part of the local claim.
+   Say what the list is for so it does not masquerade as the semantic contract.
    Use paragraphs for continuous claims.
    Use bullets, numbered steps, tables, or simple diagrams
    when they make inventories, workflows, comparisons, or relationships easier to scan.

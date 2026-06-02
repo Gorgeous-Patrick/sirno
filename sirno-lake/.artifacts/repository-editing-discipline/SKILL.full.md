@@ -31,7 +31,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Workflow
 
-1. Map the project.
+1. Orient to the project.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
@@ -48,7 +48,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
    create or revise a compact entry before the repository change settles.
    Apply semantic locality to every entry creation or revision:
    the body should state the local meaning in place,
-   and any route, index, roster, or review front door should label its map as a map.
+   and any route, index, roster, or review front door should say what the list is for.
    Keep the semantic contract separate from the current route through children.
    Use `sirno_entry_new` for a new entry,
    `sirno_entry_rename` to change its id,

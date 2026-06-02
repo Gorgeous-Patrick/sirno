@@ -35,7 +35,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Workflow
 
-1. Map the project.
+1. Orient to the project.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
@@ -52,14 +52,14 @@ Call `sirno_cwd` again before switching projects in the same server process.
    It should satisfy semantic locality:
    the body carries the local meaning,
    while links and witnesses add navigation or evidence.
-   Semantic locality allows deliberate maps.
+   Semantic locality still allows useful lists.
    A route, index, roster, or review front door may enumerate children
-   when the map is part of the entry's local claim.
+   when that list is part of the entry's local claim.
    Flag an entry as a curation candidate when any of these holds:
    the body is glossary-thin, defining a term without carrying design pressure;
    the body is backlog-thin, naming a work item rather than durable design knowledge;
    the body depends on a linked entry or witness to recover its basic semantics;
-   the body presents a child list as a definition rather than as a route, roster, index, or review map;
+   the body presents a child list as a definition rather than as a route, roster, index, or review front door;
    the framing leads with defensive negation instead of positive definition;
    an inventory, workflow, comparison, or relationship is buried in prose
    that bullets, steps, tables, or a simple diagram would make easier to scan;
@@ -99,7 +99,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 6. Act on the approved items.
    Trim and reframe surviving entries,
    removing duplication and replacing defensive negation with positive definition.
-   Preserve useful reader maps when the entry owns that route, roster, index, or review front door.
+   Preserve useful lists when the entry owns that route, roster, index, or review front door.
    Move implementation inventories into narrower entries when they are not part of the entry's local claim.
    Fold thin entries into the front-door entries that already cover them.
    Preserve the durable design fact and drop implementation detail

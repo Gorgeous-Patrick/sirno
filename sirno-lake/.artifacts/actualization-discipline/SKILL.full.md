@@ -30,7 +30,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Workflow
 
-1. Map the design source.
+1. Orient to the design source.
    Read repository instructions and `Sirno.toml`.
    If `Sirno.toml` is missing, report that the repository is not Sirno-managed
    and prompt the user to start with `sirno init`.
@@ -49,7 +49,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
    the new or revised entry should own its local meaning,
    while implementation entries and witnesses remain narrower evidence or refinement.
    If the entry is a route, index, roster, or review front door,
-   make the map explicit and keep it separate from the semantic claim.
+   say what the list is for and keep it separate from the semantic claim.
    If the work exposes a new fact that needs separate deliberation,
    hand off to the internalizer skill and return once the entry exists.
    Leave generated footer regions untouched.

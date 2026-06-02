@@ -46,7 +46,7 @@ surface the proposed change to the user for double review
 before melting it with `sirno_entry_melt`,
 rather than writing a parallel entry past it.
 
-Map the project first.
+Orient to the project first.
 The existing lake, including frozen entries, is the canonical record of prior design;
 the repository is the evidence to be considered.
 Bind the MCP server to the repository root through `sirno_cwd` when needed.
@@ -96,8 +96,8 @@ Apply semantic locality:
 the entry should remain meaningful when read without its neighbors,
 and links should help navigation rather than supply the basic semantics.
 Routes, indexes, rosters, and review front doors may enumerate children
-when that map is part of the local claim.
-Label the map so it does not masquerade as the semantic contract.
+when that list is part of the local claim.
+Say what the list is for so it does not masquerade as the semantic contract.
 Keep the body small enough to read in place and durable enough to survive
 the edit that made it useful.
 Use paragraphs for continuous claims.

@@ -25,7 +25,7 @@ The curator skill is invoked when no code change drives the work,
 but the lake itself needs a pass for clarity, focus, accurate structure,
 or witness alignment.
 
-Map the project first.
+Orient to the project first.
 Read repository instructions and `Sirno.toml`.
 Call `sirno_status` to surface the lake path, tide blockers, and pending review entries.
 Run `sirno_entry_query` to enumerate the lake.
@@ -40,14 +40,14 @@ An entry should state one durable design fact and stay focused enough to read in
 It should satisfy semantic locality:
 the body carries the local meaning,
 while links and witnesses add navigation or evidence.
-Semantic locality allows deliberate maps.
+Semantic locality still allows useful lists.
 A route, index, roster, or review front door may enumerate children
-when the map is part of the entry's local claim.
+when that list is part of the entry's local claim.
 Flag an entry as a curation candidate when any of these holds:
 the body is glossary-thin, defining a term without carrying design pressure;
 the body is backlog-thin, naming a work item rather than durable design knowledge;
 the body depends on a linked entry or witness to recover its basic semantics;
-the body presents a child list as a definition rather than as a route, roster, index, or review map;
+the body presents a child list as a definition rather than as a route, roster, index, or review front door;
 the framing leads with defensive negation instead of positive definition;
 an inventory, workflow, comparison, or relationship is buried in prose
 that bullets, steps, tables, or a simple diagram would make easier to scan;
@@ -87,7 +87,7 @@ or whether to keep a pure review-neighborhood front door.
 Act on the approved items.
 Trim and reframe surviving entries,
 removing duplication and replacing defensive negation with positive definition.
-Preserve useful reader maps when the entry owns that route, roster, index, or review front door.
+Preserve useful lists when the entry owns that route, roster, index, or review front door.
 Move implementation inventories into narrower entries when they are not part of the entry's local claim.
 Fold thin entries into the front-door entries that already cover them;
 preserve the durable design fact and drop implementation detail that follows from other claims.

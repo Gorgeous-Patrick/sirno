@@ -41,9 +41,9 @@ not skills in their own right.
 Semantic locality is one of those cross-cutting methods.
 When a generated skill creates, edits, audits, or materializes entries,
 its procedure should preserve the entry's local meaning
-and preserve useful maps without confusing them for semantic contracts.
+and preserve useful lists without confusing them for semantic contracts.
 A route, index, roster, or review front door may enumerate children
-when the map is part of that entry's local claim.
+when that list is part of that entry's local claim.
 Repository-specific design-document skills or documented prose methods are the first method input
 when Sirno skill work touches design prose.
 If a repository has none,
@@ -56,7 +56,7 @@ and whole-document coherence.
 They do not become skill sources unless the Sirno skill roster adds them.
 They may own full MCP resource artifacts without rendering installed Sirno wrappers.
 
-Map each discipline to one MCP resource and one wrapper package.
+Bind each discipline to one MCP resource and one wrapper package.
 A skill discipline owns exactly one `SKILL.full.md` resource artifact,
 one `SKILL.md` wrapper artifact,
 and one `.agents/skills/sirno-<role>/SKILL.md` installed wrapper package.

@@ -1,6 +1,6 @@
 ---
 name: MCP Interface
-desc: Agent-facing resources, tools, JSON behavior, and adapter ownership.
+desc: Agent-facing resources, tools, JSON behavior, and surface ownership.
 category:
   - concept
 belongs:
@@ -79,9 +79,9 @@ Domain failures such as failed checks, dirty query preconditions,
 and nonzero `rg` exits return structured results with `ok: false`.
 Command failures return MCP tool errors with concise text.
 
-The MCP adapter calls `sirno::surface` methods for command behavior.
+The MCP surface calls `sirno::surface` methods for command behavior.
 Public request and result DTOs live in `sirno::surface`.
-The adapter only converts JSON parameters into surface requests
+The MCP interface only converts JSON parameters into surface requests
 and surface DTOs into MCP tool results.
 This keeps CLI JSON and MCP JSON aligned without duplicating command logic.
 

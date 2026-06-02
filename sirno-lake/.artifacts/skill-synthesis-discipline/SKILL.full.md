@@ -39,7 +39,7 @@ correct the artifact or wrapper, never the lake.
 
 ## Synthesis Workflow
 
-1. Map the roster.
+1. Read the roster.
    Read `Sirno.toml` and query the active lake for the skill roster.
    A project may use `agent-skills` as the front door and rostered `*-discipline` entries
    as skill sources.
@@ -61,9 +61,9 @@ correct the artifact or wrapper, never the lake.
    Add nothing the lake does not commit.
    Include semantic locality when the resource creates, edits, audits, or materializes entries:
    entries should preserve their own local meaning,
-   and useful maps should not be confused for semantic contracts.
+   and useful lists should not be confused for semantic contracts.
    A route, index, roster, or review front door may enumerate children
-   when the map is part of that entry's local claim.
+   when that list is part of that entry's local claim.
    Preserve shared documentation habits such as reader-aware bullets, diagrams,
    conceptual ordering, and declarative precision when the full resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,

@@ -28,12 +28,12 @@ design documents outside the *lake*, and other inspectable artifacts.
 Actualization gives those materials shape from the *lake*.
 Internalization lets those materials teach the *lake* what durable design knowledge they expose.
 
-Current transform map:
+Current vocabulary:
 
 - `actualize`, also named `lake-to-repo`, moves from *lake* design to *repository* material.
 - `internalize`, also named `repo-to-lake`, moves from *repository* material to durable *lake* design.
 
-This map is the current vocabulary, not the limit of the concept.
+This vocabulary names the current directions, not the limit of the concept.
 A future *transform* should define its own entry, direction, source form, target form, and evidence habits.
 It should change this entry only when the broader transform contract changes.
 

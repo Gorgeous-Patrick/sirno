@@ -35,9 +35,9 @@ Its local contract is accepted-state comparison:
 - accept a new baseline only after review-mode checks and Tide review pass;
 - clear obsolete Tide review state after the current waterline is accepted.
 
-## Command Map
+## Anchor Operations
 
-The current CLI and MCP adapters expose Anchor through these operations:
+The current CLI and MCP surfaces expose Anchor through these operations:
 
 | Operation | Behavior |
 |---|---|
@@ -54,11 +54,11 @@ and clears obsolete Tide review state.
 The first update initializes Anchor from the current lake.
 Later updates require a clear Tide.
 
-## Design Map
+## Related Design Entries
 
 Sirno Anchor is the subsystem boundary.
 The detailed storage contracts live in smaller entries.
-This map is the review route through those contracts:
+These related entries are the review route through those contracts:
 
 - *Anchor File* defines `.sirno/anchor.toml` and fingerprint semantics.
 - *Sirno Control Files* defines `.sirno/` placement, target file ownership, and merge validity.

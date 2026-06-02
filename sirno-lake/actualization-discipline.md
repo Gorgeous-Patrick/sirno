@@ -46,7 +46,7 @@ If actualization seems to require a frozen entry to change,
 surface the proposed change to the user for double review
 before melting it with `sirno_entry_melt`.
 
-Map the project first.
+Orient to the project first.
 The configured lake and `Sirno.toml` are read as truth;
 the repository is the material to be shaped.
 Bind the MCP server to the repository root through `sirno_cwd` when needed.
@@ -71,7 +71,7 @@ Apply semantic locality to any inline entry change.
 The new or revised entry should own its local meaning,
 while implementation entries and witnesses remain narrower evidence or refinement.
 If the entry is a route, index, roster, or review front door,
-make the map explicit and keep it separate from the semantic claim.
+say what the list is for and keep it separate from the semantic claim.
 If the work exposes a durable design fact that is not yet named in the lake
 and the fact deserves its own deliberation,
 hand off to the internalizer skill,

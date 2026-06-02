@@ -12,8 +12,8 @@ prerequisite:
 
 Sirno ships an agent skill set that renders the lake method into operational procedure.
 
-This entry is the roster and handoff map for that set.
-The map is part of this entry's local claim:
+This entry is the roster and handoff guide for that set.
+The roster is part of this entry's local claim:
 a reader should be able to see which skills ship,
 what each one owns,
 and where shared method applies.
@@ -28,8 +28,8 @@ The durable procedure for each skill lives in its own discipline entry.
 | `sirno-skill-synthesizer` | `skill-synthesis-discipline` | Rebuilds MCP resources and wrappers. |
 | `sirno-curator` | `lake-curation-discipline` | Audits an existing lake with user approval. |
 
-The roster is a reader map, not the semantic contract of every skill.
-A new packaged Sirno skill should update this map and add its own discipline entry,
+The roster orients readers; it is not the semantic contract of every skill.
+A new packaged Sirno skill should update this roster and add its own discipline entry,
 artifacts, package, and structural links.
 It should not require existing discipline entries to rewrite their local meaning.
 
@@ -55,7 +55,7 @@ the relevant active-project entries.
 When a skill creates or revises an entry,
 it applies semantic locality:
 the entry body should carry the local meaning,
-and any roster, route, index, or review map should be labeled as a map.
+and any roster, route, index, or review front door should say what the list is for.
 
 The `design-doc-writer-skill` entry documents an adjacent design-document method.
 It is a reusable method input for Sirno skill work,

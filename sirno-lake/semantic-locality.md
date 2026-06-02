@@ -18,10 +18,10 @@ Semantic locality is the entry-writing rule that each *entry* should remain mean
 A reader should understand the design object before following generated links, witnesses,
 or neighboring refinements.
 
-Semantic locality permits maps.
+Semantic locality still allows useful lists.
 A narrative route, index, roster, or review front door may enumerate children
-when that map is part of the entry's local claim.
-The map should be labeled by the prose,
+when that list is part of the entry's local claim.
+The prose should say what the list is for,
 so a reader can tell the difference between the entry's semantic contract
 and its current route through narrower entries.
 
@@ -53,7 +53,7 @@ If a linked *entry*, upstream lake, repository *witness*, or generated footer is
 the *entry* should still say what it names and why it matters.
 Missing surroundings may reduce evidence or context,
 but they should not erase the local meaning.
-Changing a map may be appropriate when the route changes.
+Changing that list may be appropriate when the route changes.
 Changing a broad semantic contract should not be required merely because a new child,
 implementation, or witness appears.
 
@@ -62,7 +62,7 @@ A practical check:
 - Can the *entry* be understood from its own metadata and body?
 - Does it name only the commitment it owns?
 - Are implementation details kept in entries that refine or witness it?
-- Is any child list presented as a route, roster, index, or review map?
+- Is any child list presented as a route, roster, index, or review front door?
 - Can a new implementation be added without rewriting the broad semantic contract?
 - Are necessary pointers represented as structural links instead of prose inventories?
 

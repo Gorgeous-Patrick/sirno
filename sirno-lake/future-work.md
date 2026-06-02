@@ -9,7 +9,7 @@ prerequisite:
   - sirno
 ---
 
-Future Work is a reservation map for design areas that should stay visible
+Future Work records design areas that should stay visible
 before they are stable enough for local entries.
 A reservation names pressure and the next design boundary.
 It is not a feature promise or a substitute for the entry that will later own the design.
@@ -21,7 +21,7 @@ A future-work item should stay small:
 - point to a proposal entry when one exists;
 - leave implementation detail to the entry that later owns it.
 
-Current reservation map:
+Reserved areas are:
 
 - `locked` should define how *entries*, metadata fields, or generated regions resist accidental edits.
   It needs a clear ownership model before it becomes part of the schema.
@@ -39,7 +39,7 @@ Current reservation map:
   generated footer regions are Sirno-owned,
   and prose outside generated regions remains user-owned.
 
-The map keeps possible work explicit without turning it into speculative architecture.
+This list keeps possible work explicit without turning it into speculative architecture.
 When a reservation gains stable semantics,
 create or revise the local entry that owns those semantics and link it here only when the route helps.
 
