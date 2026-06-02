@@ -16,7 +16,7 @@ use tracing::trace;
 use indexmap::IndexMap;
 
 use crate::entry::{DESC_FIELD, FROZEN_FIELD, META_FIELD, NAME_FIELD};
-use crate::identifier::EntryAtom;
+use crate::identifier::{EntryAddress, EntryAtom};
 use crate::structural::{StructuralRenderSettings, StructuralSettings};
 
 /// Canonical Sirno project config filename.
@@ -129,6 +129,56 @@ impl Default for TutorialSettings {
         Self::all()
     }
 }
+
+/// Configured charm execution policy.
+///
+/// Invariant: `enabled` contains each charm entry address at most once.
+// sirno:witness:charm-enablement:begin
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct CharmSettings {
+    /// Entry addresses whose charm manifests may resolve and invoke spells.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub enabled: Vec<EntryAddress>,
+}
+
+impl CharmSettings {
+    /// Return true when no charm policy is configured.
+    pub fn is_empty(&self) -> bool {
+        self.enabled.is_empty()
+    }
+
+    /// Return whether an entry address is enabled.
+    pub fn contains(&self, id: &EntryAddress) -> bool {
+        self.enabled.iter().any(|enabled| enabled == id)
+    }
+
+    /// Add one enabled charm entry address.
+    pub fn enable(&mut self, id: EntryAddress) -> bool {
+        if self.contains(&id) {
+            return false;
+        }
+        self.enabled.push(id);
+        true
+    }
+
+    /// Remove one enabled charm entry address.
+    pub fn disable(&mut self, id: &EntryAddress) -> bool {
+        let before = self.enabled.len();
+        self.enabled.retain(|enabled| enabled != id);
+        self.enabled.len() != before
+    }
+
+    fn validate(&self) -> Result<(), ConfigError> {
+        for (index, id) in self.enabled.iter().enumerate() {
+            if self.enabled.iter().skip(index + 1).any(|other| other == id) {
+                return Err(ConfigError::DuplicateCharmEnabled(id.clone()));
+            }
+        }
+        Ok(())
+    }
+}
+// sirno:witness:charm-enablement:end
 
 /// Configured Sirno Lake settings.
 ///
@@ -457,6 +507,7 @@ impl WitnessSettings {
 /// `witness` controls the delimiter syntax for repository witness blocks.
 /// `check` controls optional structural check families.
 /// `tutorial`, when present, enables tutorial output for recoverable command failures.
+/// `charm` controls local charm enablement.
 /// `structural` registers structural link relations and their defining entries.
 /// `render` controls generated-link footer content.
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
@@ -480,6 +531,9 @@ pub struct SirnoConfig {
     /// Optional tutorial output settings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tutorial: Option<TutorialSettings>,
+    /// Configured charm execution policy.
+    #[serde(default, skip_serializing_if = "CharmSettings::is_empty")]
+    pub charm: CharmSettings,
     /// Structural link metadata relation settings.
     #[serde(default)]
     pub structural: StructuralSettings,
@@ -500,6 +554,7 @@ impl SirnoConfig {
             witness: WitnessSettings::standard(),
             check: CheckSettings::default(),
             tutorial: None,
+            charm: CharmSettings::default(),
             structural: StructuralSettings::default(),
             render: RenderSettings::default(),
         }
@@ -643,6 +698,7 @@ impl SirnoConfig {
         self.validate_structural_fields()?;
         self.validate_render_settings()?;
         self.witness.validate()?;
+        self.charm.validate()?;
         Ok(())
     }
 
@@ -788,6 +844,18 @@ impl ConfigRenderer {
                 "anchor_bootstrap_tide",
                 &tutorial.anchor_bootstrap_tide,
                 "Include first-anchor bootstrap context in the anchor update tide tutorial.",
+            )?;
+            // sirno:witness:project-config-comments:end
+        }
+
+        if !config.charm.is_empty() {
+            self.out.push('\n');
+            self.push_table("charm");
+            // sirno:witness:project-config-comments:begin
+            self.push_field(
+                "enabled",
+                &config.charm.enabled,
+                "Entry addresses whose charm manifests may resolve and invoke spells.",
             )?;
             // sirno:witness:project-config-comments:end
         }
@@ -1046,6 +1114,9 @@ pub enum ConfigError {
         /// Invalid project path.
         path: PathBuf,
     },
+    /// A charm entry address is enabled more than once.
+    #[error("charm.enabled repeats entry address `{0}`")]
+    DuplicateCharmEnabled(EntryAddress),
     /// The config file could not be created.
     #[error("failed to create config file {path}")]
     Create {
@@ -1116,8 +1187,52 @@ path = "docs"
         assert!(config.check.render_enabled());
         assert!(config.check.structural_inhabitance_enabled());
         assert_eq!(config.tutorial, None);
+        assert_eq!(config.charm, CharmSettings::default());
         assert_eq!(config.structural, StructuralSettings::default());
         assert_eq!(config.render, RenderSettings::default());
+    }
+
+    #[test]
+    fn parses_charm_settings() {
+        let config = parse_config(
+            r#"
+[lake]
+path = "docs"
+
+[charm]
+enabled = ["build-spell", "format-spell"]
+"#,
+        );
+
+        assert_eq!(
+            config.charm.enabled,
+            vec![
+                EntryAddress::new("build-spell").unwrap(),
+                EntryAddress::new("format-spell").unwrap()
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_duplicate_enabled_charms() {
+        let error = SirnoConfig::from_source(
+            Path::new("Sirno.toml"),
+            &config_source(
+                r#"
+[lake]
+path = "docs"
+
+[charm]
+enabled = ["build-spell", "build-spell"]
+"#,
+            ),
+        )
+        .unwrap_err();
+
+        assert!(matches!(
+            error,
+            ConfigError::DuplicateCharmEnabled(id) if id == EntryAddress::new("build-spell").unwrap()
+        ));
     }
 
     #[test]
@@ -1837,6 +1952,7 @@ delimiters = []
                 anchor_update_tide: true,
                 anchor_bootstrap_tide: false,
             }),
+            charm: CharmSettings { enabled: vec![EntryAddress::new("format-spell").unwrap()] },
             structural: StructuralSettings::from_relations([
                 ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
                 ("area", crate::EntryAddress::new("area").unwrap()),
@@ -1904,6 +2020,12 @@ delimiters = []
         ));
         assert!(source.contains("anchor_update_tide = true"));
         assert!(source.contains("anchor_bootstrap_tide = false"));
+        assert!(source.contains("[charm]"));
+        assert!(
+            source
+                .contains("# Entry addresses whose charm manifests may resolve and invoke spells.")
+        );
+        assert!(source.contains("enabled = [\"format-spell\"]"));
         assert!(source.contains("[structural]"));
         assert!(source.contains("# Structural link relations."));
         assert!(source.contains(
@@ -1926,6 +2048,7 @@ delimiters = []
         assert!(source.contains("# Values are direction lists: to, from, and clique."));
         assert_before(&source, "[upstreams.core]", "[repo]");
         assert_before(&source, "[tutorial]", "[structural]");
+        assert_before(&source, "[charm]", "[structural]");
         assert_before(&source, "[structural.parent]", "[render.structural]");
         assert_eq!(source.matches("# Structural link relations.").count(), 1);
         assert_before(&source, "# Structural link relations", "[structural.kind]");

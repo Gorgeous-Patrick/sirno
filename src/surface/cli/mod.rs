@@ -23,10 +23,11 @@ use crate::surface::SurfaceContext;
 use crate::surface::context::{default_config_path, default_lake_path};
 use crate::surface::dto::{
     AnchorOutputFormat, ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest,
-    EntryNewRequest, EntryPathsRequest, LakeInitRequest, LocalProtectionResult, PathRecord,
-    PathSelection, QueryColumnSelection, QueryColumns, QueryOutputFormat, QueryRequest, QueryRun,
-    RgRequest, SkillWrapperResult, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    CharmListResult, CharmProcessResult, CharmShowResult, EntryNewRequest, EntryPathsRequest,
+    LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection, QueryColumnSelection,
+    QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
+    SpellListResult, StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
     UpstreamCrystallizeRequest,
 };
 use crate::surface::error::CommandError;
@@ -117,6 +118,20 @@ enum Command {
         #[command(subcommand)]
         command: AnchorCommand,
     },
+    // sirno:witness:charm-and-spell-commands:begin
+    /// Manage charm artifact bundles.
+    Charm {
+        /// Charm command.
+        #[command(subcommand)]
+        command: CharmCommand,
+    },
+    /// Run and inspect resolved spells.
+    Spell {
+        /// Spell command.
+        #[command(subcommand)]
+        command: SpellCommand,
+    },
+    // sirno:witness:charm-and-spell-commands:end
     /// Manage dependency review worklists for lake edits.
     // sirno:witness:tide-commands:begin
     Tide {
@@ -463,6 +478,76 @@ enum ArtifactCommand {
     },
 }
 // sirno:witness:entry-commands:end
+
+/// Supported charm commands.
+// sirno:witness:charm-and-spell-commands:begin
+#[derive(Debug, Subcommand)]
+enum CharmCommand {
+    /// List entries that contain a charm manifest.
+    List,
+    /// Show one charm.
+    Show {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Enable one charm in project config.
+    Enable {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Disable one charm in project config.
+    Disable {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Run a charm setup command.
+    Setup {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Run a charm check command.
+    Check {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Build one source charm.
+    Build {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Remove spell cache state for one charm.
+    Clean {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+}
+
+/// Supported spell commands.
+#[derive(Debug, Subcommand)]
+enum SpellCommand {
+    /// List spells from enabled charms.
+    List,
+    /// Show the spell resolved from one charm.
+    Show {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+    /// Run the spell resolved from one charm.
+    Run {
+        /// Entry address that owns the charm.
+        #[arg(value_name = "ENTRY_ADDRESS")]
+        id: String,
+    },
+}
+// sirno:witness:charm-and-spell-commands:end
 
 /// CLI representation of check boundaries.
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -857,6 +942,8 @@ impl Cli {
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Upstream { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Anchor { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Charm { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Spell { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Tide { command } => {
                 // sirno:witness:tide-commands:begin
                 command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
@@ -1989,6 +2076,149 @@ impl ArtifactCommand {
             }
         }
     }
+}
+
+impl CharmCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
+        match self {
+            | CharmCommand::List => {
+                print_charm_list(&context.charm_list()?);
+                Ok(ExitCode::SUCCESS)
+            }
+            | CharmCommand::Show { id } => {
+                let id = EntryAddress::new(&id)?;
+                print_charm_show(&context.charm_show(id)?);
+                Ok(ExitCode::SUCCESS)
+            }
+            | CharmCommand::Enable { id } => {
+                let id = EntryAddress::new(&id)?;
+                println!("{}", context.charm_enable(id)?.message);
+                Ok(ExitCode::SUCCESS)
+            }
+            | CharmCommand::Disable { id } => {
+                let id = EntryAddress::new(&id)?;
+                println!("{}", context.charm_disable(id)?.message);
+                Ok(ExitCode::SUCCESS)
+            }
+            | CharmCommand::Setup { id } => {
+                let id = EntryAddress::new(&id)?;
+                exit_from_process_result(context.charm_setup(id)?)
+            }
+            | CharmCommand::Check { id } => {
+                let id = EntryAddress::new(&id)?;
+                exit_from_process_result(context.charm_check(id)?)
+            }
+            | CharmCommand::Build { id } => {
+                let id = EntryAddress::new(&id)?;
+                exit_from_process_result(context.charm_build(id)?)
+            }
+            | CharmCommand::Clean { id } => {
+                let id = EntryAddress::new(&id)?;
+                println!("{}", context.charm_clean(id)?.message);
+                Ok(ExitCode::SUCCESS)
+            }
+        }
+    }
+}
+
+impl SpellCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
+        match self {
+            | SpellCommand::List => {
+                print_spell_list(&context.spell_list()?);
+                Ok(ExitCode::SUCCESS)
+            }
+            | SpellCommand::Show { id } => {
+                let id = EntryAddress::new(&id)?;
+                print_charm_show(&context.spell_show(id)?);
+                Ok(ExitCode::SUCCESS)
+            }
+            | SpellCommand::Run { id } => {
+                let id = EntryAddress::new(&id)?;
+                exit_from_process_result(context.spell_run(id)?)
+            }
+        }
+    }
+}
+
+fn print_charm_list(result: &CharmListResult) {
+    let rows = result
+        .charms
+        .iter()
+        .map(|record| {
+            vec![
+                record.id.clone(),
+                record.name.clone(),
+                record.kind.clone(),
+                if record.enabled { "yes" } else { "no" }.to_owned(),
+            ]
+        })
+        .collect::<Vec<_>>();
+    print!(
+        "{}",
+        format_human_table_semantic_with_width(
+            vec!["entry".to_owned(), "name".to_owned(), "kind".to_owned(), "enabled".to_owned()],
+            rows,
+            None,
+            OutputStyle::Styled
+        )
+    );
+    println!("{}", result.message);
+}
+
+fn print_spell_list(result: &SpellListResult) {
+    let rows = result
+        .spells
+        .iter()
+        .map(|record| {
+            vec![
+                record.id.clone(),
+                record.name.clone(),
+                record.kind.clone(),
+                record.spell_cache_path.clone(),
+            ]
+        })
+        .collect::<Vec<_>>();
+    print!(
+        "{}",
+        format_human_table_semantic_with_width(
+            vec!["entry".to_owned(), "name".to_owned(), "kind".to_owned(), "cache".to_owned()],
+            rows,
+            None,
+            OutputStyle::Styled
+        )
+    );
+    println!("{}", result.message);
+}
+
+fn print_charm_show(result: &CharmShowResult) {
+    println!("entry: {}", result.id);
+    println!("name: {}", result.name);
+    println!("kind: {}", result.kind);
+    println!("enabled: {}", if result.enabled { "yes" } else { "no" });
+    println!("manifest: {}", result.manifest_path);
+    println!("artifact root: {}", result.artifact_root);
+    println!("spell cache: {}", result.spell_cache_path);
+    println!("spell command: {}", result.spell_command.join(" "));
+    println!("setup: {}", if result.has_setup { "yes" } else { "no" });
+    println!("check: {}", if result.has_check { "yes" } else { "no" });
+    println!("build: {}", if result.has_build { "yes" } else { "no" });
+    if !result.hooks.is_empty() {
+        println!("hooks: {}", result.hooks.join(", "));
+    }
+}
+
+fn exit_from_process_result(result: CharmProcessResult) -> Result<ExitCode, CommandError> {
+    println!("{}", result.message);
+    if !result.stdout.is_empty() {
+        print!("{}", result.stdout);
+    }
+    if !result.stderr.is_empty() {
+        eprint!("{}", result.stderr);
+    }
+    if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
 }
 
 impl UtilCommand {

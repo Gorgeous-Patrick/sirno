@@ -15,15 +15,17 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::error::CommandError;
 use crate::{
-    CheckSettings, ConfigError, RenderSettings, RepoSettings, SirnoConfig, TutorialSettings,
+    CharmSettings, CheckSettings, ConfigError, RenderSettings, RepoSettings, SirnoConfig,
+    TutorialSettings,
 };
 
-const SECTIONS: [ConfigSection; 7] = [
+const SECTIONS: [ConfigSection; 8] = [
     ConfigSection::Lake,
     ConfigSection::Repo,
     ConfigSection::Witness,
     ConfigSection::Check,
     ConfigSection::Tutorial,
+    ConfigSection::Charm,
     ConfigSection::Structural,
     ConfigSection::Render,
 ];
@@ -180,6 +182,7 @@ enum ConfigSection {
     Witness,
     Check,
     Tutorial,
+    Charm,
     Structural,
     Render,
 }
@@ -192,6 +195,7 @@ impl ConfigSection {
             | "witness" => Some(Self::Witness),
             | "check" => Some(Self::Check),
             | "tutorial" => Some(Self::Tutorial),
+            | "charm" => Some(Self::Charm),
             | "structural" => Some(Self::Structural),
             | "render" => Some(Self::Render),
             | _ => None,
@@ -205,6 +209,7 @@ impl ConfigSection {
             | Self::Witness => "[witness]",
             | Self::Check => "[check]",
             | Self::Tutorial => "[tutorial]",
+            | Self::Charm => "[charm]",
             | Self::Structural => "[structural]",
             | Self::Render => "[render]",
         }
@@ -288,6 +293,9 @@ fn materialize_section(config: &mut SirnoConfig, section: ConfigSection) {
         }
         | ConfigSection::Tutorial => {
             config.tutorial.get_or_insert_with(TutorialSettings::all);
+        }
+        | ConfigSection::Charm => {
+            config.charm = CharmSettings::default();
         }
     }
 }
@@ -421,6 +429,7 @@ mod tests {
             witness: WitnessSettings { delimiters: Vec::new() },
             check: CheckSettings::default(),
             tutorial: None,
+            charm: CharmSettings::default(),
             structural: Default::default(),
             render: Default::default(),
         }

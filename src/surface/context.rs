@@ -10,19 +10,24 @@ use std::process::Command as ProcessCommand;
 
 use indexmap::IndexMap;
 
+use crate::charm::{
+    CharmBuildSpec, CharmBundle, CharmCommandSpec, CharmManifest, artifact_map,
+    manifest_artifact_path,
+};
 use crate::surface::dto::{
     AnchorCheckResult, AnchorDriftKind, AnchorDriftRecord, AnchorStatusResult, AnchorUpdateResult,
     ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
-    ArtifactRenameRequest, ConfigCommentResult, CwdResult, EntryFileResult, EntryNewRequest,
-    EntryPathsRequest, EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest,
-    LakeInitResult, LocalProtectionResult, MovePathResult, PathRecord, QueryColumn,
-    QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
-    RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, StatusCheckPolicy,
-    StatusResult, StatusTide, StructuralConfigRecord, StructuralConfigSyncResult,
-    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
-    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
-    WitnessResult,
+    ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult, CharmListResult,
+    CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult, CwdResult,
+    EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadResult, EntryRenameResult,
+    LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult, MovePathResult,
+    PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse,
+    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
+    SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
+    StructuralConfigRecord, StructuralConfigSyncResult, StructuralEdgeStatus,
+    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
+    UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -30,11 +35,11 @@ use crate::surface::output::{
 };
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
-    AnchorFile, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress, EntryArtifactPath,
-    EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
-    EntryMetadata, EntryQuery, EntryStructuralMatcher, SirnoConfig, SirnoLock,
-    StructuralRenderSettings, StructuralSettings, Tide, TideEntrySnapshot, TideStatus,
-    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
+    AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
+    EntryArtifactPath, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
+    EntryDirectoryReport, EntryMetadata, EntryQuery, EntryStructuralMatcher, SPELL_CACHE_DIRECTORY,
+    SirnoConfig, SirnoLock, StructuralRenderSettings, StructuralSettings, Tide, TideEntrySnapshot,
+    TideStatus, UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
     WitnessCheckSettings, WitnessRecord,
 };
 
@@ -770,6 +775,401 @@ impl SurfaceContext {
             path: display_path(&path),
             message: format!("removed artifact {artifact_path} at {}", path.display()),
         })
+    }
+
+    // sirno:witness:charm-and-spell-commands:begin
+    /// List discovered charm entries.
+    pub fn charm_list(&self) -> Result<CharmListResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let discovered = self.discover_charms(&config)?;
+        let charms = discovered
+            .into_iter()
+            .map(|bundle| self.charm_record(&config, &bundle))
+            .collect::<Vec<_>>();
+        Ok(CharmListResult {
+            ok: true,
+            message: format!("found {} {}", charms.len(), plural(charms.len(), "charm", "charms")),
+            charms,
+        })
+    }
+
+    /// Show one discovered charm.
+    pub fn charm_show(&self, id: EntryAddress) -> Result<CharmShowResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let bundle = self.load_charm(&id)?;
+        Ok(self.charm_show_result(&config, &bundle))
+    }
+
+    /// Enable one charm entry in project config.
+    pub fn charm_enable(&self, id: EntryAddress) -> Result<CharmEnablementResult, CommandError> {
+        self.load_charm(&id)?;
+        let mut config = SirnoConfig::from_file(&self.config_path)?;
+        let changed = config.charm.enable(id.clone());
+        if changed {
+            config.write(&self.config_path)?;
+        }
+        let message = if changed {
+            format!("enabled charm {id} in {}", self.config_path.display())
+        } else {
+            format!("charm {id} is already enabled in {}", self.config_path.display())
+        };
+        Ok(CharmEnablementResult {
+            ok: true,
+            changed,
+            id: id.to_string(),
+            config_path: display_path(&self.config_path),
+            message,
+        })
+    }
+
+    /// Disable one charm entry in project config.
+    pub fn charm_disable(&self, id: EntryAddress) -> Result<CharmEnablementResult, CommandError> {
+        let mut config = SirnoConfig::from_file(&self.config_path)?;
+        let changed = config.charm.disable(&id);
+        if changed {
+            config.write(&self.config_path)?;
+        }
+        let message = if changed {
+            format!("disabled charm {id} in {}", self.config_path.display())
+        } else {
+            format!("charm {id} is not enabled in {}", self.config_path.display())
+        };
+        Ok(CharmEnablementResult {
+            ok: true,
+            changed,
+            id: id.to_string(),
+            config_path: display_path(&self.config_path),
+            message,
+        })
+    }
+
+    /// Run a charm setup command.
+    pub fn charm_setup(&self, id: EntryAddress) -> Result<CharmProcessResult, CommandError> {
+        let (config, bundle) = self.load_enabled_charm(&id)?;
+        let cache = self.spell_cache_path(&bundle);
+        let command = bundle.manifest.charm.setup.as_ref();
+        self.run_optional_charm_command(&config, &bundle, &cache, "setup", command)
+    }
+
+    /// Run a charm check command.
+    pub fn charm_check(&self, id: EntryAddress) -> Result<CharmProcessResult, CommandError> {
+        let (config, bundle) = self.load_enabled_charm(&id)?;
+        let cache = self.spell_cache_path(&bundle);
+        let command = bundle.manifest.charm.check.as_ref();
+        self.run_optional_charm_command(&config, &bundle, &cache, "check", command)
+    }
+
+    /// Build one source charm, or report that a direct charm needs no build.
+    pub fn charm_build(&self, id: EntryAddress) -> Result<CharmProcessResult, CommandError> {
+        let (config, bundle) = self.load_enabled_charm(&id)?;
+        let cache = self.spell_cache_path(&bundle);
+        self.run_optional_build_command(&config, &bundle, &cache, false)
+    }
+
+    /// Remove spell cache state for one charm entry.
+    pub fn charm_clean(&self, id: EntryAddress) -> Result<CharmCleanResult, CommandError> {
+        let bundle = self.load_charm(&id)?;
+        let path = self.spell_cache_owner_path(&bundle.entry.id);
+        let removed = match fs::remove_dir_all(&path) {
+            | Ok(()) => true,
+            | Err(source) if source.kind() == ErrorKind::NotFound => false,
+            | Err(source) => return Err(CommandError::RemoveSpellCache { path, source }),
+        };
+        let message = if removed {
+            format!("removed spell cache for charm {id} at {}", path.display())
+        } else {
+            format!("spell cache for charm {id} is already clean at {}", path.display())
+        };
+        Ok(CharmCleanResult {
+            ok: true,
+            removed,
+            id: id.to_string(),
+            path: display_path(&path),
+            message,
+        })
+    }
+
+    /// List spells resolved from enabled charms.
+    pub fn spell_list(&self) -> Result<SpellListResult, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let mut spells = Vec::new();
+        for id in &config.charm.enabled {
+            let bundle = self.load_charm(id)?;
+            spells.push(self.spell_record(&bundle));
+        }
+        Ok(SpellListResult {
+            ok: true,
+            message: format!("found {} {}", spells.len(), plural(spells.len(), "spell", "spells")),
+            spells,
+        })
+    }
+
+    /// Show the spell resolved from one charm.
+    pub fn spell_show(&self, id: EntryAddress) -> Result<CharmShowResult, CommandError> {
+        self.charm_show(id)
+    }
+
+    /// Resolve and run one spell.
+    pub fn spell_run(&self, id: EntryAddress) -> Result<CharmProcessResult, CommandError> {
+        let (config, bundle) = self.load_enabled_charm(&id)?;
+        let cache = self.spell_cache_path(&bundle);
+        self.run_optional_build_command(&config, &bundle, &cache, true)?;
+        self.run_required_command(
+            &config,
+            &bundle,
+            &cache,
+            "spell",
+            &bundle.manifest.spell.command,
+            true,
+        )
+    }
+    // sirno:witness:charm-and-spell-commands:end
+
+    // sirno:witness:charm-resolution:begin
+    fn discover_charms(&self, config: &SirnoConfig) -> Result<Vec<CharmBundle>, CommandError> {
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, config);
+        let mut settings = entry_directory_check_settings(&self.config_path, config);
+        settings.render = false;
+        settings.witness = None;
+        let directory = EntryDirectory::new(&lake);
+        let report = directory.check_with_settings(CheckMode::Edit, &settings)?;
+        let manifest_path = manifest_artifact_path();
+        let mut bundles = Vec::new();
+
+        for entry in report.entries() {
+            let artifacts = report
+                .artifacts()
+                .iter()
+                .filter(|artifact| artifact.owner == entry.id)
+                .cloned()
+                .collect::<Vec<_>>();
+            let Some(manifest_artifact) =
+                artifacts.iter().find(|artifact| artifact.path == manifest_path)
+            else {
+                continue;
+            };
+            let manifest = CharmManifest::from_bytes(&manifest_artifact.content)?;
+            bundles.push(CharmBundle {
+                entry: entry.clone(),
+                manifest,
+                artifact_root: directory.entry_artifact_root_path(&entry.id),
+                artifacts: artifact_map(artifacts),
+            });
+        }
+
+        Ok(bundles)
+    }
+
+    fn load_charm(&self, id: &EntryAddress) -> Result<CharmBundle, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let directory = EntryDirectory::new(&lake);
+        let entry = directory.read_entry(id)?;
+        let artifacts = directory.read_entry_artifacts(id)?;
+        let manifest_path = manifest_artifact_path();
+        let manifest_artifact = artifacts
+            .iter()
+            .find(|artifact| artifact.path == manifest_path)
+            .ok_or_else(|| crate::CharmError::MissingManifest(id.clone()))?;
+        let manifest = CharmManifest::from_bytes(&manifest_artifact.content)?;
+        Ok(CharmBundle {
+            entry,
+            manifest,
+            artifact_root: directory.entry_artifact_root_path(id),
+            artifacts: artifact_map(artifacts),
+        })
+    }
+    // sirno:witness:charm-resolution:end
+
+    // sirno:witness:charm-enablement:begin
+    fn load_enabled_charm(
+        &self, id: &EntryAddress,
+    ) -> Result<(SirnoConfig, CharmBundle), CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        if !config.charm.contains(id) {
+            return Err(CommandError::CharmNotEnabled(id.clone()));
+        }
+        let bundle = self.load_charm(id)?;
+        Ok((config, bundle))
+    }
+    // sirno:witness:charm-enablement:end
+
+    fn charm_record(&self, config: &SirnoConfig, bundle: &CharmBundle) -> CharmRecord {
+        CharmRecord {
+            id: bundle.entry.id.to_string(),
+            name: bundle.entry.metadata.name.clone(),
+            enabled: config.charm.contains(&bundle.entry.id),
+            kind: bundle.kind_label().to_owned(),
+            manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
+        }
+    }
+
+    fn charm_show_result(&self, config: &SirnoConfig, bundle: &CharmBundle) -> CharmShowResult {
+        CharmShowResult {
+            ok: true,
+            id: bundle.entry.id.to_string(),
+            name: bundle.entry.metadata.name.clone(),
+            enabled: config.charm.contains(&bundle.entry.id),
+            kind: bundle.kind_label().to_owned(),
+            manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
+            artifact_root: display_path(&bundle.artifact_root),
+            spell_cache_path: display_path(&self.spell_cache_path(bundle)),
+            spell_command: bundle.manifest.spell.command.clone(),
+            has_setup: bundle.manifest.charm.setup.is_some(),
+            has_check: bundle.manifest.charm.check.is_some(),
+            has_build: bundle.manifest.charm.build.is_some(),
+            hooks: bundle.manifest.hooks.clone(),
+        }
+    }
+
+    fn spell_record(&self, bundle: &CharmBundle) -> SpellRecord {
+        SpellRecord {
+            id: bundle.entry.id.to_string(),
+            name: bundle.entry.metadata.name.clone(),
+            kind: bundle.kind_label().to_owned(),
+            spell_cache_path: display_path(&self.spell_cache_path(bundle)),
+        }
+    }
+
+    fn run_optional_charm_command(
+        &self, config: &SirnoConfig, bundle: &CharmBundle, cache: &Path, phase: &'static str,
+        command: Option<&CharmCommandSpec>,
+    ) -> Result<CharmProcessResult, CommandError> {
+        let Some(command) = command else {
+            return Ok(CharmProcessResult {
+                ok: true,
+                id: bundle.entry.id.to_string(),
+                phase: phase.to_owned(),
+                skipped: true,
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                message: format!("no {phase} command declared for charm {}", bundle.entry.id),
+            });
+        };
+        self.run_required_command(config, bundle, cache, phase, &command.command, false)
+    }
+
+    fn run_optional_build_command(
+        &self, config: &SirnoConfig, bundle: &CharmBundle, cache: &Path, allow_cached: bool,
+    ) -> Result<CharmProcessResult, CommandError> {
+        let Some(build) = &bundle.manifest.charm.build else {
+            return Ok(CharmProcessResult {
+                ok: true,
+                id: bundle.entry.id.to_string(),
+                phase: "build".to_owned(),
+                skipped: true,
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                message: format!("direct charm {} does not need a build", bundle.entry.id),
+            });
+        };
+
+        if allow_cached
+            && let Some(output) = &build.output
+            && cache.join(output).exists()
+        {
+            return Ok(CharmProcessResult {
+                ok: true,
+                id: bundle.entry.id.to_string(),
+                phase: "build".to_owned(),
+                skipped: true,
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                message: format!("spell cache already contains {}", cache.join(output).display()),
+            });
+        }
+
+        fs::create_dir_all(cache).map_err(|source| CommandError::CreateSpellCache {
+            path: cache.to_path_buf(),
+            source,
+        })?;
+        let mut result = self.run_build_command(config, bundle, cache, "build", build)?;
+        if result.ok
+            && let Some(output) = &build.output
+            && !cache.join(output).exists()
+            && !bundle.artifact_root.join(output).exists()
+        {
+            result.ok = false;
+            result.message = format!(
+                "build command for charm {} did not produce {}",
+                bundle.entry.id,
+                output.display()
+            );
+        }
+        Ok(result)
+    }
+
+    fn run_build_command(
+        &self, config: &SirnoConfig, bundle: &CharmBundle, cache: &Path, phase: &'static str,
+        build: &CharmBuildSpec,
+    ) -> Result<CharmProcessResult, CommandError> {
+        self.run_required_command(config, bundle, cache, phase, &build.command, false)
+    }
+
+    // sirno:witness:spell:begin
+    fn run_required_command(
+        &self, config: &SirnoConfig, bundle: &CharmBundle, cache: &Path, phase: &'static str,
+        argv: &[String], prefer_cache: bool,
+    ) -> Result<CharmProcessResult, CommandError> {
+        fs::create_dir_all(cache).map_err(|source| CommandError::CreateSpellCache {
+            path: cache.to_path_buf(),
+            source,
+        })?;
+        let project_root = config_parent(&self.config_path);
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, config);
+        let argv =
+            resolve_manifest_argv(argv, &bundle.artifact_root, cache, &project_root, prefer_cache);
+        let mut command = ProcessCommand::new(&argv[0]);
+        command.args(&argv[1..]);
+        command.current_dir(&bundle.artifact_root);
+        command.env("SIRNO_CONFIG", &self.config_path);
+        command.env("SIRNO_PROJECT_ROOT", &project_root);
+        command.env("SIRNO_LAKE", lake);
+        command.env("SIRNO_CHARM", bundle.entry.id.as_str());
+        command.env("SIRNO_CHARM_ROOT", &bundle.artifact_root);
+        command.env("SIRNO_SPELL_DIR", cache);
+        let output = command.output().map_err(|source| CommandError::RunCharmProcess {
+            id: bundle.entry.id.clone(),
+            phase,
+            source,
+        })?;
+        let ok = output.status.success();
+        let exit_code = output.status.code();
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        let message = if ok {
+            format!("{phase} command for charm {} succeeded", bundle.entry.id)
+        } else {
+            format!(
+                "{phase} command for charm {} failed with {}",
+                bundle.entry.id,
+                exit_code
+                    .map(|code| format!("exit code {code}"))
+                    .unwrap_or_else(|| "no exit code".to_owned())
+            )
+        };
+        Ok(CharmProcessResult {
+            ok,
+            id: bundle.entry.id.to_string(),
+            phase: phase.to_owned(),
+            skipped: false,
+            exit_code,
+            stdout,
+            stderr,
+            message,
+        })
+    }
+    // sirno:witness:spell:end
+
+    fn spell_cache_owner_path(&self, id: &EntryAddress) -> PathBuf {
+        config_parent(&self.config_path).join(SPELL_CACHE_DIRECTORY).join(id.as_str())
+    }
+
+    fn spell_cache_path(&self, bundle: &CharmBundle) -> PathBuf {
+        self.spell_cache_owner_path(&bundle.entry.id).join(bundle.fingerprint())
     }
 
     // sirno:witness:agent-skills:begin
@@ -1730,6 +2130,29 @@ fn default_artifact_path_from_source(source: &Path) -> Result<EntryArtifactPath,
     Ok(EntryArtifactPath::new(Path::new(file_name))?)
 }
 
+fn resolve_manifest_argv(
+    argv: &[String], artifact_root: &Path, cache: &Path, project_root: &Path, prefer_cache: bool,
+) -> Vec<String> {
+    let mut resolved = argv.to_vec();
+    let Some(first) = resolved.first_mut() else {
+        panic!("validated charm commands are non-empty");
+    };
+    let first_path = Path::new(first);
+    if first_path.is_absolute() {
+        return resolved;
+    }
+
+    let candidates = if prefer_cache {
+        [cache.join(first_path), artifact_root.join(first_path), project_root.join(first_path)]
+    } else {
+        [artifact_root.join(first_path), project_root.join(first_path), cache.join(first_path)]
+    };
+    if let Some(path) = candidates.into_iter().find(|path| path.exists()) {
+        *first = path.display().to_string();
+    }
+    resolved
+}
+
 fn explicit_lake_check_settings(
     config_path: &std::path::Path,
 ) -> Result<EntryDirectoryCheckSettings, CommandError> {
@@ -1886,4 +2309,120 @@ fn title_name_from_id(id: &EntryAddress) -> String {
 
 fn tide_statuses_for_output(tide: &Tide, all: bool) -> Vec<TideStatus> {
     tide.statuses().iter().filter(|status| all || !status.resolved).cloned().collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn initialized_context() -> (tempfile::TempDir, SurfaceContext) {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let context = SurfaceContext::new(&config_path);
+        context.lake_init(LakeInitRequest { lake: Some(temp.path().join("lake")) }).unwrap();
+        (temp, context)
+    }
+
+    fn create_charm_entry(
+        temp: &tempfile::TempDir, context: &SurfaceContext, id: &EntryAddress, manifest: &str,
+        artifacts: &[(&str, &str)],
+    ) {
+        context
+            .entry_new(EntryNewRequest {
+                id: id.clone(),
+                name: None,
+                desc: "test charm".to_owned(),
+                structural: Vec::new(),
+                body: None,
+            })
+            .unwrap();
+
+        let manifest_source = temp.path().join(format!("{id}.manifest.toml"));
+        fs::write(&manifest_source, manifest).unwrap();
+        context
+            .entry_artifact_add(ArtifactAddRequest {
+                id: id.clone(),
+                source: manifest_source,
+                artifact_path: Some(PathBuf::from(CHARM_MANIFEST_FILE_NAME)),
+            })
+            .unwrap();
+
+        for (path, content) in artifacts {
+            let source = temp.path().join(format!("{}.{}", id, path.replace('/', ".")));
+            fs::write(&source, content).unwrap();
+            context
+                .entry_artifact_add(ArtifactAddRequest {
+                    id: id.clone(),
+                    source,
+                    artifact_path: Some(PathBuf::from(path)),
+                })
+                .unwrap();
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn direct_charm_requires_enablement_and_runs_spell() {
+        let (temp, context) = initialized_context();
+        let id = EntryAddress::new("direct-charm").unwrap();
+        create_charm_entry(
+            &temp,
+            &context,
+            &id,
+            r#"
+[spell]
+command = ["sh", "hello.sh"]
+"#,
+            &[("hello.sh", r#"printf 'spell:%s' "$SIRNO_CHARM""#)],
+        );
+
+        let error = context.spell_run(id.clone()).unwrap_err();
+        assert!(matches!(error, CommandError::CharmNotEnabled(blocked) if blocked == id));
+
+        assert_eq!(context.charm_list().unwrap().charms[0].enabled, false);
+        assert!(context.charm_enable(id.clone()).unwrap().changed);
+        assert_eq!(context.spell_list().unwrap().spells.len(), 1);
+
+        let result = context.spell_run(id).unwrap();
+        assert!(result.ok);
+        assert_eq!(result.phase, "spell");
+        assert_eq!(result.stdout, "spell:direct-charm");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn source_charm_builds_cache_and_runs_spell() {
+        let (temp, context) = initialized_context();
+        let id = EntryAddress::new("source-charm").unwrap();
+        create_charm_entry(
+            &temp,
+            &context,
+            &id,
+            r#"
+[spell]
+command = ["built-spell"]
+
+[charm.build]
+command = ["sh", "build.sh"]
+output = "built-spell"
+"#,
+            &[(
+                "build.sh",
+                r#"cat > "$SIRNO_SPELL_DIR/built-spell" <<'SCRIPT'
+#!/bin/sh
+printf 'built:%s' "$SIRNO_CHARM"
+SCRIPT
+chmod +x "$SIRNO_SPELL_DIR/built-spell"
+"#,
+            )],
+        );
+
+        context.charm_enable(id.clone()).unwrap();
+        let result = context.spell_run(id.clone()).unwrap();
+        assert!(result.ok);
+        assert_eq!(result.stdout, "built:source-charm");
+
+        let show = context.charm_show(id).unwrap();
+        assert!(PathBuf::from(show.spell_cache_path).join("built-spell").exists());
+    }
 }

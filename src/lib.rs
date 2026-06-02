@@ -7,6 +7,7 @@
 
 pub mod artifact;
 pub mod anchor;
+pub mod charm;
 pub mod check;
 pub mod config;
 pub mod surface;
@@ -30,12 +31,16 @@ pub use crate::anchor::{
 pub use crate::artifact::{
     ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath, EntryArtifactPathError,
 };
+pub use crate::charm::{
+    CHARM_MANIFEST_FILE_NAME, CharmBundle, CharmCommandSpec, CharmError, CharmManifest,
+    SPELL_CACHE_DIRECTORY,
+};
 pub use crate::check::{
     CheckDiagnostic, CheckDiagnosticKind, CheckMode, CheckReport, CheckSeverity,
 };
 pub use crate::config::{
-    CONFIG_FILE_NAME, CheckSettings, ConfigError, LakeSettings, RenderSettings, RepoMember,
-    RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
+    CONFIG_FILE_NAME, CharmSettings, CheckSettings, ConfigError, LakeSettings, RenderSettings,
+    RepoMember, RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::{
-    AnchorError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
+    AnchorError, CharmError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
     EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, TideError,
     UpstreamError, WitnessError,
 };
@@ -238,9 +238,44 @@ pub enum CommandError {
     /// The generated-footer preprocessor could not write masked output.
     #[error("failed to write rg preprocessor output")]
     WriteRgPreprocessorOutput(#[source] std::io::Error),
+    /// A charm command requires an enabled charm.
+    #[error("charm `{0}` is not enabled; run `sirno charm enable {0}` first")]
+    CharmNotEnabled(EntryAddress),
+    /// A charm process could not be started.
+    #[error("failed to run {phase} command for charm `{id}`")]
+    RunCharmProcess {
+        /// Entry address whose charm was selected.
+        id: EntryAddress,
+        /// Operation phase.
+        phase: &'static str,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A spell cache directory could not be created.
+    #[error("failed to create spell cache directory {path}")]
+    CreateSpellCache {
+        /// Cache path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// A spell cache directory could not be removed.
+    #[error("failed to remove spell cache directory {path}")]
+    RemoveSpellCache {
+        /// Cache path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// Config-backed command failed.
     #[error(transparent)]
     Config(#[from] ConfigError),
+    /// Charm-backed command failed.
+    #[error(transparent)]
+    Charm(#[from] CharmError),
     /// Anchor-backed command failed.
     #[error(transparent)]
     Anchor(#[from] AnchorError),

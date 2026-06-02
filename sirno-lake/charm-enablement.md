@@ -3,7 +3,7 @@ name: Charm Enablement
 desc: The local opt-in policy that makes a charm executable project policy.
 category:
   - concept
-  - proposal
+  - implemented
 belongs:
   - extension-system
   - project-config
@@ -23,6 +23,15 @@ A project enables charm entries in `Sirno.toml`,
 not in the artifact tree alone.
 A present charm manifest is discoverable design data.
 An enabled charm is executable project policy.
+The implemented config form is:
+
+```toml
+[charm]
+enabled = ["entry-address"]
+```
+
+`sirno charm enable ENTRY_ADDRESS` adds an entry to this list.
+`sirno charm disable ENTRY_ADDRESS` removes it.
 
 The operator grants each spell resolved from an enabled charm
 the same filesystem authority as the Sirno process.

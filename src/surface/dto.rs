@@ -899,6 +899,138 @@ pub struct ArtifactChangeResult {
     pub message: String,
 }
 
+/// One discovered charm entry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmRecord {
+    /// Entry address that owns the charm.
+    pub id: String,
+    /// Human-readable entry name.
+    pub name: String,
+    /// Whether the charm is enabled in project config.
+    pub enabled: bool,
+    /// Charm kind: direct or source.
+    pub kind: String,
+    /// Charm manifest path.
+    pub manifest_path: String,
+}
+
+/// Result of listing charm entries.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmListResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Discovered charms.
+    pub charms: Vec<CharmRecord>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Detailed charm record for one entry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmShowResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Entry address that owns the charm.
+    pub id: String,
+    /// Human-readable entry name.
+    pub name: String,
+    /// Whether the charm is enabled in project config.
+    pub enabled: bool,
+    /// Charm kind: direct or source.
+    pub kind: String,
+    /// Charm manifest path.
+    pub manifest_path: String,
+    /// Artifact root path.
+    pub artifact_root: String,
+    /// Spell cache directory for this charm fingerprint.
+    pub spell_cache_path: String,
+    /// Declared spell command.
+    pub spell_command: Vec<String>,
+    /// Whether a setup command exists.
+    pub has_setup: bool,
+    /// Whether a check command exists.
+    pub has_check: bool,
+    /// Whether a build command exists.
+    pub has_build: bool,
+    /// Declared hook ids.
+    pub hooks: Vec<String>,
+}
+
+/// Result of enabling or disabling one charm.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmEnablementResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Whether project config changed.
+    pub changed: bool,
+    /// Entry address.
+    pub id: String,
+    /// Project config path.
+    pub config_path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Result of running a charm or spell command.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmProcessResult {
+    /// Whether the process was skipped or exited successfully.
+    pub ok: bool,
+    /// Entry address.
+    pub id: String,
+    /// Operation phase.
+    pub phase: String,
+    /// Whether no command was declared for this phase.
+    pub skipped: bool,
+    /// Process exit code.
+    pub exit_code: Option<i32>,
+    /// Captured standard output.
+    pub stdout: String,
+    /// Captured standard error.
+    pub stderr: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// Result of cleaning spell cache state for one charm.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CharmCleanResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Whether any cache path was removed.
+    pub removed: bool,
+    /// Entry address.
+    pub id: String,
+    /// Cache root selected by the command.
+    pub path: String,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+/// One spell resolved from an enabled charm.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpellRecord {
+    /// Entry address that owns the charm.
+    pub id: String,
+    /// Human-readable entry name.
+    pub name: String,
+    /// Spell kind: direct or source.
+    pub kind: String,
+    /// Spell cache directory for this charm fingerprint.
+    pub spell_cache_path: String,
+}
+
+/// Result of listing spells.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpellListResult {
+    /// Whether the command completed successfully.
+    pub ok: bool,
+    /// Resolved spells.
+    pub spells: Vec<SpellRecord>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// One discovered Sirno skill wrapper, package target, or adjacent skill link.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SkillWrapperRecord {
