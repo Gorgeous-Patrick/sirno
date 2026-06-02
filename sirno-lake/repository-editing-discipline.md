@@ -40,7 +40,8 @@ If the work reveals a new boundary, invariant, representation, or behavior,
 create or revise the compact entry first.
 Apply semantic locality when creating or revising entries.
 The body should state the local meaning in place,
-and broad entries should not inventory their current implementations.
+and any route, index, roster, or review front door should label its map as a map.
+Keep the semantic contract separate from the current route through children.
 Use `category`, `belongs`, `prerequisite`, and `refines` only when they improve navigation,
 review, or accountability.
 Leave generated footer regions untouched.

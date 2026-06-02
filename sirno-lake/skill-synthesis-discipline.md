@@ -41,7 +41,9 @@ not skills in their own right.
 Semantic locality is one of those cross-cutting methods.
 When a generated skill creates, edits, audits, or materializes entries,
 its procedure should preserve the entry's local meaning
-and avoid making broad entries enumerate current implementations.
+and preserve useful maps without confusing them for semantic contracts.
+A route, index, roster, or review front door may enumerate children
+when the map is part of that entry's local claim.
 Repository-specific design-document skills or documented prose methods are the first method input
 when Sirno skill work touches design prose.
 If a repository has none,

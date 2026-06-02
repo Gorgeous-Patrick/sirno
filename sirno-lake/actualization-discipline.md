@@ -70,6 +70,8 @@ change settles.
 Apply semantic locality to any inline entry change.
 The new or revised entry should own its local meaning,
 while implementation entries and witnesses remain narrower evidence or refinement.
+If the entry is a route, index, roster, or review front door,
+make the map explicit and keep it separate from the semantic claim.
 If the work exposes a durable design fact that is not yet named in the lake
 and the fact deserves its own deliberation,
 hand off to the internalizer skill,

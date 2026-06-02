@@ -95,6 +95,9 @@ State the fact directly.
 Apply semantic locality:
 the entry should remain meaningful when read without its neighbors,
 and links should help navigation rather than supply the basic semantics.
+Routes, indexes, rosters, and review front doors may enumerate children
+when that map is part of the local claim.
+Label the map so it does not masquerade as the semantic contract.
 Keep the body small enough to read in place and durable enough to survive
 the edit that made it useful.
 Use paragraphs for continuous claims.

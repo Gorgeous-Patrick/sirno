@@ -48,6 +48,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    Apply semantic locality to any inline entry change:
    the new or revised entry should own its local meaning,
    while implementation entries and witnesses remain narrower evidence or refinement.
+   If the entry is a route, index, roster, or review front door,
+   make the map explicit and keep it separate from the semantic claim.
    If the work exposes a new fact that needs separate deliberation,
    hand off to the internalizer skill and return once the entry exists.
    Leave generated footer regions untouched.

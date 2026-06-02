@@ -61,7 +61,9 @@ correct the artifact or wrapper, never the lake.
    Add nothing the lake does not commit.
    Include semantic locality when the resource creates, edits, audits, or materializes entries:
    entries should preserve their own local meaning,
-   and broad entries should not enumerate current implementations.
+   and useful maps should not be confused for semantic contracts.
+   A route, index, roster, or review front door may enumerate children
+   when the map is part of that entry's local claim.
    Preserve shared documentation habits such as reader-aware bullets, diagrams,
    conceptual ordering, and declarative precision when the full resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,

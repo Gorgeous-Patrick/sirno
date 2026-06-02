@@ -10,107 +10,72 @@ prerequisite:
   - semantic-locality
 ---
 
-Sirno ships an agent skill set that renders the method into operational procedure.
+Sirno ships an agent skill set that renders the lake method into operational procedure.
 
-There are six packaged Sirno skills.
-The editor skill is the default entry point for codebase changes.
-It starts in the configured lake,
-updates or creates the entries that govern the work,
-actualizes from those entries into repository material,
-and keeps witnesses, configuration, and generated skill artifacts synced.
-The actualizer skill handles lake-to-repository work after the governing entry is clear.
-The internalizer skill records durable repository facts back into the lake.
-The narrative-session skill conducts an adaptive route through lake knowledge
-and materializes it as a narrative entry when the route should persist.
-The skill-synthesizer skill rebuilds the MCP skill resources and packaged wrappers
-from discipline entries,
-so the skill set stays a reproducible surface of the method rather than prose that can drift.
-The curator skill audits an existing lake for clarity, focus, accurate structure, and witness alignment,
-and acts on findings only with the user's approval.
-`src/surface/context.rs` bundles the packaged wrappers as compile-time constants
-from the lake-owned `SKILL.md` artifact files.
-Project initialization installs those bundled wrappers by default.
-Human CLI operator maintenance can refresh wrappers and detect installed wrapper drift.
-Each rostered Sirno discipline owns two skill artifacts.
+This entry is the roster and handoff map for that set.
+The map is part of this entry's local claim:
+a reader should be able to see which skills ship,
+what each one owns,
+and where shared method applies.
+The durable procedure for each skill lives in its own discipline entry.
+
+| Skill | Discipline entry | Local role |
+|---|---|---|
+| `sirno-editor` | `repository-editing-discipline` | Front door for repository edits. |
+| `sirno-actualizer` | `actualization-discipline` | Lake-to-repository work. |
+| `sirno-internalizer` | `internalization-discipline` | Repository-to-lake work. |
+| `sirno-narrative-session` | `narrative-session-discipline` | Adaptive routes through lake knowledge. |
+| `sirno-skill-synthesizer` | `skill-synthesis-discipline` | Rebuilds MCP resources and wrappers. |
+| `sirno-curator` | `lake-curation-discipline` | Audits an existing lake with user approval. |
+
+The roster is a reader map, not the semantic contract of every skill.
+A new packaged Sirno skill should update this map and add its own discipline entry,
+artifacts, package, and structural links.
+It should not require existing discipline entries to rewrite their local meaning.
+
+Each rostered discipline owns two lake artifacts.
 `SKILL.full.md` is the full Markdown skill text embedded by `src/mcp.rs`
 and served as a `sirno://skills/sirno-*` MCP resource.
-`SKILL.md` is the packaged wrapper copied word-for-word into `.agents/skills/sirno-*/SKILL.md`.
+`SKILL.md` is the small wrapper copied into `.agents/skills/sirno-*/SKILL.md`.
 The wrapper tells an agent to read the MCP resource before doing skill work.
 When Claude skill integration is selected,
-Sirno links each installed `.agents/skills/sirno-*` package directory into `.claude/skills`.
-The link is an adjacent integration point.
-The packaged wrapper under `.agents/skills` remains the owned skill package.
-MCP-hosted Sirno skills must bind the active project through the server current working directory.
-When a Sirno MCP server starts without `--config`,
-call its `sirno_cwd` tool with the repository root before project tools.
-Project tools resolve `Sirno.toml` on every project tool call from the current server cwd.
-Call `sirno_cwd` again before switching projects in the same server process.
-
-This entry is the review front door for those skills.
-The durable procedure each skill encodes lives in its own discipline entry,
-so a skill can be rebuilt from the lake rather than only from its packaged wrapper.
-Each Sirno discipline entry names its target `.agents/skills/sirno-*/SKILL.md` package path.
-The discipline entries are `repository-editing-discipline`, `actualization-discipline`,
-`internalization-discipline`, `narrative-session-discipline`, `skill-synthesis-discipline`,
-and `lake-curation-discipline`.
+Sirno links installed `.agents/skills/sirno-*` package directories into `.claude/skills`.
 
 Packaged skills are portable.
-They are installed into arbitrary user repositories,
-so their user-facing procedure must speak from the active project perspective.
-Use the configured lake path from `Sirno.toml`,
+They speak from the active project perspective:
+use the configured lake path from `Sirno.toml`,
 query and read the active project's entries,
 and avoid assuming this source repository's `sirno-lake/` path or self-hosted entry set.
-The `portable-agent-skill-language` entry carries this rule.
+The `portable-agent-skill-language` entry states this rule directly.
 
-The skills share one lake-first rule.
+All packaged skills share one lake-first rule.
 Any edit to source, tests, generated artifacts, configuration, README files,
-design documents outside the configured lake, or packaged skills begins by reading the relevant
-active-project entries.
+design documents outside the configured lake, or packaged skills begins by reading
+the relevant active-project entries.
 When a skill creates or revises an entry,
 it applies semantic locality:
 the entry body should carry the local meaning,
-while structural links, refinements, and witnesses extend or verify it.
-When the edit changes the design,
-the editor skill updates the configured lake before the repository material becomes the new
-habit.
-The resulting code, docs, config, and witnesses should be able to answer which entry explains
-an important local commitment.
-The editor skill uses repository documentation-writing skills for `README`, `DESIGN`,
-and `METHODOLOGY` prose when those documents have their own roles and style.
-The `design-doc-writer-skill` entry documents the adjacent meta-management skill
-for design documents.
-It is documented in the Sirno source lake as a method input,
-not as part of the six packaged Sirno skills.
-`design-doc-writer-skill` contributes reusable design-document habits:
-read the whole design document,
-order sections by conceptual dependency and scope,
-write declarative, dry, precise prose,
-prefer positive definitions over defensive framing,
-use bullets or simple diagrams when they improve structural reading,
-and evaluate the result as a reader before and after editing.
-It also owns `.artifacts/design-doc-writer-skill/SKILL.full.md`,
-copied exactly from `.agents/skills/design-doc-writer/SKILL.md`.
-`src/mcp.rs` embeds that artifact as `sirno://skills/design-doc-writer`.
-Sirno skill work uses those habits only as the default design-document method.
-When a repository has its own design-document skill or documented manner,
+and any roster, route, index, or review map should be labeled as a map.
+
+The `design-doc-writer-skill` entry documents an adjacent design-document method.
+It is a reusable method input for Sirno skill work,
+not one of the packaged Sirno skills in this roster.
+When a repository has its own design-document skill or documented prose method,
 use that instead.
-The synthesis skill checks the Sirno skill roster
-and reports any discipline, MCP resource, wrapper, or package that no longer has a counterpart.
+
 Repository skill maintenance is a local human CLI utility surface.
 MCP serves skill resources for agents.
-It does not expose any `sirno util` commands,
-including wrapper listing, checking, or installation.
+It does not expose `sirno util` commands for wrapper listing, checking, or installation.
 Agents maintain skill artifacts and installed wrappers as explicit repository files.
-Utility commands copy exact bundled wrapper constants;
-they do not ask a model to rewrite the skill text.
-When an agent discovers that utility maintenance is needed,
-it should report the needed human CLI action instead of treating it as an MCP operation.
+Utility commands copy exact bundled wrapper constants.
+When utility maintenance is needed,
+an agent should report the needed human CLI action.
 The editor skill may call CLI `sirno util config fix`
-to canonicalize `Sirno.toml` comments.
-That exception belongs to repository editing and does not add utility commands to MCP.
+to canonicalize `Sirno.toml` comments during repository editing.
 
 A full skill resource is an operational rendering of lake method, not a separate authority.
-When a resource or wrapper and the lake disagree, the lake and `Sirno.toml` win,
+When a resource or wrapper and the lake disagree,
+the lake and `Sirno.toml` win,
 and the artifact should be corrected.
 Failure handling belongs in the full resource.
 A wrapper should only direct the agent to the MCP resource,

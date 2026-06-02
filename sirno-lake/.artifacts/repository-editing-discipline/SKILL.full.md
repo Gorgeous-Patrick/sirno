@@ -48,7 +48,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    create or revise a compact entry before the repository change settles.
    Apply semantic locality to every entry creation or revision:
    the body should state the local meaning in place,
-   and broad entries should not inventory their current implementations.
+   and any route, index, roster, or review front door should label its map as a map.
+   Keep the semantic contract separate from the current route through children.
    Use `sirno_entry_new` for a new entry,
    `sirno_entry_rename` to change its id,
    and `sirno_entry_artifact_*` for artifacts owned by an entry.
