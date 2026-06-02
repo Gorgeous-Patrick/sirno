@@ -9,35 +9,43 @@ prerequisite:
   - sirno
 ---
 
-Several design areas are reserved for later refinement.
+Future Work is a reservation map for design areas that should stay visible
+before they are stable enough for local entries.
+A reservation names pressure and the next design boundary.
+It is not a feature promise or a substitute for the entry that will later own the design.
 
-Reserved areas are concrete:
+A future-work item should stay small:
 
-- `locked` may define how *entries*, metadata fields, or generated regions resist accidental edits.
-  That design needs a clear ownership model before it becomes part of the schema.
+- name the area;
+- describe the unresolved design question;
+- point to a proposal entry when one exists;
+- leave implementation detail to the entry that later owns it.
+
+Current reservation map:
+
+- `locked` should define how *entries*, metadata fields, or generated regions resist accidental edits.
+  It needs a clear ownership model before it becomes part of the schema.
 - Review receipt archival should define which accepted review records are kept,
   which records can be named,
   and how review interfaces expose them.
 - Lake dependency management should refine *entry domain* resolution,
   symlink materialization,
   and upstream version selection without making entry names carry all dependency policy.
-- The `extension-system` proposal defines executable entry artifacts
-  that can run from Sirno hook points.
-  Hook entries still need to define trigger points, payloads, result contracts, and failure policy.
+- `extension-system` proposes executable entry artifacts that run from Sirno hook points.
+  Hook entries still need trigger points, payloads, result contracts, and failure policy.
 - Future editing interfaces may provide a direct GUI or Obsidian-style experience.
-  They should preserve the existing ownership rules:
+  They should preserve existing ownership rules:
   metadata is structural,
   generated footer regions are Sirno-owned,
   and prose outside generated regions remains user-owned.
 
-Future work should remain explicit without becoming speculative architecture.
-The current design is useful because its core is small:
+The map keeps possible work explicit without turning it into speculative architecture.
+When a reservation gains stable semantics,
+create or revise the local entry that owns those semantics and link it here only when the route helps.
+
+The current Sirno design remains small:
 *entries*, metadata, structural links, generated footers, forms, *transforms*, checks, and *witnesses*.
 New features should preserve that clarity.
-
-Git provides history and retention.
-Sirno still needs long-term policy for optional review receipt archives.
-That policy should preserve reviewable *lake* states without making *entry* metadata harder to read.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: Interfaces
-desc: The CLI and MCP surfaces that operate on Sirno project storage.
+desc: The adapter boundary for operating on Sirno project storage.
 category:
   - concept
 belongs:
@@ -9,30 +9,39 @@ prerequisite:
   - project-config
 ---
 
-Sirno exposes configured project storage through CLI and MCP interfaces.
-The `sirno::surface` module is the shared command surface behind both adapters.
-It owns typed request and result data before each adapter renders text, JSON, or MCP results.
+An interface is an adapter over configured Sirno project storage.
+It gives a human operator, agent, editor, or other client a stable way to request Sirno operations
+without owning the storage model itself.
 
-The CLI is the human operational interface.
-It initializes projects, manages entries, checks structure, renders generated links,
-maintains Anchor baselines, and reviews active tide work.
+The interface contract has three parts:
 
-The MCP interface is the agent-facing project interface.
-It exposes stable grouped project tools and lake-owned skill resources.
-It keeps host setup and package maintenance as explicit human CLI actions.
+- accept adapter-specific input;
+- call the shared command surface for typed request and result data;
+- render results in the format expected by that adapter.
 
-Interface details are split by adapter and command family.
-CLI and MCP entries describe adapters.
-Command entries describe shared operations exposed through those adapters.
+The `sirno::surface` module owns the shared command surface.
+Adapters should depend on it instead of duplicating command behavior.
+CLI text, CLI JSON, and MCP results may differ in presentation,
+but they should agree on the project operation and typed result.
 
-- `cli-interface` defines command spelling, aliases, global path selection, and output conventions.
-- `project-commands` defines project setup, lake movement, Anchor, checks, and rendering.
-- `entry-commands` defines entry creation, paths, artifacts, freezing, queries, ripgrep, and witnesses.
-- `tide-commands` defines dependency review status and resolution commands.
-- `utility-commands` defines local operator utilities such as config, entry defaults, skills, and MCP startup.
-- `mcp-interface` defines MCP resources, tool names, JSON behavior, and adapter ownership.
+Sirno currently has two primary adapters:
 
-Future editing surfaces belong in `future-work` until they have a stable adapter model.
+- the CLI for human operational work;
+- the MCP interface for agent-facing project work and lake-owned skill resources.
+
+Current interface and command-family map:
+
+- `cli-interface` is the human adapter and its command grammar.
+- `mcp-interface` is the agent adapter and its resource and tool surface.
+- `project-commands` covers project setup, lake movement, Anchor, checks, and rendering.
+- `entry-commands` covers entry creation, paths, artifacts, freezing, queries, ripgrep, and witnesses.
+- `tide-commands` covers dependency review status and resolution commands.
+- `utility-commands` covers local operator utilities such as config, entry defaults, skills, and MCP startup.
+
+This map is a reader route, not the interface boundary itself.
+A new adapter should define its own local entry, structural links, and witnesses.
+It may reuse command families when the shared surface fits.
+It should change this entry only when the adapter model itself changes.
 
 ---
 

@@ -27,17 +27,19 @@ It records enough accepted state for comparison,
 then lets Git preserve every historical version of that state.
 It does not store old entry bodies, private snapshots, checkout state, or retention policy.
 
-## Responsibilities
+Its local contract is accepted-state comparison:
 
 - write the accepted baseline to `.sirno/anchor.toml`;
 - compare the current waterline against that baseline;
-- expose drift through `sirno anchor status` and `sirno anchor check`;
-- gate `sirno anchor update` through review-mode checks and Tide;
-- clear obsolete Tide review state after accepting the current waterline.
+- expose drift for operators and agents;
+- accept a new baseline only after review-mode checks and Tide review pass;
+- clear obsolete Tide review state after the current waterline is accepted.
 
-## Commands
+## Command Map
 
-| Command | Behavior |
+The current CLI and MCP adapters expose Anchor through these operations:
+
+| Operation | Behavior |
 |---|---|
 | `sirno anchor status` | Shows current lake drift against `.sirno/anchor.toml`. |
 | `sirno anchor check` | Validates `.sirno/anchor.toml` and compares it with the lake. |
@@ -52,10 +54,11 @@ and clears obsolete Tide review state.
 The first update initializes Anchor from the current lake.
 Later updates require a clear Tide.
 
-## Design Split
+## Design Map
 
 Sirno Anchor is the subsystem boundary.
-The detailed storage contracts live in smaller entries:
+The detailed storage contracts live in smaller entries.
+This map is the review route through those contracts:
 
 - *Anchor File* defines `.sirno/anchor.toml` and fingerprint semantics.
 - *Sirno Control Files* defines `.sirno/` placement, target file ownership, and merge validity.
@@ -64,7 +67,7 @@ The detailed storage contracts live in smaller entries:
 - *Sirno Lock* defines dependency pins and the transition away from lock-stored Tide reviews.
 - *Versioning* defines the boundary between Git history and Sirno accepted baselines.
 
-## Implementation Status
+## Current Implementation Notes
 
 The first Anchor implementation provides `.sirno/anchor.toml`,
 entry and artifact-tree fingerprints,
@@ -86,9 +89,9 @@ The target design remains tracked `.sirno/anchor.toml`,
 tracked active `.sirno/tide.toml`,
 and tracked dependency-only `.sirno/lock.toml`.
 
-## Removed Snapshot Design
+## Excluded Snapshot Responsibilities
 
-Sirno Anchor keeps these responsibilities out of Sirno:
+Sirno Anchor keeps snapshot responsibilities out of Sirno:
 
 - private snapshot storage;
 - snapshot commits;

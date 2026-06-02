@@ -10,17 +10,9 @@ prerequisite:
   - repo
 ---
 
-A *transform* names a kind of work between Sirno *forms*.
-
-Sirno uses two *transform* names:
-`actualize` and `internalize`.
-They form the review neighborhood for work across the `lake` and `repo` polarity.
-
-Their direct names are also useful:
-`lake-to-repo` and `repo-to-lake`.
-
-The *transforms* are vocabulary for humans, LLMs, skills, CLI interfaces, and MCP tools.
-They describe coherent work without requiring every *transform* to be a one-shot command.
+A *transform* names intentional movement between Sirno *forms*.
+It gives a direction, a source form, a target form, and a review habit.
+A *transform* may be a command, a skill workflow, a manual editing practice, or a narrative route.
 
 The *transform* names make design work easier to request and review.
 Instead of saying "update the code, README, or generated documents from the lake",
@@ -35,6 +27,15 @@ source code, tests, configuration, generated files, README files,
 design documents outside the *lake*, and other inspectable artifacts.
 Actualization gives those materials shape from the *lake*.
 Internalization lets those materials teach the *lake* what durable design knowledge they expose.
+
+Current transform map:
+
+- `actualize`, also named `lake-to-repo`, moves from *lake* design to *repository* material.
+- `internalize`, also named `repo-to-lake`, moves from *repository* material to durable *lake* design.
+
+This map is the current vocabulary, not the limit of the concept.
+A future *transform* should define its own entry, direction, source form, target form, and evidence habits.
+It should change this entry only when the broader transform contract changes.
 
 A reviewer who touches one direction should visit the other direction through this entry.
 The round trip matters because repo material may reveal that the *lake* needs sharper names,
