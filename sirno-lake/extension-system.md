@@ -1,6 +1,6 @@
 ---
-name: Extension System
-desc: A proposal for running entry-owned executable artifacts from Sirno hook points.
+name: Charm And Spell System
+desc: A proposal for resolving entry-owned charms into invokable spells.
 category:
   - concept
   - proposal
@@ -16,37 +16,48 @@ refines:
   - future-work
 ---
 
-The extension system lets a Sirno-managed project run user-owned code from Sirno hook points.
+The charm and spell system lets a Sirno-managed project run user-owned code
+from Sirno hook points.
 
-An *extension* is an *entry* whose artifact tree declares one runnable bundle.
+A *charm* is an *entry* whose artifact tree declares one runnable bundle.
 The artifact tree may contain a script, a native executable,
 or source files for building an executable.
-The entry states the design intent for the extension.
+The entry states the design intent for the charm.
 The artifact tree stores the runnable material that actualizes that intent.
 
-A runnable bundle is identified by an extension manifest inside the owner artifact tree.
-The manifest records the command shape, the optional build shape,
-and the hooks for which the bundle is eligible.
+A *spell* is the ready-to-run script or executable resolved from a *charm*.
+A direct charm resolves an artifact script or executable into a spell.
+A source charm builds a spell into Sirno cache state.
+Hooks invoke spells.
+Charm commands prepare charms.
+
+A charm is identified by a charm manifest inside the owner artifact tree.
+The manifest records the spell command shape, optional charm preparation commands,
+and the hooks for which the charm is eligible.
 Hook names and hook payloads are defined by later hook entries.
-The extension system treats a hook as a named event with a declared payload and result contract.
+The charm and spell system treats a hook as a named event
+with a declared payload and result contract.
 
 Entry artifacts remain opaque lake state.
-Sirno interprets an artifact tree as an extension only when an extension manifest is present
+Sirno interprets an artifact tree as a charm only when a charm manifest is present
 and the owning entry is enabled by local project configuration.
 Artifact commands continue to manage bytes.
-Extension commands interpret those bytes for execution.
+Charm commands interpret those bytes for preparation.
+Spell commands invoke resolved runtime artifacts.
 
 ## Manifest
 
-The manifest should use TOML and live at `sirno-extension.toml` under the owner artifact root.
+The manifest should use TOML and live at `Sirno.charm.toml` under the owner artifact root.
 It should contain these concepts:
 
 | Field | Meaning |
 |---|---|
-| `command` | The argv vector used to run a script or executable. |
-| `build.command` | Optional argv vector used to build source into a runnable output. |
-| `build.output` | Optional artifact-relative or cache-relative executable path produced by the build. |
-| `hooks` | Hook ids for which the extension is eligible. |
+| `spell.command` | The argv vector used to invoke the resolved spell. |
+| `charm.setup.command` | Optional argv vector used to prepare local dependencies or generated inputs. |
+| `charm.check.command` | Optional argv vector used to type check or validate the charm. |
+| `charm.build.command` | Optional argv vector used to build source into a spell. |
+| `charm.build.output` | Optional artifact-relative or cache-relative spell path produced by the build. |
+| `hooks` | Hook ids for which the charm is eligible. |
 | `inputs` | Optional declared needs, such as repo paths, lake paths, or stdin JSON. |
 
 Sirno should execute commands as argv vectors.
@@ -55,58 +66,67 @@ Shell scripts remain supported by making the shell or interpreter the first argv
 
 ## Enablement And Trust
 
-Extension execution is a local opt-in decision.
-A project enables extension entries in `Sirno.toml`, not in the artifact tree alone.
+Charm enablement is a local opt-in decision.
+A project enables charm entries in `Sirno.toml`, not in the artifact tree alone.
 A present manifest is discoverable design data.
-An enabled manifest is executable project policy.
+An enabled charm is executable project policy.
 
-The operator grants the enabled extension the same filesystem authority as the Sirno process.
+The operator grants each spell resolved from an enabled charm
+the same filesystem authority as the Sirno process.
 Sirno should make that authority explicit in CLI output and config comments.
 It should not imply sandboxing unless a later implementation provides one.
 
-Frozen entries protect the extension artifact tree from accidental mutation.
+Frozen entries protect the charm artifact tree from accidental mutation.
 They do not make the code trusted.
 Trust comes from local enablement and ordinary repository review.
 Anchor and Tide already track owner artifact-tree fingerprints,
-so extension code changes participate in lake review like other entry artifact changes.
+so charm code changes participate in lake review like other entry artifact changes.
 
-## Build Resolution
+## Charm Resolution
 
-An extension with `build.command` is a source extension.
-Sirno builds it before the first run that needs the executable.
-The build writes output under `.sirno/extensions/<entry-address>/<fingerprint>/`.
+A charm with `charm.build.command` is a source charm.
+Sirno builds it before the first invocation that needs the spell.
+The build writes spell output under `.sirno/spells/<entry-address>/<fingerprint>/`.
 The fingerprint includes the entry metadata, manifest, artifact tree, and relevant Sirno version.
 
 Build output is cache state, not lake state.
-Changing extension source, manifest fields, or build-relevant metadata invalidates the cache.
+Changing charm source, manifest fields, or build-relevant metadata invalidates the cache.
 A failed build fails the hook invocation that required it.
 
-An extension without `build.command` is a direct extension.
-Sirno resolves its `command` against the owner artifact root and the project root.
+Before a build,
+Sirno may run charm setup or check commands when the manifest declares them.
+Those commands prepare or validate the charm.
+They do not invoke the spell unless the hook or operator requested invocation.
+
+A charm without `charm.build.command` is a direct charm.
+Sirno resolves its `spell.command` against the owner artifact root and the project root.
 The manifest should state which paths are artifact-relative and which are project-relative.
 
 ## Hook Invocation
 
-A hook invocation supplies an event envelope to the extension.
+A hook invocation supplies an event envelope to the spell.
 The envelope contains the hook id, project root, lake root, Sirno version,
-the owning entry address, and hook-specific payload.
-The hook entry defines the payload and the meaning of extension stdout.
+the charm entry address, and hook-specific payload.
+The hook entry defines the payload and the meaning of spell stdout.
 
-Sirno captures stdout, stderr, exit status, and elapsed time for each extension run.
+Sirno captures stdout, stderr, exit status, and elapsed time for each spell run.
 The hook entry defines whether stdout is ignored, parsed as JSON,
 or treated as user-facing text.
 Stderr is diagnostic output.
-A non-zero exit status fails the extension run.
+A non-zero exit status fails the spell run.
 The hook entry defines whether that failure blocks the Sirno operation or is only reported.
 
-Extensions run in deterministic order for a hook.
-The default order is the order of enabled entries in `Sirno.toml`.
+Spells run in deterministic order for a hook.
+The default order is the order of enabled charms in `Sirno.toml`.
 A later ordering policy may refine this without changing artifact storage.
 
 ## Interfaces
 
-The CLI should expose extension discovery, enablement, build, run, and cache-clean commands
-under a stable command group such as `sirno extension`.
+The CLI should expose charm discovery, enablement, setup, check, build,
+and cache-clean commands under `sirno charm`.
+It should expose invocation and run inspection commands under `sirno spell`.
+Compilation, type check, setup, and cache maintenance are charm operations.
+Hook invocation and direct runtime execution are spell operations.
 The MCP surface may expose discovery and status.
 Execution should remain a human-enabled project policy,
 because MCP clients may run in contexts where silent code execution is surprising.
@@ -114,8 +134,8 @@ because MCP clients may run in contexts where silent code execution is surprisin
 Hook entries should refine this proposal.
 Each hook entry should name the hook id, trigger point, event payload,
 stdout contract, failure policy, and ordering constraints.
-The extension system supplies runnable artifacts and process execution.
-The hook design supplies when and why those artifacts run.
+The charm and spell system supplies runnable artifacts and process execution.
+The hook design supplies when and why spells run.
 
 ---
 
