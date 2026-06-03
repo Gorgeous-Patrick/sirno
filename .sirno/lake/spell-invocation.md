@@ -6,7 +6,6 @@ category:
   - proposal
 belongs:
   - extension-system
-  - interfaces
 prerequisite:
   - spell
   - charm-enablement

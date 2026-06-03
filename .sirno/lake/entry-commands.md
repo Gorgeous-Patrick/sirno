@@ -4,7 +4,7 @@ desc: CLI commands for entries, artifacts, queries, ripgrep, and witnesses.
 category:
   - concept
 belongs:
-  - interfaces
+  - entry
 prerequisite:
   - project-config
 ---

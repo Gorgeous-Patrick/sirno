@@ -24,22 +24,18 @@ Interface surfaces should depend on it instead of duplicating command behavior.
 CLI text, CLI JSON, and MCP results may differ in presentation,
 but they should agree on the project operation and typed result.
 
-Current surfaces are:
+Default interface surfaces are:
 
 - the CLI for human operational work;
 - the MCP interface for agent-facing project work and lake-owned skill resources.
 
-Shared command families are:
+These surface entries belong under this interface neighborhood:
 
 - `cli-interface` is the human-facing surface and its command grammar.
 - `mcp-interface` is the agent-facing surface and its resource and tool surface.
-- `project-commands` covers project setup, lake movement, Anchor, checks, and rendering.
-- `entry-commands` covers entry creation, paths, artifacts, freezing, queries, ripgrep, and witnesses.
-- `tide-commands` covers dependency review status and resolution commands.
-- `utility-commands` covers local operator utilities such as config, entry defaults, skills, and MCP startup.
 
-These lists are only an overview.
 The interface boundary is the surface contract above.
+Domain command entries belong with the design objects they operate on.
 A new interface surface should define its own local entry, structural links, and witnesses.
 It may reuse command families when the shared surface fits.
 It should change this entry only when the interface-surface model itself changes.

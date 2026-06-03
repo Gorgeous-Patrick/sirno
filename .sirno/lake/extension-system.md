@@ -7,11 +7,9 @@ category:
 belongs:
   - future-work
   - entry-artifact
-  - interfaces
 prerequisite:
   - entry-artifact
   - project-config
-  - interfaces
 refines:
   - future-work
 ---

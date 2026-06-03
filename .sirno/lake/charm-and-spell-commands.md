@@ -6,7 +6,6 @@ category:
   - implemented
 belongs:
   - extension-system
-  - interfaces
 prerequisite:
   - charm
   - spell

@@ -4,7 +4,7 @@ desc: Local operator commands for config repair, entry defaults, skills, and MCP
 category:
   - concept
 belongs:
-  - interfaces
+  - project-config
 prerequisite:
   - project-config
 ---

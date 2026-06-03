@@ -37,6 +37,12 @@ Sentinel shape is always checked.
 Freshness is controlled by `[check].render`,
 which is enabled by default.
 
+## Check Command
+
+`sirno check` checks the configured reservoir.
+The `-m, --mode` option selects the check boundary.
+Mist status reports generated-footer freshness for projected entries.
+
 Edit and review modes use different severity boundaries:
 
 | Diagnostic | Edit mode | Review mode |

@@ -72,11 +72,8 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.charm-and-spell-commands]
-fingerprint = "sha256:5f62255490d27d58bfc14d6bb4244f9a0fefa07af40d4cf2b1705f8cb671ceab"
-belongs = [
-    "extension-system",
-    "interfaces",
-]
+fingerprint = "sha256:eb1834d83a2ef12d1ea33c842543d0e51e188f8c963333c0c8fb5bb0d48cbd51"
+belongs = ["extension-system"]
 prerequisite = [
     "charm",
     "spell",
@@ -220,8 +217,8 @@ belongs = ["entry-address-resolution"]
 prerequisite = ["entry"]
 
 [entries.entry-commands]
-fingerprint = "sha256:bffa0e77e84ee8e708cd4ecc5592d00a6cf402c357f57508f4be05b910e3027d"
-belongs = ["interfaces"]
+fingerprint = "sha256:8d09edf26c89f8cf0fa3a7518b364f00d5c6aeb29d60b65eb3a2c9dd55850042"
+belongs = ["entry"]
 prerequisite = ["project-config"]
 
 [entries.entry-domain]
@@ -249,16 +246,14 @@ prerequisite = [
 ]
 
 [entries.extension-system]
-fingerprint = "sha256:743d105760a3857771313fa3b744ae5e67dbe82b2d5523c189b679f4c5275bc6"
+fingerprint = "sha256:3c86e40262aad2c926b19d4006c18103b6fd5d7263f0fabecb689b4871065c88"
 belongs = [
     "future-work",
     "entry-artifact",
-    "interfaces",
 ]
 prerequisite = [
     "entry-artifact",
     "project-config",
-    "interfaces",
 ]
 refines = ["future-work"]
 
@@ -312,7 +307,7 @@ belongs = ["narrative-session-discipline"]
 prerequisite = ["narrative"]
 
 [entries.interfaces]
-fingerprint = "sha256:2e37c8679835387b9bccca331e334d5a7e940d431f02cf6fa2ba071b3208542a"
+fingerprint = "sha256:bf3c2c4ccea042027ef4b0473bbdb5f8a3d0ff983d8d3c4f15528376fd217bfd"
 belongs = ["sirno"]
 prerequisite = ["project-config"]
 
@@ -442,11 +437,8 @@ prerequisite = [
 ]
 
 [entries.mist]
-fingerprint = "sha256:bc8041aae0ce41d8115c964e7a20e1d8e833e75bad5c5c5ffa0dde2d33567fa2"
-belongs = [
-    "sirno-lake",
-    "interfaces",
-]
+fingerprint = "sha256:71f6d60b46c1477f626828f77638ba3e647ec942220399632ad6dffcef811b80"
+belongs = ["sirno-lake"]
 prerequisite = [
     "query",
     "reservoir",
@@ -513,8 +505,8 @@ belongs = ["structural"]
 prerequisite = ["structural"]
 
 [entries.project-commands]
-fingerprint = "sha256:6b34c94a9c78d6610d2cda11beda0fb055700fba66b0311fe0754dd565329bbf"
-belongs = ["interfaces"]
+fingerprint = "sha256:37ee8265d77b08363fcdb0a595577c9b5b323c59d940263f7dcc5cfa6b61120a"
+belongs = ["project-config"]
 prerequisite = ["project-config"]
 
 [entries.project-config]
@@ -617,10 +609,9 @@ refines = ["methodology"]
 fingerprint = "sha256:17ed2646f8ec320ffaf9bcda7ea5836fe0ef3f05ba9c303fa99196ce158c0c4e"
 
 [entries.sirno-anchor]
-fingerprint = "sha256:55f477866132bbad6d08a661ba3835af31cdb5bc35025b2d1297f6d85807b669"
+fingerprint = "sha256:f4fbd80db346fb1dec46ca294410f745a86d7133990929a4673b9c51fd69d2b0"
 belongs = [
     "sirno-lake",
-    "interfaces",
     "storage",
 ]
 prerequisite = [
@@ -660,7 +651,7 @@ prerequisite = [
 refines = ["versioning"]
 
 [entries.sirno-upstream]
-fingerprint = "sha256:575f668bb2e58e6c59abef4e5e17f1f45015ebbba4ee2809251861371f93ff1e"
+fingerprint = "sha256:782ae94d9678c07b50bc6e65711048f5b3913802566e25e888efcb50433cf35b"
 belongs = ["sirno-lake"]
 prerequisite = [
     "project-config",
@@ -699,11 +690,8 @@ prerequisite = ["charm"]
 refines = ["extension-system"]
 
 [entries.spell-invocation]
-fingerprint = "sha256:4e69472bab0fa28ec60a40457baa9ef80f9daed65ede4ade56c7dab17b1225c5"
-belongs = [
-    "extension-system",
-    "interfaces",
-]
+fingerprint = "sha256:178bea2e8bd1f472021256096f5dc7e0af8006c23f00e0aa7335f61d079b4e65"
+belongs = ["extension-system"]
 prerequisite = [
     "spell",
     "charm-enablement",
@@ -724,7 +712,7 @@ belongs = [
 prerequisite = ["metadata"]
 
 [entries.structural-check]
-fingerprint = "sha256:189dbd2b41c202f6b649229cdb5961c1f99e49025c17983c81e60a6150f5a638"
+fingerprint = "sha256:b6db03e5f9c9ae87f273cf31dbdceddddbdc912fe11d2aca08227ea2bc06cbe8"
 belongs = ["sirno-lake"]
 prerequisite = [
     "metadata",
@@ -752,8 +740,8 @@ belongs = ["sirno-tide"]
 prerequisite = ["sirno-tide"]
 
 [entries.tide-commands]
-fingerprint = "sha256:5f1a38c0102f3925996288d042fa8fa6f7641a745219f3d688bfb30db14861cc"
-belongs = ["interfaces"]
+fingerprint = "sha256:305f4b7997fe4cb7659403a7b6a2a748aa40e2eaca0b83dcacce3286a46e7748"
+belongs = ["sirno-tide"]
 prerequisite = ["project-config"]
 
 [entries.tide-resolution]
@@ -810,8 +798,8 @@ prerequisite = [
 ]
 
 [entries.utility-commands]
-fingerprint = "sha256:62f111120002373dbf3fda628ab71cee4ef8822f9289e2b3235184992da5312f"
-belongs = ["interfaces"]
+fingerprint = "sha256:f2e714a27058b0d6a93f321994f17746fff73158ec7e05276d839d540e17a0b2"
+belongs = ["project-config"]
 prerequisite = ["project-config"]
 
 [entries.versioning]

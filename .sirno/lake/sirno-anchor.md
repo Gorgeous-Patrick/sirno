@@ -6,7 +6,6 @@ category:
   - concept
 belongs:
   - sirno-lake
-  - interfaces
   - storage
 prerequisite:
   - sirno-lake
