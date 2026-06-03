@@ -2,7 +2,7 @@
 # Sirno Lake path, resolved relative to this config file.
 path = "sirno-lake"
 # Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.
-ignore = [".obsidian"]
+ignore = [".obsidian", ".sirno"]
 
 [repo]
 # Repository files, directories, or globs scanned for witness blocks.
@@ -39,9 +39,3 @@ entry = "refines"
 
 [structural.prerequisite]
 entry = "prerequisite"
-
-[render.structural]
-# Generated-footer structural link render policy.
-# Each key names a configured structural relation.
-# Values are direction lists: to, from, and clique.
-belongs = ["to", "from"]

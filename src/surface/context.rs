@@ -36,11 +36,11 @@ use crate::surface::output::{
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
-    EntryArtifactPath, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
-    EntryDirectoryReport, EntryMetadata, EntryQuery, EntryStructuralMatcher, SPELL_CACHE_DIRECTORY,
-    SirnoConfig, SirnoLock, StructuralRenderSettings, StructuralSettings, Tide, TideEntrySnapshot,
-    TideStatus, UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
-    WitnessCheckSettings, WitnessRecord,
+    EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
+    EntryDirectoryReport, EntryMetadata, EntryQuery, EntryStructuralMatcher, MistManifest,
+    MistRenderSettings, MistSpec, SPELL_CACHE_DIRECTORY, SirnoConfig, SirnoLock,
+    StructuralSettings, Tide, TideEntrySnapshot, TideStatus, UpstreamCrystallizeReport,
+    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -417,7 +417,7 @@ impl SurfaceContext {
     ) -> Result<LocalProtectionResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
         let lock_path = SirnoLock::path_for_config(&self.config_path);
@@ -504,7 +504,7 @@ impl SurfaceContext {
         config.upstreams.insert(request.domain.clone(), request.settings);
         config.validate_for_file(&self.config_path)?;
         let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
         EntryDirectory::new(lake_path).ensure_glacier_replaceable(&request.domain, &settings)?;
@@ -524,7 +524,7 @@ impl SurfaceContext {
             return Err(crate::UpstreamError::UnknownDomain(domain).into());
         }
         config.write(&self.config_path)?;
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
         let lake = EntryDirectory::new(resolve_lake_path(
@@ -552,7 +552,7 @@ impl SurfaceContext {
     ) -> Result<UpstreamCrystallizeReport, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
         let lock_path = SirnoLock::path_for_config(&self.config_path);
@@ -593,7 +593,7 @@ impl SurfaceContext {
         let lock = SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?;
         let cache = self.upstream_cache()?;
         let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
         let lake = EntryDirectory::new(lake_path);
@@ -655,7 +655,7 @@ impl SurfaceContext {
     pub fn config_structural_sync(&self) -> Result<StructuralConfigSyncResult, CommandError> {
         let mut config = SirnoConfig::from_file(&self.config_path)?;
         let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config);
+        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.structural_inhabitance = false;
         settings.witness = None;
@@ -928,7 +928,7 @@ impl SurfaceContext {
     // sirno:witness:charm-resolution:begin
     fn discover_charms(&self, config: &SirnoConfig) -> Result<Vec<CharmBundle>, CommandError> {
         let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, config);
-        let mut settings = entry_directory_check_settings(&self.config_path, config);
+        let mut settings = entry_directory_check_settings(&self.config_path, config)?;
         settings.render = false;
         settings.witness = None;
         let directory = EntryDirectory::new(&lake);
@@ -1356,45 +1356,68 @@ impl SurfaceContext {
         Ok(LakeCheckResult::from_report(&report))
     }
 
-    /// Render Markdown links in entry footers.
-    pub fn lake_render(&self, dry: bool) -> Result<RenderResult, CommandError> {
-        self.lake_render_with_override_json(dry, None)
+    /// Render Markdown links for one misty lake projection.
+    pub fn mist_render(
+        &self, mist: Option<EntryAtom>, dry: bool,
+    ) -> Result<RenderResult, CommandError> {
+        self.mist_render_with_override_json(mist, dry, None)
     }
 
-    /// Render Markdown links with temporary JSON structural link settings.
-    pub fn lake_render_with_override_json(
-        &self, dry: bool, override_json: Option<&str>,
+    /// Render Markdown links for one misty lake projection with optional JSON settings.
+    pub fn mist_render_with_override_json(
+        &self, mist: Option<EntryAtom>, dry: bool, override_json: Option<&str>,
     ) -> Result<RenderResult, CommandError> {
-        let (lake, mut settings) =
-            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        let mut mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
         if let Some(override_json) = override_json {
-            apply_structural_override_json(&mut settings.structural, override_json)?;
+            apply_structural_override_json(
+                &mut mist.spec.render,
+                &mist.config.structural,
+                override_json,
+            )?;
+            mist.settings.structural =
+                mist.spec.render.structural_settings(&mist.config.structural)?;
         }
-        settings.render = false;
-        settings.witness = None;
+        mist.settings.render = false;
+        mist.settings.witness = None;
 
-        let directory = EntryDirectory::new(&lake);
-        let check = directory.check_with_settings(CheckMode::Review, &settings)?;
+        let directory = EntryDirectory::new(&mist.lake_path);
+        let check = directory.check_with_settings(CheckMode::Review, &mist.settings)?;
         if check.has_errors() {
             return Ok(RenderResult::blocked(&check));
         }
 
         let report = if dry {
-            directory.check_generated_links_with_check_settings(&settings)?
+            directory.check_generated_links_with_check_settings(&mist.settings)?
         } else {
-            directory.generate_links_with_check_settings(&settings)?
+            directory.generate_links_with_check_settings(&mist.settings)?
         };
-        Ok(RenderResult::from_report(&report, dry))
+        if dry {
+            return Ok(RenderResult::from_report(&report, dry));
+        }
+
+        let manifest_path = MistManifest::path_for_projection(&mist.lake_path);
+        let manifest = MistManifest::from_entries(
+            mist.name,
+            mist.spec_path,
+            mist.spec.render,
+            check.entries(),
+        )?;
+        let manifest_changed = manifest.write_if_changed(&manifest_path)?;
+        let extra_changed_paths = if manifest_changed { vec![manifest_path] } else { Vec::new() };
+        Ok(RenderResult::from_report_with_extra_changed_paths(&report, dry, &extra_changed_paths))
     }
 
-    /// Delete generated Markdown link footers.
-    pub fn lake_render_delete(&self) -> Result<RenderResult, CommandError> {
-        let (lake, mut settings) =
-            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
-        settings.witness = None;
-        let report = EntryDirectory::new(&lake)
-            .delete_generated_links_with_ignored_paths(settings.ignore)?;
-        Ok(RenderResult::from_report(&report, false))
+    /// Delete generated Markdown link footers for one misty lake projection.
+    pub fn mist_render_delete(
+        &self, mist: Option<EntryAtom>,
+    ) -> Result<RenderResult, CommandError> {
+        let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
+        let report = EntryDirectory::new(&mist.lake_path)
+            .delete_generated_links_with_ignored_paths(mist.settings.ignore)?;
+        let manifest_path = MistManifest::path_for_projection(&mist.lake_path);
+        let manifest_changed = MistManifest::remove_if_exists(&manifest_path)?;
+        let extra_changed_paths = if manifest_changed { vec![manifest_path] } else { Vec::new() };
+        Ok(RenderResult::from_report_with_extra_changed_paths(&report, false, &extra_changed_paths))
     }
 
     /// Show the current lake ripples against the accepted anchor baseline.
@@ -1514,8 +1537,8 @@ impl SurfaceContext {
                 mode: CheckMode::Review,
                 render: config.check.render_enabled(),
             },
-            structural_fields: config
-                .effective_structural_settings()
+            structural_fields: settings
+                .structural
                 .with_tide_policies_from_entries(report.entries())
                 .fields()
                 .map(|(field, settings)| StructuralFieldStatus {
@@ -1836,7 +1859,7 @@ impl TideContext {
             lock_path: SirnoLock::path_for_config(config_path),
             anchor_path: AnchorFile::path_for_config(config_path),
             anchor_lake_path: lake_path.map(Path::to_path_buf).unwrap_or(config.lake.path.clone()),
-            settings: entry_directory_check_settings(config_path, &config),
+            settings: entry_directory_check_settings(config_path, &config)?,
             lake_path: resolve_lake_path(lake_path, config_path, &config),
         })
     }
@@ -2107,16 +2130,40 @@ fn default_repo_name(config_path: &Path) -> OsString {
         .unwrap_or_else(|| OsString::from("sirno"))
 }
 
-fn apply_structural_override_json(
-    settings: &mut StructuralSettings, override_json: &str,
-) -> Result<(), CommandError> {
-    let render: StructuralRenderSettings = serde_json::from_str(override_json)?;
-    for (field, _) in render.fields() {
-        if !settings.contains_field(field) {
-            return Err(CommandError::UnconfiguredStructuralField(field.to_owned()));
-        }
+struct ResolvedMist {
+    name: EntryAtom,
+    spec_path: PathBuf,
+    spec: MistSpec,
+    config: SirnoConfig,
+    lake_path: PathBuf,
+    settings: EntryDirectoryCheckSettings,
+}
+
+impl ResolvedMist {
+    fn load(
+        config_path: &Path, lake_path: Option<&Path>, name: Option<EntryAtom>,
+    ) -> Result<Self, CommandError> {
+        let config = SirnoConfig::from_file(config_path)?;
+        let name = name.unwrap_or_else(MistSpec::default_name);
+        let spec_path = MistSpec::path_for_config(config_path, &name);
+        let spec = if name == MistSpec::default_name() && !spec_path.exists() {
+            MistSpec::default()
+        } else {
+            MistSpec::from_file(&spec_path)?
+        };
+        let lake_path = resolve_lake_path(lake_path, config_path, &config);
+        let settings = entry_directory_check_settings_with_mist(config_path, &config, &spec)?;
+        Ok(Self { name, spec_path, spec, config, lake_path, settings })
     }
-    *settings = settings.with_render_settings(&render);
+}
+
+fn apply_structural_override_json(
+    render: &mut MistRenderSettings, registered: &StructuralSettings, override_json: &str,
+) -> Result<(), CommandError> {
+    let structural_render = serde_json::from_str(override_json)?;
+    let override_render = MistRenderSettings { structural: structural_render };
+    override_render.validate(registered)?;
+    *render = override_render;
     Ok(())
 }
 
@@ -2159,7 +2206,7 @@ fn explicit_lake_check_settings(
 ) -> Result<EntryDirectoryCheckSettings, CommandError> {
     if config_path.exists() {
         let config = SirnoConfig::from_file(config_path)?;
-        Ok(entry_directory_check_settings(config_path, &config))
+        entry_directory_check_settings(config_path, &config)
     } else {
         Ok(EntryDirectoryCheckSettings::default())
     }
@@ -2167,14 +2214,21 @@ fn explicit_lake_check_settings(
 
 fn entry_directory_check_settings(
     config_path: &Path, config: &SirnoConfig,
-) -> EntryDirectoryCheckSettings {
-    EntryDirectoryCheckSettings {
+) -> Result<EntryDirectoryCheckSettings, CommandError> {
+    let mist = MistSpec::default_for_config(config_path)?;
+    entry_directory_check_settings_with_mist(config_path, config, &mist)
+}
+
+fn entry_directory_check_settings_with_mist(
+    config_path: &Path, config: &SirnoConfig, mist: &MistSpec,
+) -> Result<EntryDirectoryCheckSettings, CommandError> {
+    Ok(EntryDirectoryCheckSettings {
         render: config.check.render_enabled(),
         structural_inhabitance: config.check.structural_inhabitance_enabled(),
-        structural: config.effective_structural_settings(),
+        structural: mist.render.structural_settings(&config.structural)?,
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
-    }
+    })
 }
 
 fn witness_check_settings(
@@ -2205,7 +2259,7 @@ pub(crate) fn resolve_lake_directory(
     }
 
     let config = SirnoConfig::from_file(config_path)?;
-    Ok((config.resolve_lake(config_path), entry_directory_check_settings(config_path, &config)))
+    Ok((config.resolve_lake(config_path), entry_directory_check_settings(config_path, &config)?))
 }
 
 pub(crate) fn entry_query_from_filters(
@@ -2380,7 +2434,7 @@ command = ["sh", "hello.sh"]
         let error = context.spell_run(id.clone()).unwrap_err();
         assert!(matches!(error, CommandError::CharmNotEnabled(blocked) if blocked == id));
 
-        assert_eq!(context.charm_list().unwrap().charms[0].enabled, false);
+        assert!(!context.charm_list().unwrap().charms[0].enabled);
         assert!(context.charm_enable(id.clone()).unwrap().changed);
         assert_eq!(context.spell_list().unwrap().spells.len(), 1);
 

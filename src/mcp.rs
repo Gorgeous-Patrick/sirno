@@ -369,16 +369,16 @@ impl SirnoMcpServer {
         result(self.context.lake_check(params.mode.unwrap_or(McpCheckMode::Review).into()))
     }
 
-    /// Render Markdown links in entry footers.
-    #[tool(name = "sirno_lake_render")]
-    fn lake_render(&self, Parameters(params): Parameters<LakeRenderParams>) -> McpToolResult {
-        result(self.context.lake_render(params.dry))
+    /// Render Markdown links for one misty lake projection.
+    #[tool(name = "sirno_mist_render")]
+    fn mist_render(&self, Parameters(params): Parameters<MistRenderParams>) -> McpToolResult {
+        result(self.context.mist_render(mist_name(params.mist)?, params.dry))
     }
 
-    /// Delete generated Markdown link footers.
-    #[tool(name = "sirno_lake_render_delete")]
-    fn lake_render_delete(&self) -> McpToolResult {
-        result(self.context.lake_render_delete())
+    /// Delete generated Markdown link footers for one misty lake projection.
+    #[tool(name = "sirno_mist_render_delete")]
+    fn mist_render_delete(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
+        result(self.context.mist_render_delete(mist_name(params.mist)?))
     }
 
     /// Show the current Sirno project status.
@@ -492,6 +492,10 @@ fn entry_atom(raw: String) -> Result<EntryAtom, String> {
 
 fn entry_atoms(raw: Vec<String>) -> Result<Vec<EntryAtom>, String> {
     raw.into_iter().map(entry_atom).collect()
+}
+
+fn mist_name(raw: Option<String>) -> Result<Option<EntryAtom>, String> {
+    raw.map(entry_atom).transpose()
 }
 
 fn path_selection(entry: Option<bool>, artifact: Option<bool>) -> PathSelection {
@@ -787,7 +791,15 @@ impl From<McpCheckMode> for CheckMode {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct LakeRenderParams {
+struct MistNameParams {
+    /// Mist name. Omit for the default mist.
+    mist: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+struct MistRenderParams {
+    /// Mist name. Omit for the default mist.
+    mist: Option<String>,
     #[serde(default)]
     dry: bool,
 }
@@ -998,8 +1010,8 @@ mod tests {
         "sirno_lake_check",
         "sirno_lake_init",
         "sirno_lake_move",
-        "sirno_lake_render",
-        "sirno_lake_render_delete",
+        "sirno_mist_render",
+        "sirno_mist_render_delete",
         "sirno_status",
         "sirno_tide_reset",
         "sirno_tide_resolve",

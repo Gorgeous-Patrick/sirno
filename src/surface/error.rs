@@ -7,8 +7,8 @@ use thiserror::Error;
 
 use crate::{
     AnchorError, CharmError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
-    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, TideError,
-    UpstreamError, WitnessError,
+    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, MistError,
+    TideError, UpstreamError, WitnessError,
 };
 
 /// Error raised while running the CLI.
@@ -171,10 +171,10 @@ pub enum CommandError {
         source: std::io::Error,
     },
     /// Dry-run mode applies only to render writing.
-    #[error("`--dry` only applies to `sirno render` without a subcommand")]
+    #[error("`--dry` only applies to `sirno mist render` without a subcommand")]
     DryWithRenderSubcommand,
     /// Render JSON overrides apply only to generated-link writing.
-    #[error("`--override-json` only applies to `sirno render` without a subcommand")]
+    #[error("`--override-json` only applies to `sirno mist render` without a subcommand")]
     OverrideJsonWithRenderSubcommand,
     /// A command named a link relation not configured for this project.
     #[error("link relation `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
@@ -273,6 +273,9 @@ pub enum CommandError {
     /// Config-backed command failed.
     #[error(transparent)]
     Config(#[from] ConfigError),
+    /// Mist-backed command failed.
+    #[error(transparent)]
+    Mist(#[from] MistError),
     /// Charm-backed command failed.
     #[error(transparent)]
     Charm(#[from] CharmError),

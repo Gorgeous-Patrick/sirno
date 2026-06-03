@@ -1933,7 +1933,7 @@ impl LoadedEntryDirectory {
                         self.file_diagnostics.push(EntryFileDiagnostic::new(
                             mode.severity(),
                             path,
-                            "generated links are stale; run `sirno render`",
+                            "generated links are stale; run `sirno mist render`",
                         ));
                     }
                 }

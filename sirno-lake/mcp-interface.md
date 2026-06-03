@@ -45,16 +45,11 @@ MCP tool names are stable snake-case names prefixed with `sirno_`:
   `sirno_entry_rg`, and `sirno_entry_witness`
 - entry artifacts: `sirno_entry_artifact_list`, `sirno_entry_artifact_add`,
   `sirno_entry_artifact_rename`, and `sirno_entry_artifact_remove`
-- lake: `sirno_lake_init`, `sirno_lake_move`, `sirno_lake_check`,
-  `sirno_lake_render`, and `sirno_lake_render_delete`
+- lake: `sirno_lake_init`, `sirno_lake_move`, and `sirno_lake_check`
+- mist: `sirno_mist_render` and `sirno_mist_render_delete`
 - anchor: `sirno_anchor_status`, `sirno_anchor_check`, and `sirno_anchor_update`
 - tide: `sirno_tide_status`, `sirno_tide_resolve`, `sirno_tide_unresolve`,
   and `sirno_tide_reset`
-
-The target mist design moves render tools to mist ownership as `sirno_mist_render`
-and `sirno_mist_render_delete`.
-The current `sirno_lake_render` and `sirno_lake_render_delete` names are compatibility tools
-until that grouped MCP surface is actualized.
 
 MCP tools accept typed JSON arguments.
 `sirno_cwd` accepts optional `{ path }`.

@@ -154,10 +154,6 @@ Absent relations render no generated footer groups in that misty lake.
 | `from` | Links from the *entry* to *entries* that name it as a metadata target. |
 | `clique` | Adds separate sections through shared targets in that relation. |
 
-Legacy `[render.structural]` data in `Sirno.toml` is compatibility input
-for the default mist until mist specs are actualized.
-It should not be treated as project-level structural meaning.
-
 Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.anchor` direction lists.
 
 `Sirno.lock.toml` temporarily records explicit *tide* resolutions.

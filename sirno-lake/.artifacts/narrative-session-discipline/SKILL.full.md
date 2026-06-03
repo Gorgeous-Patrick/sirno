@@ -136,7 +136,7 @@ python3 .agents/skills/sirno-narrative-session/scripts/serialize_narrative_entry
 After changing lake metadata, run render maintenance and structural checks:
 
 ```text
-sirno_lake_render
+sirno_mist_render
 sirno_lake_check mode=edit
 sirno_lake_check mode=review
 ```

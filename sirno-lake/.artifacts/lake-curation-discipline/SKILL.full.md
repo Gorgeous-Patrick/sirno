@@ -118,7 +118,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 ## Validation
 
-Run `sirno_lake_render` after lake metadata changes.
+Run `sirno_mist_render` after lake metadata changes.
 Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` on entries whose evidence changed.
 

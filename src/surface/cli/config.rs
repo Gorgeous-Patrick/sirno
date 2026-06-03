@@ -15,11 +15,10 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::error::CommandError;
 use crate::{
-    CharmSettings, CheckSettings, ConfigError, RenderSettings, RepoSettings, SirnoConfig,
-    TutorialSettings,
+    CharmSettings, CheckSettings, ConfigError, RepoSettings, SirnoConfig, TutorialSettings,
 };
 
-const SECTIONS: [ConfigSection; 8] = [
+const SECTIONS: [ConfigSection; 7] = [
     ConfigSection::Lake,
     ConfigSection::Repo,
     ConfigSection::Witness,
@@ -27,7 +26,6 @@ const SECTIONS: [ConfigSection; 8] = [
     ConfigSection::Tutorial,
     ConfigSection::Charm,
     ConfigSection::Structural,
-    ConfigSection::Render,
 ];
 
 /// Run the interactive config maintenance UI.
@@ -184,7 +182,6 @@ enum ConfigSection {
     Tutorial,
     Charm,
     Structural,
-    Render,
 }
 
 impl ConfigSection {
@@ -197,7 +194,6 @@ impl ConfigSection {
             | "tutorial" => Some(Self::Tutorial),
             | "charm" => Some(Self::Charm),
             | "structural" => Some(Self::Structural),
-            | "render" => Some(Self::Render),
             | _ => None,
         }
     }
@@ -211,7 +207,6 @@ impl ConfigSection {
             | Self::Tutorial => "[tutorial]",
             | Self::Charm => "[charm]",
             | Self::Structural => "[structural]",
-            | Self::Render => "[render]",
         }
     }
 }
@@ -279,9 +274,6 @@ fn config_section_rows(
 fn materialize_section(config: &mut SirnoConfig, section: ConfigSection) {
     match section {
         | ConfigSection::Lake | ConfigSection::Witness | ConfigSection::Structural => {}
-        | ConfigSection::Render => {
-            config.render = RenderSettings::default();
-        }
         | ConfigSection::Repo => {
             config.repo.get_or_insert_with(|| RepoSettings { members: Vec::new() });
         }
@@ -431,7 +423,6 @@ mod tests {
             tutorial: None,
             charm: CharmSettings::default(),
             structural: Default::default(),
-            render: Default::default(),
         }
     }
 

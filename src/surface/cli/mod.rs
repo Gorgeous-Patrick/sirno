@@ -106,6 +106,12 @@ enum Command {
         #[command(subcommand)]
         command: LakeCommand,
     },
+    /// Manage mist projections.
+    Mist {
+        /// Mist command.
+        #[command(subcommand)]
+        command: MistCommand,
+    },
     /// Manage Git-backed upstream lakes.
     Upstream {
         /// Upstream command.
@@ -150,6 +156,9 @@ enum Command {
     /// Run a lake operation at the top level.
     #[command(flatten)]
     TopLevelLake(TopLevelLakeCommand),
+    /// Run a mist operation at the top level.
+    #[command(flatten)]
+    TopLevelMist(TopLevelMistCommand),
     /// Run a tide review operation at the top level.
     #[command(flatten)]
     TopLevelTide(TideReviewCommand),
@@ -318,21 +327,43 @@ enum TopLevelLakeCommand {
         #[arg(short = 'm', long, value_enum)]
         mode: Option<CheckModeArg>,
     },
+}
+
+/// Supported Sirno mist commands.
+#[derive(Debug, Subcommand)]
+enum MistCommand {
+    /// Run a top-level mist operation under `sirno mist`.
+    #[command(flatten)]
+    TopLevel(TopLevelMistCommand),
+}
+
+/// Supported top-level Sirno mist commands.
+#[derive(Debug, Subcommand)]
+enum TopLevelMistCommand {
     // sirno:witness:project-commands:begin
-    /// Render Markdown links in entry footers.
-    Render {
-        /// Report rendered-footer changes without writing files.
-        #[arg(short = 'n', long, visible_alias = "dry-run")]
-        dry: bool,
-        /// JSON render.structural settings used instead of the configured settings for this run.
-        #[arg(long = "override-json", value_name = "JSON")]
-        override_json: Option<String>,
-        /// Render command.
-        #[command(subcommand)]
-        command: Option<RenderCommand>,
-    },
+    /// Render Markdown links for a misty lake projection.
+    Render(MistRenderArgs),
     // sirno:witness:project-commands:end
 }
+
+/// Arguments for rendering one mist projection.
+// sirno:witness:project-commands:begin
+#[derive(Debug, Args)]
+struct MistRenderArgs {
+    /// Mist name. Omit for the default mist.
+    #[arg(value_name = "MIST")]
+    mist: Option<String>,
+    /// Report rendered-footer changes without writing files.
+    #[arg(short = 'n', long, visible_alias = "dry-run")]
+    dry: bool,
+    /// JSON render.structural settings used instead of the mist spec for this run.
+    #[arg(long = "override-json", value_name = "JSON")]
+    override_json: Option<String>,
+    /// Render command.
+    #[command(subcommand)]
+    command: Option<RenderCommand>,
+}
+// sirno:witness:project-commands:end
 
 /// Supported top-level move wrappers.
 // sirno:witness:cli-interface:begin
@@ -940,6 +971,7 @@ impl Cli {
             | Command::Move { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
+            | Command::Mist { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Upstream { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Anchor { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Charm { command } => command.run(&config_path, lake_path.as_deref()),
@@ -952,6 +984,7 @@ impl Cli {
             | Command::Status => run_status_command(&config_path, lake_path.as_deref()),
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
+            | Command::TopLevelMist(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelTide(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(&config_path, lake_path.as_deref()),
         }
@@ -1359,6 +1392,14 @@ impl LakeCommand {
     }
 }
 
+impl MistCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        match self {
+            | MistCommand::TopLevel(command) => command.run(config_path, lake_path),
+        }
+    }
+}
+
 impl LakeMoveArgs {
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let result = SurfaceContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
@@ -1377,30 +1418,43 @@ impl TopLevelLakeCommand {
                 print_lake_check_result(&result);
                 if result.has_errors { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
             }
-            // sirno:witness:project-commands:begin
-            | TopLevelLakeCommand::Render { command, dry, override_json } => match command {
-                | None => {
-                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                        .lake_render_with_override_json(dry, override_json.as_deref())?;
-                    print_render_result(&result);
-                    if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
-                }
-                | Some(RenderCommand::Delete) => {
-                    if dry {
-                        return Err(CommandError::DryWithRenderSubcommand);
-                    }
-                    if override_json.is_some() {
-                        return Err(CommandError::OverrideJsonWithRenderSubcommand);
-                    }
-                    let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                        .lake_render_delete()?;
-                    print_render_result(&result);
-                    Ok(ExitCode::SUCCESS)
-                }
-            },
-            // sirno:witness:project-commands:end
         }
     }
+}
+
+impl TopLevelMistCommand {
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        match self {
+            | TopLevelMistCommand::Render(args) => args.run(config_path, lake_path),
+        }
+    }
+}
+
+impl MistRenderArgs {
+    // sirno:witness:project-commands:begin
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let mist = self.mist.as_deref().map(entry_atom).transpose()?;
+        let context = SurfaceContext::from_cli_paths(config_path, lake_path);
+        let result = match self.command {
+            | None => context.mist_render_with_override_json(
+                mist,
+                self.dry,
+                self.override_json.as_deref(),
+            )?,
+            | Some(RenderCommand::Delete) => {
+                if self.dry {
+                    return Err(CommandError::DryWithRenderSubcommand);
+                }
+                if self.override_json.is_some() {
+                    return Err(CommandError::OverrideJsonWithRenderSubcommand);
+                }
+                context.mist_render_delete(mist)?
+            }
+        };
+        print_render_result(&result);
+        if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+    }
+    // sirno:witness:project-commands:end
 }
 
 fn run_status_command(

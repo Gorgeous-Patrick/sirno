@@ -104,7 +104,7 @@ a configuration boundary or generated artifact may also qualify.
 Skip the witness when the entry holds only prose.
 
 Validate at the review boundary.
-Run `sirno_lake_render` after lake metadata changes.
+Run `sirno_mist_render` after lake metadata changes.
 Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` on entries whose evidence changed.
 If `sirno_status` reports an open tide,

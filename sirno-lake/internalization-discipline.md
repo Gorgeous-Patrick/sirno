@@ -126,7 +126,7 @@ Internalize first, then let the actualizer skill regenerate the published form.
 Validate at the review boundary.
 The lake remains the source of truth;
 the structural checks confirm that it still resolves cleanly after the entries change.
-Run `sirno_lake_render` after lake metadata changes.
+Run `sirno_mist_render` after lake metadata changes.
 Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` against any entry whose evidence references changed.
 

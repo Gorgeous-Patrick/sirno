@@ -17,6 +17,7 @@ pub mod identifier;
 pub mod lake;
 pub mod lock;
 pub mod mcp;
+pub mod mist;
 pub mod query;
 pub mod render;
 pub mod structural;
@@ -39,8 +40,8 @@ pub use crate::check::{
     CheckDiagnostic, CheckDiagnosticKind, CheckMode, CheckReport, CheckSeverity,
 };
 pub use crate::config::{
-    CONFIG_FILE_NAME, CharmSettings, CheckSettings, ConfigError, LakeSettings, RenderSettings,
-    RepoMember, RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
+    CONFIG_FILE_NAME, CharmSettings, CheckSettings, ConfigError, LakeSettings, RepoMember,
+    RepoSettings, SirnoConfig, TutorialSettings, UpstreamRef, UpstreamSettings,
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
@@ -56,6 +57,10 @@ pub use crate::lake::{
 };
 pub use crate::lock::{
     LOCK_FILE_NAME, LockError, SirnoLock, TideLock, UpstreamLock, UpstreamLockMap,
+};
+pub use crate::mist::{
+    MIST_MANIFEST_FILE_NAME, MIST_MANIFEST_SCHEMA, MIST_SPEC_DIR_NAME, MistError, MistManifest,
+    MistManifestEntry, MistRenderSettings, MistSpec, MistStructuralRenderMap,
 };
 pub use crate::query::{EntryQuery, EntryStructuralMatcher, EntryTextTerm, VagueEntryQuery};
 pub use crate::render::{

@@ -115,7 +115,7 @@ otherwise fall back to `sirno://skills/design-doc-writer`.
 Validate at the review boundary.
 The lake remains the source of truth;
 the structural checks confirm that it still resolves cleanly after the edit.
-Run `sirno_lake_render` after lake metadata changes.
+Run `sirno_mist_render` after lake metadata changes.
 Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` against any entry whose evidence changed.
 Run the formatter, tests, and checks that fit the active repository.

@@ -1133,7 +1133,17 @@ pub struct RenderResult {
 
 impl RenderResult {
     pub(crate) fn from_report(report: &GenLinkDirectoryReport, dry: bool) -> Self {
-        let changed_paths = display_paths(report.changed_paths());
+        Self::from_report_with_extra_changed_paths(report, dry, &[])
+    }
+
+    pub(crate) fn from_report_with_extra_changed_paths(
+        report: &GenLinkDirectoryReport, dry: bool, extra_changed_paths: &[PathBuf],
+    ) -> Self {
+        let mut changed_path_bufs = report.changed_paths().to_vec();
+        changed_path_bufs.extend_from_slice(extra_changed_paths);
+        changed_path_bufs.sort();
+        changed_path_bufs.dedup();
+        let changed_paths = display_paths(&changed_path_bufs);
         Self {
             ok: true,
             dry,
@@ -1144,7 +1154,7 @@ impl RenderResult {
             message: format_gen_link_report(
                 report.root(),
                 report.entry_count(),
-                report.changed_paths(),
+                &changed_path_bufs,
             ),
         }
     }

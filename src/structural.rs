@@ -289,7 +289,7 @@ pub struct StructuralRelationSettings {
 /// Generated-footer render directions by structural relation.
 pub type StructuralRenderMap = IndexMap<String, Vec<StructuralEdgeDirection>>;
 
-/// Configured generated-footer render policy for structural links.
+/// Mist generated-footer render policy for structural links.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct StructuralRenderSettings {
