@@ -25,9 +25,9 @@ use crate::surface::dto::{
     QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
     RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, SpellListResult,
     SpellRecord, StatusCheckPolicy, StatusResult, StatusTide, StructuralConfigRecord,
-    StructuralConfigSyncResult, StructuralEdgeStatus, StructuralFieldState, StructuralFieldStatus,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
+    StructuralConfigSyncResult, StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter,
+    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
+    TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
     UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
@@ -40,11 +40,9 @@ use crate::{
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
     EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
     EntryStructuralMatcher, GeneratedLinkBody, MistManifest, MistManifestEntry, MistRenderSettings,
-    MistSelectionSettings, MistSpec, MistStructuralFieldState, MistStructuralStateFilter,
-    MistStructuralTargetFilter, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig,
-    StructuralSettings, Tide, TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport,
-    UpstreamFile, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings,
-    WitnessRecord,
+    MistSpec, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig, StructuralSettings, Tide,
+    TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport, UpstreamFile,
+    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -1402,11 +1400,8 @@ impl SurfaceContext {
         if reservoir_report.has_errors() {
             return Ok(RenderResult::blocked(&reservoir_report));
         }
-        let selected = select_mist_entries(
-            reservoir_report.entries(),
-            &mist.spec.select,
-            &mist.config.structural,
-        )?;
+        let selected =
+            mist.spec.select.select_entries(reservoir_report.entries(), &mist.config.structural)?;
         let selected_ids = selected.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
         let selected_entries = selected
             .iter()
@@ -2279,39 +2274,6 @@ fn resolve_projection_path(config_path: &Path, projection_path: &Path) -> PathBu
         return projection_path.to_path_buf();
     }
     config_parent(config_path).join(projection_path)
-}
-
-fn select_mist_entries<'a>(
-    entries: &'a [Entry], select: &MistSelectionSettings, structural: &StructuralSettings,
-) -> Result<Vec<&'a Entry>, CommandError> {
-    let vague_query = VagueEntryQuery::new().with_text_terms(select.terms.clone());
-    let filtered_query = entry_query_from_filters(
-        EntryQuery::new().with_text_terms(select.exact_terms.clone()),
-        select.has.iter().map(structural_filter_from_mist).collect::<Vec<_>>(),
-        select.is.iter().map(structural_state_from_mist).collect::<Vec<_>>(),
-        structural,
-    )?;
-    let vague_matches = vague_query.select_entries(entries);
-    Ok(filtered_query.select_entries(vague_matches))
-}
-
-fn structural_filter_from_mist(filter: &MistStructuralTargetFilter) -> StructuralFilter {
-    StructuralFilter { field: filter.field.clone(), targets: filter.targets.clone() }
-}
-
-fn structural_state_from_mist(filter: &MistStructuralStateFilter) -> StructuralStateFilter {
-    StructuralStateFilter {
-        field: filter.field.clone(),
-        state: structural_field_state_from_mist(filter.state),
-    }
-}
-
-fn structural_field_state_from_mist(state: MistStructuralFieldState) -> StructuralFieldState {
-    match state {
-        | MistStructuralFieldState::Present => StructuralFieldState::Present,
-        | MistStructuralFieldState::Empty => StructuralFieldState::Empty,
-        | MistStructuralFieldState::Missing => StructuralFieldState::Missing,
-    }
 }
 
 fn entry_without_generated_links(entry: &Entry) -> Result<Entry, CommandError> {

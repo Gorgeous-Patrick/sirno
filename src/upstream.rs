@@ -5,6 +5,7 @@
 //! Crystallization materializes each upstream lake into a managed glacier.
 // sirno:witness:sirno-upstream:end
 
+use std::collections::BTreeSet;
 use std::ffi::{OsStr, OsString};
 use std::fs::{self, OpenOptions};
 use std::io::{ErrorKind, Write};
@@ -24,6 +25,7 @@ use crate::config::{CONFIG_FILE_NAME, SirnoConfig, UpstreamRef, UpstreamSettings
 use crate::entry::{Entry, FrozenMarker};
 use crate::identifier::{EntryAddress, EntryAtom};
 use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
+use crate::mist::{MIST_SPEC_DIR_NAME, MistSpec};
 use crate::render::GeneratedLinkBody;
 
 /// Canonical upstream dependency filename.
@@ -189,6 +191,7 @@ impl Default for UpstreamFile {
 /// Invariant: `commit` is a non-empty Git commit id.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:upstream-file:begin
 pub struct UpstreamLock {
     /// Git source copied from `Sirno.toml`.
     pub git: String,
@@ -203,6 +206,9 @@ pub struct UpstreamLock {
     pub rev: Option<String>,
     /// Directory inside the Git tree containing `Sirno.toml`.
     pub project: PathBuf,
+    /// Upstream mist copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mist: Option<EntryAtom>,
     /// Lake path read from the upstream project's `Sirno.toml`.
     pub lake: PathBuf,
     /// Exact Git commit crystallized into the glacier.
@@ -218,6 +224,7 @@ impl UpstreamLock {
             tag: settings.tag.clone(),
             rev: settings.rev.clone(),
             project: settings.project.clone(),
+            mist: settings.mist.clone(),
             lake,
             commit: commit.into(),
         }
@@ -230,6 +237,7 @@ impl UpstreamLock {
             && self.tag == settings.tag
             && self.rev == settings.rev
             && self.project == settings.project
+            && self.mist == settings.mist
     }
 
     fn validate(&self, domain: &EntryAtom) -> Result<(), UpstreamFileError> {
@@ -249,6 +257,7 @@ impl UpstreamLock {
         Ok(())
     }
 }
+// sirno:witness:upstream-file:end
 
 /// Error raised by upstream file operations.
 #[derive(Debug, Error)]
@@ -653,11 +662,19 @@ fn load_upstream(
     let config_tree_path = join_tree_path(&project, CONFIG_FILE_NAME);
     let config_source = git_show_text(&mirror, &commit, &config_tree_path)?;
     let upstream_config = SirnoConfig::from_source(Path::new(&config_tree_path), &config_source)?;
+    let mist = load_upstream_mist_spec(&mirror, &commit, &project, settings)?;
     let lake = git_tree_path(&upstream_config.lake.path)?;
     let lake_tree_path = join_tree_path(&project, &lake);
     let files = git_list_files(&mirror, &commit, &lake_tree_path)?;
-    let loaded =
-        load_upstream_files(&mirror, &commit, &lake_tree_path, &files, domain, &upstream_config)?;
+    let loaded = load_upstream_files(
+        &mirror,
+        &commit,
+        &lake_tree_path,
+        &files,
+        domain,
+        &upstream_config,
+        mist.as_ref(),
+    )?;
     let lock = UpstreamLock::new(settings, upstream_config.lake.path.clone(), commit);
     Ok(LoadedUpstream { entries: loaded.entries, artifacts: loaded.artifacts, lock })
 }
@@ -677,7 +694,7 @@ struct LoadedUpstreamFiles {
 // sirno:witness:lake-sheaf:begin
 fn load_upstream_files(
     mirror: &Path, commit: &str, lake_tree_path: &str, files: &[String], domain: &EntryAtom,
-    config: &SirnoConfig,
+    config: &SirnoConfig, mist: Option<&MistSpec>,
 ) -> Result<LoadedUpstreamFiles, UpstreamError> {
     let mut entries = Vec::new();
     let mut artifacts = Vec::new();
@@ -695,7 +712,7 @@ fn load_upstream_files(
             continue;
         }
         if relative.starts_with(&format!("{ARTIFACT_DIRECTORY_NAME}/")) {
-            let artifact = load_artifact(mirror, commit, file, relative, domain)?;
+            let artifact = load_artifact(mirror, commit, file, relative)?;
             artifacts.push(artifact);
             continue;
         }
@@ -704,15 +721,28 @@ fn load_upstream_files(
         }
         let source = git_show_text(mirror, commit, file)?;
         let source_address = EntryAddress::from_lake_relative_path(&relative_path)?;
-        let mut entry = Entry::from_markdown(source_address.under_domain(domain), &source)?;
+        let mut entry = Entry::from_markdown(source_address, &source)?;
         entry.body = strip_generated_footer_for_import(&entry.body)?;
-        rebase_structural_targets(&mut entry, domain);
-        match &mut entry.metadata.meta.frozen {
-            | Some(marker) => marker.insert_managed(),
-            | None => entry.metadata.meta.frozen = Some(FrozenMarker::managed()),
-        }
         entries.push(entry);
     }
+
+    let selected_ids = select_upstream_entry_ids(&entries, mist, &config.structural)?;
+    let mut entries = entries
+        .into_iter()
+        .filter(|entry| selected_ids.contains(&entry.id))
+        .map(|mut entry| {
+            rebase_entry_for_glacier(&mut entry, domain);
+            entry
+        })
+        .collect::<Vec<_>>();
+    let mut artifacts = artifacts
+        .into_iter()
+        .filter(|artifact| selected_ids.contains(&artifact.owner))
+        .map(|mut artifact| {
+            artifact.owner = artifact.owner.under_domain(domain);
+            artifact
+        })
+        .collect::<Vec<_>>();
     entries.sort_by(|left, right| left.id.cmp(&right.id));
     artifacts.sort_by(|left, right| {
         left.owner.cmp(&right.owner).then_with(|| left.path.cmp(&right.path))
@@ -722,16 +752,35 @@ fn load_upstream_files(
 // sirno:witness:lake-sheaf:end
 
 fn load_artifact(
-    mirror: &Path, commit: &str, file: &str, relative: &str, domain: &EntryAtom,
+    mirror: &Path, commit: &str, file: &str, relative: &str,
 ) -> Result<EntryArtifact, UpstreamError> {
     let rest = relative.strip_prefix(ARTIFACT_DIRECTORY_NAME).unwrap().trim_start_matches('/');
     let Some((owner, path)) = rest.split_once('/') else {
         return Err(UpstreamError::UnsupportedLakePath(file.to_owned()));
     };
-    let owner = EntryAddress::new(owner)?.under_domain(domain);
+    let owner = EntryAddress::new(owner)?;
     let artifact_path = EntryArtifactPath::new(Path::new(path))?;
     let content = git_show_bytes(mirror, commit, file)?;
     Ok(EntryArtifact::new(owner, artifact_path, content))
+}
+
+fn select_upstream_entry_ids(
+    entries: &[Entry], mist: Option<&MistSpec>, structural: &crate::StructuralSettings,
+) -> Result<BTreeSet<EntryAddress>, UpstreamError> {
+    let selected = match mist {
+        | Some(mist) => mist.select.select_entries(entries, structural)?,
+        | None => entries.iter().collect::<Vec<_>>(),
+    };
+    Ok(selected.into_iter().map(|entry| entry.id.clone()).collect())
+}
+
+fn rebase_entry_for_glacier(entry: &mut Entry, domain: &EntryAtom) {
+    entry.id = entry.id.under_domain(domain);
+    rebase_structural_targets(entry, domain);
+    match &mut entry.metadata.meta.frozen {
+        | Some(marker) => marker.insert_managed(),
+        | None => entry.metadata.meta.frozen = Some(FrozenMarker::managed()),
+    }
 }
 
 fn rebase_structural_targets(entry: &mut Entry, domain: &EntryAtom) {
@@ -753,6 +802,20 @@ fn strip_generated_footer_for_import(body: &str) -> Result<String, UpstreamError
         return Ok(out);
     }
     Ok(stripped)
+}
+
+fn load_upstream_mist_spec(
+    mirror: &Path, commit: &str, project: &str, settings: &UpstreamSettings,
+) -> Result<Option<MistSpec>, UpstreamError> {
+    let Some(mist) = &settings.mist else {
+        return Ok(None);
+    };
+    let mist_tree_path = join_tree_path(
+        project,
+        PathBuf::from(SIRNO_CONTROL_DIR_NAME).join(MIST_SPEC_DIR_NAME).join(format!("{mist}.toml")),
+    );
+    let source = git_show_text(mirror, commit, &mist_tree_path)?;
+    Ok(Some(MistSpec::from_source(Path::new(&mist_tree_path), &source)?))
 }
 
 fn resolve_commit(mirror: &Path, selector: UpstreamRef<'_>) -> Result<String, UpstreamError> {
@@ -972,9 +1035,18 @@ pub enum UpstreamError {
     /// Generated-link footer handling failed.
     #[error(transparent)]
     GeneratedLink(#[from] crate::GeneratedLinkError),
+    /// Mist selection failed.
+    #[error(transparent)]
+    Mist(Box<crate::MistError>),
     /// Lake writing failed.
     #[error(transparent)]
     Lake(#[from] crate::EntryDirectoryError),
+}
+
+impl From<crate::MistError> for UpstreamError {
+    fn from(source: crate::MistError) -> Self {
+        Self::Mist(Box::new(source))
+    }
 }
 
 #[cfg(test)]
@@ -1106,8 +1178,17 @@ fingerprint = "sha256:abc"
     }
 
     fn write_upstream_repo(root: &Path) -> String {
+        fs::create_dir_all(root.join(".sirno/mist")).unwrap();
         fs::create_dir_all(root.join("docs/.artifacts/design")).unwrap();
         SirnoConfig::new("docs").write_new(root.join(CONFIG_FILE_NAME)).unwrap();
+        fs::write(
+            root.join(".sirno/mist/public.toml"),
+            "\
+[select]
+exact_terms = [\"Design\"]
+",
+        )
+        .unwrap();
         fs::write(
             root.join("docs/design.md"),
             "\
@@ -1209,6 +1290,53 @@ Body.
             .unwrap();
         assert_eq!(result.domains, ["core"]);
         assert_eq!(fs::read_dir(temp.path().join("store/git")).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn crystallizes_only_entries_selected_by_upstream_mist() {
+        let temp = tempfile::tempdir().unwrap();
+        let upstream_root = temp.path().join("upstream");
+        fs::create_dir(&upstream_root).unwrap();
+        write_upstream_repo(&upstream_root);
+        let project_root = temp.path().join("project");
+        fs::create_dir(&project_root).unwrap();
+        let config_path = project_root.join(CONFIG_FILE_NAME);
+        let domain = EntryAtom::new("core").unwrap();
+        let settings = UpstreamSettings::branch(upstream_root.to_string_lossy(), "main")
+            .with_mist(EntryAtom::new("public").unwrap());
+        let config = SirnoConfig {
+            upstreams: UpstreamSettingsMap::from([(domain.clone(), settings)]),
+            structural: StructuralSettings::default(),
+            ..SirnoConfig::new("lake")
+        };
+        config.write_new(&config_path).unwrap();
+
+        let result = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_crystallize(UpstreamCrystallizeRequest {
+                domains: vec![domain.clone()],
+                locked: false,
+            })
+            .unwrap();
+
+        assert_eq!(result.domains, ["core"]);
+        assert!(project_root.join("lake/core/design.md").exists());
+        assert!(!project_root.join("lake/core/alpha.md").exists());
+        assert_eq!(
+            fs::read(project_root.join("lake/.artifacts/core.design/logo.bin")).unwrap(),
+            b"logo"
+        );
+        let upstream_file =
+            UpstreamFile::from_file(UpstreamFile::path_for_config(&config_path)).unwrap();
+        let upstream = upstream_file.upstreams.get(&domain).unwrap();
+        assert_eq!(upstream.mist, Some(EntryAtom::new("public").unwrap()));
+
+        let status = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_status()
+            .unwrap();
+        assert!(status.ok, "{status:?}");
+        assert_eq!(status.upstreams[0].state, UpstreamStatusState::Ok);
     }
 
     #[test]

@@ -21,6 +21,7 @@ The canonical comments are:
 - `Sirno Lake path, resolved relative to this config file.`
 - `Paths in lake that Sirno skips while reading, checking, querying, and rendering footers.`
 - `Git-backed upstream lake crystallized into a glacier under this entry domain.`
+- `Optional mist selects the imported portion from the upstream project.`
 - `Repository files, directories, or globs scanned for witness blocks.`
 - `Witness delimiter regex pairs; each first capture group is the entry address.`
 - `Canonical entry-address capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`

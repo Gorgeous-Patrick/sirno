@@ -671,6 +671,9 @@ struct UpstreamAddArgs {
     /// Directory inside the Git tree containing `Sirno.toml`.
     #[arg(long)]
     project: Option<PathBuf>,
+    /// Upstream mist that selects the crystallized entries.
+    #[arg(long)]
+    mist: Option<String>,
 }
 
 /// CLI upstream output renderer.
@@ -1553,6 +1556,9 @@ impl UpstreamAddArgs {
         };
         if let Some(project) = self.project {
             settings.project = project;
+        }
+        if let Some(mist) = self.mist {
+            settings.mist = Some(entry_atom(&mist)?);
         }
         Ok(UpstreamAddRequest { domain: entry_atom(&self.domain)?, settings })
     }

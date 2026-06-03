@@ -104,6 +104,7 @@ Anchor update deletes that file after accepting the waterline.
 
 `sirno upstream add` accepts exactly one of `--branch NAME`, `--tag NAME`, or `--rev COMMIT`.
 `--project PATH` selects a directory inside the Git tree that contains `Sirno.toml`.
+`--mist MIST` imports only entries selected by that mist in the upstream project.
 
 ## Check And Render
 

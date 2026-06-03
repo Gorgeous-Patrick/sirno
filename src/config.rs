@@ -227,6 +227,9 @@ pub struct UpstreamSettings {
     /// Directory inside the Git tree that contains `Sirno.toml`.
     #[serde(default = "default_upstream_project", skip_serializing_if = "is_default_project")]
     pub project: PathBuf,
+    /// Upstream mist that selects the crystallized entries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mist: Option<EntryAtom>,
 }
 
 impl UpstreamSettings {
@@ -238,6 +241,7 @@ impl UpstreamSettings {
             tag: None,
             rev: None,
             project: default_upstream_project(),
+            mist: None,
         }
     }
 
@@ -249,6 +253,7 @@ impl UpstreamSettings {
             tag: Some(tag.into()),
             rev: None,
             project: default_upstream_project(),
+            mist: None,
         }
     }
 
@@ -260,7 +265,14 @@ impl UpstreamSettings {
             tag: None,
             rev: Some(rev.into()),
             project: default_upstream_project(),
+            mist: None,
         }
+    }
+
+    /// Return these settings with one upstream mist selected.
+    pub fn with_mist(mut self, mist: EntryAtom) -> Self {
+        self.mist = Some(mist);
+        self
     }
 
     /// Return the requested ref selector.
@@ -924,6 +936,9 @@ impl ConfigRenderer {
                     .push_str(
                         "# Git-backed upstream lake crystallized into a glacier under this entry domain.\n",
                     );
+                self.out.push_str(
+                    "# Optional mist selects the imported portion from the upstream project.\n",
+                );
             }
             // sirno:witness:project-config-comments:end
             self.push_bare_field("git", &upstream.git)?;
@@ -938,6 +953,9 @@ impl ConfigRenderer {
             }
             if !is_default_project(&upstream.project) {
                 self.push_bare_field("project", &upstream.project)?;
+            }
+            if let Some(mist) = &upstream.mist {
+                self.push_bare_field("mist", mist)?;
             }
         }
         Ok(())
@@ -1181,6 +1199,7 @@ path = "docs"
 git = "https://example.invalid/core.git"
 branch = "main"
 project = "packages/core"
+mist = "public"
 
 [upstreams.std]
 git = "../std.git"
@@ -1196,6 +1215,7 @@ tag = "stable"
                 tag: None,
                 rev: None,
                 project: PathBuf::from("packages/core"),
+                mist: Some(EntryAtom::new("public").unwrap()),
             })
         );
         assert_eq!(
@@ -1828,6 +1848,7 @@ delimiters = []
     fn rendered_config_keeps_selected_comments_and_structural_link_order() {
         let mut upstream = UpstreamSettings::branch("https://example.invalid/core.git", "main");
         upstream.project = PathBuf::from("packages/core");
+        upstream.mist = Some(EntryAtom::new("public").unwrap());
         let upstreams = UpstreamSettingsMap::from([(EntryAtom::new("core").unwrap(), upstream)]);
         let config = SirnoConfig {
             lake: LakeSettings {
@@ -1861,9 +1882,15 @@ delimiters = []
         assert!(source.contains(
             "# Git-backed upstream lake crystallized into a glacier under this entry domain."
         ));
+        assert!(
+            source.contains(
+                "# Optional mist selects the imported portion from the upstream project."
+            )
+        );
         assert!(source.contains("git = \"https://example.invalid/core.git\""));
         assert!(source.contains("branch = \"main\""));
         assert!(source.contains("project = \"packages/core\""));
+        assert!(source.contains("mist = \"public\""));
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));
         assert!(source.contains(&format!(

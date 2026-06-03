@@ -17,6 +17,7 @@ use tracing::trace;
 use crate::anchor::{AnchorError, SIRNO_CONTROL_DIR_NAME, entry_fingerprint};
 use crate::entry::Entry;
 use crate::identifier::{EntryAddress, EntryAtom, EntryAtomError};
+use crate::query::{EntryQuery, EntryStructuralMatcher, VagueEntryQuery};
 use crate::structural::{StructuralEdgeDirection, StructuralRenderSettings, StructuralSettings};
 
 /// Directory below `.sirno/` that stores shared mist specs.
@@ -82,6 +83,7 @@ impl Default for MistProjectionSettings {
 /// Entry selector for one mist projection.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+// sirno:witness:mist:begin
 pub struct MistSelectionSettings {
     /// Vague text terms matched against expanded entry text.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -96,6 +98,49 @@ pub struct MistSelectionSettings {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub is: Vec<MistStructuralStateFilter>,
 }
+
+impl MistSelectionSettings {
+    /// Select entries through this mist selector.
+    pub fn select_entries<'a>(
+        &self, entries: &'a [Entry], structural: &StructuralSettings,
+    ) -> Result<Vec<&'a Entry>, MistError> {
+        let vague_query = VagueEntryQuery::new().with_text_terms(self.terms.clone());
+        let mut exact_query = EntryQuery::new().with_text_terms(self.exact_terms.clone());
+        for (field, matchers) in self.structural_matchers_by_field(structural)? {
+            for matcher in matchers {
+                exact_query = exact_query.with_structural_matcher(field.clone(), matcher);
+            }
+        }
+        let vague_matches = vague_query.select_entries(entries);
+        Ok(exact_query.select_entries(vague_matches))
+    }
+
+    fn structural_matchers_by_field(
+        &self, structural: &StructuralSettings,
+    ) -> Result<IndexMap<String, Vec<EntryStructuralMatcher>>, MistError> {
+        let mut matchers_by_field = IndexMap::<String, Vec<EntryStructuralMatcher>>::new();
+        for filter in &self.has {
+            if !structural.contains_field(&filter.field) {
+                return Err(MistError::SelectStructuralField(filter.field.clone()));
+            }
+            matchers_by_field
+                .entry(filter.field.clone())
+                .or_default()
+                .push(EntryStructuralMatcher::Targets(filter.targets.clone()));
+        }
+        for filter in &self.is {
+            if !structural.contains_field(&filter.field) {
+                return Err(MistError::SelectStructuralField(filter.field.clone()));
+            }
+            matchers_by_field
+                .entry(filter.field.clone())
+                .or_default()
+                .push(mist_structural_state_to_matcher(filter.state));
+        }
+        Ok(matchers_by_field)
+    }
+}
+// sirno:witness:mist:end
 
 /// Structural target filter stored in a mist spec.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -127,6 +172,14 @@ pub enum MistStructuralFieldState {
     Empty,
     /// The relation is absent.
     Missing,
+}
+
+fn mist_structural_state_to_matcher(state: MistStructuralFieldState) -> EntryStructuralMatcher {
+    match state {
+        | MistStructuralFieldState::Present => EntryStructuralMatcher::Present,
+        | MistStructuralFieldState::Empty => EntryStructuralMatcher::Empty,
+        | MistStructuralFieldState::Missing => EntryStructuralMatcher::Missing,
+    }
 }
 
 /// A shared mist spec stored below `.sirno/mist/`.
@@ -413,6 +466,9 @@ pub enum MistError {
     /// A rendered structural relation is not configured.
     #[error("render.structural `{0}` must name a configured link relation")]
     RenderStructuralField(String),
+    /// A selected structural relation is not configured.
+    #[error("select structural field `{0}` must name a configured link relation")]
+    SelectStructuralField(String),
     /// A rendered structural direction is listed more than once.
     #[error("render.structural `{field}` repeats direction `{direction}`")]
     DuplicateRenderStructuralDirection {

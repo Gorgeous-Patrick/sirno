@@ -830,6 +830,8 @@ struct UpstreamAddParams {
     rev: Option<String>,
     /// Directory inside the Git tree containing `Sirno.toml`.
     project: Option<PathBuf>,
+    /// Upstream mist that selects the crystallized entries.
+    mist: Option<String>,
 }
 
 impl UpstreamAddParams {
@@ -852,6 +854,9 @@ impl UpstreamAddParams {
         };
         if let Some(project) = self.project {
             settings.project = project;
+        }
+        if let Some(mist) = self.mist {
+            settings.mist = Some(entry_atom(mist)?);
         }
         Ok(UpstreamAddRequest { domain: entry_atom(self.domain)?, settings })
     }
