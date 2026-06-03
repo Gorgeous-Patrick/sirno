@@ -20,7 +20,7 @@ Status reports:
 - config path;
 - lake path;
 - entry count;
-- Anchor drift state;
+- Anchor ripple state;
 - structural link relation count;
 - review-mode lake check;
 - active tide summary.
@@ -79,7 +79,7 @@ A destination inside the moved path is handled through temporary staging.
 
 | Command | Behavior |
 |---|---|
-| `sirno anchor status` | Shows current lake drift against `.sirno/anchor.toml`. |
+| `sirno anchor status` | Shows current lake ripples against `.sirno/anchor.toml`. |
 | `sirno anchor check` | Validates `.sirno/anchor.toml` and compares it with the lake. |
 | `sirno anchor update` | Accepts the current lake as the new Anchor baseline. |
 

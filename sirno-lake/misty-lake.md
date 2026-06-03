@@ -25,9 +25,9 @@ while the canonical reservoir lives at `.sirno/lake`.
 
 A misty lake is a working surface.
 Humans, agents, editors, and local tools may read and edit it directly.
-Those edits are *mist drift* until explicit intake writes them back into the reservoir.
-Anchor update should refuse to accept the reservoir while an editable misty lake has dirty,
-stale, conflicted, or staged workspace files.
+Those edits are *mist ripples* until explicit intake writes them back into the reservoir.
+Anchor update should refuse to accept the reservoir while an editable misty lake has
+unintaken ripples, stale state, conflicts, or staged workspace files.
 
 A misty lake carries a local manifest at `.sirno/Sirno.mist.toml` inside the projection.
 The manifest identifies the mist spec,

@@ -31,7 +31,7 @@ Its local contract is accepted-state comparison:
 
 - write the accepted baseline to `.sirno/anchor.toml`;
 - compare the current waterline against that baseline;
-- expose drift for operators and agents;
+- expose current ripples for operators and agents;
 - accept a new baseline only after review-mode checks and Tide review pass;
 - clear obsolete Tide review state after the current waterline is accepted.
 
@@ -41,7 +41,7 @@ The current CLI and MCP surfaces expose Anchor through these operations:
 
 | Operation | Behavior |
 |---|---|
-| `sirno anchor status` | Shows current lake drift against `.sirno/anchor.toml`. |
+| `sirno anchor status` | Shows current lake ripples against `.sirno/anchor.toml`. |
 | `sirno anchor check` | Validates `.sirno/anchor.toml` and compares it with the lake. |
 | `sirno anchor update` | Accepts the current lake as the new baseline. |
 

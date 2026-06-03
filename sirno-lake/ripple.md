@@ -31,6 +31,12 @@ but meaningful because it belongs to a larger surface.
 The *ripple* names reviewable difference, not semantic judgment.
 Sirno can show what changed and which configured neighbors must be reviewed.
 It does not decide whether the new design is correct.
+The difference may be an improvement, correction, experiment, or deletion.
+Use *drift* only for unwanted or degraded divergence.
+
+A *mist ripple* is an edit made in a *misty lake* before intake.
+It becomes a reservoir ripple after intake changes the canonical reservoir.
+Anchor reviews reservoir ripples against the accepted baseline.
 
 A *ripple fingerprint* is a `sha256:` hash of one *ripple* delta.
 Sirno labels the Anchor side and the waterline side,

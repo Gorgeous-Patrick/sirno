@@ -27,7 +27,7 @@ Those working surfaces are *misty lakes* produced by a *mist*.
 The reservoir keeps design authority separate from local projection shape.
 Git versions the reservoir and Sirno control files.
 A *misty lake* may be untracked workspace material,
-but intake must write accepted edits back into the reservoir before Anchor accepts them.
+but intake must write accepted mist ripples back into the reservoir before Anchor accepts them.
 
 The reservoir stores authored entry content.
 Rendered output belongs in *misty lakes*.

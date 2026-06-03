@@ -46,8 +46,8 @@ A ripple is an entry-level delta between the accepted baseline and the current w
 Review status is valid only while the involved entry fingerprints and ripple fingerprints match.
 After `sirno anchor update`, the current waterline becomes the accepted baseline.
 In the target split,
-dirty, stale, conflicted, or staged misty-lake files block Anchor update
-until their edits are intaken or discarded.
+unintaken mist ripples, stale state, conflicts, or staged misty-lake files block Anchor update
+until those ripples are intaken or discarded.
 
 Entry artifacts are versioned by Git as ordinary files under the lake `.artifacts` tree.
 Anchor stores an owner artifact-tree fingerprint for entries that own artifacts.

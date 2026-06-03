@@ -30,6 +30,10 @@ and whether the resulting workspace is editable.
 A project can keep shared mist specs under `.sirno/mist/`.
 A user can keep local mist specs for personal or agent-specific workspaces.
 
+Edits made in a misty lake are *mist ripples*.
+They are reviewable differences, not decay.
+The term *drift* is reserved for unwanted or degraded divergence.
+
 A mist should render entries with normal entry-address layout by default.
 For example,
 entry address `core.design` renders as `core/design.md` inside the misty lake.
