@@ -52,12 +52,16 @@ A mist may also render Sirno-owned generated navigation.
 Structural rendering belongs to the mist because it is presentation for one projection,
 not canonical lake semantics.
 Relation entries still own structural meaning and Tide review policy.
+The reservoir supplies the metadata registry,
+structural relation set,
+and lake-wide link index used by the projection.
+The misty lake does not need to contain the entries that define those lake semantics.
 All rendered output belongs in misty lakes,
 so the reservoir remains the authored source for entry metadata, prose, and artifacts.
 
 `sirno mist render` projects selected reservoir entries into the misty lake,
 copies selected entry artifacts,
-renders generated navigation,
+renders generated navigation from the reservoir context,
 and writes the projection manifest.
 `sirno mist status` compares the projection with the reservoir.
 `sirno mist intake` writes changed Markdown entries back to the reservoir

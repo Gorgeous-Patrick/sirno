@@ -22,6 +22,8 @@ It uses the same entry-address layout as the reservoir by default,
 so existing lake reading habits still work.
 A default project mist may render into `sirno-lake/`
 while the canonical reservoir lives at `.sirno/lake`.
+The reservoir remains the whole lake for metadata, structural checks, and generated navigation.
+A misty lake may contain only the selected entries.
 
 A misty lake is a working surface.
 Humans, agents, editors, and local tools may read and edit it directly.
@@ -38,4 +40,5 @@ and lets intake detect staleness and conflicts without relying on timestamps.
 All renders happen in misty lakes.
 Generated footers, generated indexes, route files, or other Sirno-owned presentation output
 belong in the projected workspace.
+They are computed from the checked reservoir and written onto selected projected entries.
 The reservoir remains the canonical authored store.

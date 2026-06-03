@@ -69,6 +69,10 @@ The accepted baseline keeps canonical metadata and prose,
 not rendered navigation projections.
 
 The active mist's structural render settings control which link relations appear.
+For mist projections,
+Sirno computes those rendered links from the checked reservoir,
+then writes the resulting footer onto each selected projected entry.
+The projected entry set can be narrower than the lake-wide link index.
 
 `sirno check` reports stale *generated footer* regions when render checking is enabled.
 `sirno mist render` creates or replaces *generated footer* regions.

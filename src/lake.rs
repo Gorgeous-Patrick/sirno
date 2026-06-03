@@ -175,6 +175,13 @@ pub struct GenLinkDirectoryReport {
 }
 
 impl GenLinkDirectoryReport {
+    /// Build a generated-link report from an already processed entry set.
+    pub(crate) fn new(
+        root: impl Into<PathBuf>, entry_count: usize, changed_paths: Vec<PathBuf>,
+    ) -> Self {
+        Self { root: root.into(), entry_count, changed_paths }
+    }
+
     /// Directory whose entries were processed.
     pub fn root(&self) -> &Path {
         &self.root
@@ -341,6 +348,61 @@ impl EntryDirectory {
         }
 
         Ok(fs::read_to_string(path)?)
+    }
+
+    /// Read every projected Markdown entry through an external metadata registry.
+    ///
+    /// This is used by mist projections.
+    /// The projection is an interface over selected entries,
+    /// while the reservoir supplies the lake-wide metadata vocabulary.
+    pub fn read_entries_with_registry(
+        &self, meta: &MetaRegistry, ignore: impl IntoIterator<Item = PathBuf>,
+    ) -> Result<Vec<Entry>, EntryDirectoryError> {
+        if !self.root.exists() {
+            return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
+        }
+        if !self.root.is_dir() {
+            return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
+        }
+
+        let settings = EntryDirectoryCheckSettings {
+            render: false,
+            structural_render: StructuralRenderSettings::default(),
+            meta_path: None,
+            ignore: ignore.into_iter().collect(),
+            witness: None,
+        };
+        let mut artifact_root = None;
+        let mut diagnostics = Vec::new();
+        let entry_paths = collect_entry_file_paths(
+            &self.root,
+            &self.root,
+            &settings,
+            CheckSeverity::Error,
+            &mut artifact_root,
+            &mut diagnostics,
+        )?;
+        if diagnostics.iter().any(|diagnostic| diagnostic.severity == CheckSeverity::Error) {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
+        }
+
+        let mut entries = Vec::new();
+        for path in entry_paths {
+            let relative_path =
+                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
+                    path: path.clone(),
+                    root: self.root.clone(),
+                    source,
+                })?;
+            let id = EntryAddress::from_lake_relative_path(relative_path)?;
+            let source = fs::read_to_string(&path)?;
+            let entry = RawEntry::from_markdown(id, &source)?.into_entry(meta)?;
+            GeneratedLinkBody::new(&entry.body).validate()?;
+            entries.push(entry);
+        }
+
+        entries.sort_by(|left, right| left.id.cmp(&right.id));
+        Ok(entries)
     }
 
     /// Read one Sirno Lake Markdown entry file by path.

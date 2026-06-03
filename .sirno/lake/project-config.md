@@ -109,7 +109,7 @@ but they should include every *entry address* allowed by the active project poli
 
 `[check]` is optional.
 Omitting the table or an individual check flag leaves that check enabled.
-`[check].render` controls generated-footer freshness checks in misty lakes.
+`[check].render` controls generated-footer freshness checks for checked entry directories.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
 When a check flag is present,

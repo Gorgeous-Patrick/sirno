@@ -38,10 +38,11 @@ use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
     EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
-    EntryStructuralMatcher, GeneratedLinkBody, MistManifest, MistManifestEntry, MistRenderSettings,
-    MistSpec, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig, StructuralSettings, Tide,
-    TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport, UpstreamFile,
-    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MistManifest,
+    MistManifestEntry, MistRenderSettings, MistSpec, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY,
+    SirnoConfig, StructuralEdgeIndex, StructuralSettings, Tide, TideEntrySnapshot, TideFile,
+    TideStatus, UpstreamCrystallizeReport, UpstreamFile, UpstreamGitCache, UpstreamStatusReport,
+    VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -1314,27 +1315,13 @@ impl SurfaceContext {
         let mut mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
         if let Some(override_json) = override_json {
             apply_structural_override_json(&mut mist.spec.render, override_json)?;
-            mist.projection_settings.structural_render = mist.spec.render.structural.clone();
-        }
-        let projection_settings = mist.projection_render_settings();
-
-        if dry {
-            let directory = EntryDirectory::new(&mist.projection_path);
-            let check = directory.check_with_settings(CheckMode::Review, &projection_settings)?;
-            if check.has_errors() {
-                return Ok(RenderResult::blocked(&check));
-            }
-            mist.spec.render.validate(check.structural())?;
-            let report =
-                directory.check_generated_links_with_check_settings(&projection_settings)?;
-            return Ok(RenderResult::from_report(&report, dry));
         }
 
         let reservoir_report = mist.reservoir_report(CheckMode::Review)?;
         if reservoir_report.has_errors() {
             return Ok(RenderResult::blocked(&reservoir_report));
         }
-        mist.spec.render.validate(reservoir_report.structural())?;
+        let structural = mist.spec.render.structural_settings(reservoir_report.structural())?;
         let selected = mist
             .spec
             .select
@@ -1350,20 +1337,25 @@ impl SurfaceContext {
             .filter(|artifact| selected_ids.contains(&artifact.owner))
             .cloned()
             .collect::<Vec<_>>();
+        let rendered_entries =
+            mist_projection_entries(&selected_entries, reservoir_report.entries(), &structural)?;
 
         let directory = EntryDirectory::new(&mist.projection_path);
+        if dry {
+            let report =
+                mist_projection_dry_report(&mist.projection_path, &directory, &rendered_entries)?;
+            return Ok(RenderResult::from_report(&report, dry));
+        }
+
         let mut extra_changed_paths = directory.write_with_artifacts(
-            &selected_entries,
+            &rendered_entries,
             &selected_artifacts,
             EntryDirectoryWritePolicy::ReplaceDirectory {
                 ignore: mist.projection_settings.ignore.clone(),
             },
         )?;
-        let report = directory.generate_links_with_check_settings(&projection_settings)?;
-        if dry {
-            return Ok(RenderResult::from_report(&report, dry));
-        }
-
+        let report =
+            GenLinkDirectoryReport::new(&mist.projection_path, rendered_entries.len(), Vec::new());
         let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
         let manifest = MistManifest::from_entries(
             mist.name,
@@ -1386,8 +1378,15 @@ impl SurfaceContext {
         &self, mist: Option<EntryAtom>,
     ) -> Result<RenderResult, CommandError> {
         let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
-        let report = EntryDirectory::new(&mist.projection_path)
-            .delete_generated_links_with_ignored_paths(mist.projection_settings.ignore)?;
+        let reservoir_report = mist.reservoir_report(CheckMode::Edit)?;
+        if reservoir_report.has_errors() {
+            return Ok(RenderResult::blocked(&reservoir_report));
+        }
+        let projection = EntryDirectory::new(&mist.projection_path);
+        let projected_entries = projection
+            .read_entries_with_registry(reservoir_report.meta(), mist.projection_settings.ignore)?;
+        let report =
+            mist_projection_delete_report(&mist.projection_path, &projection, &projected_entries)?;
         let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
         let manifest_changed = MistManifest::remove_if_exists(&manifest_path)?;
         let extra_changed_paths = if manifest_changed { vec![manifest_path] } else { Vec::new() };
@@ -2193,13 +2192,6 @@ impl ResolvedMist {
             EntryDirectory::new(&self.reservoir_path).check_with_settings(mode, &settings)?;
         Ok(report)
     }
-
-    fn projection_render_settings(&self) -> EntryDirectoryCheckSettings {
-        let mut settings = self.projection_settings.clone();
-        settings.render = false;
-        settings.witness = None;
-        settings
-    }
 }
 
 fn resolve_projection_path(config_path: &Path, projection_path: &Path) -> PathBuf {
@@ -2231,6 +2223,60 @@ fn remove_generated_footer_divider(body: &str) -> String {
     let before = before.trim_end_matches('\n');
     if before.is_empty() { String::new() } else { format!("{before}\n") }
 }
+
+// sirno:witness:mist:begin
+fn mist_projection_entries(
+    selected_entries: &[Entry], reservoir_entries: &[Entry], structural: &StructuralSettings,
+) -> Result<Vec<Entry>, CommandError> {
+    let index = StructuralEdgeIndex::from_entries(reservoir_entries);
+    let mut rendered = Vec::new();
+    for entry in selected_entries {
+        let mut entry = entry.clone();
+        let footer = index.render_entry(&entry, structural);
+        entry.body = GeneratedLinkBody::new(&entry.body).apply(&footer)?;
+        rendered.push(entry);
+    }
+    Ok(rendered)
+}
+
+fn mist_projection_dry_report(
+    projection_root: &Path, projection: &EntryDirectory, rendered_entries: &[Entry],
+) -> Result<GenLinkDirectoryReport, CommandError> {
+    let mut changed_paths = Vec::new();
+    for entry in rendered_entries {
+        let path = projection.entry_file_path(&entry.id);
+        let rendered = entry.to_markdown().map_err(EntryDirectoryError::from)?;
+        match fs::read_to_string(&path) {
+            | Ok(current) if current == rendered => {}
+            | Ok(_) => changed_paths.push(path),
+            | Err(source) if source.kind() == ErrorKind::NotFound => changed_paths.push(path),
+            | Err(source) => return Err(EntryDirectoryError::from(source).into()),
+        }
+    }
+    Ok(GenLinkDirectoryReport::new(projection_root, rendered_entries.len(), changed_paths))
+}
+
+fn mist_projection_delete_report(
+    projection_root: &Path, projection: &EntryDirectory, projected_entries: &[Entry],
+) -> Result<GenLinkDirectoryReport, CommandError> {
+    let mut changed_paths = Vec::new();
+    for entry in projected_entries {
+        if entry.metadata.meta.frozen.is_some() {
+            return Err(EntryDirectoryError::FrozenEntryProtected(entry.id.clone()).into());
+        }
+        let path = projection.entry_file_path(&entry.id);
+        let source = fs::read_to_string(&path).map_err(EntryDirectoryError::from)?;
+        let body = GeneratedLinkBody::new(&entry.body).delete()?;
+        let rendered = Entry::replace_markdown_body(&source, &body)?;
+        if rendered != source {
+            fs::write(&path, rendered)
+                .map_err(|source| EntryDirectoryError::WriteFile { path: path.clone(), source })?;
+            changed_paths.push(path);
+        }
+    }
+    Ok(GenLinkDirectoryReport::new(projection_root, projected_entries.len(), changed_paths))
+}
+// sirno:witness:mist:end
 
 fn mist_status_for(
     config_path: &Path, mist: &ResolvedMist,
@@ -2322,22 +2368,18 @@ fn mist_status_for(
         }
     }
 
-    let projection_report =
-        projection.check_with_settings(CheckMode::Edit, &mist.projection_render_settings());
-    match projection_report {
-        | Ok(report) if !report.has_errors() => {
-            for entry in report.entries() {
+    match projection.read_entries_with_registry(
+        reservoir_report.meta(),
+        mist.projection_settings.ignore.clone(),
+    ) {
+        | Ok(entries) => {
+            for entry in entries {
                 if !manifest_ids.contains(&entry.id)
                     && !changed_entries.iter().any(|id| id == entry.id.as_str())
                 {
                     changed_entries.push(entry.id.to_string());
                 }
             }
-        }
-        | Ok(_) => {
-            return Err(
-                EntryDirectoryError::InvalidEntryDirectory(mist.projection_path.clone()).into()
-            );
         }
         | Err(EntryDirectoryError::MissingDirectory(_)) => {}
         | Err(error) => return Err(error.into()),
@@ -2759,6 +2801,46 @@ mod tests {
         let reservoir = temp.path().join("lake").join("name.md");
         assert!(fs::read_to_string(reservoir).unwrap().contains("accepted `name`"));
         assert!(context.mist_status(None).unwrap().ok);
+    }
+
+    #[test]
+    fn mist_render_uses_reservoir_context_for_narrow_projection() {
+        let (temp, context) = initialized_context();
+        let mist_dir = temp.path().join(SIRNO_CONTROL_DIR_NAME).join(crate::MIST_SPEC_DIR_NAME);
+        fs::create_dir_all(&mist_dir).unwrap();
+        fs::write(
+            mist_dir.join("default.toml"),
+            r#"
+[projection]
+path = "narrow"
+editable = true
+
+[select]
+exact_terms = ["Concept"]
+"#,
+        )
+        .unwrap();
+
+        let render = context.mist_render(None, false).unwrap();
+        assert!(render.ok);
+
+        let projection = temp.path().join("narrow");
+        assert!(projection.join("concept.md").exists());
+        assert!(!projection.join("name.md").exists());
+        assert!(
+            fs::read_to_string(projection.join("concept.md"))
+                .unwrap()
+                .contains(crate::render::BEGIN_LINKS_GUARD)
+        );
+        assert!(context.mist_status(None).unwrap().ok);
+
+        let delete = context.mist_render_delete(None).unwrap();
+        assert!(delete.ok);
+        assert!(
+            !fs::read_to_string(projection.join("concept.md"))
+                .unwrap()
+                .contains(crate::render::BEGIN_LINKS_GUARD)
+        );
     }
 
     #[cfg(unix)]

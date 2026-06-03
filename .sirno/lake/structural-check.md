@@ -41,7 +41,7 @@ which is enabled by default.
 
 `sirno check` checks the configured reservoir.
 The `-m, --mode` option selects the check boundary.
-Mist status reports generated-footer freshness for projected entries.
+Mist render derives generated-footer freshness from the checked reservoir and the selected projection.
 
 Edit and review modes use different severity boundaries:
 
