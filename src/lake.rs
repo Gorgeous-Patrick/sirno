@@ -69,7 +69,7 @@ pub struct EntryDirectoryCheckSettings {
     pub render: bool,
     /// Generated-footer render policy for discovered structural relations.
     pub structural_render: StructuralRenderSettings,
-    /// Path for the generated disposable meta registry.
+    /// Path for the generated meta registry lockfile.
     pub meta_path: Option<PathBuf>,
     /// Lake-root-relative paths ignored by Sirno.
     pub ignore: Vec<PathBuf>,
@@ -2332,7 +2332,7 @@ pub enum EntryDirectoryError {
     /// An entry could not be parsed or constructed.
     #[error(transparent)]
     EntryParse(#[from] EntryParseError),
-    /// The generated meta registry could not be written.
+    /// The generated meta registry lockfile could not be written.
     #[error(transparent)]
     MetaRegistry(#[from] MetaRegistryError),
     /// An entry address could not be represented.
@@ -3060,7 +3060,7 @@ kind:
     }
 
     #[test]
-    fn check_writes_generated_meta_registry() {
+    fn check_writes_generated_meta_registry_lockfile() {
         let temp = tempfile::tempdir().unwrap();
         let meta_path = temp.path().join(".sirno/meta.toml");
         write_entry(

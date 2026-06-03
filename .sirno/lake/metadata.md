@@ -26,7 +26,7 @@ Metadata belongs to `entry` because it describes the schema surface of each entr
 
 Sirno resolves metadata in two phases.
 The first phase scans raw entry frontmatter for `meta.type`.
-It writes the generated disposable `meta-registry`.
+It writes the generated `meta-registry` lockfile.
 The second phase uses that registry to parse intrinsic fields and structural relations.
 
 The `meta-type` entry groups the `meta.type` discriminator values:

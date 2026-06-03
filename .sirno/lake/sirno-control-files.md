@@ -39,8 +39,8 @@ The target control directory is:
 It exists after the first successful Anchor update.
 
 `.sirno/meta.toml` records the generated meta registry for the current lake.
-It is disposable and ignored by Git.
-Sirno rewrites it from raw entry metadata on each project lake load.
+It is a tracked lockfile.
+Sirno rewrites it from raw entry metadata when the registry changes.
 
 `.sirno/tide.toml` records active Tide review status for the current diff.
 It exists only while review status must survive across commands or Git operations.
@@ -60,12 +60,15 @@ Sirno should install merge drivers for the target files:
 
 ```gitattributes
 .sirno/anchor.toml merge=sirno-anchor
+.sirno/meta.toml merge=sirno-meta
 .sirno/tide.toml merge=sirno-tide
 .sirno/upstream.toml merge=sirno-upstream
 ```
 
 A Sirno merge driver must write complete valid TOML.
 It must not leave conflict markers in a control file.
+When the meta registry cannot be merged directly,
+it regenerates the lockfile from the merged lake entries.
 When the driver cannot prove that a review still matches current fingerprints,
 it drops that review and lets Tide reopen the obligation.
 When the driver cannot safely merge dependency pins,

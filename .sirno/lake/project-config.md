@@ -82,7 +82,8 @@ It pins each upstream to the exact Git commit crystallized into the glacier.
 Anchor state belongs in `.sirno/anchor.toml`.
 Active Tide resolutions belong in `.sirno/tide.toml`.
 The generated meta registry belongs in `.sirno/meta.toml`.
-It is disposable and rewritten on each project lake load.
+It is a tracked lockfile.
+Sirno rewrites it when the raw meta scan changes.
 
 `[lake].ignore` lists paths relative to the reservoir root.
 Sirno skips those paths and their descendants while reading, checking,

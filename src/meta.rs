@@ -1,9 +1,10 @@
-//! Generated meta-level registry for Sirno Lake parsing.
+//! Generated meta-level lockfile for Sirno Lake parsing.
 //!
 //! The registry is derived from raw entry frontmatter before typed metadata parsing.
-//! It records which entries define intrinsic metadata fields and structural relations.
+//! The lockfile records which entries define intrinsic metadata fields and structural relations.
 
 use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use indexmap::IndexMap;
@@ -14,14 +15,15 @@ use crate::entry::{EntryMetaType, FROZEN_FIELD, META_FIELD, META_TYPE_FIELD, Raw
 use crate::identifier::EntryAddress;
 use crate::structural::StructuralSettings;
 
-/// Generated meta registry filename under `.sirno/`.
+/// Generated meta registry lockfile name under `.sirno/`.
 pub const META_FILE_NAME: &str = "meta.toml";
-/// Current generated meta registry schema.
+/// Current generated meta registry lockfile schema.
 pub const META_FILE_SCHEMA: u32 = 1;
 
 const META_FILE_HEADER: &str = "\
-# This file is generated and disposable.
-# Sirno rewrites it from lake entry metadata on each project load.
+# This file is a generated Sirno lockfile.
+# Sirno rewrites it from lake entry metadata when the registry changes.
+# Edit the lake entries that define meta fields.
 
 ";
 
@@ -35,7 +37,7 @@ pub struct MetaRegistry {
     structural: StructuralSettings,
 }
 
-/// File representation for `.sirno/meta.toml`.
+/// File representation for the tracked `.sirno/meta.toml` lockfile.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MetaFile {
@@ -170,7 +172,7 @@ impl MetaRegistry {
         changed
     }
 
-    /// Convert this registry into its generated file representation.
+    /// Convert this registry into its lockfile representation.
     pub fn to_file(&self) -> MetaFile {
         MetaFile {
             schema: META_FILE_SCHEMA,
@@ -195,16 +197,25 @@ impl MetaRegistry {
         Ok(source)
     }
 
-    /// Write this registry to a generated TOML file.
+    /// Write this registry to its generated lockfile.
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), MetaRegistryError> {
         let path = path.as_ref();
+        let source = self.to_toml()?;
+        match fs::read_to_string(path) {
+            | Ok(existing) if existing == source => return Ok(()),
+            | Ok(_) => {}
+            | Err(source) if source.kind() == ErrorKind::NotFound => {}
+            | Err(source) => {
+                return Err(MetaRegistryError::Read { path: path.to_path_buf(), source });
+            }
+        }
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|source| MetaRegistryError::CreateDirectory {
                 path: parent.to_path_buf(),
                 source,
             })?;
         }
-        fs::write(path, self.to_toml()?)
+        fs::write(path, source)
             .map_err(|source| MetaRegistryError::Write { path: path.to_path_buf(), source })
     }
 }
@@ -239,11 +250,11 @@ pub enum MetaFieldNameError {
     Reserved(String),
 }
 
-/// Error raised while writing the generated meta registry.
+/// Error raised while writing the generated meta registry lockfile.
 #[derive(Debug, Error)]
 pub enum MetaRegistryError {
     /// The control directory could not be created.
-    #[error("failed to create generated meta registry directory {path}")]
+    #[error("failed to create meta registry lockfile directory {path}")]
     CreateDirectory {
         /// Directory path.
         path: PathBuf,
@@ -252,10 +263,19 @@ pub enum MetaRegistryError {
         source: std::io::Error,
     },
     /// TOML rendering failed.
-    #[error("failed to render generated meta registry")]
+    #[error("failed to render meta registry lockfile")]
     Render(#[source] toml::ser::Error),
+    /// The existing registry file could not be read.
+    #[error("failed to read meta registry lockfile {path}")]
+    Read {
+        /// Registry path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
     /// The registry file could not be written.
-    #[error("failed to write generated meta registry {path}")]
+    #[error("failed to write meta registry lockfile {path}")]
     Write {
         /// Registry path.
         path: PathBuf,
@@ -305,7 +325,7 @@ Body.
     }
 
     #[test]
-    fn renders_generated_registry_toml() {
+    fn renders_generated_registry_lockfile_toml() {
         let registry = MetaRegistry::from_raw_entries([
             &raw_entry("name", "intrinsic"),
             &raw_entry("category", "structural"),
@@ -317,6 +337,6 @@ Body.
         assert_eq!(parsed.schema, META_FILE_SCHEMA);
         assert_eq!(parsed.intrinsics[0].field, "name");
         assert_eq!(parsed.structural[0].field, "category");
-        assert!(source.starts_with("# This file is generated and disposable."));
+        assert!(source.starts_with("# This file is a generated Sirno lockfile."));
     }
 }
