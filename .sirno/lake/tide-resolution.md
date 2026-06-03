@@ -16,7 +16,7 @@ It pairs a *tide workitem* tuple `(ripple, field, direction, neighbor)`
 with the *ripple fingerprint* of the delta the reviewer inspected.
 
 Resolutions are the only *tide* state the current implementation persists.
-They live in `Sirno.lock.toml` under tide state.
+They live in `.sirno/tide.toml` under active Tide state.
 Open *workitems* are never stored;
 Sirno derives them on demand from the current *waterline* and Anchor.
 A *workitem* counts as resolved only when a stored resolution matches
@@ -42,7 +42,7 @@ and `sirno reopen` is its alias.
 `sirno resolve --infer` applies the mutual-ripple rule.
 The grouped forms are `sirno tide resolve`, `sirno tide unresolve`,
 and `sirno tide reopen` as an alias of unresolve.
-`sirno tide reset` clears every tide resolution from the lock at once.
+`sirno tide reset` clears every tide resolution from the Tide file at once.
 
 A resolution is bound to its delta, not to wall-clock time.
 If the *ripple entry* changes again, its fingerprint changes,
@@ -54,10 +54,8 @@ The first `sirno anchor update` initializes Anchor from the current lake.
 A later update refuses to accept the lake while any open *workitem* remains.
 A successful update clears tide resolutions because the new Anchor makes the prior deltas moot.
 
-The target design moves active review status to `.sirno/tide.toml`.
-That file stores target-first review records:
-one reviewed *entry* can cover several ripples that reached it.
-Anchor update deletes the file after accepting the current waterline.
+The Tide file stores active review records for the current waterline.
+Anchor update deletes `.sirno/tide.toml` after accepting the current waterline.
 The durable accepted record is the new Anchor plus the Git commit,
 not a permanent active-review file.
 

@@ -1,7 +1,7 @@
-//! Project-local lock state for upstream lakes and tide.
+//! Project-local lock state for upstream lakes.
 //!
 //! `Sirno.toml` configures paths and policy.
-//! `Sirno.lock.toml` records generated project state represented by the lake.
+//! `Sirno.lock.toml` records generated upstream dependency state represented by the lake.
 
 use std::ffi::{OsStr, OsString};
 use std::fs::{self, OpenOptions};
@@ -16,8 +16,6 @@ use tracing::trace;
 
 use crate::config::UpstreamSettings;
 use crate::identifier::EntryAtom;
-use crate::tide::TideResolution;
-
 /// Canonical Sirno project lock filename.
 pub const LOCK_FILE_NAME: &str = "Sirno.lock.toml";
 
@@ -35,9 +33,6 @@ pub struct SirnoLock {
     /// Resolved upstream lake commits.
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub upstreams: UpstreamLockMap,
-    /// Explicit dependency review resolutions for the current lake edit session.
-    #[serde(default, skip_serializing_if = "TideLock::is_empty")]
-    pub tide: TideLock,
 }
 // sirno:witness:sirno-lock:end
 
@@ -142,7 +137,7 @@ impl SirnoLock {
 
 impl Default for SirnoLock {
     fn default() -> Self {
-        Self { upstreams: UpstreamLockMap::new(), tide: TideLock::default() }
+        Self { upstreams: UpstreamLockMap::new() }
     }
 }
 
@@ -209,34 +204,6 @@ impl UpstreamLock {
             return Err(LockError::UpstreamRefSelector(domain.clone()));
         }
         Ok(())
-    }
-}
-
-/// Tide state recorded in `Sirno.lock.toml`.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
-pub struct TideLock {
-    /// Explicitly resolved tide workitems.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub resolved: Vec<TideResolution>,
-}
-
-impl TideLock {
-    /// Returns true when no tide state is stored.
-    pub fn is_empty(&self) -> bool {
-        self.resolved.is_empty()
-    }
-
-    /// Replace stored resolutions with a deterministic list.
-    pub fn set_resolved(&mut self, mut resolved: Vec<TideResolution>) {
-        resolved.sort();
-        resolved.dedup();
-        self.resolved = resolved;
-    }
-
-    /// Clear all tide state.
-    pub fn clear(&mut self) {
-        self.resolved.clear();
     }
 }
 
@@ -338,7 +305,6 @@ mod tests {
                 EntryAtom::new("core").unwrap(),
                 UpstreamLock::new(&settings, PathBuf::from("docs"), "0123456789abcdef"),
             )]),
-            tide: TideLock::default(),
         };
         let rendered = lock.to_toml().unwrap();
         let read: SirnoLock = toml::from_str(&rendered).unwrap();
@@ -365,6 +331,23 @@ path = ".sirno/anchor.toml"
     }
 
     #[test]
+    fn rejects_tide_lock_state() {
+        let error = toml::from_str::<SirnoLock>(
+            r#"
+[[tide.resolved]]
+ripple = "ripple"
+field = "belongs"
+direction = "to"
+neighbor = "neighbor"
+fingerprint = "sha256:abc"
+"#,
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
     fn lock_write_replaces_existing_file() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join(LOCK_FILE_NAME);
@@ -374,7 +357,6 @@ path = ".sirno/anchor.toml"
                 EntryAtom::new("core").unwrap(),
                 UpstreamLock::new(&settings, PathBuf::from("docs"), "1"),
             )]),
-            tide: TideLock::default(),
         };
         first.write(&path).unwrap();
 
@@ -383,7 +365,6 @@ path = ".sirno/anchor.toml"
                 EntryAtom::new("core").unwrap(),
                 UpstreamLock::new(&settings, PathBuf::from("docs"), "2"),
             )]),
-            tide: TideLock::default(),
         };
         second.write(&path).unwrap();
 

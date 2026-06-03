@@ -4,14 +4,19 @@
 //! It derives review obligations from structural relation entries.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::ffi::{OsStr, OsString};
 use std::fmt;
+use std::fs::{self, OpenOptions};
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize, de};
 use sha2::Digest;
 use thiserror::Error;
 
-use crate::anchor::{AnchorEntry, AnchorError, entry_fingerprint};
+use crate::anchor::{AnchorEntry, AnchorError, SIRNO_CONTROL_DIR_NAME, entry_fingerprint};
 use crate::entry::{Entry, EntryMetadata};
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
@@ -19,6 +24,17 @@ use crate::structural::{
     StructuralEdgeDirection, StructuralEdgeDirectionParseError, StructuralEdgeIndex,
     StructuralSettings,
 };
+
+/// Canonical active Tide review filename.
+pub const TIDE_FILE_NAME: &str = "tide.toml";
+/// Current Tide file schema.
+pub const TIDE_FILE_SCHEMA: u32 = 1;
+
+const TIDE_FILE_HEADER: &str = "\
+# This file is generated and managed by Sirno.
+# It records active Tide review state for Git.
+
+";
 
 /// One side that can produce a tide workitem.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -104,6 +120,7 @@ impl FromStr for TideWorkitem {
 
 /// One persisted tide resolution.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+// sirno:witness:tide-resolution:begin
 pub struct TideResolution {
     /// Changed entry that produced the obligation.
     pub ripple: EntryAddress,
@@ -128,6 +145,7 @@ impl TideResolution {
         }
     }
 }
+// sirno:witness:tide-resolution:end
 
 impl<'de> Deserialize<'de> for TideResolution {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -155,6 +173,148 @@ impl<'de> Deserialize<'de> for TideResolution {
     }
 }
 
+/// Active Tide review state stored in `.sirno/tide.toml`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+// sirno:witness:tide-review-file:begin
+pub struct TideFile {
+    /// Tide file schema version.
+    pub schema: u32,
+    /// Explicitly resolved tide workitems.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resolved: Vec<TideResolution>,
+}
+// sirno:witness:tide-review-file:end
+
+impl TideFile {
+    /// Resolve the Tide file path next to the config file.
+    // sirno:witness:tide-review-file:begin
+    pub fn path_for_config(config_path: impl AsRef<Path>) -> PathBuf {
+        config_path
+            .as_ref()
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(SIRNO_CONTROL_DIR_NAME)
+            .join(TIDE_FILE_NAME)
+    }
+    // sirno:witness:tide-review-file:end
+
+    /// Load a Tide file from a specific path.
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, TideFileError> {
+        let path = path.as_ref();
+        let source = fs::read_to_string(path)
+            .map_err(|source| TideFileError::Read { path: path.to_path_buf(), source })?;
+        let file: Self = toml::from_str(&source)
+            .map_err(|source| TideFileError::Parse { path: path.to_path_buf(), source })?;
+        file.validate()?;
+        Ok(file)
+    }
+
+    /// Load a Tide file when it exists.
+    pub fn from_file_if_exists(path: impl AsRef<Path>) -> Result<Option<Self>, TideFileError> {
+        match Self::from_file(path) {
+            | Ok(file) => Ok(Some(file)),
+            | Err(TideFileError::Read { source, .. }) if source.kind() == ErrorKind::NotFound => {
+                Ok(None)
+            }
+            | Err(source) => Err(source),
+        }
+    }
+
+    /// Write this Tide file atomically.
+    pub fn write(&self, path: impl AsRef<Path>) -> Result<(), TideFileError> {
+        let path = path.as_ref();
+        let source = self.to_toml()?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|source| TideFileError::CreateDirectory {
+                path: parent.to_path_buf(),
+                source,
+            })?;
+        }
+        let temporary_path = Self::temporary_path(path);
+        let mut file =
+            OpenOptions::new().write(true).create_new(true).open(&temporary_path).map_err(
+                |source| TideFileError::CreateTemporary { path: temporary_path.clone(), source },
+            )?;
+        if let Err(source) = file.write_all(source.as_bytes()) {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(TideFileError::WriteTemporary { path: temporary_path, source });
+        }
+        if let Err(source) = file.sync_all() {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(TideFileError::WriteTemporary { path: temporary_path, source });
+        }
+        drop(file);
+        if let Err(source) = fs::rename(&temporary_path, path) {
+            let _ = fs::remove_file(&temporary_path);
+            return Err(TideFileError::Replace {
+                path: path.to_path_buf(),
+                temporary_path,
+                source,
+            });
+        }
+        Ok(())
+    }
+
+    /// Remove a Tide file when it exists.
+    pub fn remove_if_exists(path: impl AsRef<Path>) -> Result<bool, TideFileError> {
+        let path = path.as_ref();
+        match fs::remove_file(path) {
+            | Ok(()) => Ok(true),
+            | Err(source) if source.kind() == ErrorKind::NotFound => Ok(false),
+            | Err(source) => Err(TideFileError::Remove { path: path.to_path_buf(), source }),
+        }
+    }
+
+    /// Returns true when no active review state is stored.
+    pub fn is_empty(&self) -> bool {
+        self.resolved.is_empty()
+    }
+
+    /// Replace stored resolutions with a deterministic list.
+    pub fn set_resolved(&mut self, mut resolved: Vec<TideResolution>) {
+        resolved.sort();
+        resolved.dedup();
+        self.resolved = resolved;
+    }
+
+    /// Validate the file schema.
+    pub fn validate(&self) -> Result<(), TideFileError> {
+        if self.schema != TIDE_FILE_SCHEMA {
+            return Err(TideFileError::UnsupportedSchema { found: self.schema });
+        }
+        Ok(())
+    }
+
+    fn to_toml(&self) -> Result<String, TideFileError> {
+        self.validate()?;
+        let mut source = String::from(TIDE_FILE_HEADER);
+        source.push_str(&toml::to_string_pretty(self).map_err(TideFileError::Render)?);
+        Ok(source)
+    }
+
+    fn temporary_path(path: &Path) -> PathBuf {
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let file_name = path.file_name().unwrap_or_else(|| OsStr::new(TIDE_FILE_NAME));
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or(0);
+        let mut temporary_name = OsString::from(".");
+        temporary_name.push(file_name);
+        temporary_name.push(format!(".{}.{}.tmp", std::process::id(), nonce));
+        parent.join(temporary_name)
+    }
+}
+
+impl Default for TideFile {
+    fn default() -> Self {
+        Self { schema: TIDE_FILE_SCHEMA, resolved: Vec::new() }
+    }
+}
+
 /// Display status for one tide workitem.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TideStatus {
@@ -164,7 +324,7 @@ pub struct TideStatus {
     pub sources: BTreeSet<TideSource>,
     /// Fingerprint of the ripple delta this status reviews.
     pub fingerprint: String,
-    /// Whether a matching resolution exists in the lock.
+    /// Whether a matching resolution exists in the Tide file.
     pub resolved: bool,
 }
 
@@ -471,6 +631,85 @@ pub enum TideError {
     Workitem(#[from] TideWorkitemParseError),
 }
 
+/// Error raised by Tide file operations.
+#[derive(Debug, Error)]
+pub enum TideFileError {
+    /// The Tide file could not be read.
+    #[error("failed to read tide file {path}")]
+    Read {
+        /// Path that could not be read.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The Tide file could not be parsed as TOML.
+    #[error("failed to parse tide file {path}")]
+    Parse {
+        /// Path that could not be parsed.
+        path: PathBuf,
+        /// Underlying TOML parse error.
+        #[source]
+        source: toml::de::Error,
+    },
+    /// The Tide file could not be rendered.
+    #[error("failed to render tide file")]
+    Render(#[source] toml::ser::Error),
+    /// The Tide file schema is not supported.
+    #[error("unsupported tide file schema {found}")]
+    UnsupportedSchema {
+        /// Schema version found in the file.
+        found: u32,
+    },
+    /// The Tide file directory could not be created.
+    #[error("failed to create tide file directory {path}")]
+    CreateDirectory {
+        /// Directory path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary Tide file could not be created.
+    #[error("failed to create temporary tide file {path}")]
+    CreateTemporary {
+        /// Temporary path that could not be created.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary Tide file could not be written.
+    #[error("failed to write temporary tide file {path}")]
+    WriteTemporary {
+        /// Temporary path that could not be written.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary Tide file could not replace the public Tide file.
+    #[error("failed to replace tide file {path} with temporary tide file {temporary_path}")]
+    Replace {
+        /// Tide file path that could not be replaced.
+        path: PathBuf,
+        /// Complete temporary Tide file path.
+        temporary_path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The Tide file could not be removed.
+    #[error("failed to remove tide file {path}")]
+    Remove {
+        /// Tide file path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -633,5 +872,60 @@ mod tests {
         .unwrap_err();
 
         assert!(error.to_string().contains("comma"));
+    }
+
+    #[test]
+    fn tide_file_path_uses_control_directory() {
+        let path = TideFile::path_for_config("/project/Sirno.toml");
+
+        assert_eq!(path, PathBuf::from("/project/.sirno/tide.toml"));
+    }
+
+    #[test]
+    fn renders_tide_file_resolutions() {
+        let mut old = entry("ripple");
+        old.metadata.push_structural_target("belongs", id("neighbor"));
+        let mut new = old.clone();
+        new.body = "changed body.\n".to_owned();
+        let tide = Tide::from_entries(&[old], &[new], &belongs_settings(true, false), &[]).unwrap();
+        let mut file = TideFile::default();
+        file.set_resolved(vec![TideResolution::from_status(&tide.statuses()[0])]);
+
+        let rendered = file.to_toml().unwrap();
+        let read: TideFile = toml::from_str(&rendered).unwrap();
+
+        assert_eq!(read, file);
+        assert!(rendered.contains("schema = 1"));
+        assert!(rendered.contains("[[resolved]]"));
+        assert!(rendered.contains("ripple = \"ripple\""));
+    }
+
+    #[test]
+    fn tide_file_write_replaces_existing_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join(".sirno").join(TIDE_FILE_NAME);
+        let first = TideFile::default();
+        first.write(&path).unwrap();
+
+        let mut old = entry("ripple");
+        old.metadata.push_structural_target("belongs", id("neighbor"));
+        let mut new = old.clone();
+        new.body = "changed body.\n".to_owned();
+        let tide = Tide::from_entries(&[old], &[new], &belongs_settings(true, false), &[]).unwrap();
+        let mut second = TideFile::default();
+        second.set_resolved(vec![TideResolution::from_status(&tide.statuses()[0])]);
+        second.write(&path).unwrap();
+
+        let rendered = fs::read_to_string(&path).unwrap();
+        assert!(rendered.contains("[[resolved]]"));
+        let paths = fs::read_dir(path.parent().unwrap()).unwrap().count();
+        assert_eq!(paths, 1);
+    }
+
+    #[test]
+    fn tide_file_rejects_unknown_schema() {
+        let error = toml::from_str::<TideFile>("schema = 2\n").unwrap().validate().unwrap_err();
+
+        assert!(error.to_string().contains("unsupported tide file schema 2"));
     }
 }

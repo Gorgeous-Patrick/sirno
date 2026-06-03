@@ -81,7 +81,7 @@ A destination inside the moved path is handled through temporary staging.
 It lives next to `Sirno.toml`.
 It also pins each upstream to the exact Git commit crystallized into the glacier.
 Anchor state belongs in `.sirno/anchor.toml`.
-Temporary Tide resolutions may still use `Sirno.lock.toml` until `.sirno/tide.toml` is actualized.
+Active Tide resolutions belong in `.sirno/tide.toml`.
 The target lock path is `.sirno/lock.toml`.
 
 `[lake].ignore` lists paths relative to the reservoir root.
@@ -157,6 +157,6 @@ Absent relations render no generated footer groups in that misty lake.
 
 Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.anchor` direction lists.
 
-`Sirno.lock.toml` temporarily records explicit *tide* resolutions.
+`.sirno/tide.toml` records explicit *tide* resolutions.
 Those resolutions are compared against the current ripple fingerprint.
 They are cleared after a successful anchor update.

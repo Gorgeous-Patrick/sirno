@@ -42,8 +42,9 @@ use crate::{
     EntryStructuralMatcher, GeneratedLinkBody, MistManifest, MistManifestEntry, MistRenderSettings,
     MistSelectionSettings, MistSpec, MistStructuralFieldState, MistStructuralStateFilter,
     MistStructuralTargetFilter, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig,
-    SirnoLock, StructuralSettings, Tide, TideEntrySnapshot, TideStatus, UpstreamCrystallizeReport,
-    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    SirnoLock, StructuralSettings, Tide, TideEntrySnapshot, TideFile, TideStatus,
+    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
+    WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -54,7 +55,9 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         wrapper_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.md",
         full_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
-        content: include_str!("../../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.md"),
+        content: include_str!(
+            "../../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.md"
+        ),
     },
     SkillWrapperSpec {
         name: "sirno-actualizer",
@@ -248,24 +251,24 @@ impl SurfaceContext {
     /// Return tide statuses in structured form.
     pub fn tide_statuses(&self, mode: TideStatusMode) -> Result<Vec<TideStatus>, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
+        let tide_file = context.load_tide_file_or_current()?;
+        let tide = context.tide(&tide_file)?;
         Ok(tide_statuses_for_output(&tide, mode.includes_resolved()))
     }
 
     /// Return entry addresses that still need tide review.
     pub fn tide_review_entries(&self) -> Result<Vec<EntryAddress>, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
+        let tide_file = context.load_tide_file_or_current()?;
+        let tide = context.tide(&tide_file)?;
         Ok(tide.review_entries())
     }
 
     /// Return tide review entries and optional full statuses as a JSON-first command result.
     pub fn tide_status(&self, mode: TideStatusMode) -> Result<TideStatusResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
+        let tide_file = context.load_tide_file_or_current()?;
+        let tide = context.tide(&tide_file)?;
         let review_entries = tide.review_entries();
         let statuses = if mode.includes_workitems() {
             tide_statuses_for_output(&tide, mode.includes_resolved())
@@ -1558,9 +1561,9 @@ impl SurfaceContext {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let report = context.checked_report(CheckMode::Review)?;
         let anchor_exists = context.anchor_path.exists();
-        let mut lock = context.load_lock_or_current()?;
+        let tide_file = context.load_tide_file_or_current()?;
         if anchor_exists {
-            let tide = context.tide(&lock)?;
+            let tide = context.tide(&tide_file)?;
             let open_workitems = tide.open_statuses().count();
             if open_workitems > 0 {
                 return Err(CommandError::AnchorUpdateOpenTide { open_workitems });
@@ -1574,22 +1577,8 @@ impl SurfaceContext {
         let anchor = context.anchor_from_report(&report)?;
         anchor.write(&context.anchor_path)?;
 
-        let cleared_tide_resolutions = lock.tide.resolved.len();
-        lock.tide.clear();
-        if lock.upstreams.is_empty() && lock.tide.is_empty() {
-            match fs::remove_file(&context.lock_path) {
-                | Ok(()) => {}
-                | Err(source) if source.kind() == ErrorKind::NotFound => {}
-                | Err(source) => {
-                    return Err(CommandError::RemoveEmptyLock {
-                        path: context.lock_path.clone(),
-                        source,
-                    });
-                }
-            }
-        } else {
-            lock.write(&context.lock_path)?;
-        }
+        let cleared_tide_resolutions = tide_file.resolved.len();
+        TideFile::remove_if_exists(&context.tide_path)?;
 
         Ok(AnchorUpdateResult {
             ok: true,
@@ -1615,8 +1604,8 @@ impl SurfaceContext {
         let check = LakeCheckResult::from_report(&report);
         let tide = if !check.has_errors {
             let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-            let lock = tide_context.load_lock_or_current()?;
-            let tide = tide_context.tide(&lock)?;
+            let tide_file = tide_context.load_tide_file_or_current()?;
+            let tide = tide_context.tide(&tide_file)?;
             Some(StatusTide::from_tide(&tide))
         } else {
             None
@@ -1626,7 +1615,7 @@ impl SurfaceContext {
         } else {
             None
         };
-        let ok = check.ok && mist.as_ref().map_or(true, |mist| mist.ok || !mist.manifest_present);
+        let ok = check.ok && mist.as_ref().is_none_or(|mist| mist.ok || !mist.manifest_present);
         Ok(StatusResult {
             ok,
             config_path: display_path(&self.config_path),
@@ -1660,15 +1649,15 @@ impl SurfaceContext {
         &self, request: TideResolveRequest,
     ) -> Result<TideChangeResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let mut lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
+        let mut tide_file = context.load_tide_file_or_current()?;
+        let tide = context.tide(&tide_file)?;
         let (resolutions, count) = if request.infer {
             tide.resolve_where(|status| tide.ripple_ids().contains(&status.workitem.neighbor))
         } else {
             tide.resolve_where(|status| tide_selection_matches(&request, status))
         };
-        lock.tide.set_resolved(resolutions);
-        lock.write(&context.lock_path)?;
+        tide_file.set_resolved(resolutions);
+        context.write_tide_file_or_remove(&tide_file)?;
         Ok(TideChangeResult {
             ok: true,
             count,
@@ -1681,12 +1670,12 @@ impl SurfaceContext {
         &self, request: TideSelectionRequest,
     ) -> Result<TideChangeResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let mut lock = context.load_lock_or_current()?;
-        let tide = context.tide(&lock)?;
+        let mut tide_file = context.load_tide_file_or_current()?;
+        let tide = context.tide(&tide_file)?;
         let (resolutions, count) =
             tide.reopen_where(|status| tide_selection_request_matches(&request, status));
-        lock.tide.set_resolved(resolutions);
-        lock.write(&context.lock_path)?;
+        tide_file.set_resolved(resolutions);
+        context.write_tide_file_or_remove(&tide_file)?;
         Ok(TideChangeResult {
             ok: true,
             count,
@@ -1694,13 +1683,12 @@ impl SurfaceContext {
         })
     }
 
-    /// Clear all tide resolutions from the lock.
+    /// Clear all tide resolutions from the Tide file.
     pub fn tide_reset(&self) -> Result<TideChangeResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let mut lock = context.load_lock_or_current()?;
-        let count = lock.tide.resolved.len();
-        lock.tide.clear();
-        lock.write(&context.lock_path)?;
+        let tide_file = context.load_tide_file_or_current()?;
+        let count = tide_file.resolved.len();
+        TideFile::remove_if_exists(&context.tide_path)?;
         Ok(TideChangeResult {
             ok: true,
             count,
@@ -1942,7 +1930,7 @@ fn move_staging_path(source: &Path) -> std::io::Result<PathBuf> {
 }
 
 struct TideContext {
-    lock_path: PathBuf,
+    tide_path: PathBuf,
     anchor_path: PathBuf,
     anchor_lake_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
@@ -1953,7 +1941,7 @@ impl TideContext {
     fn load(config_path: &Path, lake_path: Option<&Path>) -> Result<Self, CommandError> {
         let config = SirnoConfig::from_file(config_path)?;
         Ok(Self {
-            lock_path: SirnoLock::path_for_config(config_path),
+            tide_path: TideFile::path_for_config(config_path),
             anchor_path: AnchorFile::path_for_config(config_path),
             anchor_lake_path: lake_path.map(Path::to_path_buf).unwrap_or(config.lake.path.clone()),
             settings: entry_directory_check_settings(config_path, &config)?,
@@ -1961,8 +1949,17 @@ impl TideContext {
         })
     }
 
-    fn load_lock_or_current(&self) -> Result<SirnoLock, CommandError> {
-        Ok(SirnoLock::from_file_if_exists(&self.lock_path)?.unwrap_or_default())
+    fn load_tide_file_or_current(&self) -> Result<TideFile, CommandError> {
+        Ok(TideFile::from_file_if_exists(&self.tide_path)?.unwrap_or_default())
+    }
+
+    fn write_tide_file_or_remove(&self, file: &TideFile) -> Result<(), CommandError> {
+        if file.is_empty() {
+            TideFile::remove_if_exists(&self.tide_path)?;
+        } else {
+            file.write(&self.tide_path)?;
+        }
+        Ok(())
     }
 
     fn checked_report(&self, mode: CheckMode) -> Result<EntryDirectoryReport, CommandError> {
@@ -1985,7 +1982,7 @@ impl TideContext {
         Ok(AnchorFile::from_report(&self.anchor_lake_path, report, &structural)?)
     }
 
-    fn tide(&self, lock: &SirnoLock) -> Result<Tide, CommandError> {
+    fn tide(&self, file: &TideFile) -> Result<Tide, CommandError> {
         let report = self.checked_report(CheckMode::Edit)?;
         let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
         let anchor = AnchorFile::from_file_if_exists(&self.anchor_path)?;
@@ -1996,7 +1993,7 @@ impl TideContext {
             .iter()
             .map(TideEntrySnapshot::from_entry)
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Tide::from_snapshots(&anchor_snapshots, &waterline, &structural, &lock.tide.resolved)?)
+        Ok(Tide::from_snapshots(&anchor_snapshots, &waterline, &structural, &file.resolved)?)
     }
 }
 

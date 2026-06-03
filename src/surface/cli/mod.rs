@@ -735,7 +735,7 @@ enum TideCommand {
     /// Run a tide review operation.
     #[command(flatten)]
     Review(TideReviewCommand),
-    /// Clear all tide resolutions from the lock.
+    /// Clear all tide resolutions from the Tide file.
     Reset,
 }
 // sirno:witness:tide:end

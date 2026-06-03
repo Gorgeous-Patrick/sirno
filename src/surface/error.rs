@@ -8,7 +8,7 @@ use thiserror::Error;
 use crate::{
     AnchorError, CharmError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
     EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, MistError,
-    TideError, UpstreamError, WitnessError,
+    TideError, TideFileError, UpstreamError, WitnessError,
 };
 
 /// Error raised while running the CLI.
@@ -196,15 +196,6 @@ pub enum CommandError {
     /// Mist intake requires a fresh editable projection.
     #[error("mist intake blocked: {0}")]
     MistIntakeBlocked(String),
-    /// An empty generated lock file could not be removed.
-    #[error("failed to remove empty lock file {path}")]
-    RemoveEmptyLock {
-        /// Lock path.
-        path: PathBuf,
-        /// Underlying I/O error.
-        #[source]
-        source: std::io::Error,
-    },
     /// Ripgrep generated-footer preprocessor received an unexpected argument shape.
     #[error("rg generated-footer preprocessor expects one path argument")]
     RgPreprocessorArgumentCount,
@@ -327,6 +318,9 @@ pub enum CommandError {
     /// Tide operation failed.
     #[error(transparent)]
     Tide(#[from] TideError),
+    /// Tide file operation failed.
+    #[error(transparent)]
+    TideFile(#[from] TideFileError),
     /// Upstream operation failed.
     #[error(transparent)]
     Upstream(#[from] UpstreamError),

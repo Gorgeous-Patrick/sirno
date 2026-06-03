@@ -88,8 +88,8 @@ When `[tutorial]` is present,
 this failure can include tutorial text controlled by `[tutorial].anchor_update_tide`
 and `[tutorial].anchor_bootstrap_tide`.
 
-The first implementation stores review resolutions in `Sirno.lock.toml`.
-The target design moves active review status to `.sirno/tide.toml`.
+Active review resolutions are stored in `.sirno/tide.toml`.
+Anchor update deletes that file after accepting the waterline.
 
 ## Upstreams
 

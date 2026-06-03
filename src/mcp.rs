@@ -472,7 +472,7 @@ impl SirnoMcpServer {
         result(self.context.tide_unresolve(params.into_request()?))
     }
 
-    /// Clear all tide resolutions from the lock.
+    /// Clear all tide resolutions from the Tide file.
     #[tool(name = "sirno_tide_reset")]
     fn tide_reset(&self) -> McpToolResult {
         result(self.context.tide_reset())

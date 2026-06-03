@@ -1,9 +1,9 @@
 ---
 name: Tide Review File
-desc: The target tracked TOML file for active Tide review status.
+desc: The tracked TOML file for active Tide resolution state.
 category:
   - concept
-  - proposal
+  - implemented
 belongs:
   - tide
   - sirno-control-files
@@ -13,44 +13,36 @@ prerequisite:
   - sirno-control-files
 ---
 
-The Tide review file is the target `.sirno/tide.toml` design.
+The Tide review file is `.sirno/tide.toml`.
 It stores active review status against the current Anchor.
+It exists when explicit Tide resolutions must survive across commands or Git operations.
 
-The file is target-first.
-A reviewer opens one reached entry and reviews it once,
-even when several ripples reached that entry.
+The file stores the current resolution set with schema version `1`.
+Each `resolved` item records the workitem tuple and the ripple fingerprint it reviewed.
 
 ```toml
 schema = 1
-anchor = "sha256:..."
 
-[[reviews]]
-entry = "methodology"
-entry_fingerprint = "sha256:..."
-reviewer = "arctic"
-reviewed_at = "2026-05-26T14:30:00Z"
-
-[[reviews.reaches]]
+[[resolved]]
 ripple = "storage"
-ripple_fingerprint = "sha256:..."
 field = "belongs"
 direction = "from"
+neighbor = "methodology"
+fingerprint = "sha256:..."
 ```
 
-A review means that the reviewer inspected `entry` at `entry_fingerprint`
-and accepted the listed ripples that reached it.
+A resolution means the reviewer accepted `neighbor`
+for the listed relation edge from `ripple`.
 It resolves a current workitem only when these values still match:
 
-- target entry id;
-- target entry fingerprint;
 - ripple id;
 - ripple fingerprint;
 - relation field;
-- edge direction.
+- edge direction;
+- neighbor entry id.
 
-If the target entry changes, its reviews reopen.
-If a ripple changes, only reviews for that ripple reopen.
-Unrelated edits do not invalidate the review.
+If a ripple changes, only resolutions for that ripple reopen.
+Unrelated edits do not invalidate the resolution.
 
 The file is active review evidence, not permanent history.
 Anchor update consumes it by accepting the current lake into `.sirno/anchor.toml`

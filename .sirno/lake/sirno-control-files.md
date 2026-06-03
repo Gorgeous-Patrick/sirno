@@ -44,9 +44,8 @@ Anchor update deletes it after accepting the waterline.
 `.sirno/lock.toml` records external upstream dependency pins.
 It exists only when the project has shared upstream pins.
 
-The current implementation has only `.sirno/anchor.toml` in this directory.
-`Sirno.lock.toml` still stores upstream pins and Tide resolutions
-until `.sirno/tide.toml` and `.sirno/lock.toml` are actualized.
+The current implementation has `.sirno/anchor.toml` and `.sirno/tide.toml` in this directory.
+`Sirno.lock.toml` still stores upstream pins until `.sirno/lock.toml` is actualized.
 
 ## Merge Validity
 

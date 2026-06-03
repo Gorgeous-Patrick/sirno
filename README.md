@@ -117,7 +117,7 @@ which opens an interactive setup plan. The full plan creates:
 
 - a *lake* (documentation directory)
 - `Sirno.toml` (project level configuration)
-- `Sirno.lock.toml` (project state management; don't edit or delete this)
+- `.sirno/` control files for Anchor and Tide state
 - a few wrapper skills that teach your agent how to talk to the MCP server
 
 Use `sirno init --all` to run the full setup without prompts.

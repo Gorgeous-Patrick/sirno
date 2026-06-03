@@ -34,12 +34,11 @@ flowchart LR
 
 Sirno derives open *workitems* on demand.
 It stores no worklist;
-the current implementation keeps only *tide resolutions* in `Sirno.lock.toml`,
+the current implementation keeps only *tide resolutions* in `.sirno/tide.toml`,
 each scoped to a *ripple fingerprint*.
 That binding is what reopens an obligation when its *ripple* changes again.
 
-The target design stores active review status in `.sirno/tide.toml`.
-That Tide review file is deleted after Anchor accepts the waterline.
+The Tide review file is deleted after Anchor accepts the waterline.
 
 `sirno tide status` reports the open worklist.
 It prints one table grouped by the *entry* that needs review.
