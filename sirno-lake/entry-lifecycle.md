@@ -45,7 +45,7 @@ stateDiagram-v2
     reviewed --> aligned: anchor update
     reviewed --> working: edit again
 
-    aligned --> working: edit / render / rename
+    aligned --> working: edit / mist render / rename
     aligned --> absent: delete file
 ```
 
@@ -100,7 +100,8 @@ The supported exit is to melt the entry before intentionally changing it.
 
 ## Projections And Frame Commands
 
-`sirno render` changes only Sirno-owned generated footer regions.
+`sirno mist render` changes only Sirno-owned generated footer regions in a misty lake.
+`sirno render` is shorthand for the default or active mist render.
 Those regions help readers navigate,
 but they are ignored by Anchor fingerprints.
 Authored prose and metadata are the accepted entry content.

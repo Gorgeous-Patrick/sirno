@@ -1,6 +1,6 @@
 ---
 name: Project Commands
-desc: CLI commands for project setup, storage movement, Anchor, checks, and rendering.
+desc: CLI commands for project setup, storage movement, Anchor, checks, and mist rendering.
 category:
   - concept
 belongs:
@@ -10,7 +10,7 @@ prerequisite:
 ---
 
 Project commands operate on the configured project, active lake, Anchor baseline,
-and generated footer state.
+mist projection state, and generated footer state.
 
 ## Status
 
@@ -27,7 +27,8 @@ Status reports:
 
 CLI status keeps structural policy collapsed.
 MCP status returns the effective typed structural link policy,
-including rendered directions from config and tide directions from relation entries.
+including rendered directions from the active or default mist settings
+and tide directions from relation entries.
 
 ## Setup
 
@@ -110,19 +111,20 @@ The target design moves active review status to `.sirno/tide.toml`.
 | Command | Behavior |
 |---|---|
 | `sirno check` | Checks the active lake. |
-| `sirno render` | Creates or replaces Sirno-owned generated footer regions. |
-| `sirno render -n, --dry` | Reports footer changes without writing files. |
-| `sirno render --dry-run` | Alias for `sirno render --dry`. |
-| `sirno render --override-json JSON` | Uses `[render.structural]` settings for that run only. |
-| `sirno render delete` | Removes generated footer regions. |
+| `sirno mist render [MIST]` | Creates or replaces Sirno-owned generated navigation for a misty lake. |
+| `sirno mist render -n, --dry` | Reports generated navigation changes without writing files. |
+| `sirno mist render --dry-run` | Alias for `sirno mist render --dry`. |
+| `sirno mist render --override-json JSON` | Uses temporary mist structural render settings for that run only. |
+| `sirno mist render delete` | Removes generated navigation regions from a misty lake. |
+| `sirno render ...` | Shorthand for `sirno mist render ...` on the default or active mist. |
 
 The `sirno check -m, --mode` option selects the check boundary.
-Render commands print changed paths or blocking diagnostics before their summary line.
-Render commands operate on the active lake path.
+Mist render forms print changed paths or blocking diagnostics before their summary line.
+Mist render commands operate on the selected misty lake.
 
 The override JSON uses link relation names with edge direction lists,
 such as `{"belongs":["to"]}`.
-It does not write `Sirno.toml`.
+It does not write the mist spec.
 
 ---
 

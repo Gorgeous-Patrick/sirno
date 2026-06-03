@@ -12,7 +12,7 @@ prerequisite:
 `Sirno.toml` marks a *repository* as Sirno-managed.
 
 The file configures the lake
-and the operational policies that Sirno applies to the *lake*.
+and the project-level operational policies that Sirno applies to the *lake*.
 It may also configure *repository witness* members
 and *upstream lakes*.
 Generated config files include concise comments that describe how each written field is used.
@@ -86,7 +86,7 @@ The target lock path is `.sirno/lock.toml`.
 
 `[lake].ignore` lists paths relative to the *lake* root.
 Sirno skips those paths and their descendants while reading, checking,
-querying, and rendering generated footers.
+querying, and rendering generated footers in misty lakes.
 Ignored paths are for adjacent tool state, not for *entries*.
 
 `[repo].members` lists paths and globs relative to `Sirno.toml` when repo *witnesses* are enabled.
@@ -141,16 +141,22 @@ This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
 When `[check].structural-inhabitance` is enabled,
 checks report configured relation entries that are missing or not structural.
 
-`[render.structural]` controls generated footer output.
+Generated footer structural rendering belongs to mist settings,
+not to project configuration.
+A mist spec owns `[render.structural]` for that projection.
 Each key names a configured structural relation.
 Each value is a list of rendered edge directions.
-Absent relations render no generated footer groups.
+Absent relations render no generated footer groups in that misty lake.
 
 | Edge | Generated relation |
 |---|---|
 | `to` | Links from the *entry* to metadata targets. |
 | `from` | Links from the *entry* to *entries* that name it as a metadata target. |
 | `clique` | Adds separate sections through shared targets in that relation. |
+
+Legacy `[render.structural]` data in `Sirno.toml` is compatibility input
+for the default mist until mist specs are actualized.
+It should not be treated as project-level structural meaning.
 
 Tide policy lives in structural relation entry `meta.ripple.lake` and `meta.ripple.anchor` direction lists.
 

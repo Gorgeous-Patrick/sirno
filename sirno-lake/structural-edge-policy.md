@@ -1,6 +1,6 @@
 ---
 name: Structural Link Policy
-desc: Rendering and Tide behavior for structural links.
+desc: Projection and Tide behavior for structural links.
 category:
   - concept
 belongs:
@@ -10,15 +10,14 @@ prerequisite:
   - generated-footer
 ---
 
-Structural link policy has two owners.
+Structural link policy separates relation registration, projection, and review.
 
 | Owner | Stored form | Controls |
 |---|---|---|
-| `Sirno.toml` | `[structural.FIELD].entry` | Relation registration. |
-| `Sirno.toml` | `[render.structural]` lists | Generated footer rendering. |
+| `Sirno.toml` | `[structural.FIELD].entry` | Relation registration and relation order. |
+| mist spec | `[render.structural]` lists | Generated navigation in that mist. |
 | relation entry | `meta.ripple.lake` and `meta.ripple.anchor` lists | Sirno Tide review obligations. |
 
-`Sirno.toml` also preserves relation order in `[structural.FIELD]`.
 The relation entry declares `meta.type: "structural"`.
 
 Both owners use the same edge names:
@@ -29,7 +28,9 @@ Both owners use the same edge names:
 | `from` | Follows incoming sources that name the current *entry*. |
 | `clique` | Follows entries connected through a shared target in that relation. |
 
-In `Sirno.toml`, `[render.structural]` lists rendered edge directions per relation.
+A mist spec lists rendered edge directions per relation under `[render.structural]`.
+That table belongs to projection settings,
+so different mists can render different structural surfaces.
 In relation metadata,
 edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.anchor` lists.
 Absent render and tide values are false.
@@ -43,7 +44,9 @@ entry = "refines"
 
 [structural.prerequisite]
 entry = "prerequisite"
+```
 
+```toml
 [render.structural]
 belongs = ["to", "from"]
 ```
@@ -72,9 +75,11 @@ so the tide should surface both current and former entries that point at the rip
 For `belongs`, waterline `clique` surfaces the current review neighborhood around a changed member.
 Anchor-side clique is disabled because former peer groups usually mean a deliberate neighborhood move.
 
-The clique semantics are the same for rendering and tide generation:
+The clique semantics are shared by rendering and tide generation:
 the target links to its members,
 and each member links to the target and to the other members.
+Mist settings choose whether a rendered projection uses clique.
+Relation metadata chooses whether Tide uses clique.
 
 ---
 

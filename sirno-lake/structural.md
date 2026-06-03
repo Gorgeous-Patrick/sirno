@@ -18,15 +18,16 @@ Each configured `FIELD` is the relation name.
 The subtable's `entry` value names the *entry* that documents that relation.
 Configured relations are ordinary *entry* metadata fields today,
 but Sirno treats their values as the graph that powers query, checking,
-generated footer rendering, and tide review worklists.
+mist rendering, and tide review worklists.
 
 `meta.type: "structural"` marks an *entry* as the definition of one configured relation.
 The matching relation entry documents that relation's meaning
 and carries its Tide policy in `meta.ripple.lake` and `meta.ripple.anchor`.
 The marker lets checks confirm that every configured relation has a documented owner.
 It also keeps relation behavior local to the relation entry,
-so rendering policy can live in config while review policy stays in the lake.
-`Sirno.toml` defines relation order and generated-footer rendering.
+so projection policy can live in mist settings while review policy stays in the lake.
+`Sirno.toml` defines relation order.
+Mist settings define generated-footer rendering.
 
 Structural links refer to *entries* by path.
 They are list-valued and may name several targets.
@@ -46,7 +47,8 @@ It gives the relation set one review front door while leaving each relation *ent
 to carry its own meaning and other `belongs` targets.
 
 The *repository witness* for this *entry* should show the generic structural metadata map.
-The active relation set and rendered directions are defined by `Sirno.toml`.
+The active relation set is defined by `Sirno.toml`.
+Rendered directions are defined by the active mist.
 
 ---
 

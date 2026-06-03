@@ -13,11 +13,12 @@ Sirno may generate and maintain a footer at the bottom of *entries*.
 
 The *generated footer* *entry* is the front door for generated navigation regions.
 It defines the ownership boundary.
-*Structural link policy* defines which links appear there.
+Mist render settings choose which links appear there.
+*Structural link policy* defines the shared edge names and review behavior.
 
 The footer is bounded by sentinels that state Sirno owns the region.
 Humans and tools should leave that region untouched.
-Render commands create, replace, check, or delete only that guard-bounded region.
+Mist render commands create, replace, check, or delete only that guard-bounded region.
 Malformed, missing, duplicated, or reversed sentinels are structural errors.
 Prose outside the generated-link region remains user-owned.
 
@@ -50,7 +51,7 @@ Some editors and documentation tools navigate Markdown links more naturally than
 Sirno can project selected fields into links so those tools can participate in the *lake*.
 
 The generated body is grouped by configured link relation.
-Each direction listed under `[render.structural]` appears in the region.
+Each direction listed in the active mist's structural render settings appears in the region.
 Within one relation,
 groups render in `to`, `from`, then `clique` order.
 Each group is a top-level Markdown list item,
@@ -67,14 +68,15 @@ Anchor fingerprints ignore the *generated footer*.
 The accepted baseline keeps canonical metadata and prose,
 not rendered navigation projections.
 
-The `[render.structural]` policy controls which link relations appear.
+The active mist's structural render settings control which link relations appear.
 
 `sirno check` reports stale *generated footer* regions when render checking is enabled.
-`sirno render` creates or replaces *generated footer* regions.
-`sirno render --dry` reports *generated footer* regions that would change without writing files.
-`sirno render --override-json JSON` applies temporary `[render.structural]` settings.
-The override replaces the configured settings in memory and does not update `Sirno.toml`.
-`sirno render delete` removes them.
+`sirno mist render` creates or replaces *generated footer* regions.
+`sirno render` is the top-level shorthand for the default or active mist render.
+`sirno mist render --dry` reports *generated footer* regions that would change without writing files.
+`sirno mist render --override-json JSON` applies temporary mist structural render settings.
+The override replaces the configured settings in memory and does not update the mist spec.
+`sirno mist render delete` removes them.
 The mutating commands leave prose outside the guard-bounded region under user ownership.
 `sirno rg` searches the *lake* as if those guard-bounded regions contain only whitespace.
 That keeps literal searches focused on authored metadata and prose.

@@ -49,6 +49,9 @@ so the lake and the renderer stay in sync.
 
 The comments explain use, not schema authority.
 The Rust config types and TOML parser remain the schema boundary.
+The generated-footer structural render comments are a compatibility surface
+until mist specs own render comments directly;
+the design owner for structural rendering is the mist, not `Sirno.toml`.
 
 ---
 

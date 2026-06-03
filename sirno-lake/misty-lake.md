@@ -29,9 +29,9 @@ Those edits are *mist ripples* until explicit intake writes them back into the r
 Anchor update should refuse to accept the reservoir while an editable misty lake has
 unintaken ripples, stale state, conflicts, or staged workspace files.
 
-A misty lake carries a local manifest at `.sirno/Sirno.mist.toml` inside the projection.
+A misty lake carries a local manifest at `.sirno/mist.toml` inside the projection.
 The manifest identifies the mist spec,
-records the source entry fingerprints used for rendering,
+records the source entry fingerprints and render settings used for rendering,
 and lets intake detect staleness and conflicts without relying on timestamps.
 
 All renders happen in misty lakes.

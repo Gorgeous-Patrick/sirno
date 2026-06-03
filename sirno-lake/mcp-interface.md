@@ -51,6 +51,11 @@ MCP tool names are stable snake-case names prefixed with `sirno_`:
 - tide: `sirno_tide_status`, `sirno_tide_resolve`, `sirno_tide_unresolve`,
   and `sirno_tide_reset`
 
+The target mist design moves render tools to mist ownership as `sirno_mist_render`
+and `sirno_mist_render_delete`.
+The current `sirno_lake_render` and `sirno_lake_render_delete` names are compatibility tools
+until that grouped MCP surface is actualized.
+
 MCP tools accept typed JSON arguments.
 `sirno_cwd` accepts optional `{ path }`.
 With `path`, it changes the process current working directory before returning it.

@@ -27,6 +27,8 @@ not the projected directory.
 It names what to show,
 how to lay entry addresses out,
 and whether the resulting workspace is editable.
+It also owns projection settings,
+including which structural relation edge directions render as generated navigation.
 A project can keep shared mist specs under `.sirno/mist/`.
 A user can keep local mist specs for personal or agent-specific workspaces.
 
@@ -40,6 +42,9 @@ entry address `core.design` renders as `core/design.md` inside the misty lake.
 That shape preserves the old lake browsing habit while keeping canonical storage in the reservoir.
 
 A mist may also render Sirno-owned generated navigation.
+Structural rendering belongs to the mist because it is presentation for one projection,
+not canonical lake semantics.
+Relation entries still own structural meaning and Tide review policy.
 All rendered output belongs in misty lakes,
 so the reservoir remains the authored source for entry metadata, prose, and artifacts.
 
