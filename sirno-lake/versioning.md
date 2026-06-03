@@ -21,10 +21,17 @@ An Anchor update accepts that working form by writing semantic fingerprints for 
 and their artifact trees.
 The resulting file is tracked by Git with the source changes that made the lake acceptable.
 
+The target reservoir and mist design makes the reservoir the versioned lake surface.
+Git tracks `.sirno/lake`, Sirno control files, and shared mist specs.
+Git does not track misty-lake workspace files.
+Sirno guards commits by rejecting staged misty-lake paths
+and points the user toward explicit mist intake.
+
 A version of Sirno design is therefore a Git commit that contains:
 
 - `Sirno.toml`;
 - the Sirno Lake;
+- shared mist specs when the reservoir and mist design is active;
 - `.sirno/anchor.toml`;
 - optional active `.sirno/tide.toml` review state;
 - optional `.sirno/lock.toml` or `Sirno.lock.toml` dependency pins.
@@ -38,6 +45,9 @@ Tide compares the current lake against Anchor.
 A ripple is an entry-level delta between the accepted baseline and the current waterline.
 Review status is valid only while the involved entry fingerprints and ripple fingerprints match.
 After `sirno anchor update`, the current waterline becomes the accepted baseline.
+In the target split,
+dirty, stale, conflicted, or staged misty-lake files block Anchor update
+until their edits are intaken or discarded.
 
 Entry artifacts are versioned by Git as ordinary files under the lake `.artifacts` tree.
 Anchor stores an owner artifact-tree fingerprint for entries that own artifacts.

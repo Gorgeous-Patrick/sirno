@@ -17,6 +17,12 @@ It echoes Misty Lake and recasts the project design source as a Misty Lake of Kn
 quiet enough to read,
 but structured enough that changes leave visible *ripples*.
 
+The target reservoir and mist design keeps *lake* as the conceptual entry set.
+The *reservoir* stores the canonical lake under `.sirno/lake`.
+A *mist* selects entries from that reservoir.
+A *misty lake* is the projected lake-like workspace that people and agents read,
+edit, and receive rendered output in.
+
 `Sirno.toml` records the *lake* path under `[lake].path`.
 `sirno lake move PATH` renames the configured *lake* directory
 and writes the new path back to `[lake].path`.
@@ -32,6 +38,9 @@ text first, structured enough for tools,
 and compact enough for humans and agents to inspect locally.
 Anchor records the accepted baseline for the *lake*.
 Git versions the *lake* and Anchor file together.
+In the target split,
+Anchor and Git version the reservoir,
+while misty lakes remain projected working surfaces.
 
 Each *entry* is an ordinary Markdown file with a YAML metadata block and prose body.
 The filename stem is the local *entry atom*.
@@ -73,6 +82,12 @@ An agent can query a few related *entries* before changing code.
 An editor can use *generated footers* to expose navigation.
 All of those forms use the same filenames and metadata.
 
+In the reservoir and mist design,
+that collaboration boundary moves to misty lakes.
+Humans and agents edit projected files,
+then explicit intake writes accepted edits back to the reservoir.
+All renders happen in misty lakes.
+
 The *lake* is a working form.
 Direct edits become accepted design only after review and `sirno anchor update`.
 
@@ -101,8 +116,11 @@ and where implementation evidence should be found when that evidence exists.
   - [entry](entry.md)
   - [lake-namespace](lake-namespace.md)
   - [metadata](metadata.md)
+  - [mist](mist.md)
+  - [misty-lake](misty-lake.md)
   - [query](query.md)
   - [refinement](refinement.md)
+  - [reservoir](reservoir.md)
   - [sirno-anchor](sirno-anchor.md)
   - [sirno-tide](sirno-tide.md)
   - [sirno-upstream](sirno-upstream.md)

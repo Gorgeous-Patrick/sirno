@@ -15,6 +15,11 @@ It gathers the parts that produce and bound rendered generated links:
 `generated-footer` is the guard-bounded footer Sirno projects from metadata,
 and `structural-edge-policy` chooses which structural links appear.
 
+The target reservoir and mist design makes misty lakes the render surface.
+Generated footers, generated indexes, route files, and other Sirno-owned presentation output
+are rendered into misty lakes.
+The reservoir remains the authored source for metadata, prose, and artifacts.
+
 These parts are reviewed together.
 A change to footer rendering, ownership boundaries, or structural link policy
 usually constrains the others, so this *entry* gives them one neighborhood.
@@ -32,6 +37,7 @@ This neighborhood is the separate horizontal view:
   - [structural](structural.md)
 - belongs (from):
   - [generated-footer](generated-footer.md)
+  - [misty-lake](misty-lake.md)
   - [structural-edge-policy](structural-edge-policy.md)
 
 > **Sirno generated links end.**

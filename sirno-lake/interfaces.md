@@ -56,6 +56,7 @@ It should change this entry only when the interface-surface model itself changes
   - [entry-commands](entry-commands.md)
   - [extension-system](extension-system.md)
   - [mcp-interface](mcp-interface.md)
+  - [mist](mist.md)
   - [project-commands](project-commands.md)
   - [sirno-anchor](sirno-anchor.md)
   - [spell-invocation](spell-invocation.md)

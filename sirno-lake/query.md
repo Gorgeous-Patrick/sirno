@@ -20,6 +20,11 @@ not structural input to query.
 When no version is supplied,
 query reads the lake.
 
+The target mist design strengthens query into the shared selector mechanism.
+`sirno query` prints selected entries.
+A *mist* uses the same selector to render selected reservoir entries into a *misty lake*.
+Filters and projection should not become separate languages.
+
 The default query mode is vague text query.
 It matches an *entry*'s address, local atom, name, desc, and body.
 It also matches the paths, names, and `desc` values of *entries* named by structural links.
