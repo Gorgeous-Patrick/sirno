@@ -447,6 +447,32 @@ mod tests {
     #[test]
     fn anchor_from_report_records_structural_fields() {
         let temp = tempfile::tempdir().unwrap();
+        fs::write(
+            temp.path().join("name.md"),
+            "\
+---
+name: Name
+desc: The required plain-string title field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            temp.path().join("desc.md"),
+            "\
+---
+name: Description
+desc: The required plain-string summary field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
         let entry_path = temp.path().join("alpha.md");
         fs::write(
             entry_path,
@@ -489,6 +515,7 @@ Body.
                 &crate::EntryDirectoryCheckSettings {
                     render: false,
                     structural_render: Default::default(),
+                    meta_path: None,
                     ignore: Vec::new(),
                     witness: None,
                 },

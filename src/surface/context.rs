@@ -227,18 +227,21 @@ impl SurfaceContext {
     // sirno:witness:mcp-interface:begin
     /// Read one Sirno Lake Markdown entry and return its parsed body and stored source.
     pub fn entry_read(&self, id: EntryAddress) -> Result<EntryReadResult, CommandError> {
-        let config = SirnoConfig::from_file(&self.config_path)?;
-        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let (lake, mut settings) =
+            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.render = false;
+        settings.witness = None;
         let directory = EntryDirectory::new(&lake);
         let path = directory.entry_file_path(&id);
         let source = directory.read_entry_source(&id)?;
-        let entry = Entry::from_markdown(id.clone(), &source)?;
+        let report = directory.check_with_settings(CheckMode::Edit, &settings)?;
+        let entry = Entry::from_markdown_with_registry(id.clone(), &source, report.meta())?;
         Ok(EntryReadResult {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
-            name: entry.metadata.name,
-            desc: entry.metadata.desc,
+            name: entry.metadata.name().to_owned(),
+            desc: entry.metadata.desc().to_owned(),
             body: entry.body,
             source,
             message: format!("read entry {id} from {}", path.display()),
@@ -938,7 +941,7 @@ impl SurfaceContext {
     fn charm_record(&self, config: &SirnoConfig, bundle: &CharmBundle) -> CharmRecord {
         CharmRecord {
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name.clone(),
+            name: bundle.entry.metadata.name().to_owned(),
             enabled: config.charm.contains(&bundle.entry.id),
             kind: bundle.kind_label().to_owned(),
             manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
@@ -949,7 +952,7 @@ impl SurfaceContext {
         CharmShowResult {
             ok: true,
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name.clone(),
+            name: bundle.entry.metadata.name().to_owned(),
             enabled: config.charm.contains(&bundle.entry.id),
             kind: bundle.kind_label().to_owned(),
             manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
@@ -966,7 +969,7 @@ impl SurfaceContext {
     fn spell_record(&self, bundle: &CharmBundle) -> SpellRecord {
         SpellRecord {
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name.clone(),
+            name: bundle.entry.metadata.name().to_owned(),
             kind: bundle.kind_label().to_owned(),
             spell_cache_path: display_path(&self.spell_cache_path(bundle)),
         }
@@ -2215,7 +2218,7 @@ fn entry_without_generated_links(entry: &Entry) -> Result<Entry, CommandError> {
 fn entry_source_without_generated_links(
     id: &EntryAddress, source: &str,
 ) -> Result<String, CommandError> {
-    let entry = Entry::from_markdown(id.clone(), source)?;
+    let entry = crate::RawEntry::from_markdown(id.clone(), source)?;
     let body = remove_generated_footer_divider(&GeneratedLinkBody::new(&entry.body).delete()?);
     Ok(Entry::replace_markdown_body(source, &body)?)
 }
@@ -2304,8 +2307,16 @@ fn mist_status_for(
         let projected_clean = entry_source_without_generated_links(&id, &projected_source)?;
         let reservoir_source = reservoir.read_entry_source(&id)?;
         let reservoir_clean = entry_source_without_generated_links(&id, &reservoir_source)?;
-        let projected_entry = Entry::from_markdown(id.clone(), &projected_clean)?;
-        let reservoir_entry = Entry::from_markdown(id.clone(), &reservoir_clean)?;
+        let projected_entry = Entry::from_markdown_with_registry(
+            id.clone(),
+            &projected_clean,
+            reservoir_report.meta(),
+        )?;
+        let reservoir_entry = Entry::from_markdown_with_registry(
+            id.clone(),
+            &reservoir_clean,
+            reservoir_report.meta(),
+        )?;
         if projected_entry != reservoir_entry {
             changed_entries.push(id.to_string());
         }
@@ -2512,6 +2523,7 @@ fn entry_directory_check_settings(
     Ok(EntryDirectoryCheckSettings {
         render: false,
         structural_render: Default::default(),
+        meta_path: Some(meta_file_path_for_config(config_path)),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
     })
@@ -2523,9 +2535,14 @@ fn projection_check_settings(
     EntryDirectoryCheckSettings {
         render: config.check.render_enabled(),
         structural_render: mist.render.structural.clone(),
+        meta_path: None,
         ignore: projection_ignore_paths(config),
         witness: witness_check_settings(config_path, config),
     }
+}
+
+fn meta_file_path_for_config(config_path: &Path) -> PathBuf {
+    config_parent(config_path).join(SIRNO_CONTROL_DIR_NAME).join(crate::META_FILE_NAME)
 }
 
 fn projection_ignore_paths(config: &SirnoConfig) -> Vec<PathBuf> {

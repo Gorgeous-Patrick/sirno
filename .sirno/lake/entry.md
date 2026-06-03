@@ -30,11 +30,10 @@ Each atom can use at most 252 UTF-8 bytes,
 so the final `.md` filename stays inside common component limits.
 
 Each *entry* has a YAML metadata block and a prose body.
-The required metadata fields are `name` and `desc`.
-The `name` and `desc` *entries* define those fields
-with `meta.type: "intrinsic"`.
+The required metadata fields are discovered from intrinsic field entries.
+This lake defines `name` and `desc` with `meta.type: "intrinsic"`.
 This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
-The active structural link relation set is configured in `Sirno.toml`.
+The active structural link relation set is discovered from structural relation entries.
 The `meta.frozen` field stores protection reasons such as `reviewed` and `managed`.
 `sirno freeze ENTRY_ADDRESS` adds `reviewed`.
 Crystallization adds `managed`.

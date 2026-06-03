@@ -1,4 +1,5 @@
 /target/
 /sirno-lake/
+.sirno/meta.toml
 _*/
 result

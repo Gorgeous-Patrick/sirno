@@ -20,8 +20,8 @@ Structural checks cover these areas:
 | metadata shape | Required fields and accepted field shapes. |
 | structural targets | References through fields with structural relation entries. |
 | relation entries | `meta.type: "structural"` entries use valid relation field names. |
-| intrinsic entries | `name` and `desc` carry `meta.type: "intrinsic"` when present. |
-| intrinsic markers | Only `name` and `desc` carry `meta.type: "intrinsic"`. |
+| intrinsic entries | `meta.type: "intrinsic"` entries use valid intrinsic field names. |
+| meta registry | Raw metadata scan finds intrinsic and structural field entries. |
 | category targets | Entries used as category targets include `category: category`. |
 | generated footers | Sirno-owned footer boundaries and freshness. |
 | witnesses | Configured witness lookup validity when requested. |
@@ -44,7 +44,7 @@ Edit and review modes use different severity boundaries:
 | dangling structural link target | warning | error |
 | list-valued metadata without a structural relation entry | warning | warning |
 | invalid structural relation field name | warning | error |
-| intrinsic-field `meta.type` mismatch | warning | error |
+| invalid intrinsic field name | warning | error |
 
 Checks keep local movement fast while making review boundaries strict.
 They do not decide whether prose is true or whether code satisfies a claim.
@@ -58,6 +58,8 @@ because the *lake* is being treated as a coherent design form.
 File checks keep the Sirno Lake shape predictable.
 An *entry* directory contains Markdown *entry* files with valid ids.
 Each file starts with accepted frontmatter.
+The first load phase scans raw frontmatter for `meta.type`.
+The second phase parses entries with the generated meta registry.
 Files may use LF or CRLF line endings.
 Mixed LF and CRLF line endings warn,
 because a file should keep one line-ending style even when Sirno can still parse it.
@@ -72,10 +74,10 @@ that target should exist by the time the *lake* is reviewed.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
 
-Intrinsic metadata field entries keep Sirno's built-in entry shape self-described.
-The checker accepts `meta.type: "intrinsic"` only for the `name` and `desc` entries.
-Those entries are stored and versioned like ordinary entries,
-but their type marker binds them to fields the entry parser always requires.
+Intrinsic metadata field entries keep Sirno's required entry shape self-described.
+The checker accepts `meta.type: "intrinsic"` on entries with valid intrinsic field names.
+The raw scan registers those entries before typed parsing.
+Their type marker binds them to fields the entry parser requires.
 
 Category target checks keep kind vocabulary explicit.
 An *entry* that appears in another *entry*'s `category` list is a category target.

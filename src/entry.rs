@@ -12,6 +12,7 @@ use serde_yaml::{Mapping, Value};
 use thiserror::Error;
 
 use crate::identifier::{EntryAddress, EntryAddressError};
+use crate::meta::MetaRegistry;
 use crate::structural::{StructuralEdgeDirection, StructuralTideSettings};
 
 pub const NAME_FIELD: &str = "name";
@@ -59,9 +60,14 @@ impl Entry {
     pub fn from_markdown(
         id: impl Into<EntryAddress>, source: &str,
     ) -> Result<Self, EntryParseError> {
-        let (metadata_source, body) = split_frontmatter(source)?;
-        let metadata = EntryMetadata::from_yaml_source(metadata_source)?;
-        Ok(Self::new(id, metadata, body))
+        Self::from_markdown_with_registry(id, source, &MetaRegistry::standard())
+    }
+
+    /// Parse an entry from Markdown source with a discovered meta registry.
+    pub fn from_markdown_with_registry(
+        id: impl Into<EntryAddress>, source: &str, registry: &MetaRegistry,
+    ) -> Result<Self, EntryParseError> {
+        RawEntry::from_markdown(id, source)?.into_entry(registry)
     }
     // sirno:witness:entry:end
 
@@ -157,20 +163,68 @@ impl Entry {
     }
 }
 
+/// Raw entry frontmatter and body before typed metadata resolution.
+///
+/// This form parses only the Markdown and YAML container shape.
+/// It lets Sirno discover meta-level declarations before typed entry parsing.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RawEntry {
+    /// Lookup path for this entry.
+    pub id: EntryAddress,
+    metadata: Mapping,
+    /// Markdown body after the metadata block.
+    pub body: String,
+}
+
+impl RawEntry {
+    /// Parse raw entry frontmatter and body.
+    pub fn from_markdown(
+        id: impl Into<EntryAddress>, source: &str,
+    ) -> Result<Self, EntryParseError> {
+        let (metadata_source, body) = split_frontmatter(source)?;
+        let metadata = parse_metadata_mapping(metadata_source)?;
+        Ok(Self { id: id.into(), metadata, body })
+    }
+
+    /// Return the flat `meta.type` value when it is present and valid.
+    pub fn meta_type(&self) -> Result<Option<EntryMetaType>, EntryParseError> {
+        parse_flat_meta_type_value(self.metadata.get(Value::String(META_TYPE_FIELD.to_owned())))
+    }
+
+    /// Return Sirno-managed metadata without resolving intrinsic or structural fields.
+    pub fn entry_meta(&self) -> Result<EntryMeta, EntryParseError> {
+        let mut mapping = self.metadata.clone();
+        if mapping.contains_key(Value::String(FROZEN_FIELD.to_owned())) {
+            return Err(EntryParseError::TopLevelFrozenMarker);
+        }
+        let mut meta = take_entry_meta(&mut mapping)?;
+        meta.entry_type = take_flat_meta_type(&mut mapping)?;
+        meta.tide = take_flat_structural_tide_settings(&mut mapping, meta.entry_type)?;
+        Ok(meta)
+    }
+
+    /// Convert this raw entry into typed entry data using discovered meta knowledge.
+    pub fn into_entry(self, registry: &MetaRegistry) -> Result<Entry, EntryParseError> {
+        let metadata = EntryMetadata::from_mapping(self.metadata, registry)?;
+        Ok(Entry::new(self.id, metadata, self.body))
+    }
+}
+
 /// Ordered structural link metadata for one entry.
 pub type EntryStructuralFields = IndexMap<String, Vec<EntryAddress>>;
 
+/// Ordered intrinsic metadata fields for one entry.
+pub type EntryIntrinsicFields = IndexMap<String, String>;
+
 /// Metadata for one Sirno entry.
 ///
-/// Invariant: `name` and `desc` are single-line plain strings.
+/// Invariant: intrinsic values are single-line plain strings.
 /// `meta` carries Sirno-managed optional metadata.
 /// Structural links map relation names to entry-path targets.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntryMetadata {
-    /// Human-readable entry name.
-    pub name: String,
-    /// Short prose summary of the entry.
-    pub desc: String,
+    /// Intrinsic metadata fields keyed by their Markdown field name.
+    pub intrinsic: EntryIntrinsicFields,
     /// Sirno-managed metadata fields.
     pub meta: EntryMeta,
     // sirno:witness:structural:begin
@@ -190,28 +244,36 @@ impl EntryMetadata {
         let desc = desc.into();
         validate_plain_string(NAME_FIELD, &name)?;
         validate_plain_string(DESC_FIELD, &desc)?;
-        Ok(Self {
-            name,
-            desc,
-            meta: EntryMeta::default(),
-            structural: EntryStructuralFields::new(),
-        })
+        let mut intrinsic = EntryIntrinsicFields::new();
+        intrinsic.insert(NAME_FIELD.to_owned(), name);
+        intrinsic.insert(DESC_FIELD.to_owned(), desc);
+        Ok(Self { intrinsic, meta: EntryMeta::default(), structural: EntryStructuralFields::new() })
     }
     // sirno:witness:metadata:end
 
     /// Parse metadata from YAML source without surrounding `---` sentinels.
     // sirno:witness:metadata:begin
     pub fn from_yaml_source(source: &str) -> Result<Self, EntryParseError> {
-        let value: Value = serde_yaml::from_str(source).map_err(EntryParseError::Yaml)?;
-        let mut mapping = match value {
-            | Value::Mapping(mapping) => mapping,
-            | _ => return Err(EntryParseError::MetadataMustBeMapping),
-        };
+        Self::from_yaml_source_with_registry(source, &MetaRegistry::standard())
+    }
 
-        let name = take_required_string(&mut mapping, NAME_FIELD)?;
-        let desc = take_required_string(&mut mapping, DESC_FIELD)?;
-        validate_plain_string(NAME_FIELD, &name)?;
-        validate_plain_string(DESC_FIELD, &desc)?;
+    /// Parse metadata from YAML source with a discovered meta registry.
+    pub fn from_yaml_source_with_registry(
+        source: &str, registry: &MetaRegistry,
+    ) -> Result<Self, EntryParseError> {
+        let mapping = parse_metadata_mapping(source)?;
+        Self::from_mapping(mapping, registry)
+    }
+
+    pub(crate) fn from_mapping(
+        mut mapping: Mapping, registry: &MetaRegistry,
+    ) -> Result<Self, EntryParseError> {
+        let mut intrinsic = EntryIntrinsicFields::new();
+        for (field, _) in registry.intrinsic_fields() {
+            let value = take_required_string(&mut mapping, field)?;
+            validate_plain_string(field, &value)?;
+            intrinsic.insert(field.to_owned(), value);
+        }
 
         if mapping.contains_key(Value::String(FROZEN_FIELD.to_owned())) {
             return Err(EntryParseError::TopLevelFrozenMarker);
@@ -221,19 +283,21 @@ impl EntryMetadata {
         meta.tide = take_flat_structural_tide_settings(&mut mapping, meta.entry_type)?;
         let structural = take_structural_fields(mapping)?;
 
-        Ok(Self { name, desc, meta, structural })
+        Ok(Self { intrinsic, meta, structural })
     }
     // sirno:witness:metadata:end
 
     /// Render this metadata block to canonical YAML source.
     // sirno:witness:metadata:begin
     pub fn to_yaml_source(&self) -> Result<String, EntryRenderError> {
-        validate_plain_string(NAME_FIELD, &self.name)?;
-        validate_plain_string(DESC_FIELD, &self.desc)?;
+        for (field, value) in &self.intrinsic {
+            validate_plain_string(field, value)?;
+        }
 
         let mut out = String::new();
-        out.push_str(&format!("name: {}\n", render_yaml_scalar(&self.name)?));
-        out.push_str(&format!("desc: {}\n", render_yaml_scalar(&self.desc)?));
+        for (field, value) in &self.intrinsic {
+            out.push_str(&format!("{field}: {}\n", render_yaml_scalar(value)?));
+        }
         render_entry_meta(&mut out, &self.meta);
         render_structural_fields(&mut out, &self.structural)?;
         Ok(out)
@@ -272,6 +336,26 @@ impl EntryMetadata {
         &mut self, field: impl Into<String>,
     ) -> &mut Vec<EntryAddress> {
         self.structural.entry(field.into()).or_default()
+    }
+
+    /// Return one intrinsic metadata value.
+    pub fn intrinsic_field(&self, field: &str) -> Option<&str> {
+        self.intrinsic.get(field).map(String::as_str)
+    }
+
+    /// Iterate intrinsic metadata fields in stored order.
+    pub fn intrinsic_fields(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.intrinsic.iter().map(|(field, value)| (field.as_str(), value.as_str()))
+    }
+
+    /// Human-readable entry name used by current Sirno surfaces.
+    pub fn name(&self) -> &str {
+        self.intrinsic_field(NAME_FIELD).unwrap_or("")
+    }
+
+    /// Short prose summary used by current Sirno surfaces.
+    pub fn desc(&self) -> &str {
+        self.intrinsic_field(DESC_FIELD).unwrap_or("")
     }
 
     /// Set the targets for one link relation.
@@ -568,15 +652,21 @@ fn line_ending(line: &str) -> Option<LineEnding> {
     }
 }
 
-fn take_required_string(
-    mapping: &mut Mapping, field: &'static str,
-) -> Result<String, EntryParseError> {
+fn parse_metadata_mapping(source: &str) -> Result<Mapping, EntryParseError> {
+    let value: Value = serde_yaml::from_str(source).map_err(EntryParseError::Yaml)?;
+    match value {
+        | Value::Mapping(mapping) => Ok(mapping),
+        | _ => Err(EntryParseError::MetadataMustBeMapping),
+    }
+}
+
+fn take_required_string(mapping: &mut Mapping, field: &str) -> Result<String, EntryParseError> {
     let value = mapping
         .shift_remove(Value::String(field.to_owned()))
-        .ok_or(EntryParseError::MissingField(field))?;
+        .ok_or_else(|| EntryParseError::MissingField(field.to_owned()))?;
     match value {
         | Value::String(value) => Ok(value),
-        | _ => Err(EntryParseError::FieldMustBeString(field)),
+        | _ => Err(EntryParseError::FieldMustBeString(field.to_owned())),
     }
 }
 
@@ -637,9 +727,20 @@ fn take_flat_meta_type(mapping: &mut Mapping) -> Result<Option<EntryMetaType>, E
     let Some(value) = mapping.shift_remove(Value::String(META_TYPE_FIELD.to_owned())) else {
         return Ok(None);
     };
+    parse_flat_meta_type_value(Some(&value))
+}
+
+fn parse_flat_meta_type_value(
+    value: Option<&Value>,
+) -> Result<Option<EntryMetaType>, EntryParseError> {
     match value {
-        | Value::String(raw) if raw == STRUCTURAL_META_TYPE => Ok(Some(EntryMetaType::Structural)),
-        | Value::String(raw) if raw == INTRINSIC_META_TYPE => Ok(Some(EntryMetaType::Intrinsic)),
+        | None => Ok(None),
+        | Some(Value::String(raw)) if raw == STRUCTURAL_META_TYPE => {
+            Ok(Some(EntryMetaType::Structural))
+        }
+        | Some(Value::String(raw)) if raw == INTRINSIC_META_TYPE => {
+            Ok(Some(EntryMetaType::Intrinsic))
+        }
         | _ => Err(EntryParseError::InvalidMetaType),
     }
 }
@@ -754,9 +855,9 @@ fn parse_frozen_marker_value(value: Value) -> Result<FrozenMarker, EntryParseErr
     Ok(FrozenMarker { reasons })
 }
 
-fn validate_plain_string(field: &'static str, value: &str) -> Result<(), EntryParseError> {
+fn validate_plain_string(field: &str, value: &str) -> Result<(), EntryParseError> {
     if value.contains('\n') || value.contains('\r') {
-        return Err(EntryParseError::FieldMustBePlainString(field));
+        return Err(EntryParseError::FieldMustBePlainString(field.to_owned()));
     }
     Ok(())
 }
@@ -908,13 +1009,13 @@ pub enum EntryParseError {
     StructuralTideWithoutType(String),
     /// A required field is absent.
     #[error("missing required metadata field `{0}`")]
-    MissingField(&'static str),
+    MissingField(String),
     /// A required string field has another YAML type.
     #[error("metadata field `{0}` must be a string")]
-    FieldMustBeString(&'static str),
+    FieldMustBeString(String),
     /// A string field is not a single-line plain string.
     #[error("metadata field `{0}` must be a single-line plain string")]
-    FieldMustBePlainString(&'static str),
+    FieldMustBePlainString(String),
     /// A structural link relation is not a YAML list.
     #[error("metadata field `{0}` must be a list")]
     FieldMustBeList(String),
@@ -976,7 +1077,7 @@ Body.
 ";
 
         let entry = Entry::from_markdown(entry_id(), source).unwrap();
-        assert_eq!(entry.metadata.name, "Witness");
+        assert_eq!(entry.metadata.name(), "Witness");
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
             &[EntryAddress::new("concept").unwrap()]
@@ -999,7 +1100,7 @@ Body.
 
         let entry = Entry::from_markdown(entry_id(), source).unwrap();
 
-        assert_eq!(entry.metadata.name, "Witness");
+        assert_eq!(entry.metadata.name(), "Witness");
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
             &[EntryAddress::new("concept").unwrap()]

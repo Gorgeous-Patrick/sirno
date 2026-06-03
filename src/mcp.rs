@@ -1046,6 +1046,7 @@ mod tests {
         let docs = root.join("docs");
         SirnoConfig::new("docs").write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
+        write_intrinsic_entries(&docs);
         fs::write(
             docs.join("alpha.md"),
             "\
@@ -1073,6 +1074,7 @@ Body.
         .unwrap();
         fs::create_dir(&docs).unwrap();
         fs::create_dir(&src).unwrap();
+        write_intrinsic_entries(&docs);
         fs::write(
             docs.join("alpha.md"),
             "\
@@ -1105,6 +1107,7 @@ Body.
         let config = SirnoConfig::new("docs");
         config.write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
+        write_intrinsic_entries(&docs);
         fs::write(
             docs.join("alpha.md"),
             "\
@@ -1160,6 +1163,35 @@ Changed body.
         )
         .unwrap();
         config_path
+    }
+
+    fn write_intrinsic_entries(docs: &Path) {
+        fs::write(
+            docs.join("name.md"),
+            "\
+---
+name: Name
+desc: The required plain-string title field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            docs.join("desc.md"),
+            "\
+---
+name: Description
+desc: The required plain-string summary field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
     }
 
     fn structured(result: &CallToolResult) -> &serde_json::Value {
@@ -1433,7 +1465,7 @@ Changed body.
 
         let status = result.structured_content.as_ref().unwrap();
         assert_eq!(status["ok"], true);
-        assert_eq!(status["entry_count"], 1);
+        assert_eq!(status["entry_count"], 3);
         assert_eq!(status["check_policy"]["mode"], "review");
         assert!(status.get("anchor").is_none());
 

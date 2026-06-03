@@ -33,8 +33,7 @@ The notes are scaffolding for the route; the input is what becomes the file.
 
 The contract holds these invariants.
 The entry address uses lowercase kebab-case atoms.
-`name`, `desc`, `meta`, and `frozen` are reserved metadata
-and are never written as structural links.
+Intrinsic fields and Sirno-managed `meta` fields are never written as structural links.
 Structural links are written exactly as supplied, in the order given,
 because their order is user-managed and Sirno renders configured surfaces in that order.
 Empty fields are omitted, and `witness:` is added only when repository evidence exists.

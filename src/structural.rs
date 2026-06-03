@@ -11,8 +11,9 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
-use crate::entry::{DESC_FIELD, Entry, FROZEN_FIELD, META_FIELD, NAME_FIELD};
+use crate::entry::Entry;
 use crate::identifier::EntryAddress;
+use crate::meta::{MetaFieldNameError, validate_meta_field_name};
 
 fn is_false(value: &bool) -> bool {
     !*value
@@ -554,11 +555,11 @@ impl StructuralSettings {
 
 /// Validate a metadata key used as a structural relation name.
 pub fn validate_structural_field_name(field: &str) -> Result<(), StructuralFieldNameError> {
-    if field.is_empty() || field.contains('\n') || field.contains('\r') || field.contains(',') {
-        return Err(StructuralFieldNameError::Invalid(field.to_owned()));
-    }
-    if matches!(field, NAME_FIELD | DESC_FIELD | META_FIELD | FROZEN_FIELD) {
-        return Err(StructuralFieldNameError::Reserved(field.to_owned()));
+    if let Err(error) = validate_meta_field_name(field) {
+        return match error {
+            | MetaFieldNameError::Invalid(field) => Err(StructuralFieldNameError::Invalid(field)),
+            | MetaFieldNameError::Reserved(field) => Err(StructuralFieldNameError::Reserved(field)),
+        };
     }
     Ok(())
 }
@@ -569,7 +570,7 @@ pub enum StructuralFieldNameError {
     /// The field is empty, multiline, or contains a forbidden separator.
     #[error("structural relation name must be a non-empty single-line metadata key: {0}")]
     Invalid(String),
-    /// The field belongs to required or managed metadata.
+    /// The field belongs to managed metadata.
     #[error("structural relation name is reserved for Sirno metadata: {0}")]
     Reserved(String),
 }

@@ -14,14 +14,15 @@ prerequisite:
 
 It is optional for ordinary entries.
 When present,
-it tells Sirno that the entry defines a schema-level role rather than only project prose.
+the raw meta-registry scan treats the entry as a schema-level definition.
 
 The current values are documented by their role entries:
 
 | Value | Role entry | Meaning |
 |---|---|---|
-| `intrinsic` | `intrinsic` | The entry defines a required built-in metadata field. |
+| `intrinsic` | `intrinsic` | The entry defines a required intrinsic metadata field. |
 | `structural` | `structural` | The entry defines a structural link relation. |
 
 The role entries document the allowed carriers for each marker.
 They keep the compact metadata table readable while giving each marker a stable review target.
+The generated `meta-registry` records the discovered carriers for typed parsing.

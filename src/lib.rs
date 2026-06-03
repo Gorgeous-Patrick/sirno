@@ -16,6 +16,7 @@ pub mod freeze;
 pub mod identifier;
 pub mod lake;
 pub mod mcp;
+pub mod meta;
 pub mod mist;
 pub mod query;
 pub mod render;
@@ -44,8 +45,9 @@ pub use crate::config::{
     UpstreamSettingsMap, WitnessDelimiterSettings, WitnessSettings,
 };
 pub use crate::entry::{
-    DESC_FIELD, Entry, EntryMeta, EntryMetaType, EntryMetadata, EntryParseError,
-    EntryStructuralFields, FROZEN_FIELD, FrozenMarker, META_FIELD, NAME_FIELD,
+    DESC_FIELD, Entry, EntryIntrinsicFields, EntryMeta, EntryMetaType, EntryMetadata,
+    EntryParseError, EntryStructuralFields, FROZEN_FIELD, FrozenMarker, META_FIELD, NAME_FIELD,
+    RawEntry,
 };
 pub use crate::freeze::{FreezeError, FrozenPath};
 pub use crate::identifier::{EntryAddress, EntryAddressError, EntryAtom, EntryAtomError};
@@ -53,6 +55,10 @@ pub use crate::lake::{
     EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError, EntryDirectoryReport,
     EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
     GlacierReport,
+};
+pub use crate::meta::{
+    IntrinsicFieldMap, META_FILE_NAME, META_FILE_SCHEMA, MetaFieldNameError, MetaFieldRecord,
+    MetaFile, MetaRegistry, MetaRegistryError,
 };
 pub use crate::mist::{
     DEFAULT_MIST_PROJECTION_PATH, MIST_MANIFEST_FILE_NAME, MIST_MANIFEST_SCHEMA,

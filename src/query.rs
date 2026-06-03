@@ -202,7 +202,7 @@ impl VagueEntryQuery {
 
 impl Entry {
     fn query_text(&self) -> String {
-        format!("{}\n{}\n{}\n{}", self.id, self.metadata.name, self.metadata.desc, self.body)
+        format!("{}\n{}\n{}\n{}", self.id, self.metadata.name(), self.metadata.desc(), self.body)
             .to_lowercase()
     }
 
@@ -213,9 +213,9 @@ impl Entry {
             text.push_str(target.as_str());
             if let Some(target_entry) = entries_by_id.get(target) {
                 text.push('\n');
-                text.push_str(&target_entry.metadata.name);
+                text.push_str(target_entry.metadata.name());
                 text.push('\n');
-                text.push_str(&target_entry.metadata.desc);
+                text.push_str(target_entry.metadata.desc());
             }
         }
         text.to_lowercase()

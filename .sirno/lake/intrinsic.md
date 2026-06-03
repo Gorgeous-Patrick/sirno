@@ -1,6 +1,6 @@
 ---
 name: Intrinsic
-desc: The meta.type value for entries that define required built-in metadata fields.
+desc: The meta.type value for entries that define required intrinsic metadata fields.
 category:
   - concept
   - meta
@@ -10,17 +10,16 @@ prerequisite:
   - meta-type
 ---
 
-`meta.type: "intrinsic"` is the `meta.type` value for built-in metadata fields.
+`meta.type: "intrinsic"` is the `meta.type` value for intrinsic metadata fields.
 It marks an *entry* as the definition of one required field.
 
-The valid intrinsic field entries are `name` and `desc`.
-Those fields are required on every *entry*,
-and their values are plain strings.
+Sirno discovers intrinsic fields during the raw meta-registry scan.
+Each discovered intrinsic field is required on every typed *entry*,
+and its value is a plain string.
 
-The marker keeps Sirno's built-in entry shape self-described in the lake.
-The fields are still ordinary entries,
+This lake currently defines `name` and `desc` as intrinsic fields.
+They are ordinary entries,
 so their meaning can be read, queried, reviewed, and versioned beside project-specific entries.
 
-Only `name` and `desc` may carry this marker.
-If another entry carries `meta.type: "intrinsic"`,
-Sirno reports that mismatch during checks.
+Intrinsic field names use the same metadata-key validity rules as other meta-level fields.
+Sirno reports invalid intrinsic field names during checks.

@@ -81,6 +81,8 @@ A destination inside the moved path is handled through temporary staging.
 It pins each upstream to the exact Git commit crystallized into the glacier.
 Anchor state belongs in `.sirno/anchor.toml`.
 Active Tide resolutions belong in `.sirno/tide.toml`.
+The generated meta registry belongs in `.sirno/meta.toml`.
+It is disposable and rewritten on each project lake load.
 
 `[lake].ignore` lists paths relative to the reservoir root.
 Sirno skips those paths and their descendants while reading, checking,
@@ -122,9 +124,9 @@ Sirno shows enabled tutorials after matching recoverable command failures.
 `[tutorial].anchor_bootstrap_tide` adds first-anchor context to that tutorial.
 Removing the table silences all tutorial text.
 
-`Sirno.toml` does not store structural link relation registration.
-Sirno discovers structural relations from lake entries that define `meta.type: "structural"`.
-The relation entry address is the metadata field name.
+`Sirno.toml` does not store intrinsic or structural field registration.
+Sirno discovers both from lake entries that define `meta.type`.
+An intrinsic or structural entry address is the metadata field name.
 Structural relation order is entry-address order.
 
 Generated footer structural rendering belongs to mist settings,

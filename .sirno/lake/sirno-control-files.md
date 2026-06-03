@@ -1,6 +1,6 @@
 ---
 name: Sirno Control Files
-desc: The tracked Sirno-owned TOML files stored under .sirno.
+desc: The Sirno-owned TOML files stored under .sirno.
 category:
   - concept
   - proposal
@@ -16,7 +16,7 @@ refines:
   - storage
 ---
 
-Sirno control files are tracked TOML files under `.sirno/` next to `Sirno.toml`.
+Sirno control files are TOML files under `.sirno/` next to `Sirno.toml`.
 They store generated or semi-generated project state.
 
 `Sirno.toml` stays at the repository root because it marks the project
@@ -30,12 +30,17 @@ The target control directory is:
 ```text
 .sirno/
   anchor.toml
+  meta.toml
   tide.toml
   upstream.toml
 ```
 
 `.sirno/anchor.toml` records the accepted lake baseline.
 It exists after the first successful Anchor update.
+
+`.sirno/meta.toml` records the generated meta registry for the current lake.
+It is disposable and ignored by Git.
+Sirno rewrites it from raw entry metadata on each project lake load.
 
 `.sirno/tide.toml` records active Tide review status for the current diff.
 It exists only while review status must survive across commands or Git operations.
@@ -44,11 +49,12 @@ Anchor update deletes it after accepting the waterline.
 `.sirno/upstream.toml` records external upstream dependency pins.
 It exists only when the project has shared upstream pins.
 
-The current implementation stores Anchor, Tide, and upstream control state in this directory.
+The current implementation stores Anchor, meta registry, Tide, and upstream control state
+in this directory.
 
 ## Merge Validity
 
-Sirno control files are tracked by Git,
+Tracked Sirno control files are tracked by Git,
 so merges, rebases, cherry-picks, and conflict resolution may touch them.
 Sirno should install merge drivers for the target files:
 

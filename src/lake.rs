@@ -20,11 +20,12 @@ use crate::artifact::{
 };
 use crate::check::{CheckMode, CheckReport, CheckSeverity};
 use crate::entry::{
-    Entry, EntryParseError, EntryRenderError, FrozenMarker, has_mixed_line_endings,
+    Entry, EntryParseError, EntryRenderError, FrozenMarker, RawEntry, has_mixed_line_endings,
 };
 use crate::freeze::FrozenPath;
 use crate::identifier::EntryAtom;
 use crate::identifier::{EntryAddress, EntryAddressError};
+use crate::meta::{MetaRegistry, MetaRegistryError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{StructuralEdgeIndex, StructuralRenderSettings, StructuralSettings};
 use crate::witness::{WitnessCheckSettings, WitnessError};
@@ -55,6 +56,7 @@ pub struct EntryDirectoryReport {
     paths_by_address: BTreeMap<EntryAddress, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
+    meta: MetaRegistry,
     structural: StructuralSettings,
 }
 // sirno:witness:sirno-lake:end
@@ -67,6 +69,8 @@ pub struct EntryDirectoryCheckSettings {
     pub render: bool,
     /// Generated-footer render policy for discovered structural relations.
     pub structural_render: StructuralRenderSettings,
+    /// Path for the generated disposable meta registry.
+    pub meta_path: Option<PathBuf>,
     /// Lake-root-relative paths ignored by Sirno.
     pub ignore: Vec<PathBuf>,
     /// Repository witness scan settings.
@@ -79,6 +83,7 @@ impl Default for EntryDirectoryCheckSettings {
         Self {
             render: true,
             structural_render: StructuralRenderSettings::default(),
+            meta_path: None,
             ignore: Vec::new(),
             witness: None,
         }
@@ -121,6 +126,11 @@ impl EntryDirectoryReport {
     /// Structural check report for successfully parsed entries.
     pub fn structural_report(&self) -> &CheckReport {
         &self.structural_report
+    }
+
+    /// Generated meta registry discovered while loading this report.
+    pub fn meta(&self) -> &MetaRegistry {
+        &self.meta
     }
 
     /// Discovered structural relation settings used by this report.
@@ -335,8 +345,15 @@ impl EntryDirectory {
 
     /// Read one Sirno Lake Markdown entry file by path.
     pub fn read_entry(&self, id: &EntryAddress) -> Result<Entry, EntryDirectoryError> {
-        let source = self.read_entry_source(id)?;
-        Ok(Entry::from_markdown(id.clone(), &source)?)
+        let settings =
+            EntryDirectoryCheckSettings { render: false, ..EntryDirectoryCheckSettings::default() };
+        let report = self.check_with_settings(CheckMode::Edit, &settings)?;
+        report
+            .entries()
+            .iter()
+            .find(|entry| &entry.id == id)
+            .cloned()
+            .ok_or_else(|| EntryDirectoryError::EntryNotFound(id.clone()))
     }
 
     /// Replace one existing Sirno Lake Markdown entry source.
@@ -358,8 +375,8 @@ impl EntryDirectory {
         if current == source {
             return Ok(path);
         }
-        let entry = Entry::from_markdown(id.clone(), &current)?;
-        if entry.metadata.meta.frozen.is_some() {
+        let raw_entry = RawEntry::from_markdown(id.clone(), &current)?;
+        if raw_entry.entry_meta()?.frozen.is_some() {
             return Err(EntryDirectoryError::FrozenEntryProtected(id.clone()));
         }
         set_path_writable(&path)?;
@@ -374,7 +391,7 @@ impl EntryDirectory {
     pub fn write_entry_source(
         &self, id: &EntryAddress, source: &str,
     ) -> Result<PathBuf, EntryDirectoryError> {
-        let _ = Entry::from_markdown(id.clone(), source)?;
+        let _ = RawEntry::from_markdown(id.clone(), source)?;
         match self.entry_exists(id) {
             | Ok(true) => self.replace_entry_source(id, source),
             | Ok(false) => {
@@ -560,7 +577,7 @@ impl EntryDirectory {
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         trace!("check_entry_directory begin: root={}", self.root.display());
         let loaded = LoadedEntryDirectory::load(&self.root, mode, settings)?;
-        let structural_report = mode.check_entries(&loaded.entries, &loaded.structural);
+        let structural_report = mode.check_entries(&loaded.entries, &loaded.meta);
         trace!(
             "check_entry_directory end: entries={} file_diagnostics={} structural_diagnostics={}",
             loaded.entries.len(),
@@ -574,6 +591,7 @@ impl EntryDirectory {
             paths_by_address: loaded.paths_by_address,
             file_diagnostics: loaded.file_diagnostics,
             structural_report,
+            meta: loaded.meta,
             structural: loaded.structural,
         })
     }
@@ -1011,6 +1029,7 @@ impl EntryDirectory {
         let check_settings = EntryDirectoryCheckSettings {
             render: false,
             structural_render: StructuralRenderSettings::default(),
+            meta_path: None,
             ignore: ignore.into_iter().collect(),
             witness: None,
         };
@@ -1100,6 +1119,7 @@ impl EntryDirectory {
         let check_settings = EntryDirectoryCheckSettings {
             render: false,
             structural_render: StructuralRenderSettings::default(),
+            meta_path: None,
             ignore: ignore.into_iter().collect(),
             witness: None,
         };
@@ -1207,7 +1227,7 @@ impl EntryDirectory {
 
         let path = self.entry_file_path(id);
         let source = fs::read_to_string(&path)?;
-        let mut entry = Entry::from_markdown(id.clone(), &source)?;
+        let mut entry = self.read_entry(id)?;
         if frozen {
             match &mut entry.metadata.meta.frozen {
                 | Some(marker) => marker.insert_reviewed(),
@@ -1261,6 +1281,7 @@ impl EntryDirectory {
                     melt_path_best_effort(&self.root)?;
                     let settings = EntryDirectoryCheckSettings {
                         ignore,
+                        meta_path: None,
                         witness: None,
                         ..EntryDirectoryCheckSettings::default()
                     };
@@ -1501,7 +1522,7 @@ impl EntryDirectory {
             return Ok(false);
         };
         let source = fs::read_to_string(path)?;
-        Ok(Entry::from_markdown(id, &source).is_ok())
+        Ok(RawEntry::from_markdown(id, &source).is_ok())
     }
 
     fn is_frozen_entry_file(path: &Path) -> Result<bool, EntryDirectoryError> {
@@ -1512,8 +1533,9 @@ impl EntryDirectory {
             return Ok(false);
         };
         let source = fs::read_to_string(path)?;
-        Ok(Entry::from_markdown(id, &source)
-            .map(|entry| entry.metadata.meta.frozen.is_some())
+        Ok(RawEntry::from_markdown(id, &source)
+            .and_then(|entry| entry.entry_meta())
+            .map(|meta| meta.frozen.is_some())
             .unwrap_or(false))
     }
 
@@ -1788,6 +1810,7 @@ struct LoadedEntryDirectory {
     artifacts: Vec<EntryArtifact>,
     paths_by_address: BTreeMap<EntryAddress, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
+    meta: MetaRegistry,
     structural: StructuralSettings,
 }
 
@@ -1803,7 +1826,8 @@ impl LoadedEntryDirectory {
         }
 
         let non_entry_severity = mode.severity();
-        let mut entries = Vec::new();
+        let mut raw_entries = Vec::new();
+        let mut raw_paths_by_address = BTreeMap::<EntryAddress, PathBuf>::new();
         let mut paths_by_address = BTreeMap::<EntryAddress, PathBuf>::new();
         let mut seen_ids = BTreeSet::<EntryAddress>::new();
         let mut file_diagnostics = Vec::new();
@@ -1838,7 +1862,7 @@ impl LoadedEntryDirectory {
             };
 
             if seen_ids.contains(&id) {
-                let first_path = paths_by_address
+                let first_path = raw_paths_by_address
                     .get(&id)
                     .map(|path| path.display().to_string())
                     .unwrap_or_else(|| "<unknown>".to_owned());
@@ -1858,7 +1882,7 @@ impl LoadedEntryDirectory {
                     "entry file uses mixed LF and CRLF line endings",
                 ));
             }
-            let entry = match Entry::from_markdown(id.clone(), &source) {
+            let raw_entry = match RawEntry::from_markdown(id.clone(), &source) {
                 | Ok(entry) => entry,
                 | Err(source) => {
                     file_diagnostics.push(EntryFileDiagnostic::new(
@@ -1870,15 +1894,46 @@ impl LoadedEntryDirectory {
                 }
             };
             seen_ids.insert(id.clone());
+            raw_paths_by_address.insert(id, path.clone());
+            raw_entries.push(raw_entry);
+        }
+
+        raw_entries.sort_by(|left, right| left.id.cmp(&right.id));
+        let meta = MetaRegistry::from_raw_entries(&raw_entries);
+        if let Some(path) = &settings.meta_path {
+            meta.write(path)?;
+        }
+        let mut entries = Vec::new();
+        for raw_entry in raw_entries {
+            let id = raw_entry.id.clone();
+            let path = raw_paths_by_address
+                .get(&id)
+                .expect("raw entry path was recorded before typed parsing")
+                .clone();
+            let entry = match raw_entry.into_entry(&meta) {
+                | Ok(entry) => entry,
+                | Err(source) => {
+                    file_diagnostics.push(EntryFileDiagnostic::new(
+                        CheckSeverity::Error,
+                        &path,
+                        format!("failed to parse entry: {source}"),
+                    ));
+                    continue;
+                }
+            };
             paths_by_address.insert(id, path);
             entries.push(entry);
         }
-
         entries.sort_by(|left, right| left.id.cmp(&right.id));
-        let structural = StructuralSettings::from_entries(&entries)
-            .with_render_settings(&settings.structural_render);
-        let mut loaded =
-            Self { entries, artifacts: Vec::new(), paths_by_address, file_diagnostics, structural };
+        let structural = meta.structural().with_render_settings(&settings.structural_render);
+        let mut loaded = Self {
+            entries,
+            artifacts: Vec::new(),
+            paths_by_address,
+            file_diagnostics,
+            meta,
+            structural,
+        };
         loaded.load_artifacts(root, artifact_root.as_deref(), mode)?;
         loaded.add_generated_link_diagnostics(mode, settings)?;
         loaded.add_witness_diagnostics(mode, settings)?;
@@ -2168,7 +2223,7 @@ fn add_readonly_checkout_warning(path: &Path, source: &str) -> Result<String, En
     };
     let id = EntryAddress::new(stem)
         .map_err(|_| EntryDirectoryError::CheckoutConflict(path.to_path_buf()))?;
-    let entry = Entry::from_markdown(id, source)?;
+    let entry = RawEntry::from_markdown(id, source)?;
     if entry.body.starts_with(READONLY_CHECKOUT_WARNING) {
         return Ok(source.to_owned());
     }
@@ -2277,6 +2332,9 @@ pub enum EntryDirectoryError {
     /// An entry could not be parsed or constructed.
     #[error(transparent)]
     EntryParse(#[from] EntryParseError),
+    /// The generated meta registry could not be written.
+    #[error(transparent)]
+    MetaRegistry(#[from] MetaRegistryError),
     /// An entry address could not be represented.
     #[error(transparent)]
     EntryAddress(#[from] EntryAddressError),
@@ -2386,7 +2444,8 @@ mod tests {
     use super::*;
     use crate::structural::StructuralEdgeDirection;
     use crate::{
-        EntryMetadata, RepoMember, StructuralFieldSettings, WitnessCheckSettings, WitnessSettings,
+        EntryMetadata, MetaFile, RepoMember, StructuralFieldSettings, WitnessCheckSettings,
+        WitnessSettings,
     };
 
     const FIELD_KIND: &str = "kind";
@@ -2394,11 +2453,48 @@ mod tests {
     const FIELD_PARENT: &str = "parent";
 
     fn write_entry(root: &Path, name: &str, body: &str) {
+        ensure_intrinsic_field_entries(root);
         let path = root.join(name);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).unwrap();
         }
         fs::write(path, body).unwrap();
+    }
+
+    fn ensure_intrinsic_field_entries(root: &Path) {
+        fs::create_dir_all(root).unwrap();
+        let name_path = root.join("name.md");
+        if !name_path.exists() {
+            fs::write(
+                &name_path,
+                "\
+---
+name: Name
+desc: The required plain-string title field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+            )
+            .unwrap();
+        }
+        let desc_path = root.join("desc.md");
+        if !desc_path.exists() {
+            fs::write(
+                &desc_path,
+                "\
+---
+name: Description
+desc: The required plain-string summary field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+            )
+            .unwrap();
+        }
     }
 
     fn write_structural_field_entries(root: &Path, fields: &[&str]) {
@@ -2609,7 +2705,7 @@ Body.
         let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
 
         assert!(report.is_clean());
-        assert_eq!(report.entries().len(), 2);
+        assert_eq!(report.entries().len(), 4);
         assert!(report.entry_file_path(&EntryAddress::new("concept").unwrap()).is_some());
     }
 
@@ -2632,7 +2728,7 @@ Body.
         let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
 
         assert!(report.is_clean());
-        assert_eq!(report.entries()[0].id.as_str(), "core.design");
+        assert!(report.entries().iter().any(|entry| entry.id.as_str() == "core.design"));
         assert_eq!(
             report.entry_file_path(&EntryAddress::new("core.design").unwrap()).unwrap(),
             temp.path().join("core/design.md")
@@ -2659,7 +2755,7 @@ Body.
 
         assert!(report.has_errors());
         assert!(report.file_diagnostics()[0].message.contains("filename must not contain dots"));
-        assert!(report.entries().is_empty());
+        assert!(report.entries().iter().all(|entry| entry.id.as_str() != "core.design"));
     }
 
     #[test]
@@ -2682,7 +2778,7 @@ Body.
 
         assert!(report.has_errors());
         assert!(report.file_diagnostics()[0].message.contains("reserved built-in path"));
-        assert!(report.entries().is_empty());
+        assert!(report.entries().iter().all(|entry| entry.id.as_str() != ".custom.design"));
     }
 
     #[test]
@@ -2879,7 +2975,7 @@ Body.
 
         assert!(!report.is_clean());
         assert!(!report.has_errors());
-        assert_eq!(report.entries().len(), 1);
+        assert_eq!(report.entries().len(), 3);
         assert_eq!(report.file_diagnostics()[0].severity, CheckSeverity::Warning);
         assert!(report.file_diagnostics()[0].message.contains("mixed LF and CRLF"));
     }
@@ -2935,7 +3031,7 @@ Body.
             .unwrap();
 
         assert!(report.is_clean());
-        assert_eq!(report.entries().len(), 1);
+        assert_eq!(report.entries().len(), 3);
     }
 
     #[test]
@@ -2962,6 +3058,43 @@ kind:
         assert!(report.has_errors());
         assert_eq!(report.structural_report().diagnostics().len(), 1);
     }
+
+    #[test]
+    fn check_writes_generated_meta_registry() {
+        let temp = tempfile::tempdir().unwrap();
+        let meta_path = temp.path().join(".sirno/meta.toml");
+        write_entry(
+            temp.path(),
+            "concept.md",
+            "\
+---
+name: Concept
+desc: A named idea.
+---
+
+Body.
+",
+        );
+        write_structural_field_entries(temp.path(), &[FIELD_KIND]);
+
+        let report = entry_directory(temp.path())
+            .check_with_settings(
+                CheckMode::Review,
+                &EntryDirectoryCheckSettings {
+                    render: false,
+                    meta_path: Some(meta_path.clone()),
+                    ..EntryDirectoryCheckSettings::default()
+                },
+            )
+            .unwrap();
+
+        assert!(report.is_clean());
+        let file: MetaFile = toml::from_str(&fs::read_to_string(meta_path).unwrap()).unwrap();
+        assert_eq!(file.intrinsics[0].field, "desc");
+        assert_eq!(file.intrinsics[1].field, "name");
+        assert_eq!(file.structural[0].field, FIELD_KIND);
+    }
+
     #[test]
     fn check_accepts_witness_block_found_by_mosaika() {
         let temp = tempfile::tempdir().unwrap();
@@ -3673,8 +3806,10 @@ Body.
         let root = temp.path().join("docs");
         let metadata = EntryMetadata::new("New", "New entry.").unwrap();
         let entry = Entry::new(EntryAddress::new("new").unwrap(), metadata, "Body.\n");
+        let mut entries = Entry::default_seed_entries().unwrap();
+        entries.push(entry.clone());
         let paths = entry_directory(&root)
-            .write(std::slice::from_ref(&entry), EntryDirectoryWritePolicy::EmptyDirectory)
+            .write(&entries, EntryDirectoryWritePolicy::EmptyDirectory)
             .unwrap();
 
         entry_directory(&root).add_readonly_checkout_warnings(&paths).unwrap();
@@ -3685,9 +3820,11 @@ Body.
             "\n---\n\n> This file is a read-only Sirno managed checkout.\n\
              > Do not edit it by hand.\n\nBody.\n"
         ));
-        assert_eq!(checked.entries()[0].metadata, entry.metadata);
-        assert!(checked.entries()[0].body.starts_with(READONLY_CHECKOUT_WARNING));
-        assert!(checked.entries()[0].body.ends_with("Body.\n"));
+        let checked_entry =
+            checked.entries().iter().find(|entry| entry.id.as_str() == "new").unwrap();
+        assert_eq!(checked_entry.metadata, entry.metadata);
+        assert!(checked_entry.body.starts_with(READONLY_CHECKOUT_WARNING));
+        assert!(checked_entry.body.ends_with("Body.\n"));
     }
 
     #[test]
@@ -3920,7 +4057,12 @@ Body.
         let report = entry_directory(temp.path()).check(CheckMode::Review).unwrap();
 
         assert!(report.has_errors());
-        assert!(report.file_diagnostics()[0].message.contains("malformed generated links"));
+        assert!(
+            report
+                .file_diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.message.contains("malformed generated links"))
+        );
     }
 
     #[test]

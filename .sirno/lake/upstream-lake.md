@@ -31,6 +31,8 @@ When the declaration names a mist,
 crystallization applies that upstream mist before rebasing entry addresses into the glacier domain.
 Only selected upstream entries and their artifacts are imported.
 An upstream with no mist imports the complete upstream lake.
+Intrinsic meta entries are not imported into glaciers,
+because the receiving lake owns its own intrinsic field registry.
 
 Upstream fetches are cached in the global Sirno store under `~/.sirno`.
 The cache stores one Git mirror for each normalized upstream URI.

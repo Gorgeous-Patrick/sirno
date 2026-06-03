@@ -22,9 +22,10 @@ use crate::anchor::SIRNO_CONTROL_DIR_NAME;
 use crate::artifact::{ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath};
 use crate::check::CheckMode;
 use crate::config::{CONFIG_FILE_NAME, SirnoConfig, UpstreamRef, UpstreamSettings};
-use crate::entry::{Entry, FrozenMarker};
+use crate::entry::{Entry, FrozenMarker, RawEntry};
 use crate::identifier::{EntryAddress, EntryAtom};
 use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
+use crate::meta::MetaRegistry;
 use crate::mist::{MIST_SPEC_DIR_NAME, MistSpec};
 use crate::render::GeneratedLinkBody;
 use crate::structural::StructuralSettings;
@@ -697,7 +698,7 @@ fn load_upstream_files(
     mirror: &Path, commit: &str, lake_tree_path: &str, files: &[String], domain: &EntryAtom,
     config: &SirnoConfig, mist: Option<&MistSpec>,
 ) -> Result<LoadedUpstreamFiles, UpstreamError> {
-    let mut entries = Vec::new();
+    let mut raw_entries = Vec::new();
     let mut artifacts = Vec::new();
     for file in files {
         let Some(relative) = strip_tree_prefix(file, lake_tree_path) else {
@@ -722,16 +723,27 @@ fn load_upstream_files(
         }
         let source = git_show_text(mirror, commit, file)?;
         let source_address = EntryAddress::from_lake_relative_path(&relative_path)?;
-        let mut entry = Entry::from_markdown(source_address, &source)?;
-        entry.body = strip_generated_footer_for_import(&entry.body)?;
-        entries.push(entry);
+        raw_entries.push(RawEntry::from_markdown(source_address, &source)?);
     }
 
-    let structural = StructuralSettings::from_entries(&entries);
+    raw_entries.sort_by(|left, right| left.id.cmp(&right.id));
+    let meta = MetaRegistry::from_raw_entries(&raw_entries);
+    let entries = raw_entries
+        .into_iter()
+        .map(|raw_entry| {
+            let mut entry = raw_entry.into_entry(&meta)?;
+            entry.body = strip_generated_footer_for_import(&entry.body)?;
+            Ok(entry)
+        })
+        .collect::<Result<Vec<_>, UpstreamError>>()?;
+
+    let structural = meta.structural().clone();
     let selected_ids = select_upstream_entry_ids(&entries, mist, &structural)?;
     let mut entries = entries
         .into_iter()
-        .filter(|entry| selected_ids.contains(&entry.id))
+        .filter(|entry| {
+            selected_ids.contains(&entry.id) && !entry.metadata.meta.is_intrinsic_field()
+        })
         .map(|mut entry| {
             rebase_entry_for_glacier(&mut entry, domain);
             entry
@@ -1192,6 +1204,32 @@ exact_terms = [\"Design\"]
         )
         .unwrap();
         fs::write(
+            root.join("docs/name.md"),
+            "\
+---
+name: Name
+desc: The required plain-string title field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            root.join("docs/desc.md"),
+            "\
+---
+name: Description
+desc: The required plain-string summary field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
             root.join("docs/design.md"),
             "\
 ---
@@ -1252,6 +1290,7 @@ Body.
             ..SirnoConfig::new("lake")
         };
         config.write_new(&config_path).unwrap();
+        EntryDirectory::new(project_root.join("lake")).init().unwrap();
 
         let result = SurfaceContext::new(&config_path)
             .with_upstream_store_path(temp.path().join("store"))
@@ -1310,6 +1349,7 @@ Body.
             ..SirnoConfig::new("lake")
         };
         config.write_new(&config_path).unwrap();
+        EntryDirectory::new(project_root.join("lake")).init().unwrap();
 
         let result = SurfaceContext::new(&config_path)
             .with_upstream_store_path(temp.path().join("store"))
@@ -1350,6 +1390,32 @@ Body.
         let config_path = project_root.join(CONFIG_FILE_NAME);
         SirnoConfig::new("lake").write_new(&config_path).unwrap();
         fs::create_dir_all(project_root.join("lake/core")).unwrap();
+        fs::write(
+            project_root.join("lake/name.md"),
+            "\
+---
+name: Name
+desc: The required plain-string title field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+        fs::write(
+            project_root.join("lake/desc.md"),
+            "\
+---
+name: Description
+desc: The required plain-string summary field for entries.
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        )
+        .unwrap();
         fs::write(
             project_root.join("lake/core/local.md"),
             "\

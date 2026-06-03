@@ -611,14 +611,14 @@ fn format_query_column(
 ) -> Result<QueryValue, CommandError> {
     match column {
         | QueryColumn::Id => Ok(QueryValue::text(entry.id.to_string())),
-        | QueryColumn::Name => Ok(QueryValue::text(entry.metadata.name.clone())),
+        | QueryColumn::Name => Ok(QueryValue::text(entry.metadata.name().to_owned())),
         | QueryColumn::Path => {
             let path = report
                 .entry_file_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
             Ok(QueryValue::text(path.display().to_string()))
         }
-        | QueryColumn::Desc => Ok(QueryValue::text(entry.metadata.desc.clone())),
+        | QueryColumn::Desc => Ok(QueryValue::text(entry.metadata.desc().to_owned())),
         | QueryColumn::Structural { field } => {
             Ok(QueryValue::targets(entry.metadata.structural_field(field)))
         }

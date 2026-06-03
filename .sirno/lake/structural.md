@@ -43,5 +43,6 @@ It gives the relation set one review front door while leaving each relation *ent
 to carry its own meaning and other `belongs` targets.
 
 The *repository witness* for this *entry* should show the generic structural metadata map.
-The active relation set is discovered from lake entries with `meta.type: "structural"`.
+The active relation set is discovered during the raw meta-registry scan
+from lake entries with `meta.type: "structural"`.
 Rendered directions are defined by the active mist.

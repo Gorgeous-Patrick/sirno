@@ -298,8 +298,8 @@ fn entry_freeze_rows(report: &EntryDirectoryReport) -> Vec<EntryFreezeRow> {
                 id: entry.id.clone(),
                 state: EntryFreezeState::from_entry(entry),
                 artifacts,
-                name: entry.metadata.name.clone(),
-                desc: entry.metadata.desc.clone(),
+                name: entry.metadata.name().to_owned(),
+                desc: entry.metadata.desc().to_owned(),
                 path,
             }
         })

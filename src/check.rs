@@ -7,12 +7,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::entry::{DESC_FIELD, Entry, EntryMetaType, NAME_FIELD};
+use crate::entry::Entry;
 use crate::identifier::EntryAddress;
+use crate::meta::{MetaRegistry, validate_intrinsic_field_name};
 use crate::structural::{StructuralSettings, validate_structural_field_name};
 
 const CATEGORY_FIELD: &str = "category";
-const INTRINSIC_META_FIELDS: [&str; 2] = [NAME_FIELD, DESC_FIELD];
 
 /// Boundary at which Sirno checks structure.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -39,32 +39,22 @@ impl CheckMode {
     /// Parsing already enforces required fields, accepted field shapes, and valid path syntax.
     /// This pass checks structural relation entries, typed metadata, and target addresses.
     pub fn check_entries<'a>(
-        self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
+        self, entries: impl IntoIterator<Item = &'a Entry>, meta: &MetaRegistry,
     ) -> CheckReport {
         let entries = entries.into_iter().collect::<Vec<_>>();
         let entries_by_id =
             entries.iter().map(|entry| (entry.id.clone(), *entry)).collect::<BTreeMap<_, _>>();
+        let structural = meta.structural();
         let severity = self.severity();
 
         let mut report = CheckReport::new();
         for entry in &entries {
-            if Self::is_intrinsic_meta_field(entry.id.as_str())
-                && !entry.metadata.meta.is_intrinsic_field()
+            if entry.metadata.meta.is_intrinsic_field()
+                && validate_intrinsic_field_name(entry.id.as_str()).is_err()
             {
                 report.push(CheckDiagnostic {
                     severity,
-                    kind: CheckDiagnosticKind::MissingIntrinsicMeta,
-                    entry: Some(entry.id.clone()),
-                    field: entry.id.as_str().to_owned(),
-                    target: None,
-                });
-            }
-            if entry.metadata.meta.entry_type == Some(EntryMetaType::Intrinsic)
-                && !Self::is_intrinsic_meta_field(entry.id.as_str())
-            {
-                report.push(CheckDiagnostic {
-                    severity,
-                    kind: CheckDiagnosticKind::UnregisteredIntrinsicMeta,
+                    kind: CheckDiagnosticKind::InvalidIntrinsicField,
                     entry: Some(entry.id.clone()),
                     field: entry.id.as_str().to_owned(),
                     target: None,
@@ -155,10 +145,6 @@ impl CheckMode {
         }
     }
     // sirno:witness:structural-check:end
-
-    fn is_intrinsic_meta_field(field: &str) -> bool {
-        INTRINSIC_META_FIELDS.contains(&field)
-    }
 }
 
 /// Severity of one structural diagnostic.
@@ -185,10 +171,8 @@ impl CheckSeverity {
 pub enum CheckDiagnosticKind {
     /// A structural relation entry cannot be used as a metadata field.
     InvalidStructuralRelationField,
-    /// An intrinsic metadata-field entry does not define the intrinsic meta type.
-    MissingIntrinsicMeta,
-    /// An entry defines intrinsic metadata-field type without being an intrinsic field entry.
-    UnregisteredIntrinsicMeta,
+    /// An intrinsic metadata-field entry cannot be used as a metadata field.
+    InvalidIntrinsicField,
     /// An entry uses a structural link relation without a matching relation entry.
     UninhabitedStructuralField,
     /// A structural link target id does not name an entry.
@@ -223,15 +207,10 @@ impl CheckDiagnostic {
                  structural relation field",
                 self.entry.as_ref().expect("invalid structural field diagnostic has entry")
             ),
-            | CheckDiagnosticKind::MissingIntrinsicMeta => format!(
-                "entry `{}` defines required metadata field `{}`, but does not define \
-                 `meta.type: \"intrinsic\"`",
-                self.entry.as_ref().expect("missing intrinsic meta diagnostic has entry"),
-                self.field
-            ),
-            | CheckDiagnosticKind::UnregisteredIntrinsicMeta => format!(
-                "`{}` defines `meta.type: \"intrinsic\"`, but it is not an intrinsic metadata field entry",
-                self.entry.as_ref().expect("unregistered intrinsic meta diagnostic has entry")
+            | CheckDiagnosticKind::InvalidIntrinsicField => format!(
+                "`{}` defines `meta.type: \"intrinsic\"`, but its address is not a valid \
+                 intrinsic metadata field",
+                self.entry.as_ref().expect("invalid intrinsic field diagnostic has entry")
             ),
             | CheckDiagnosticKind::UninhabitedStructuralField => format!(
                 "`{}` uses link relation `{}` without a structural relation entry",
@@ -293,7 +272,7 @@ impl CheckReport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entry::{EntryMetaType, EntryMetadata};
+    use crate::entry::{DESC_FIELD, EntryMetaType, EntryMetadata, NAME_FIELD};
     use crate::structural::{StructuralFieldSettings, StructuralTideSettings};
 
     const FIELD_TOPIC: &str = "topic";
@@ -324,6 +303,16 @@ mod tests {
         StructuralSettings::from_fields([(FIELD_CATEGORY, StructuralFieldSettings::default())])
     }
 
+    fn meta_registry(structural: StructuralSettings) -> MetaRegistry {
+        MetaRegistry::from_parts(
+            [
+                (NAME_FIELD, EntryAddress::new(NAME_FIELD).unwrap()),
+                (DESC_FIELD, EntryAddress::new(DESC_FIELD).unwrap()),
+            ],
+            structural,
+        )
+    }
+
     #[test]
     fn clean_entries_produce_clean_report() {
         let mut concept = entry("concept");
@@ -332,8 +321,8 @@ mod tests {
         meta.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = relation_entry(FIELD_TOPIC);
 
-        let report =
-            CheckMode::Review.check_entries([&concept, &meta, &topic], &structural_settings());
+        let report = CheckMode::Review
+            .check_entries([&concept, &meta, &topic], &meta_registry(structural_settings()));
         assert!(report.is_clean());
     }
 
@@ -342,7 +331,8 @@ mod tests {
         let mut topic = entry(FIELD_TOPIC);
         topic.metadata.meta.entry_type = Some(EntryMetaType::Structural);
 
-        let report = CheckMode::Review.check_entries([&topic], &structural_settings());
+        let report =
+            CheckMode::Review.check_entries([&topic], &meta_registry(structural_settings()));
 
         assert!(report.is_clean());
     }
@@ -353,7 +343,8 @@ mod tests {
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = relation_entry(FIELD_TOPIC);
 
-        let report = CheckMode::Edit.check_entries([&concept, &topic], &structural_settings());
+        let report = CheckMode::Edit
+            .check_entries([&concept, &topic], &meta_registry(structural_settings()));
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
         assert!(!report.has_errors());
@@ -365,7 +356,8 @@ mod tests {
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
         let topic = relation_entry(FIELD_TOPIC);
 
-        let report = CheckMode::Review.check_entries([&concept, &topic], &structural_settings());
+        let report = CheckMode::Review
+            .check_entries([&concept, &topic], &meta_registry(structural_settings()));
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingTarget);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
         assert!(report.has_errors());
@@ -376,7 +368,8 @@ mod tests {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
 
-        let report = CheckMode::Review.check_entries([&concept], &StructuralSettings::default());
+        let report = CheckMode::Review
+            .check_entries([&concept], &meta_registry(StructuralSettings::default()));
 
         assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UninhabitedStructuralField);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
@@ -387,7 +380,8 @@ mod tests {
     fn review_mode_reports_invalid_structural_relation_field_as_error() {
         let topic = relation_entry("meta");
 
-        let report = CheckMode::Review.check_entries([&topic], &StructuralSettings::default());
+        let report = CheckMode::Review
+            .check_entries([&topic], &meta_registry(StructuralSettings::default()));
 
         assert_eq!(
             report.diagnostics()[0].kind,
@@ -402,31 +396,20 @@ mod tests {
         let name = intrinsic_entry(NAME_FIELD);
         let desc = intrinsic_entry(DESC_FIELD);
 
-        let report =
-            CheckMode::Review.check_entries([&name, &desc], &StructuralSettings::default());
+        let report = CheckMode::Review
+            .check_entries([&name, &desc], &meta_registry(StructuralSettings::default()));
 
         assert!(report.is_clean());
     }
 
     #[test]
-    fn review_mode_reports_intrinsic_field_without_intrinsic_meta_as_error() {
-        let name = entry(NAME_FIELD);
+    fn review_mode_reports_invalid_intrinsic_field_as_error() {
+        let meta = intrinsic_entry("meta");
 
-        let report = CheckMode::Review.check_entries([&name], &StructuralSettings::default());
+        let report =
+            CheckMode::Review.check_entries([&meta], &meta_registry(StructuralSettings::default()));
 
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingIntrinsicMeta);
-        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
-        assert!(report.has_errors());
-        assert!(report.diagnostics()[0].message().contains("meta.type: \"intrinsic\""));
-    }
-
-    #[test]
-    fn review_mode_reports_unregistered_intrinsic_meta_as_error() {
-        let concept = intrinsic_entry("concept");
-
-        let report = CheckMode::Review.check_entries([&concept], &StructuralSettings::default());
-
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnregisteredIntrinsicMeta);
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::InvalidIntrinsicField);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
         assert!(report.has_errors());
     }
@@ -439,7 +422,8 @@ mod tests {
         meta.metadata
             .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
-        let report = CheckMode::Review.check_entries([&concept, &meta], &category_settings());
+        let report =
+            CheckMode::Review.check_entries([&concept, &meta], &meta_registry(category_settings()));
 
         assert!(
             report
@@ -460,8 +444,8 @@ mod tests {
             .metadata
             .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
-        let report =
-            CheckMode::Review.check_entries([&concept, &meta, &category], &category_settings());
+        let report = CheckMode::Review
+            .check_entries([&concept, &meta, &category], &meta_registry(category_settings()));
 
         let diagnostic = report
             .diagnostics()
@@ -485,8 +469,8 @@ mod tests {
             .metadata
             .push_structural_target(FIELD_CATEGORY, EntryAddress::new("category").unwrap());
 
-        let report =
-            CheckMode::Edit.check_entries([&concept, &meta, &category], &category_settings());
+        let report = CheckMode::Edit
+            .check_entries([&concept, &meta, &category], &meta_registry(category_settings()));
 
         let diagnostic = report
             .diagnostics()
