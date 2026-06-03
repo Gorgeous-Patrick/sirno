@@ -1,0 +1,56 @@
+---
+name: Narrative
+desc: The storytelling layer that gives concepts a motivated route a reader can follow.
+category:
+  - category
+  - meta
+  - concept
+belongs:
+  - category
+prerequisite:
+  - category
+---
+
+A narrative is the storytelling layer over the *lake*.
+
+*Entries* are addressable but unordered.
+A reader who meets them in arbitrary order gets facts without understanding.
+A narrative supplies the missing thing:
+an intentional route that makes one concept lead to the next.
+
+A narrative does three jobs at once.
+It sequences, so accurate concepts arrive when the reader can use them.
+It motivates, so the reader wants the next concept before it is explained.
+It glues, so a set of separate *entries* reads as one deliberate movement.
+
+The motivating job is a pitch.
+Before a concept is made complete, the route makes it worth moving toward.
+The pull may be practical, aesthetic, playful, urgent, or clarifying.
+A narrative that only orders concepts is a table of contents;
+a narrative that also creates pull is a reason to keep reading.
+
+The *lake* is the canonical narrative form.
+Materialized narratives live in the *lake* as guides.
+They state useful prerequisites,
+choose a base language,
+and move a reader through *entries* in an intentional order.
+This *lake*'s `introduction` is the first route through the model.
+The `methodology` is the working route for acting inside the *lake*.
+The `bootstrap-resolution` route walks the self-application problem to its answer.
+
+Long-form documents outside the *lake* are repo material.
+They may introduce terms once and trust them afterward,
+but their durable claims belong in *entries*.
+
+Interactive narratives may be generated ephemerally by skills.
+They adapt the route to one reader or task,
+but canonical knowledge still lives in *entries* and metadata.
+
+A narrative is judged by reader understanding, not by coverage.
+It should explain why the route matters,
+state the prerequisites that unlock it,
+keep the sequence tight,
+and point to the *entries* that carry durable detail
+instead of restating them.
+A good narrative leaves an aftertaste:
+a phrase or handle the reader keeps after the prose is gone.

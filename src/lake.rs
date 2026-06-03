@@ -336,6 +336,66 @@ impl EntryDirectory {
         Ok(Entry::from_markdown(id.clone(), &source)?)
     }
 
+    /// Replace one existing Sirno Lake Markdown entry source.
+    ///
+    /// The entry address controls the target path.
+    /// Frozen entries cannot be changed through this low-level replacement.
+    pub fn replace_entry_source(
+        &self, id: &EntryAddress, source: &str,
+    ) -> Result<PathBuf, EntryDirectoryError> {
+        if !self.root.exists() {
+            return Err(EntryDirectoryError::MissingDirectory(self.root.clone()));
+        }
+        if !self.root.is_dir() {
+            return Err(EntryDirectoryError::NotDirectory(self.root.clone()));
+        }
+
+        let path = self.entry_file_path(id);
+        let current = self.read_entry_source(id)?;
+        if current == source {
+            return Ok(path);
+        }
+        let entry = Entry::from_markdown(id.clone(), &current)?;
+        if entry.metadata.meta.frozen.is_some() {
+            return Err(EntryDirectoryError::FrozenEntryProtected(id.clone()));
+        }
+        set_path_writable(&path)?;
+        fs::write(&path, source)
+            .map_err(|source| EntryDirectoryError::WriteFile { path: path.clone(), source })?;
+        Ok(path)
+    }
+
+    /// Write one Sirno Lake Markdown entry source, creating it when absent.
+    ///
+    /// Existing frozen entries cannot be changed.
+    pub fn write_entry_source(
+        &self, id: &EntryAddress, source: &str,
+    ) -> Result<PathBuf, EntryDirectoryError> {
+        let _ = Entry::from_markdown(id.clone(), source)?;
+        match self.entry_exists(id) {
+            | Ok(true) => self.replace_entry_source(id, source),
+            | Ok(false) => {
+                let path = self.entry_file_path(id);
+                if let Some(parent) = path.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                let mut file =
+                    OpenOptions::new().write(true).create_new(true).open(&path).map_err(
+                        |source| EntryDirectoryError::CreateFile { path: path.clone(), source },
+                    )?;
+                file.write_all(source.as_bytes()).map_err(|source| {
+                    EntryDirectoryError::WriteFile { path: path.clone(), source }
+                })?;
+                Ok(path)
+            }
+            | Err(EntryDirectoryError::MissingDirectory(_)) => {
+                fs::create_dir_all(&self.root)?;
+                self.write_entry_source(id, source)
+            }
+            | Err(error) => Err(error),
+        }
+    }
+
     /// Read lake-owned artifacts for one entry address.
     // sirno:witness:entry-artifact:begin
     pub fn read_entry_artifacts(

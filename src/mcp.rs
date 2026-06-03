@@ -46,7 +46,7 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
     name: "design-doc-writer",
     title: "Design Doc Writer",
     description: "Full design-doc-writer skill text.",
-    content: include_str!("../sirno-lake/.artifacts/design-doc-writer-skill/SKILL.full.md"),
+    content: include_str!("../.sirno/lake/.artifacts/design-doc-writer-skill/SKILL.full.md"),
 };
 // sirno:witness:design-doc-writer-skill:end
 
@@ -59,7 +59,7 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         title: "Sirno Editor",
         description: "Full Sirno editor skill text.",
         content: include_str!(
-            "../sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md"
+            "../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md"
         ),
     },
     SkillResourceSpec {
@@ -67,14 +67,14 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-actualizer",
         title: "Sirno Actualizer",
         description: "Full Sirno actualizer skill text.",
-        content: include_str!("../sirno-lake/.artifacts/actualization-discipline/SKILL.full.md"),
+        content: include_str!("../.sirno/lake/.artifacts/actualization-discipline/SKILL.full.md"),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-internalizer",
         name: "sirno-internalizer",
         title: "Sirno Internalizer",
         description: "Full Sirno internalizer skill text.",
-        content: include_str!("../sirno-lake/.artifacts/internalization-discipline/SKILL.full.md"),
+        content: include_str!("../.sirno/lake/.artifacts/internalization-discipline/SKILL.full.md"),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-narrative-session",
@@ -82,7 +82,7 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         title: "Sirno Narrative Session",
         description: "Full Sirno narrative-session skill text.",
         content: include_str!(
-            "../sirno-lake/.artifacts/narrative-session-discipline/SKILL.full.md"
+            "../.sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.md"
         ),
     },
     SkillResourceSpec {
@@ -90,14 +90,14 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-skill-synthesizer",
         title: "Sirno Skill Synthesizer",
         description: "Full Sirno skill-synthesizer text.",
-        content: include_str!("../sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
+        content: include_str!("../.sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-curator",
         name: "sirno-curator",
         title: "Sirno Curator",
         description: "Full Sirno curator skill text.",
-        content: include_str!("../sirno-lake/.artifacts/lake-curation-discipline/SKILL.full.md"),
+        content: include_str!("../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.md"),
     },
 ];
 // sirno:witness:agent-skills:end
@@ -373,6 +373,18 @@ impl SirnoMcpServer {
     #[tool(name = "sirno_mist_render")]
     fn mist_render(&self, Parameters(params): Parameters<MistRenderParams>) -> McpToolResult {
         result(self.context.mist_render(mist_name(params.mist)?, params.dry))
+    }
+
+    /// Show pending mist ripples and stale projection state.
+    #[tool(name = "sirno_mist_status")]
+    fn mist_status(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
+        result(self.context.mist_status(mist_name(params.mist)?))
+    }
+
+    /// Intake edited Markdown entry sources from a misty lake into the reservoir.
+    #[tool(name = "sirno_mist_intake")]
+    fn mist_intake(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
+        result(self.context.mist_intake(mist_name(params.mist)?))
     }
 
     /// Delete generated Markdown link footers for one misty lake projection.
@@ -1010,8 +1022,10 @@ mod tests {
         "sirno_lake_check",
         "sirno_lake_init",
         "sirno_lake_move",
+        "sirno_mist_intake",
         "sirno_mist_render",
         "sirno_mist_render_delete",
+        "sirno_mist_status",
         "sirno_status",
         "sirno_tide_reset",
         "sirno_tide_resolve",

@@ -11,9 +11,9 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
     AnchorCheckResult, AnchorRippleKind, AnchorRippleRecord, AnchorStatusResult,
-    AnchorUpdateResult, ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord,
-    QueryColumn, QueryColumns, QueryOutputFormat, QueryResults, QueryValue, RenderResult,
-    SkillWrapperRecord, StatusResult,
+    AnchorUpdateResult, ConfigCommentResult, DiagnosticRecord, LakeCheckResult, MistIntakeResult,
+    MistStatusResult, PathRecord, QueryColumn, QueryColumns, QueryOutputFormat, QueryResults,
+    QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
 };
 use crate::surface::error::CommandError;
 use crate::{
@@ -334,6 +334,21 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
             ));
         }
     }
+    if let Some(mist) = &result.mist {
+        if mist.ok {
+            output.push_str(&format!(
+                "mist: {} ({})\n",
+                style_text("clean", SemanticStyle::Success, style),
+                mist.projection_path
+            ));
+        } else {
+            output.push_str(&format!(
+                "mist: {} ({})\n",
+                style_text("pending", SemanticStyle::Warning, style),
+                mist.message
+            ));
+        }
+    }
     output
 }
 
@@ -377,6 +392,17 @@ pub(crate) fn print_render_result(result: &RenderResult) {
     anstream::print!("{}", format_render_result_with_style(result, OutputStyle::Styled));
 }
 
+pub(crate) fn print_mist_status_result(result: &MistStatusResult) {
+    anstream::print!("{}", format_mist_status_result_with_style(result, OutputStyle::Styled));
+}
+
+pub(crate) fn print_mist_intake_result(result: &MistIntakeResult) {
+    anstream::println!("{}", result.message);
+    for path in &result.changed_paths {
+        anstream::println!("{path}");
+    }
+}
+
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) fn format_render_result(result: &RenderResult) -> String {
@@ -392,6 +418,32 @@ fn format_render_result_with_style(result: &RenderResult, style: OutputStyle) ->
     output.push_str(&result.message);
     output.push('\n');
     output
+}
+
+fn format_mist_status_result_with_style(result: &MistStatusResult, style: OutputStyle) -> String {
+    let mut output = String::new();
+    output.push_str(&format!("mist: {}\n", result.mist));
+    output.push_str(&format!("reservoir: {}\n", result.reservoir_path));
+    output.push_str(&format!("projection: {}\n", result.projection_path));
+    append_mist_status_rows(&mut output, "changed", &result.changed_entries, style);
+    append_mist_status_rows(&mut output, "stale", &result.stale_entries, style);
+    append_mist_status_rows(&mut output, "missing", &result.missing_entries, style);
+    append_mist_status_rows(&mut output, "staged", &result.staged_paths, style);
+    output.push_str(&result.message);
+    output.push('\n');
+    output
+}
+
+fn append_mist_status_rows(
+    output: &mut String, label: &str, values: &[String], style: OutputStyle,
+) {
+    if values.is_empty() {
+        return;
+    }
+    let label = style_text(label, SemanticStyle::Warning, style);
+    for value in values {
+        output.push_str(&format!("{label}: {value}\n"));
+    }
 }
 
 pub(crate) fn print_config_comment_result(result: &ConfigCommentResult) {

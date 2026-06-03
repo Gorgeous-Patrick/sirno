@@ -16,15 +16,17 @@ use tracing::trace;
 
 use crate::anchor::{AnchorError, SIRNO_CONTROL_DIR_NAME, entry_fingerprint};
 use crate::entry::Entry;
-use crate::identifier::{EntryAtom, EntryAtomError};
+use crate::identifier::{EntryAddress, EntryAtom, EntryAtomError};
 use crate::structural::{StructuralEdgeDirection, StructuralRenderSettings, StructuralSettings};
 
 /// Directory below `.sirno/` that stores shared mist specs.
 pub const MIST_SPEC_DIR_NAME: &str = "mist";
 /// Name of the local manifest written inside a misty lake projection.
 pub const MIST_MANIFEST_FILE_NAME: &str = "mist.toml";
+/// Default path where the default mist renders its misty lake.
+pub const DEFAULT_MIST_PROJECTION_PATH: &str = "sirno-lake";
 /// Current mist manifest schema.
-pub const MIST_MANIFEST_SCHEMA: u32 = 1;
+pub const MIST_MANIFEST_SCHEMA: u32 = 2;
 
 const DEFAULT_MIST_NAME: &str = "default";
 const MIST_FILE_HEADER: &str = "\
@@ -61,10 +63,80 @@ impl MistRenderSettings {
     }
 }
 
+/// Filesystem target and edit policy for one mist projection.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct MistProjectionSettings {
+    /// Project-root-relative path of the materialized misty lake.
+    pub path: PathBuf,
+    /// Whether edits in this projection can be intaken into the reservoir.
+    pub editable: bool,
+}
+
+impl Default for MistProjectionSettings {
+    fn default() -> Self {
+        Self { path: PathBuf::from(DEFAULT_MIST_PROJECTION_PATH), editable: true }
+    }
+}
+
+/// Entry selector for one mist projection.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct MistSelectionSettings {
+    /// Vague text terms matched against expanded entry text.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub terms: Vec<String>,
+    /// Exact text terms matched against entry-local text.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub exact_terms: Vec<String>,
+    /// Structural target filters.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub has: Vec<MistStructuralTargetFilter>,
+    /// Structural state filters.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub is: Vec<MistStructuralStateFilter>,
+}
+
+/// Structural target filter stored in a mist spec.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MistStructuralTargetFilter {
+    /// Link relation name.
+    pub field: String,
+    /// Accepted target entry addresses for this relation.
+    pub targets: Vec<EntryAddress>,
+}
+
+/// Structural state filter stored in a mist spec.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MistStructuralStateFilter {
+    /// Link relation name.
+    pub field: String,
+    /// Accepted state for this relation.
+    pub state: MistStructuralFieldState,
+}
+
+/// Structural link state matched by a mist selector.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MistStructuralFieldState {
+    /// The relation is present with any target count.
+    Present,
+    /// The relation is present with no targets.
+    Empty,
+    /// The relation is absent.
+    Missing,
+}
+
 /// A shared mist spec stored below `.sirno/mist/`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MistSpec {
+    /// Projection target and edit policy.
+    pub projection: MistProjectionSettings,
+    /// Reservoir entry selector.
+    pub select: MistSelectionSettings,
     /// Projection render settings.
     pub render: MistRenderSettings,
 }
@@ -144,6 +216,13 @@ pub struct MistManifestEntry {
     pub fingerprint: String,
 }
 
+impl MistManifestEntry {
+    /// Build a manifest entry record from one canonical reservoir entry.
+    pub fn from_entry(entry: &Entry) -> Result<Self, MistError> {
+        Ok(Self { id: entry.id.to_string(), fingerprint: entry_fingerprint(entry)? })
+    }
+}
+
 /// Local projection manifest written to `.sirno/mist.toml` inside a misty lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -154,6 +233,12 @@ pub struct MistManifest {
     pub mist: EntryAtom,
     /// Mist spec path used for the projection.
     pub spec: PathBuf,
+    /// Canonical reservoir path used for the projection.
+    pub reservoir: PathBuf,
+    /// Projection target and edit policy used for the projection.
+    pub projection: MistProjectionSettings,
+    /// Reservoir entry selector used for the projection.
+    pub select: MistSelectionSettings,
     /// Render settings used for the projection.
     pub render: MistRenderSettings,
     /// Source entries and fingerprints used for rendering.
@@ -167,20 +252,40 @@ impl MistManifest {
         lake.as_ref().join(SIRNO_CONTROL_DIR_NAME).join(MIST_MANIFEST_FILE_NAME)
     }
 
+    /// Load a projection manifest from a TOML file.
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, MistError> {
+        let path = path.as_ref();
+        let source = fs::read_to_string(path)
+            .map_err(|source| MistError::Read { path: path.to_path_buf(), source })?;
+        Self::from_source(path, &source)
+    }
+
+    /// Load a projection manifest from source text.
+    pub fn from_source(path: impl AsRef<Path>, source: &str) -> Result<Self, MistError> {
+        let path = path.as_ref();
+        toml::from_str(source)
+            .map_err(|source| MistError::Parse { path: path.to_path_buf(), source })
+    }
+
     /// Build a projection manifest from checked entries.
     pub fn from_entries(
-        mist: EntryAtom, spec: PathBuf, render: MistRenderSettings, entries: &[Entry],
+        mist: EntryAtom, spec: PathBuf, reservoir: PathBuf, projection: MistProjectionSettings,
+        select: MistSelectionSettings, render: MistRenderSettings, entries: &[Entry],
     ) -> Result<Self, MistError> {
         let entries = entries
             .iter()
-            .map(|entry| {
-                Ok(MistManifestEntry {
-                    id: entry.id.to_string(),
-                    fingerprint: entry_fingerprint(entry)?,
-                })
-            })
+            .map(MistManifestEntry::from_entry)
             .collect::<Result<Vec<_>, MistError>>()?;
-        Ok(Self { schema: MIST_MANIFEST_SCHEMA, mist, spec, render, entries })
+        Ok(Self {
+            schema: MIST_MANIFEST_SCHEMA,
+            mist,
+            spec,
+            reservoir,
+            projection,
+            select,
+            render,
+            entries,
+        })
     }
 
     /// Write this manifest only when the on-disk content would change.

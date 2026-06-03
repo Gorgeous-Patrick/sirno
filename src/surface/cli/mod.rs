@@ -36,9 +36,9 @@ use crate::surface::output::{
     format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
     print_anchor_check_result, print_anchor_status_result, print_anchor_update_result,
     print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
-    print_lake_check_result, print_query_column_options, print_query_results, print_render_result,
-    print_status_result, print_upstream_crystallize_report, print_upstream_status_report,
-    print_witness_records,
+    print_lake_check_result, print_mist_intake_result, print_mist_status_result,
+    print_query_column_options, print_query_results, print_render_result, print_status_result,
+    print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
@@ -335,6 +335,10 @@ enum MistCommand {
     /// Run a top-level mist operation under `sirno mist`.
     #[command(flatten)]
     TopLevel(TopLevelMistCommand),
+    /// Show pending mist ripples and stale projection state.
+    Status(MistNameArgs),
+    /// Intake edited Markdown entry sources from a misty lake into the reservoir.
+    Intake(MistNameArgs),
 }
 
 /// Supported top-level Sirno mist commands.
@@ -344,6 +348,14 @@ enum TopLevelMistCommand {
     /// Render Markdown links for a misty lake projection.
     Render(MistRenderArgs),
     // sirno:witness:project-commands:end
+}
+
+/// Arguments for one named mist.
+#[derive(Debug, Args)]
+struct MistNameArgs {
+    /// Mist name. Omit for the default mist.
+    #[arg(value_name = "MIST")]
+    mist: Option<String>,
 }
 
 /// Arguments for rendering one mist projection.
@@ -1395,6 +1407,8 @@ impl LakeCommand {
 impl MistCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
+            | MistCommand::Status(args) => args.run_status(config_path, lake_path),
+            | MistCommand::Intake(args) => args.run_intake(config_path, lake_path),
             | MistCommand::TopLevel(command) => command.run(config_path, lake_path),
         }
     }
@@ -1427,6 +1441,26 @@ impl TopLevelMistCommand {
         match self {
             | TopLevelMistCommand::Render(args) => args.run(config_path, lake_path),
         }
+    }
+}
+
+impl MistNameArgs {
+    fn run_status(
+        self, config_path: &Path, lake_path: Option<&Path>,
+    ) -> Result<ExitCode, CommandError> {
+        let mist = self.mist.as_deref().map(entry_atom).transpose()?;
+        let result = SurfaceContext::from_cli_paths(config_path, lake_path).mist_status(mist)?;
+        print_mist_status_result(&result);
+        if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+    }
+
+    fn run_intake(
+        self, config_path: &Path, lake_path: Option<&Path>,
+    ) -> Result<ExitCode, CommandError> {
+        let mist = self.mist.as_deref().map(entry_atom).transpose()?;
+        let result = SurfaceContext::from_cli_paths(config_path, lake_path).mist_intake(mist)?;
+        print_mist_intake_result(&result);
+        Ok(ExitCode::SUCCESS)
     }
 }
 

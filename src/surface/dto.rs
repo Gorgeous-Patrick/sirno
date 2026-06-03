@@ -1172,6 +1172,67 @@ impl RenderResult {
     }
 }
 
+/// JSON-ready mist projection status.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MistStatusResult {
+    /// Whether the misty lake has no intake blockers or pending ripples.
+    pub ok: bool,
+    /// Whether a projection manifest was found.
+    pub manifest_present: bool,
+    /// Mist name that was inspected.
+    pub mist: String,
+    /// Mist spec path used for the projection.
+    pub spec_path: String,
+    /// Reservoir path used for comparison.
+    pub reservoir_path: String,
+    /// Misty lake projection path.
+    pub projection_path: String,
+    /// Whether projection edits can be intaken.
+    pub editable: bool,
+    /// Number of entries recorded in the current manifest.
+    pub entry_count: usize,
+    /// Entries whose projected source differs from the reservoir source.
+    pub changed_entries: Vec<String>,
+    /// Entries whose reservoir fingerprint no longer matches the manifest.
+    pub stale_entries: Vec<String>,
+    /// Entries recorded in the manifest but missing from the projection.
+    pub missing_entries: Vec<String>,
+    /// Git-staged paths below the misty lake projection.
+    pub staged_paths: Vec<String>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
+impl MistStatusResult {
+    /// Return true when the projection has changed or blocked state.
+    pub fn has_ripples_or_blockers(&self) -> bool {
+        !self.changed_entries.is_empty()
+            || !self.stale_entries.is_empty()
+            || !self.missing_entries.is_empty()
+            || !self.staged_paths.is_empty()
+            || !self.manifest_present
+    }
+}
+
+/// JSON-ready mist intake result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MistIntakeResult {
+    /// Whether the intake completed.
+    pub ok: bool,
+    /// Mist name that was intaken.
+    pub mist: String,
+    /// Reservoir path that received accepted edits.
+    pub reservoir_path: String,
+    /// Misty lake projection path that supplied edits.
+    pub projection_path: String,
+    /// Entry addresses written back to the reservoir.
+    pub updated_entries: Vec<String>,
+    /// Reservoir paths changed by intake and projection rerendering.
+    pub changed_paths: Vec<String>,
+    /// Concise human-readable summary.
+    pub message: String,
+}
+
 /// Structured edge policy for one structural link direction.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructuralEdgeStatus {
@@ -1265,6 +1326,9 @@ pub struct StatusResult {
     /// Tide summary when the lake can be compared against the active review baseline.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tide: Option<StatusTide>,
+    /// Default mist projection status.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mist: Option<MistStatusResult>,
     /// Review-mode check result.
     pub check: LakeCheckResult,
 }

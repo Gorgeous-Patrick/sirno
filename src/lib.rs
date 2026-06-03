@@ -59,8 +59,10 @@ pub use crate::lock::{
     LOCK_FILE_NAME, LockError, SirnoLock, TideLock, UpstreamLock, UpstreamLockMap,
 };
 pub use crate::mist::{
-    MIST_MANIFEST_FILE_NAME, MIST_MANIFEST_SCHEMA, MIST_SPEC_DIR_NAME, MistError, MistManifest,
-    MistManifestEntry, MistRenderSettings, MistSpec, MistStructuralRenderMap,
+    DEFAULT_MIST_PROJECTION_PATH, MIST_MANIFEST_FILE_NAME, MIST_MANIFEST_SCHEMA,
+    MIST_SPEC_DIR_NAME, MistError, MistManifest, MistManifestEntry, MistProjectionSettings,
+    MistRenderSettings, MistSelectionSettings, MistSpec, MistStructuralFieldState,
+    MistStructuralRenderMap, MistStructuralStateFilter, MistStructuralTargetFilter,
 };
 pub use crate::query::{EntryQuery, EntryStructuralMatcher, EntryTextTerm, VagueEntryQuery};
 pub use crate::render::{

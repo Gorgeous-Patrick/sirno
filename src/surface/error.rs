@@ -190,6 +190,12 @@ pub enum CommandError {
         /// Number of open workitems.
         open_workitems: usize,
     },
+    /// Anchor update requires editable mist projections to be clean.
+    #[error("anchor update blocked by mist state: {0}")]
+    AnchorUpdateMist(String),
+    /// Mist intake requires a fresh editable projection.
+    #[error("mist intake blocked: {0}")]
+    MistIntakeBlocked(String),
     /// An empty generated lock file could not be removed.
     #[error("failed to remove empty lock file {path}")]
     RemoveEmptyLock {
@@ -238,6 +244,18 @@ pub enum CommandError {
     /// The generated-footer preprocessor could not write masked output.
     #[error("failed to write rg preprocessor output")]
     WriteRgPreprocessorOutput(#[source] std::io::Error),
+    /// Git could not be started.
+    #[error("failed to run git")]
+    RunGit(#[source] std::io::Error),
+    /// Git exited unsuccessfully.
+    #[error("git command failed: {stderr}")]
+    GitFailed {
+        /// Captured standard error.
+        stderr: String,
+    },
+    /// Git output was not valid UTF-8.
+    #[error("git output is not valid UTF-8")]
+    GitOutput(#[source] std::string::FromUtf8Error),
     /// A charm command requires an enabled charm.
     #[error("charm `{0}` is not enabled; run `sirno charm enable {0}` first")]
     CharmNotEnabled(EntryAddress),

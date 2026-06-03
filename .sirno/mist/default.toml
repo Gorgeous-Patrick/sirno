@@ -1,2 +1,6 @@
+[projection]
+path = "sirno-lake"
+editable = true
+
 [render.structural]
 belongs = ["to", "from"]

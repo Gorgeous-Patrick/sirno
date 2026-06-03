@@ -29,7 +29,8 @@ Keep each visual form aware of the human co-worker who must read and review it.
 
 ### Sirno Lake
 
-The authoritative project design lives in `sirno-lake/`.
+The authoritative project design lives in the reservoir at `.sirno/lake/`.
+The default projected misty workspace is `sirno-lake/`.
 The split Chinese translation snapshot lives in `sirno-lake-zh/`.
 Do not update `sirno-lake-zh/` during normal agent workflow or lake maintenance.
 Whenever anything changes about the project design, keep the Sirno Lake in sync.
@@ -37,10 +38,10 @@ Use `sirno-editor` for design-sensitive repository exploration, lake knowledge e
 Use `sirno-narrative-session` when guiding or saving a route through lake knowledge.
 Use `sirno-curator` when auditing an existing lake for clarity, focus, structure, or witness alignment.
 Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
-After lake metadata changes, run `sirno_lake_render`,
+After reservoir metadata changes, run `sirno_mist_render`,
 then `sirno_lake_check` in edit and review modes.
-Use `sirno-lake/introduction.md` as the first narrative route.
-Use `sirno-lake/methodology.md` as the working guide.
+Use `.sirno/lake/introduction.md` as the first narrative route.
+Use `.sirno/lake/methodology.md` as the working guide.
 
 ### Rust
 

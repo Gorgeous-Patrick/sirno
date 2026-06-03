@@ -1,6 +1,6 @@
 //! Typed command execution shared by CLI and tool adapters.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::ffi::OsString;
 use std::fs;
@@ -21,13 +21,14 @@ use crate::surface::dto::{
     CharmListResult, CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult,
     CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadResult,
     EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult,
-    MovePathResult, PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest,
-    QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
-    SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
-    StructuralConfigRecord, StructuralConfigSyncResult, StructuralEdgeStatus,
-    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
-    UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
+    MistIntakeResult, MistStatusResult, MovePathResult, PathRecord, QueryColumn,
+    QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
+    RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, SpellListResult,
+    SpellRecord, StatusCheckPolicy, StatusResult, StatusTide, StructuralConfigRecord,
+    StructuralConfigSyncResult, StructuralEdgeStatus, StructuralFieldState, StructuralFieldStatus,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
+    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -37,9 +38,11 @@ use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
-    EntryDirectoryReport, EntryMetadata, EntryQuery, EntryStructuralMatcher, MistManifest,
-    MistRenderSettings, MistSpec, SPELL_CACHE_DIRECTORY, SirnoConfig, SirnoLock,
-    StructuralSettings, Tide, TideEntrySnapshot, TideStatus, UpstreamCrystallizeReport,
+    EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
+    EntryStructuralMatcher, GeneratedLinkBody, MistManifest, MistManifestEntry, MistRenderSettings,
+    MistSelectionSettings, MistSpec, MistStructuralFieldState, MistStructuralStateFilter,
+    MistStructuralTargetFilter, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig,
+    SirnoLock, StructuralSettings, Tide, TideEntrySnapshot, TideStatus, UpstreamCrystallizeReport,
     UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
@@ -48,50 +51,50 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
     SkillWrapperSpec {
         name: "sirno-editor",
         entry_id: "repository-editing-discipline",
-        wrapper_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/repository-editing-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/repository-editing-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-actualizer",
         entry_id: "actualization-discipline",
-        wrapper_path: "sirno-lake/.artifacts/actualization-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/actualization-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/actualization-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/actualization-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-actualizer/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/actualization-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/actualization-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-internalizer",
         entry_id: "internalization-discipline",
-        wrapper_path: "sirno-lake/.artifacts/internalization-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/internalization-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/internalization-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/internalization-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-internalizer/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/internalization-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/internalization-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-narrative-session",
         entry_id: "narrative-session-discipline",
-        wrapper_path: "sirno-lake/.artifacts/narrative-session-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/narrative-session-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/narrative-session-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-narrative-session/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/narrative-session-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/narrative-session-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-skill-synthesizer",
         entry_id: "skill-synthesis-discipline",
-        wrapper_path: "sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-skill-synthesizer/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/skill-synthesis-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.md"),
     },
     SkillWrapperSpec {
         name: "sirno-curator",
         entry_id: "lake-curation-discipline",
-        wrapper_path: "sirno-lake/.artifacts/lake-curation-discipline/SKILL.md",
-        full_path: "sirno-lake/.artifacts/lake-curation-discipline/SKILL.full.md",
+        wrapper_path: ".sirno/lake/.artifacts/lake-curation-discipline/SKILL.md",
+        full_path: ".sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.md",
         target_path: ".agents/skills/sirno-curator/SKILL.md",
-        content: include_str!("../../sirno-lake/.artifacts/lake-curation-discipline/SKILL.md"),
+        content: include_str!("../../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.md"),
     },
 ];
 // sirno:witness:agent-skills:end
@@ -1374,36 +1377,70 @@ impl SurfaceContext {
                 &mist.config.structural,
                 override_json,
             )?;
-            mist.settings.structural =
+            mist.projection_settings.structural =
                 mist.spec.render.structural_settings(&mist.config.structural)?;
         }
-        mist.settings.render = false;
-        mist.settings.witness = None;
+        let projection_settings = mist.projection_render_settings();
 
-        let directory = EntryDirectory::new(&mist.lake_path);
-        let check = directory.check_with_settings(CheckMode::Review, &mist.settings)?;
-        if check.has_errors() {
-            return Ok(RenderResult::blocked(&check));
+        if dry {
+            let directory = EntryDirectory::new(&mist.projection_path);
+            let check = directory.check_with_settings(CheckMode::Review, &projection_settings)?;
+            if check.has_errors() {
+                return Ok(RenderResult::blocked(&check));
+            }
+            let report =
+                directory.check_generated_links_with_check_settings(&projection_settings)?;
+            return Ok(RenderResult::from_report(&report, dry));
         }
 
-        let report = if dry {
-            directory.check_generated_links_with_check_settings(&mist.settings)?
-        } else {
-            directory.generate_links_with_check_settings(&mist.settings)?
-        };
+        let reservoir_report = mist.reservoir_report(CheckMode::Review)?;
+        if reservoir_report.has_errors() {
+            return Ok(RenderResult::blocked(&reservoir_report));
+        }
+        let selected = select_mist_entries(
+            reservoir_report.entries(),
+            &mist.spec.select,
+            &mist.config.structural,
+        )?;
+        let selected_ids = selected.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
+        let selected_entries = selected
+            .iter()
+            .map(|entry| entry_without_generated_links(entry))
+            .collect::<Result<Vec<_>, CommandError>>()?;
+        let selected_artifacts = reservoir_report
+            .artifacts()
+            .iter()
+            .filter(|artifact| selected_ids.contains(&artifact.owner))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let directory = EntryDirectory::new(&mist.projection_path);
+        let mut extra_changed_paths = directory.write_with_artifacts(
+            &selected_entries,
+            &selected_artifacts,
+            EntryDirectoryWritePolicy::ReplaceDirectory {
+                ignore: mist.projection_settings.ignore.clone(),
+            },
+        )?;
+        let report = directory.generate_links_with_check_settings(&projection_settings)?;
         if dry {
             return Ok(RenderResult::from_report(&report, dry));
         }
 
-        let manifest_path = MistManifest::path_for_projection(&mist.lake_path);
+        let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
         let manifest = MistManifest::from_entries(
             mist.name,
             mist.spec_path,
+            mist.reservoir_path,
+            mist.spec.projection,
+            mist.spec.select,
             mist.spec.render,
-            check.entries(),
+            &selected_entries,
         )?;
         let manifest_changed = manifest.write_if_changed(&manifest_path)?;
-        let extra_changed_paths = if manifest_changed { vec![manifest_path] } else { Vec::new() };
+        if manifest_changed {
+            extra_changed_paths.push(manifest_path);
+        }
         Ok(RenderResult::from_report_with_extra_changed_paths(&report, dry, &extra_changed_paths))
     }
 
@@ -1412,12 +1449,64 @@ impl SurfaceContext {
         &self, mist: Option<EntryAtom>,
     ) -> Result<RenderResult, CommandError> {
         let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
-        let report = EntryDirectory::new(&mist.lake_path)
-            .delete_generated_links_with_ignored_paths(mist.settings.ignore)?;
-        let manifest_path = MistManifest::path_for_projection(&mist.lake_path);
+        let report = EntryDirectory::new(&mist.projection_path)
+            .delete_generated_links_with_ignored_paths(mist.projection_settings.ignore)?;
+        let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
         let manifest_changed = MistManifest::remove_if_exists(&manifest_path)?;
         let extra_changed_paths = if manifest_changed { vec![manifest_path] } else { Vec::new() };
         Ok(RenderResult::from_report_with_extra_changed_paths(&report, false, &extra_changed_paths))
+    }
+
+    /// Show pending mist ripples and stale projection state.
+    pub fn mist_status(&self, mist: Option<EntryAtom>) -> Result<MistStatusResult, CommandError> {
+        let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
+        mist_status_for(&self.config_path, &mist)
+    }
+
+    /// Intake edited Markdown entry sources from one misty lake into the reservoir.
+    pub fn mist_intake(&self, mist: Option<EntryAtom>) -> Result<MistIntakeResult, CommandError> {
+        let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
+        let status = mist_status_for(&self.config_path, &mist)?;
+        let blockers = mist_intake_blockers(&status);
+        if !blockers.is_empty() {
+            return Err(CommandError::MistIntakeBlocked(blockers.join("; ")));
+        }
+
+        let reservoir = EntryDirectory::new(&mist.reservoir_path);
+        let projection = EntryDirectory::new(&mist.projection_path);
+        let mut updated_entries = Vec::new();
+        let mut changed_paths = Vec::new();
+        for id in &status.changed_entries {
+            let id = EntryAddress::new(id)?;
+            let projected = projection.read_entry_source(&id)?;
+            let clean = entry_source_without_generated_links(&id, &projected)?;
+            changed_paths.push(reservoir.write_entry_source(&id, &clean)?);
+            updated_entries.push(id.to_string());
+        }
+
+        let render = self.mist_render(Some(mist.name.clone()), false)?;
+        changed_paths.extend(render.changed_paths.iter().map(PathBuf::from));
+        changed_paths.sort();
+        changed_paths.dedup();
+        let message = if updated_entries.is_empty() {
+            format!("mist {} has no ripples to intake", mist.name)
+        } else {
+            format!(
+                "intook {} {} from mist {}",
+                updated_entries.len(),
+                plural(updated_entries.len(), "entry", "entries"),
+                mist.name
+            )
+        };
+        Ok(MistIntakeResult {
+            ok: true,
+            mist: mist.name.to_string(),
+            reservoir_path: display_path(&mist.reservoir_path),
+            projection_path: display_path(&mist.projection_path),
+            updated_entries,
+            changed_paths: display_paths(&changed_paths),
+            message,
+        })
     }
 
     /// Show the current lake ripples against the accepted anchor baseline.
@@ -1477,6 +1566,10 @@ impl SurfaceContext {
                 return Err(CommandError::AnchorUpdateOpenTide { open_workitems });
             }
         }
+        let mist_status = self.mist_status(Some(MistSpec::default_name()))?;
+        if mist_status.has_ripples_or_blockers() {
+            return Err(CommandError::AnchorUpdateMist(mist_status.message));
+        }
 
         let anchor = context.anchor_from_report(&report)?;
         anchor.write(&context.anchor_path)?;
@@ -1528,15 +1621,18 @@ impl SurfaceContext {
         } else {
             None
         };
+        let mist = if !check.has_errors {
+            Some(self.mist_status(Some(MistSpec::default_name()))?)
+        } else {
+            None
+        };
+        let ok = check.ok && mist.as_ref().map_or(true, |mist| mist.ok || !mist.manifest_present);
         Ok(StatusResult {
-            ok: check.ok,
+            ok,
             config_path: display_path(&self.config_path),
             lake_path: display_path(report.root()),
             entry_count: report.entries().len(),
-            check_policy: StatusCheckPolicy {
-                mode: CheckMode::Review,
-                render: config.check.render_enabled(),
-            },
+            check_policy: StatusCheckPolicy { mode: CheckMode::Review, render: settings.render },
             structural_fields: settings
                 .structural
                 .with_tide_policies_from_entries(report.entries())
@@ -1554,6 +1650,7 @@ impl SurfaceContext {
                 })
                 .collect(),
             tide,
+            mist,
             check,
         })
     }
@@ -2109,25 +2206,7 @@ pub(crate) fn default_config_path() -> PathBuf {
 }
 
 pub(crate) fn default_lake_path(config_path: &Path) -> PathBuf {
-    default_repo_path(config_path, "lake")
-}
-
-fn default_repo_path(config_path: &Path, suffix: &str) -> PathBuf {
-    let mut name = default_repo_name(config_path);
-    name.push("-");
-    name.push(suffix);
-    PathBuf::from(name)
-}
-
-fn default_repo_name(config_path: &Path) -> OsString {
-    let config_dir = match config_path.parent().filter(|path| !path.as_os_str().is_empty()) {
-        | Some(path) if path == Path::new(".") => env::current_dir().ok(),
-        | Some(path) => Some(path.to_path_buf()),
-        | None => env::current_dir().ok(),
-    };
-    config_dir
-        .and_then(|path| path.file_name().map(OsString::from))
-        .unwrap_or_else(|| OsString::from("sirno"))
+    config_path.parent().unwrap_or_else(|| Path::new(".")).join(SIRNO_CONTROL_DIR_NAME).join("lake")
 }
 
 struct ResolvedMist {
@@ -2135,8 +2214,10 @@ struct ResolvedMist {
     spec_path: PathBuf,
     spec: MistSpec,
     config: SirnoConfig,
-    lake_path: PathBuf,
-    settings: EntryDirectoryCheckSettings,
+    reservoir_path: PathBuf,
+    reservoir_settings: EntryDirectoryCheckSettings,
+    projection_path: PathBuf,
+    projection_settings: EntryDirectoryCheckSettings,
 }
 
 impl ResolvedMist {
@@ -2151,10 +2232,325 @@ impl ResolvedMist {
         } else {
             MistSpec::from_file(&spec_path)?
         };
-        let lake_path = resolve_lake_path(lake_path, config_path, &config);
-        let settings = entry_directory_check_settings_with_mist(config_path, &config, &spec)?;
-        Ok(Self { name, spec_path, spec, config, lake_path, settings })
+        let reservoir_path = resolve_lake_path(lake_path, config_path, &config);
+        let reservoir_settings = entry_directory_check_settings(config_path, &config)?;
+        let projection_path = resolve_projection_path(config_path, &spec.projection.path);
+        let projection_settings = projection_check_settings(config_path, &config, &spec)?;
+        Ok(Self {
+            name,
+            spec_path,
+            spec,
+            config,
+            reservoir_path,
+            reservoir_settings,
+            projection_path,
+            projection_settings,
+        })
     }
+
+    fn reservoir_report(&self, mode: CheckMode) -> Result<EntryDirectoryReport, CommandError> {
+        let mut settings = self.reservoir_settings.clone();
+        settings.render = false;
+        settings.witness = if mode == CheckMode::Review { settings.witness } else { None };
+        let report =
+            EntryDirectory::new(&self.reservoir_path).check_with_settings(mode, &settings)?;
+        Ok(report)
+    }
+
+    fn projection_render_settings(&self) -> EntryDirectoryCheckSettings {
+        let mut settings = self.projection_settings.clone();
+        settings.render = false;
+        settings.witness = None;
+        settings.structural_inhabitance = false;
+        settings
+    }
+}
+
+fn resolve_projection_path(config_path: &Path, projection_path: &Path) -> PathBuf {
+    if projection_path.is_absolute() {
+        return projection_path.to_path_buf();
+    }
+    config_parent(config_path).join(projection_path)
+}
+
+fn select_mist_entries<'a>(
+    entries: &'a [Entry], select: &MistSelectionSettings, structural: &StructuralSettings,
+) -> Result<Vec<&'a Entry>, CommandError> {
+    let vague_query = VagueEntryQuery::new().with_text_terms(select.terms.clone());
+    let filtered_query = entry_query_from_filters(
+        EntryQuery::new().with_text_terms(select.exact_terms.clone()),
+        select.has.iter().map(structural_filter_from_mist).collect::<Vec<_>>(),
+        select.is.iter().map(structural_state_from_mist).collect::<Vec<_>>(),
+        structural,
+    )?;
+    let vague_matches = vague_query.select_entries(entries);
+    Ok(filtered_query.select_entries(vague_matches))
+}
+
+fn structural_filter_from_mist(filter: &MistStructuralTargetFilter) -> StructuralFilter {
+    StructuralFilter { field: filter.field.clone(), targets: filter.targets.clone() }
+}
+
+fn structural_state_from_mist(filter: &MistStructuralStateFilter) -> StructuralStateFilter {
+    StructuralStateFilter {
+        field: filter.field.clone(),
+        state: structural_field_state_from_mist(filter.state),
+    }
+}
+
+fn structural_field_state_from_mist(state: MistStructuralFieldState) -> StructuralFieldState {
+    match state {
+        | MistStructuralFieldState::Present => StructuralFieldState::Present,
+        | MistStructuralFieldState::Empty => StructuralFieldState::Empty,
+        | MistStructuralFieldState::Missing => StructuralFieldState::Missing,
+    }
+}
+
+fn entry_without_generated_links(entry: &Entry) -> Result<Entry, CommandError> {
+    let mut entry = entry.clone();
+    entry.body = remove_generated_footer_divider(&GeneratedLinkBody::new(&entry.body).delete()?);
+    Ok(entry)
+}
+
+fn entry_source_without_generated_links(
+    id: &EntryAddress, source: &str,
+) -> Result<String, CommandError> {
+    let entry = Entry::from_markdown(id.clone(), source)?;
+    let body = remove_generated_footer_divider(&GeneratedLinkBody::new(&entry.body).delete()?);
+    Ok(Entry::replace_markdown_body(source, &body)?)
+}
+
+fn remove_generated_footer_divider(body: &str) -> String {
+    let trimmed = body.trim_end_matches('\n');
+    let Some(before) = trimmed.strip_suffix("\n---") else {
+        return body.to_owned();
+    };
+    let before = before.trim_end_matches('\n');
+    if before.is_empty() { String::new() } else { format!("{before}\n") }
+}
+
+fn mist_status_for(
+    config_path: &Path, mist: &ResolvedMist,
+) -> Result<MistStatusResult, CommandError> {
+    let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
+    let manifest = match MistManifest::from_file(&manifest_path) {
+        | Ok(manifest) => manifest,
+        | Err(crate::MistError::Read { source, .. }) if source.kind() == ErrorKind::NotFound => {
+            return Ok(MistStatusResult {
+                ok: false,
+                manifest_present: false,
+                mist: mist.name.to_string(),
+                spec_path: display_path(&mist.spec_path),
+                reservoir_path: display_path(&mist.reservoir_path),
+                projection_path: display_path(&mist.projection_path),
+                editable: mist.spec.projection.editable,
+                entry_count: 0,
+                changed_entries: Vec::new(),
+                stale_entries: Vec::new(),
+                missing_entries: Vec::new(),
+                staged_paths: git_staged_paths_under(config_path, &mist.projection_path)
+                    .map(|paths| display_paths(&paths))?,
+                message: format!(
+                    "mist {} has no projection manifest; run `sirno mist render`",
+                    mist.name
+                ),
+            });
+        }
+        | Err(error) => return Err(error.into()),
+    };
+
+    let reservoir_report = mist.reservoir_report(CheckMode::Edit)?;
+    if reservoir_report.has_errors() {
+        return Err(EntryDirectoryError::InvalidEntryDirectory(mist.reservoir_path.clone()).into());
+    }
+    let reservoir = EntryDirectory::new(&mist.reservoir_path);
+    let projection = EntryDirectory::new(&mist.projection_path);
+    let manifest_ids = manifest
+        .entries
+        .iter()
+        .map(|record| EntryAddress::new(&record.id))
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    let entries_by_id = reservoir_report
+        .entries()
+        .iter()
+        .map(|entry| (entry.id.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut changed_entries = Vec::new();
+    let mut stale_entries = Vec::new();
+    let mut missing_entries = Vec::new();
+
+    for record in &manifest.entries {
+        let id = EntryAddress::new(&record.id)?;
+        let Some(reservoir_entry) = entries_by_id.get(&id) else {
+            stale_entries.push(id.to_string());
+            continue;
+        };
+        let current =
+            MistManifestEntry::from_entry(&entry_without_generated_links(reservoir_entry)?)?;
+        if current.fingerprint != record.fingerprint {
+            stale_entries.push(id.to_string());
+            continue;
+        }
+
+        let projected_source = match projection.read_entry_source(&id) {
+            | Ok(source) => source,
+            | Err(EntryDirectoryError::EntryNotFound(_))
+            | Err(EntryDirectoryError::MissingDirectory(_)) => {
+                missing_entries.push(id.to_string());
+                continue;
+            }
+            | Err(error) => return Err(error.into()),
+        };
+        let projected_clean = entry_source_without_generated_links(&id, &projected_source)?;
+        let reservoir_source = reservoir.read_entry_source(&id)?;
+        let reservoir_clean = entry_source_without_generated_links(&id, &reservoir_source)?;
+        let projected_entry = Entry::from_markdown(id.clone(), &projected_clean)?;
+        let reservoir_entry = Entry::from_markdown(id.clone(), &reservoir_clean)?;
+        if projected_entry != reservoir_entry {
+            changed_entries.push(id.to_string());
+        }
+    }
+
+    let projection_report =
+        projection.check_with_settings(CheckMode::Edit, &mist.projection_render_settings());
+    match projection_report {
+        | Ok(report) if !report.has_errors() => {
+            for entry in report.entries() {
+                if !manifest_ids.contains(&entry.id)
+                    && !changed_entries.iter().any(|id| id == entry.id.as_str())
+                {
+                    changed_entries.push(entry.id.to_string());
+                }
+            }
+        }
+        | Ok(_) => {
+            return Err(
+                EntryDirectoryError::InvalidEntryDirectory(mist.projection_path.clone()).into()
+            );
+        }
+        | Err(EntryDirectoryError::MissingDirectory(_)) => {}
+        | Err(error) => return Err(error.into()),
+    }
+
+    let staged_paths = display_paths(&git_staged_paths_under(config_path, &mist.projection_path)?);
+    let ok = changed_entries.is_empty()
+        && stale_entries.is_empty()
+        && missing_entries.is_empty()
+        && staged_paths.is_empty();
+    let message = mist_status_message(
+        &mist.name,
+        ok,
+        changed_entries.len(),
+        stale_entries.len(),
+        missing_entries.len(),
+        staged_paths.len(),
+    );
+    Ok(MistStatusResult {
+        ok,
+        manifest_present: true,
+        mist: mist.name.to_string(),
+        spec_path: display_path(&mist.spec_path),
+        reservoir_path: display_path(&mist.reservoir_path),
+        projection_path: display_path(&mist.projection_path),
+        editable: mist.spec.projection.editable,
+        entry_count: manifest.entries.len(),
+        changed_entries,
+        stale_entries,
+        missing_entries,
+        staged_paths,
+        message,
+    })
+}
+
+fn mist_status_message(
+    name: &EntryAtom, ok: bool, changed: usize, stale: usize, missing: usize, staged: usize,
+) -> String {
+    if ok {
+        return format!("mist {name} is clean");
+    }
+
+    let mut parts = Vec::new();
+    if changed > 0 {
+        parts.push(format!("{changed} changed {}", plural(changed, "entry", "entries")));
+    }
+    if stale > 0 {
+        parts.push(format!("{stale} stale {}", plural(stale, "entry", "entries")));
+    }
+    if missing > 0 {
+        parts.push(format!("{missing} missing {}", plural(missing, "entry", "entries")));
+    }
+    if staged > 0 {
+        parts.push(format!("{staged} staged {}", plural(staged, "path", "paths")));
+    }
+    format!("mist {name} has {}", parts.join(", "))
+}
+
+fn mist_intake_blockers(status: &MistStatusResult) -> Vec<String> {
+    let mut blockers = Vec::new();
+    if !status.editable {
+        blockers.push("projection is not editable".to_owned());
+    }
+    if !status.manifest_present {
+        blockers.push("projection manifest is missing".to_owned());
+    }
+    if !status.stale_entries.is_empty() {
+        blockers.push(format!(
+            "{} stale {}",
+            status.stale_entries.len(),
+            plural(status.stale_entries.len(), "entry", "entries")
+        ));
+    }
+    if !status.missing_entries.is_empty() {
+        blockers.push(format!(
+            "{} missing {}",
+            status.missing_entries.len(),
+            plural(status.missing_entries.len(), "entry", "entries")
+        ));
+    }
+    if !status.staged_paths.is_empty() {
+        blockers.push(format!(
+            "{} staged {}",
+            status.staged_paths.len(),
+            plural(status.staged_paths.len(), "path", "paths")
+        ));
+    }
+    blockers
+}
+
+fn git_staged_paths_under(
+    config_path: &Path, projection_path: &Path,
+) -> Result<Vec<PathBuf>, CommandError> {
+    let root = config_parent(config_path);
+    let probe = ProcessCommand::new("git")
+        .arg("-C")
+        .arg(&root)
+        .arg("rev-parse")
+        .arg("--is-inside-work-tree")
+        .output()
+        .map_err(CommandError::RunGit)?;
+    if !probe.status.success() {
+        return Ok(Vec::new());
+    }
+    let pathspec = projection_path.strip_prefix(&root).unwrap_or(projection_path);
+    let output = ProcessCommand::new("git")
+        .arg("-C")
+        .arg(&root)
+        .arg("diff")
+        .arg("--name-only")
+        .arg("--cached")
+        .arg("--")
+        .arg(pathspec)
+        .output()
+        .map_err(CommandError::RunGit)?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        if stderr.contains("not a git repository") {
+            return Ok(Vec::new());
+        }
+        return Err(CommandError::GitFailed { stderr });
+    }
+    let stdout = String::from_utf8(output.stdout).map_err(CommandError::GitOutput)?;
+    Ok(stdout.lines().filter(|line| !line.trim().is_empty()).map(|line| root.join(line)).collect())
 }
 
 fn apply_structural_override_json(
@@ -2215,20 +2611,34 @@ fn explicit_lake_check_settings(
 fn entry_directory_check_settings(
     config_path: &Path, config: &SirnoConfig,
 ) -> Result<EntryDirectoryCheckSettings, CommandError> {
-    let mist = MistSpec::default_for_config(config_path)?;
-    entry_directory_check_settings_with_mist(config_path, config, &mist)
+    Ok(EntryDirectoryCheckSettings {
+        render: false,
+        structural_inhabitance: config.check.structural_inhabitance_enabled(),
+        structural: config.structural.clone(),
+        ignore: config.lake.ignore.clone(),
+        witness: witness_check_settings(config_path, config),
+    })
 }
 
-fn entry_directory_check_settings_with_mist(
+fn projection_check_settings(
     config_path: &Path, config: &SirnoConfig, mist: &MistSpec,
 ) -> Result<EntryDirectoryCheckSettings, CommandError> {
     Ok(EntryDirectoryCheckSettings {
         render: config.check.render_enabled(),
-        structural_inhabitance: config.check.structural_inhabitance_enabled(),
+        structural_inhabitance: false,
         structural: mist.render.structural_settings(&config.structural)?,
-        ignore: config.lake.ignore.clone(),
+        ignore: projection_ignore_paths(config),
         witness: witness_check_settings(config_path, config),
     })
+}
+
+fn projection_ignore_paths(config: &SirnoConfig) -> Vec<PathBuf> {
+    let mut ignore = config.lake.ignore.clone();
+    let control = PathBuf::from(SIRNO_CONTROL_DIR_NAME);
+    if !ignore.iter().any(|path| path == &control) {
+        ignore.push(control);
+    }
+    ignore
 }
 
 fn witness_check_settings(
@@ -2413,6 +2823,29 @@ mod tests {
                 })
                 .unwrap();
         }
+    }
+
+    #[test]
+    fn mist_render_status_and_intake_round_trip_entry_edits() {
+        let (temp, context) = initialized_context();
+
+        let render = context.mist_render(None, false).unwrap();
+        assert!(render.ok);
+
+        let projected = temp.path().join(crate::DEFAULT_MIST_PROJECTION_PATH).join("name.md");
+        let source = fs::read_to_string(&projected).unwrap();
+        fs::write(&projected, source.replace("required `name`", "accepted `name`")).unwrap();
+
+        let status = context.mist_status(None).unwrap();
+        assert!(!status.ok);
+        assert_eq!(status.changed_entries, vec!["name"]);
+
+        let intake = context.mist_intake(None).unwrap();
+        assert_eq!(intake.updated_entries, vec!["name"]);
+
+        let reservoir = temp.path().join("lake").join("name.md");
+        assert!(fs::read_to_string(reservoir).unwrap().contains("accepted `name`"));
+        assert!(context.mist_status(None).unwrap().ok);
     }
 
     #[cfg(unix)]
