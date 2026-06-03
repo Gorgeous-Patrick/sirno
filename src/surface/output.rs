@@ -10,9 +10,10 @@ use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
-    AnchorCheckResult, AnchorDriftKind, AnchorDriftRecord, AnchorStatusResult, AnchorUpdateResult,
-    ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord, QueryColumn, QueryColumns,
-    QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
+    AnchorCheckResult, AnchorRippleKind, AnchorRippleRecord, AnchorStatusResult,
+    AnchorUpdateResult, ConfigCommentResult, DiagnosticRecord, LakeCheckResult, PathRecord,
+    QueryColumn, QueryColumns, QueryOutputFormat, QueryResults, QueryValue, RenderResult,
+    SkillWrapperRecord, StatusResult,
 };
 use crate::surface::error::CommandError;
 use crate::{
@@ -204,8 +205,8 @@ pub(crate) fn print_anchor_update_result(result: &AnchorUpdateResult) {
 
 fn format_anchor_status_result(result: &AnchorStatusResult) -> String {
     let mut output = String::new();
-    if !result.drift.is_empty() {
-        output.push_str(&format_anchor_drift_table(&result.drift));
+    if !result.ripples.is_empty() {
+        output.push_str(&format_anchor_ripple_table(&result.ripples));
     }
     output.push_str(&result.message);
     output.push('\n');
@@ -214,32 +215,32 @@ fn format_anchor_status_result(result: &AnchorStatusResult) -> String {
 
 fn format_anchor_check_result(result: &AnchorCheckResult) -> String {
     let mut output = String::new();
-    if !result.drift.is_empty() {
-        output.push_str(&format_anchor_drift_table(&result.drift));
+    if !result.ripples.is_empty() {
+        output.push_str(&format_anchor_ripple_table(&result.ripples));
     }
     output.push_str(&result.message);
     output.push('\n');
     output
 }
 
-fn format_anchor_drift_table(drift: &[AnchorDriftRecord]) -> String {
-    let rows = drift
+fn format_anchor_ripple_table(ripples: &[AnchorRippleRecord]) -> String {
+    let rows = ripples
         .iter()
-        .map(|record| vec![record.id.to_string(), anchor_drift_kind_label(record.kind).to_owned()])
+        .map(|record| vec![record.id.to_string(), anchor_ripple_kind_label(record.kind).to_owned()])
         .collect::<Vec<_>>();
     format_human_table_with_width_and_style(
-        vec!["entry".to_owned(), "drift".to_owned()],
+        vec!["entry".to_owned(), "ripple".to_owned()],
         rows,
         None,
         OutputStyle::Plain,
     )
 }
 
-fn anchor_drift_kind_label(kind: AnchorDriftKind) -> &'static str {
+fn anchor_ripple_kind_label(kind: AnchorRippleKind) -> &'static str {
     match kind {
-        | AnchorDriftKind::Added => "added",
-        | AnchorDriftKind::Changed => "changed",
-        | AnchorDriftKind::Deleted => "deleted",
+        | AnchorRippleKind::Added => "added",
+        | AnchorRippleKind::Changed => "changed",
+        | AnchorRippleKind::Deleted => "deleted",
     }
 }
 

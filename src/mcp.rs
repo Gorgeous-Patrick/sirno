@@ -423,7 +423,7 @@ impl SirnoMcpServer {
         result(self.context.upstream_status())
     }
 
-    /// Show lake drift against the accepted anchor baseline.
+    /// Show lake ripples against the accepted anchor baseline.
     #[tool(name = "sirno_anchor_status")]
     fn anchor_status(&self) -> McpToolResult {
         result(self.context.anchor_status())

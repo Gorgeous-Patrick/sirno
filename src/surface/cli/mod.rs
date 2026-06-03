@@ -700,7 +700,7 @@ enum TideCommand {
 /// Supported Anchor commands.
 #[derive(Debug, Subcommand)]
 enum AnchorCommand {
-    /// Show lake drift against `.sirno/anchor.toml`.
+    /// Show lake ripples against `.sirno/anchor.toml`.
     Status {
         /// Output format.
         #[arg(short = 'o', long, value_enum)]

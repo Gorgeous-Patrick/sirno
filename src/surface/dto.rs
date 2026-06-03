@@ -46,10 +46,10 @@ pub enum TideStatusMode {
     All,
 }
 
-/// Anchor drift class for one entry.
+/// Anchor ripple class for one entry.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum AnchorDriftKind {
+pub enum AnchorRippleKind {
     /// The entry exists in the lake but not in the anchor.
     Added,
     /// The entry exists in both places and has a different fingerprint.
@@ -60,11 +60,11 @@ pub enum AnchorDriftKind {
 
 /// One entry-level difference between the current lake and the anchor.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AnchorDriftRecord {
+pub struct AnchorRippleRecord {
     /// Entry address.
     pub id: EntryAddress,
-    /// Drift class.
-    pub kind: AnchorDriftKind,
+    /// Ripple class.
+    pub kind: AnchorRippleKind,
 }
 
 /// JSON-ready Anchor status result.
@@ -80,8 +80,8 @@ pub struct AnchorStatusResult {
     pub lake_path: String,
     /// Number of current lake entries.
     pub entry_count: usize,
-    /// Current entry-level drift.
-    pub drift: Vec<AnchorDriftRecord>,
+    /// Current entry-level ripples.
+    pub ripples: Vec<AnchorRippleRecord>,
     /// Human-readable summary.
     pub message: String,
 }
@@ -99,8 +99,8 @@ pub struct AnchorCheckResult {
     pub lake_path: String,
     /// Number of current lake entries.
     pub entry_count: usize,
-    /// Current entry-level drift.
-    pub drift: Vec<AnchorDriftRecord>,
+    /// Current entry-level ripples.
+    pub ripples: Vec<AnchorRippleRecord>,
     /// Human-readable summary.
     pub message: String,
 }

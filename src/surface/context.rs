@@ -15,14 +15,14 @@ use crate::charm::{
     manifest_artifact_path,
 };
 use crate::surface::dto::{
-    AnchorCheckResult, AnchorDriftKind, AnchorDriftRecord, AnchorStatusResult, AnchorUpdateResult,
-    ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest,
-    ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult, CharmListResult,
-    CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult, CwdResult,
-    EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadResult, EntryRenameResult,
-    LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult, MovePathResult,
-    PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse,
-    QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
+    AnchorCheckResult, AnchorRippleKind, AnchorRippleRecord, AnchorStatusResult,
+    AnchorUpdateResult, ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult,
+    ArtifactRemoveRequest, ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult,
+    CharmListResult, CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult,
+    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadResult,
+    EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult,
+    MovePathResult, PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest,
+    QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillWrapperRecord,
     SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
     StructuralConfigRecord, StructuralConfigSyncResult, StructuralEdgeStatus,
     StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
@@ -1397,24 +1397,24 @@ impl SurfaceContext {
         Ok(RenderResult::from_report(&report, false))
     }
 
-    /// Show the current lake drift against the accepted anchor baseline.
+    /// Show the current lake ripples against the accepted anchor baseline.
     pub fn anchor_status(&self) -> Result<AnchorStatusResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let report = context.checked_report(CheckMode::Edit)?;
         let current = context.anchor_from_report(&report)?;
         let anchor = AnchorFile::from_file_if_exists(&context.anchor_path)?;
-        let (initialized, drift) = match anchor {
-            | Some(anchor) => (true, anchor_drift(&anchor, &current)?),
-            | None => (false, unanchored_drift(&current)?),
+        let (initialized, ripples) = match anchor {
+            | Some(anchor) => (true, anchor_ripples(&anchor, &current)?),
+            | None => (false, unanchored_ripples(&current)?),
         };
-        let ok = initialized && drift.is_empty();
+        let ok = initialized && ripples.is_empty();
         Ok(AnchorStatusResult {
             ok,
             initialized,
             anchor_path: display_path(&context.anchor_path),
             lake_path: display_path(report.root()),
             entry_count: report.entries().len(),
-            drift,
+            ripples,
             message: anchor_status_message(ok, initialized, current.entries.len()),
         })
     }
@@ -1425,7 +1425,8 @@ impl SurfaceContext {
         let message = if status.ok {
             format!("anchor check ok in {}", status.anchor_path)
         } else if status.initialized {
-            format!("anchor check found {} drifted entries", status.drift.len())
+            let count = status.ripples.len();
+            format!("anchor check found {count} {}", plural(count, "ripple", "ripples"))
         } else {
             format!("anchor check found no anchor at {}", status.anchor_path)
         };
@@ -1435,7 +1436,7 @@ impl SurfaceContext {
             anchor_path: status.anchor_path,
             lake_path: status.lake_path,
             entry_count: status.entry_count,
-            drift: status.drift,
+            ripples: status.ripples,
             message,
         })
     }
@@ -1890,36 +1891,36 @@ fn anchor_snapshots(anchor: &AnchorFile) -> Result<Vec<TideEntrySnapshot>, Comma
         .collect()
 }
 
-fn anchor_drift(
+fn anchor_ripples(
     anchor: &AnchorFile, current: &AnchorFile,
-) -> Result<Vec<AnchorDriftRecord>, CommandError> {
+) -> Result<Vec<AnchorRippleRecord>, CommandError> {
     let mut ids = BTreeSet::new();
     ids.extend(anchor.entries.keys().cloned());
     ids.extend(current.entries.keys().cloned());
 
-    let mut drift = Vec::new();
+    let mut ripples = Vec::new();
     for id in ids {
         let kind = match (anchor.entries.get(&id), current.entries.get(&id)) {
-            | (None, Some(_)) => Some(AnchorDriftKind::Added),
-            | (Some(_), None) => Some(AnchorDriftKind::Deleted),
-            | (Some(left), Some(right)) if left != right => Some(AnchorDriftKind::Changed),
+            | (None, Some(_)) => Some(AnchorRippleKind::Added),
+            | (Some(_), None) => Some(AnchorRippleKind::Deleted),
+            | (Some(left), Some(right)) if left != right => Some(AnchorRippleKind::Changed),
             | (Some(_), Some(_)) | (None, None) => None,
         };
         if let Some(kind) = kind {
-            drift.push(AnchorDriftRecord { id: EntryAddress::new(id)?, kind });
+            ripples.push(AnchorRippleRecord { id: EntryAddress::new(id)?, kind });
         }
     }
-    Ok(drift)
+    Ok(ripples)
 }
 
-fn unanchored_drift(current: &AnchorFile) -> Result<Vec<AnchorDriftRecord>, CommandError> {
+fn unanchored_ripples(current: &AnchorFile) -> Result<Vec<AnchorRippleRecord>, CommandError> {
     current
         .entries
         .keys()
         .map(|id| {
-            Ok(AnchorDriftRecord {
+            Ok(AnchorRippleRecord {
                 id: EntryAddress::new(id.as_str())?,
-                kind: AnchorDriftKind::Added,
+                kind: AnchorRippleKind::Added,
             })
         })
         .collect()
@@ -1929,7 +1930,7 @@ fn anchor_status_message(ok: bool, initialized: bool, entry_count: usize) -> Str
     if ok {
         format!("anchor is current for {entry_count} entries")
     } else if initialized {
-        "anchor drift detected".to_owned()
+        "anchor ripples detected".to_owned()
     } else {
         "anchor is not initialized; run `sirno anchor update`".to_owned()
     }
