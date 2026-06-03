@@ -42,9 +42,9 @@ use crate::{
     EntryStructuralMatcher, GeneratedLinkBody, MistManifest, MistManifestEntry, MistRenderSettings,
     MistSelectionSettings, MistSpec, MistStructuralFieldState, MistStructuralStateFilter,
     MistStructuralTargetFilter, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig,
-    SirnoLock, StructuralSettings, Tide, TideEntrySnapshot, TideFile, TideStatus,
-    UpstreamCrystallizeReport, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery,
-    WitnessCheckSettings, WitnessRecord,
+    StructuralSettings, Tide, TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport,
+    UpstreamFile, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings,
+    WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -426,8 +426,8 @@ impl SurfaceContext {
         let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
-        let lock_path = SirnoLock::path_for_config(&self.config_path);
-        let _lock = SirnoLock::from_file_if_exists(lock_path)?;
+        let upstream_path = UpstreamFile::path_for_config(&self.config_path);
+        let _upstream_file = UpstreamFile::from_file_if_exists(upstream_path)?;
         let report = EntryDirectory::new(&lake).fix_local_protection(&settings, false, dry_run)?;
         Ok(local_protection_result(report.root(), report.paths(), dry_run, "repair"))
     }
@@ -539,11 +539,11 @@ impl SurfaceContext {
             &config,
         ));
         let report = lake.replace_glacier(&domain, &[], &[], &settings)?;
-        let mut lock =
-            SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?
-                .unwrap_or_default();
-        lock.upstreams.shift_remove(&domain);
-        lock.write(SirnoLock::path_for_config(&self.config_path))?;
+        let upstream_path = UpstreamFile::path_for_config(&self.config_path);
+        let mut upstream_file =
+            UpstreamFile::from_file_if_exists(&upstream_path)?.unwrap_or_default();
+        upstream_file.upstreams.shift_remove(&domain);
+        write_upstream_file_or_remove(&upstream_path, &upstream_file)?;
         Ok(UpstreamCrystallizeReport {
             ok: true,
             domains: vec![domain.to_string()],
@@ -561,22 +561,23 @@ impl SurfaceContext {
         let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
         settings.render = false;
         settings.witness = None;
-        let lock_path = SirnoLock::path_for_config(&self.config_path);
-        let mut lock = SirnoLock::from_file_if_exists(&lock_path)?.unwrap_or_default();
+        let upstream_path = UpstreamFile::path_for_config(&self.config_path);
+        let mut upstream_file =
+            UpstreamFile::from_file_if_exists(&upstream_path)?.unwrap_or_default();
         let cache = self.upstream_cache()?;
         let directory = EntryDirectory::new(&lake_path);
         let (mut report, _) =
             crate::upstream::crystallize_upstreams(crate::upstream::CrystallizeUpstreams {
                 config_path: &self.config_path,
                 config: &config,
-                lock: &mut lock,
+                upstream_file: &mut upstream_file,
                 lake: &directory,
                 settings: &settings,
                 cache: &cache,
                 domains: &request.domains,
                 locked: request.locked,
             })?;
-        lock.write(&lock_path)?;
+        write_upstream_file_or_remove(&upstream_path, &upstream_file)?;
         let render = directory.generate_links_for_crystallization(&settings)?;
         report.changed_paths.extend(display_paths(render.changed_paths()));
         let protection = directory.fix_local_protection(&settings, false, false)?;
@@ -596,7 +597,8 @@ impl SurfaceContext {
     /// Return upstream status.
     pub fn upstream_status(&self) -> Result<UpstreamStatusReport, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
-        let lock = SirnoLock::from_file_if_exists(SirnoLock::path_for_config(&self.config_path))?;
+        let upstream_file =
+            UpstreamFile::from_file_if_exists(UpstreamFile::path_for_config(&self.config_path))?;
         let cache = self.upstream_cache()?;
         let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
         let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
@@ -606,7 +608,7 @@ impl SurfaceContext {
         Ok(crate::upstream::upstream_status(
             &self.config_path,
             &config,
-            lock.as_ref(),
+            upstream_file.as_ref(),
             &cache,
             Some((&lake, &settings)),
         )?)
@@ -1695,6 +1697,15 @@ impl SurfaceContext {
             message: format!("cleared {count} tide resolutions"),
         })
     }
+}
+
+fn write_upstream_file_or_remove(path: &Path, file: &UpstreamFile) -> Result<(), CommandError> {
+    if file.is_empty() {
+        UpstreamFile::remove_if_exists(path)?;
+    } else {
+        file.write(path)?;
+    }
+    Ok(())
 }
 
 fn move_configured_path_and_write_config(

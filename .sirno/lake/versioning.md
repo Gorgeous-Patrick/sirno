@@ -34,7 +34,7 @@ A version of Sirno design is therefore a Git commit that contains:
 - shared mist specs when the reservoir and mist design is active;
 - `.sirno/anchor.toml`;
 - optional active `.sirno/tide.toml` review state;
-- optional `.sirno/lock.toml` or `Sirno.lock.toml` dependency pins.
+- optional `.sirno/upstream.toml` dependency pins.
 
 Anchor is not a history store.
 It does not contain old entry bodies, restore coordinates, checkout state, or retention policy.

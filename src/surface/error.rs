@@ -7,8 +7,8 @@ use thiserror::Error;
 
 use crate::{
     AnchorError, CharmError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
-    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, LockError, MistError,
-    TideError, TideFileError, UpstreamError, WitnessError,
+    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, MistError, TideError,
+    TideFileError, UpstreamError, UpstreamFileError, WitnessError,
 };
 
 /// Error raised while running the CLI.
@@ -291,9 +291,9 @@ pub enum CommandError {
     /// Anchor-backed command failed.
     #[error(transparent)]
     Anchor(#[from] AnchorError),
-    /// Lock-backed command failed.
+    /// Upstream-file-backed command failed.
     #[error(transparent)]
-    Lock(#[from] LockError),
+    UpstreamFile(#[from] UpstreamFileError),
     /// Witness lookup failed.
     #[error(transparent)]
     Witness(#[from] WitnessError),

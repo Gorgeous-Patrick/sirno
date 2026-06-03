@@ -8,7 +8,7 @@ belongs:
 prerequisite:
   - upstream-lake
   - entry-freeze
-  - sirno-lock
+  - upstream-file
 ---
 
 *Crystallization* materializes declared upstream lakes into glaciers in the current lake.

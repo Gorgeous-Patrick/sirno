@@ -77,12 +77,10 @@ When a setup part is skipped, its path option is not accepted.
 Path moves create missing destination parents and refuse existing destinations.
 A destination inside the moved path is handled through temporary staging.
 
-`Sirno.lock.toml` records the resolved upstream state when upstream lakes are configured.
-It lives next to `Sirno.toml`.
-It also pins each upstream to the exact Git commit crystallized into the glacier.
+`.sirno/upstream.toml` records the resolved upstream state when upstream lakes are configured.
+It pins each upstream to the exact Git commit crystallized into the glacier.
 Anchor state belongs in `.sirno/anchor.toml`.
 Active Tide resolutions belong in `.sirno/tide.toml`.
-The target lock path is `.sirno/lock.toml`.
 
 `[lake].ignore` lists paths relative to the reservoir root.
 Sirno skips those paths and their descendants while reading, checking,

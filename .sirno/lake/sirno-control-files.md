@@ -10,7 +10,7 @@ prerequisite:
   - storage
   - project-config
   - anchor-file
-  - sirno-lock
+  - upstream-file
   - tide-resolution
 refines:
   - storage
@@ -31,7 +31,7 @@ The target control directory is:
 .sirno/
   anchor.toml
   tide.toml
-  lock.toml
+  upstream.toml
 ```
 
 `.sirno/anchor.toml` records the accepted lake baseline.
@@ -41,11 +41,10 @@ It exists after the first successful Anchor update.
 It exists only while review status must survive across commands or Git operations.
 Anchor update deletes it after accepting the waterline.
 
-`.sirno/lock.toml` records external upstream dependency pins.
+`.sirno/upstream.toml` records external upstream dependency pins.
 It exists only when the project has shared upstream pins.
 
-The current implementation has `.sirno/anchor.toml` and `.sirno/tide.toml` in this directory.
-`Sirno.lock.toml` still stores upstream pins until `.sirno/lock.toml` is actualized.
+The current implementation stores Anchor, Tide, and upstream control state in this directory.
 
 ## Merge Validity
 
@@ -56,7 +55,7 @@ Sirno should install merge drivers for the target files:
 ```gitattributes
 .sirno/anchor.toml merge=sirno-anchor
 .sirno/tide.toml merge=sirno-tide
-.sirno/lock.toml merge=sirno-lock
+.sirno/upstream.toml merge=sirno-upstream
 ```
 
 A Sirno merge driver must write complete valid TOML.

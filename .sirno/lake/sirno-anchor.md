@@ -64,7 +64,7 @@ These related entries are the review route through those contracts:
 - *Sirno Control Files* defines `.sirno/` placement, target file ownership, and merge validity.
 - *Sirno Tide* defines how Anchor differences become review work.
 - *Tide Resolution* and *Tide Review File* define persisted review state.
-- *Sirno Lock* defines upstream dependency pins.
+- *Upstream File* defines upstream dependency pins.
 - *Versioning* defines the boundary between Git history and Sirno accepted baselines.
 
 ## Current Implementation Notes
@@ -80,14 +80,13 @@ If Anchor is absent, Tide treats the current lake as added against an empty base
 Temporary implementation surfaces remain while the target control-file split is actualized:
 
 - structural relation entries spell the baseline-side policy as `meta.ripple.anchor`;
-- merge drivers for `.sirno/anchor.toml`, `.sirno/tide.toml`, and `.sirno/lock.toml`
-  are not installed yet;
-- upstream dependency pins still use `Sirno.lock.toml`.
+- merge drivers for `.sirno/anchor.toml`, `.sirno/tide.toml`, and `.sirno/upstream.toml`
+  are not installed yet.
 
 These surfaces are implementation debt, not new design direction.
 The target design remains tracked `.sirno/anchor.toml`,
 tracked active `.sirno/tide.toml`,
-and tracked dependency-only `.sirno/lock.toml`.
+and tracked upstream dependency `.sirno/upstream.toml`.
 
 ## Excluded Snapshot Responsibilities
 

@@ -15,7 +15,6 @@ pub mod entry;
 pub mod freeze;
 pub mod identifier;
 pub mod lake;
-pub mod lock;
 pub mod mcp;
 pub mod mist;
 pub mod query;
@@ -55,7 +54,6 @@ pub use crate::lake::{
     EntryDirectoryWritePolicy, EntryFileDiagnostic, EntryRenameReport, GenLinkDirectoryReport,
     GlacierReport,
 };
-pub use crate::lock::{LOCK_FILE_NAME, LockError, SirnoLock, UpstreamLock, UpstreamLockMap};
 pub use crate::mist::{
     DEFAULT_MIST_PROJECTION_PATH, MIST_MANIFEST_FILE_NAME, MIST_MANIFEST_SCHEMA,
     MIST_SPEC_DIR_NAME, MistError, MistManifest, MistManifestEntry, MistProjectionSettings,
@@ -77,8 +75,9 @@ pub use crate::tide::{
     TideResolution, TideSource, TideStatus, TideWorkitem, TideWorkitemParseError,
 };
 pub use crate::upstream::{
-    UpstreamCrystallizeReport, UpstreamError, UpstreamGitCache, UpstreamStatus,
-    UpstreamStatusReport, UpstreamStatusState,
+    UPSTREAM_FILE_NAME, UpstreamCrystallizeReport, UpstreamError, UpstreamFile, UpstreamFileError,
+    UpstreamGitCache, UpstreamLock, UpstreamLockMap, UpstreamStatus, UpstreamStatusReport,
+    UpstreamStatusState,
 };
 pub use crate::witness::{
     WitnessCheckSettings, WitnessError, WitnessIndex, WitnessRecord, WitnessSpan,

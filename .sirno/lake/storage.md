@@ -36,7 +36,7 @@ or documents that actualize an *entry* claim.
 `Sirno.toml` names configured storage paths and policies.
 `.sirno/anchor.toml` records the accepted baseline.
 The target control-file split also places active Tide reviews in `.sirno/tide.toml`
-and upstream dependency pins in `.sirno/lock.toml`.
+and upstream dependency pins in `.sirno/upstream.toml`.
 The *Sirno Control Files* entry defines that split.
 The reservoir, misty lakes, Sirno control files, and *repository* artifacts remain separate surfaces
 with separate ownership rules.

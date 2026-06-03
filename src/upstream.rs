@@ -5,23 +5,332 @@
 //! Crystallization materializes each upstream lake into a managed glacier.
 // sirno:witness:sirno-upstream:end
 
-use std::ffi::OsStr;
-use std::fs;
+use std::ffi::{OsStr, OsString};
+use std::fs::{self, OpenOptions};
+use std::io::{ErrorKind, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::trace;
 
+use crate::anchor::SIRNO_CONTROL_DIR_NAME;
 use crate::artifact::{ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath};
 use crate::check::CheckMode;
 use crate::config::{CONFIG_FILE_NAME, SirnoConfig, UpstreamRef, UpstreamSettings};
 use crate::entry::{Entry, FrozenMarker};
 use crate::identifier::{EntryAddress, EntryAtom};
 use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
-use crate::lock::{SirnoLock, UpstreamLock};
 use crate::render::GeneratedLinkBody;
+
+/// Canonical upstream dependency filename.
+pub const UPSTREAM_FILE_NAME: &str = "upstream.toml";
+
+const UPSTREAM_FILE_HEADER: &str = "\
+# This file is generated and managed by Sirno.
+# It records upstream dependency pins for Git.
+
+";
+
+/// Project-local generated upstream dependency state.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+// sirno:witness:upstream-file:begin
+pub struct UpstreamFile {
+    /// Resolved upstream lake commits.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub upstreams: UpstreamLockMap,
+}
+// sirno:witness:upstream-file:end
+
+/// Ordered upstream lock records keyed by glacier domain.
+pub type UpstreamLockMap = IndexMap<EntryAtom, UpstreamLock>;
+
+impl UpstreamFile {
+    /// Resolve the upstream file path next to the config file.
+    pub fn path_for_config(config_path: impl AsRef<Path>) -> PathBuf {
+        config_path
+            .as_ref()
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(SIRNO_CONTROL_DIR_NAME)
+            .join(UPSTREAM_FILE_NAME)
+    }
+
+    /// Load an upstream file from a specific path.
+    // sirno:witness:upstream-file:begin
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, UpstreamFileError> {
+        let path = path.as_ref();
+        trace!("sirno upstream file load begin: path={}", path.display());
+        let source = fs::read_to_string(path)
+            .map_err(|source| UpstreamFileError::Read { path: path.to_path_buf(), source })?;
+        let file: Self = toml::from_str(&source)
+            .map_err(|source| UpstreamFileError::Parse { path: path.to_path_buf(), source })?;
+        file.validate()?;
+        trace!("sirno upstream file load end");
+        Ok(file)
+    }
+    // sirno:witness:upstream-file:end
+
+    /// Load an upstream file when it exists.
+    pub fn from_file_if_exists(path: impl AsRef<Path>) -> Result<Option<Self>, UpstreamFileError> {
+        match Self::from_file(path) {
+            | Ok(file) => Ok(Some(file)),
+            | Err(UpstreamFileError::Read { source, .. }) if source.kind() == ErrorKind::NotFound => {
+                Ok(None)
+            }
+            | Err(source) => Err(source),
+        }
+    }
+
+    /// Write this upstream file atomically.
+    ///
+    /// The file is first written to a sibling temporary path.
+    /// A rename then publishes the complete TOML file as one filesystem replacement.
+    // sirno:witness:upstream-file:begin
+    pub fn write(&self, path: impl AsRef<Path>) -> Result<(), UpstreamFileError> {
+        let path = path.as_ref();
+        trace!("sirno upstream file write begin: path={}", path.display());
+        let source = self.to_toml()?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|source| UpstreamFileError::CreateDirectory {
+                path: parent.to_path_buf(),
+                source,
+            })?;
+        }
+        let temporary_path = Self::temporary_path(path);
+        let mut file =
+            OpenOptions::new().write(true).create_new(true).open(&temporary_path).map_err(
+                |source| UpstreamFileError::CreateTemporary {
+                    path: temporary_path.clone(),
+                    source,
+                },
+            )?;
+        if let Err(source) = file.write_all(source.as_bytes()) {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(UpstreamFileError::WriteTemporary { path: temporary_path, source });
+        }
+        if let Err(source) = file.sync_all() {
+            drop(file);
+            let _ = fs::remove_file(&temporary_path);
+            return Err(UpstreamFileError::WriteTemporary { path: temporary_path, source });
+        }
+        drop(file);
+        if let Err(source) = fs::rename(&temporary_path, path) {
+            let _ = fs::remove_file(&temporary_path);
+            return Err(UpstreamFileError::Replace {
+                path: path.to_path_buf(),
+                temporary_path,
+                source,
+            });
+        }
+        trace!("sirno upstream file write end");
+        Ok(())
+    }
+    // sirno:witness:upstream-file:end
+
+    /// Remove an upstream file when it exists.
+    pub fn remove_if_exists(path: impl AsRef<Path>) -> Result<bool, UpstreamFileError> {
+        let path = path.as_ref();
+        match fs::remove_file(path) {
+            | Ok(()) => Ok(true),
+            | Err(source) if source.kind() == ErrorKind::NotFound => Ok(false),
+            | Err(source) => Err(UpstreamFileError::Remove { path: path.to_path_buf(), source }),
+        }
+    }
+
+    /// Returns true when no upstream state is stored.
+    pub fn is_empty(&self) -> bool {
+        self.upstreams.is_empty()
+    }
+
+    // sirno:witness:upstream-file:begin
+    fn validate(&self) -> Result<(), UpstreamFileError> {
+        for (domain, upstream) in &self.upstreams {
+            upstream.validate(domain)?;
+        }
+        Ok(())
+    }
+
+    fn to_toml(&self) -> Result<String, UpstreamFileError> {
+        self.validate()?;
+        let mut source = String::from(UPSTREAM_FILE_HEADER);
+        source.push_str(&toml::to_string_pretty(self).map_err(UpstreamFileError::Render)?);
+        Ok(source)
+    }
+
+    fn temporary_path(path: &Path) -> PathBuf {
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let file_name = path.file_name().unwrap_or_else(|| OsStr::new(UPSTREAM_FILE_NAME));
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or(0);
+        let mut temporary_name = OsString::from(".");
+        temporary_name.push(file_name);
+        temporary_name.push(format!(".{}.{}.tmp", std::process::id(), nonce));
+        parent.join(temporary_name)
+    }
+    // sirno:witness:upstream-file:end
+}
+
+impl Default for UpstreamFile {
+    fn default() -> Self {
+        Self { upstreams: UpstreamLockMap::new() }
+    }
+}
+
+/// Resolved upstream state recorded in `.sirno/upstream.toml`.
+///
+/// Invariant: `commit` is a non-empty Git commit id.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpstreamLock {
+    /// Git source copied from `Sirno.toml`.
+    pub git: String,
+    /// Branch copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    /// Tag copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    /// Commit-ish copied from `Sirno.toml`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+    /// Directory inside the Git tree containing `Sirno.toml`.
+    pub project: PathBuf,
+    /// Lake path read from the upstream project's `Sirno.toml`.
+    pub lake: PathBuf,
+    /// Exact Git commit crystallized into the glacier.
+    pub commit: String,
+}
+
+impl UpstreamLock {
+    /// Construct a lock record from config and a resolved commit.
+    pub fn new(settings: &UpstreamSettings, lake: PathBuf, commit: impl Into<String>) -> Self {
+        Self {
+            git: settings.git.clone(),
+            branch: settings.branch.clone(),
+            tag: settings.tag.clone(),
+            rev: settings.rev.clone(),
+            project: settings.project.clone(),
+            lake,
+            commit: commit.into(),
+        }
+    }
+
+    /// Return whether this lock still corresponds to a config declaration.
+    pub fn matches_settings(&self, settings: &UpstreamSettings) -> bool {
+        self.git == settings.git
+            && self.branch == settings.branch
+            && self.tag == settings.tag
+            && self.rev == settings.rev
+            && self.project == settings.project
+    }
+
+    fn validate(&self, domain: &EntryAtom) -> Result<(), UpstreamFileError> {
+        if self.git.trim().is_empty() {
+            return Err(UpstreamFileError::UpstreamGitSource(domain.clone()));
+        }
+        if self.commit.trim().is_empty() {
+            return Err(UpstreamFileError::UpstreamCommit(domain.clone()));
+        }
+        let ref_count = [self.branch.as_ref(), self.tag.as_ref(), self.rev.as_ref()]
+            .into_iter()
+            .flatten()
+            .count();
+        if ref_count != 1 {
+            return Err(UpstreamFileError::UpstreamRefSelector(domain.clone()));
+        }
+        Ok(())
+    }
+}
+
+/// Error raised by upstream file operations.
+#[derive(Debug, Error)]
+pub enum UpstreamFileError {
+    /// The upstream file could not be read.
+    #[error("failed to read upstream file {path}")]
+    Read {
+        /// Path that could not be read.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The upstream file could not be parsed as TOML.
+    #[error("failed to parse upstream file {path}")]
+    Parse {
+        /// Path that could not be parsed.
+        path: PathBuf,
+        /// Underlying TOML parse error.
+        #[source]
+        source: toml::de::Error,
+    },
+    /// The upstream file could not be rendered.
+    #[error("failed to render upstream file")]
+    Render(#[source] toml::ser::Error),
+    /// An upstream Git source is empty.
+    #[error("locked upstream `{0}` git source must not be empty")]
+    UpstreamGitSource(EntryAtom),
+    /// An upstream must have exactly one ref selector.
+    #[error("locked upstream `{0}` must configure exactly one of branch, tag, or rev")]
+    UpstreamRefSelector(EntryAtom),
+    /// An upstream commit is empty.
+    #[error("locked upstream `{0}` commit must not be empty")]
+    UpstreamCommit(EntryAtom),
+    /// The upstream file directory could not be created.
+    #[error("failed to create upstream file directory {path}")]
+    CreateDirectory {
+        /// Directory path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary upstream file could not be created.
+    #[error("failed to create temporary upstream file {path}")]
+    CreateTemporary {
+        /// Temporary path that could not be created.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary upstream file could not be written.
+    #[error("failed to write temporary upstream file {path}")]
+    WriteTemporary {
+        /// Temporary path that could not be written.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The temporary upstream file could not replace the public upstream file.
+    #[error("failed to replace upstream file {path} with temporary upstream file {temporary_path}")]
+    Replace {
+        /// Upstream file path that could not be replaced.
+        path: PathBuf,
+        /// Complete temporary upstream file path.
+        temporary_path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+    /// The upstream file could not be removed.
+    #[error("failed to remove upstream file {path}")]
+    Remove {
+        /// Upstream file path.
+        path: PathBuf,
+        /// Underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+}
 
 /// Global Git cache for upstream sources.
 #[derive(Clone, Debug)]
@@ -35,8 +344,8 @@ pub(crate) struct CrystallizeUpstreams<'a> {
     pub(crate) config_path: &'a Path,
     /// Current project config.
     pub(crate) config: &'a SirnoConfig,
-    /// Mutable project lock.
-    pub(crate) lock: &'a mut SirnoLock,
+    /// Mutable project upstream file.
+    pub(crate) upstream_file: &'a mut UpstreamFile,
     /// Current lake directory.
     pub(crate) lake: &'a EntryDirectory,
     /// Lake check settings used while replacing glaciers.
@@ -158,8 +467,16 @@ impl UpstreamGitCache {
 pub(crate) fn crystallize_upstreams(
     input: CrystallizeUpstreams<'_>,
 ) -> Result<(UpstreamCrystallizeReport, Vec<GlacierReport>), UpstreamError> {
-    let CrystallizeUpstreams { config_path, config, lock, lake, settings, cache, domains, locked } =
-        input;
+    let CrystallizeUpstreams {
+        config_path,
+        config,
+        upstream_file,
+        lake,
+        settings,
+        cache,
+        domains,
+        locked,
+    } = input;
     let selected = select_upstreams(config, domains)?;
     let mut changed_paths = Vec::new();
     let mut reports = Vec::new();
@@ -167,11 +484,11 @@ pub(crate) fn crystallize_upstreams(
 
     for (domain, upstream) in selected {
         trace!("crystallize upstream begin: domain={domain}");
-        let loaded = load_upstream(config_path, domain, upstream, lock, cache, locked)?;
+        let loaded = load_upstream(config_path, domain, upstream, upstream_file, cache, locked)?;
         let report = lake.replace_glacier(domain, &loaded.entries, &loaded.artifacts, settings)?;
         changed_paths.extend(report.changed_paths().iter().map(|path| display_path(path)));
         reports.push(report);
-        lock.upstreams.insert(domain.clone(), loaded.lock);
+        upstream_file.upstreams.insert(domain.clone(), loaded.lock);
         names.push(domain.to_string());
         trace!("crystallize upstream end: domain={domain}");
     }
@@ -195,13 +512,13 @@ pub(crate) fn crystallize_upstreams(
 // sirno:witness:lake-system:begin
 /// Return status for configured upstream lakes.
 pub fn upstream_status(
-    config_path: &Path, config: &SirnoConfig, lock: Option<&SirnoLock>, cache: &UpstreamGitCache,
-    lake: Option<(&EntryDirectory, &EntryDirectoryCheckSettings)>,
+    config_path: &Path, config: &SirnoConfig, upstream_file: Option<&UpstreamFile>,
+    cache: &UpstreamGitCache, lake: Option<(&EntryDirectory, &EntryDirectoryCheckSettings)>,
 ) -> Result<UpstreamStatusReport, UpstreamError> {
     let mut upstreams = Vec::new();
     for (domain, upstream) in &config.upstreams {
         let source = normalize_git_source(config_path, &upstream.git)?;
-        let locked = lock.and_then(|lock| lock.upstreams.get(domain));
+        let locked = upstream_file.and_then(|file| file.upstreams.get(domain));
         let (mut state, commit) = match locked {
             | None => (UpstreamStatusState::MissingLock, None),
             | Some(locked) if !locked.matches_settings(upstream) => {
@@ -213,9 +530,17 @@ pub fn upstream_status(
             | Some(locked) => (UpstreamStatusState::Ok, Some(locked.commit.clone())),
         };
         if state == UpstreamStatusState::Ok
-            && let (Some(lock), Some((lake, settings))) = (lock, lake)
+            && let (Some(upstream_file), Some((lake, settings))) = (upstream_file, lake)
         {
-            state = glacier_status(config_path, domain, upstream, lock, cache, lake, settings)?;
+            state = glacier_status(
+                config_path,
+                domain,
+                upstream,
+                upstream_file,
+                cache,
+                lake,
+                settings,
+            )?;
         }
         upstreams.push(UpstreamStatus {
             domain: domain.to_string(),
@@ -234,10 +559,11 @@ pub fn upstream_status(
 // sirno:witness:lake-system:end
 
 fn glacier_status(
-    config_path: &Path, domain: &EntryAtom, upstream: &UpstreamSettings, lock: &SirnoLock,
-    cache: &UpstreamGitCache, lake: &EntryDirectory, settings: &EntryDirectoryCheckSettings,
+    config_path: &Path, domain: &EntryAtom, upstream: &UpstreamSettings,
+    upstream_file: &UpstreamFile, cache: &UpstreamGitCache, lake: &EntryDirectory,
+    settings: &EntryDirectoryCheckSettings,
 ) -> Result<UpstreamStatusState, UpstreamError> {
-    let loaded = load_upstream(config_path, domain, upstream, lock, cache, true)?;
+    let loaded = load_upstream(config_path, domain, upstream, upstream_file, cache, true)?;
     let Some(actual) = read_glacier(lake, domain, settings)? else {
         return Ok(UpstreamStatusState::MissingGlacier);
     };
@@ -303,15 +629,17 @@ fn select_upstreams<'a>(
 }
 
 fn load_upstream(
-    config_path: &Path, domain: &EntryAtom, settings: &UpstreamSettings, lock: &SirnoLock,
-    cache: &UpstreamGitCache, locked: bool,
+    config_path: &Path, domain: &EntryAtom, settings: &UpstreamSettings,
+    upstream_file: &UpstreamFile, cache: &UpstreamGitCache, locked: bool,
 ) -> Result<LoadedUpstream, UpstreamError> {
     let source = normalize_git_source(config_path, &settings.git)?;
     let mirror =
         if locked { cache.require_mirror(&source)? } else { cache.ensure_mirror(&source)? };
     let commit = if locked {
-        let locked =
-            lock.upstreams.get(domain).ok_or_else(|| UpstreamError::MissingLock(domain.clone()))?;
+        let locked = upstream_file
+            .upstreams
+            .get(domain)
+            .ok_or_else(|| UpstreamError::MissingLock(domain.clone()))?;
         if !locked.matches_settings(settings) {
             return Err(UpstreamError::StaleLock(domain.clone()));
         }
@@ -657,7 +985,7 @@ mod tests {
     use crate::surface::{
         CommandError, SurfaceContext, UpstreamAddRequest, UpstreamCrystallizeRequest,
     };
-    use crate::{EntryDirectoryError, LOCK_FILE_NAME, StructuralSettings, UpstreamSettingsMap};
+    use crate::{EntryDirectoryError, StructuralSettings, UpstreamSettingsMap};
 
     fn run_git(root: &Path, args: &[&str]) {
         let output = Command::new("git").current_dir(root).args(args).output().unwrap();
@@ -667,6 +995,114 @@ mod tests {
             args,
             String::from_utf8_lossy(&output.stderr)
         );
+    }
+
+    #[test]
+    fn renders_empty_upstream_file() {
+        let file = UpstreamFile::default();
+        let rendered = file.to_toml().unwrap();
+
+        assert_eq!(
+            rendered,
+            "\
+# This file is generated and managed by Sirno.
+# It records upstream dependency pins for Git.
+
+"
+        );
+    }
+
+    #[test]
+    fn upstream_file_path_uses_control_directory() {
+        let path = UpstreamFile::path_for_config("/project/Sirno.toml");
+
+        assert_eq!(path, PathBuf::from("/project/.sirno/upstream.toml"));
+    }
+
+    #[test]
+    fn renders_upstream_file() {
+        let settings = UpstreamSettings::branch("../core.git", "main");
+        let file = UpstreamFile {
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "0123456789abcdef"),
+            )]),
+        };
+        let rendered = file.to_toml().unwrap();
+        let read: UpstreamFile = toml::from_str(&rendered).unwrap();
+
+        assert_eq!(read, file);
+        assert!(rendered.contains("[upstreams.core]"));
+        assert!(rendered.contains("git = \"../core.git\""));
+        assert!(rendered.contains("branch = \"main\""));
+        assert!(rendered.contains("lake = \"docs\""));
+        assert!(rendered.contains("commit = \"0123456789abcdef\""));
+    }
+
+    #[test]
+    fn rejects_anchor_state() {
+        let error = toml::from_str::<UpstreamFile>(
+            r#"
+[anchor]
+path = ".sirno/anchor.toml"
+"#,
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn rejects_tide_state() {
+        let error = toml::from_str::<UpstreamFile>(
+            r#"
+[[tide.resolved]]
+ripple = "ripple"
+field = "belongs"
+direction = "to"
+neighbor = "neighbor"
+fingerprint = "sha256:abc"
+"#,
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn upstream_file_write_replaces_existing_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join(".sirno").join(UPSTREAM_FILE_NAME);
+        let settings = UpstreamSettings::branch("../core.git", "main");
+        let first = UpstreamFile {
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "1"),
+            )]),
+        };
+        first.write(&path).unwrap();
+
+        let second = UpstreamFile {
+            upstreams: UpstreamLockMap::from([(
+                EntryAtom::new("core").unwrap(),
+                UpstreamLock::new(&settings, PathBuf::from("docs"), "2"),
+            )]),
+        };
+        second.write(&path).unwrap();
+
+        let rendered = fs::read_to_string(&path).unwrap();
+        assert!(rendered.contains("commit = \"2\""));
+        assert!(!rendered.contains("commit = \"1\""));
+        let paths = fs::read_dir(path.parent().unwrap()).unwrap().count();
+        assert_eq!(paths, 1);
+    }
+
+    #[test]
+    fn upstream_file_remove_ignores_missing_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join(".sirno").join(UPSTREAM_FILE_NAME);
+
+        assert!(!UpstreamFile::remove_if_exists(&path).unwrap());
     }
 
     fn write_upstream_repo(root: &Path) -> String {
@@ -716,7 +1152,7 @@ Body.
     }
 
     #[test]
-    fn crystallizes_local_git_upstream_through_cache_and_lock() {
+    fn crystallizes_local_git_upstream_through_cache_and_upstream_file() {
         let temp = tempfile::tempdir().unwrap();
         let upstream_root = temp.path().join("upstream");
         fs::create_dir(&upstream_root).unwrap();
@@ -752,8 +1188,9 @@ Body.
             fs::read(project_root.join("lake/.artifacts/core.design/logo.bin")).unwrap(),
             b"logo"
         );
-        let lock = SirnoLock::from_file(project_root.join(LOCK_FILE_NAME)).unwrap();
-        let upstream = lock.upstreams.get(&domain).unwrap();
+        let upstream_file =
+            UpstreamFile::from_file(UpstreamFile::path_for_config(&config_path)).unwrap();
+        let upstream = upstream_file.upstreams.get(&domain).unwrap();
         assert_eq!(upstream.commit, commit);
 
         let status = SurfaceContext::new(&config_path)
@@ -814,7 +1251,7 @@ Body.
         ));
         let config = SirnoConfig::from_file(&config_path).unwrap();
         assert!(config.upstreams.is_empty());
-        assert!(!project_root.join(LOCK_FILE_NAME).exists());
+        assert!(!UpstreamFile::path_for_config(&config_path).exists());
         assert!(project_root.join("lake/core/local.md").exists());
     }
 }

@@ -7,7 +7,7 @@ belongs:
   - sirno-lake
 prerequisite:
   - project-config
-  - sirno-lock
+  - upstream-file
   - lake-namespace
 ---
 
