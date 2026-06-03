@@ -1128,6 +1128,7 @@ impl RenderResult {
             message: format_gen_link_report(
                 report.root(),
                 report.entry_count(),
+                report.changed_entry_count(),
                 &changed_path_bufs,
             ),
         }

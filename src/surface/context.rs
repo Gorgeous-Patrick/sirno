@@ -1354,8 +1354,12 @@ impl SurfaceContext {
                 ignore: mist.projection_settings.ignore.clone(),
             },
         )?;
-        let report =
-            GenLinkDirectoryReport::new(&mist.projection_path, rendered_entries.len(), Vec::new());
+        let report = GenLinkDirectoryReport::new(
+            &mist.projection_path,
+            rendered_entries.len(),
+            rendered_entries.len(),
+            Vec::new(),
+        );
         let manifest_path = MistManifest::path_for_projection(&mist.projection_path);
         let manifest = MistManifest::from_entries(
             mist.name,
@@ -2253,7 +2257,13 @@ fn mist_projection_dry_report(
             | Err(source) => return Err(EntryDirectoryError::from(source).into()),
         }
     }
-    Ok(GenLinkDirectoryReport::new(projection_root, rendered_entries.len(), changed_paths))
+    let changed_entry_count = changed_paths.len();
+    Ok(GenLinkDirectoryReport::new(
+        projection_root,
+        rendered_entries.len(),
+        changed_entry_count,
+        changed_paths,
+    ))
 }
 
 fn mist_projection_delete_report(
@@ -2274,7 +2284,13 @@ fn mist_projection_delete_report(
             changed_paths.push(path);
         }
     }
-    Ok(GenLinkDirectoryReport::new(projection_root, projected_entries.len(), changed_paths))
+    let changed_entry_count = changed_paths.len();
+    Ok(GenLinkDirectoryReport::new(
+        projection_root,
+        projected_entries.len(),
+        changed_entry_count,
+        changed_paths,
+    ))
 }
 // sirno:witness:mist:end
 
@@ -2816,16 +2832,28 @@ path = "narrow"
 editable = true
 
 [select]
-exact_terms = ["Concept"]
+exact_terms = ["compresses"]
 "#,
         )
         .unwrap();
+        let artifact_source = temp.path().join("concept.note.md");
+        fs::write(&artifact_source, "artifact").unwrap();
+        context
+            .entry_artifact_add(ArtifactAddRequest {
+                id: EntryAddress::new("concept").unwrap(),
+                source: artifact_source,
+                artifact_path: Some(PathBuf::from("note.md")),
+            })
+            .unwrap();
 
         let render = context.mist_render(None, false).unwrap();
         assert!(render.ok);
+        assert!(render.changed_paths.len() > 1);
+        assert!(render.message.contains("Total changes: 1/1"), "{}", render.message);
 
         let projection = temp.path().join("narrow");
         assert!(projection.join("concept.md").exists());
+        assert!(projection.join(".artifacts/concept/note.md").exists());
         assert!(!projection.join("name.md").exists());
         assert!(
             fs::read_to_string(projection.join("concept.md"))

@@ -268,7 +268,7 @@ belongs = ["sirno"]
 prerequisite = ["sirno"]
 
 [entries.generated-footer]
-fingerprint = "sha256:d166171b67322908acd40972501c603dd62b2feb3269358241a8017858120510"
+fingerprint = "sha256:a0f433cbdbb735293b4c8d87fcba4027aa821bb4436b64aa6b628e9fb663d6b8"
 belongs = ["generated-navigation"]
 prerequisite = ["structural"]
 
@@ -437,7 +437,7 @@ prerequisite = [
 ]
 
 [entries.mist]
-fingerprint = "sha256:71f6d60b46c1477f626828f77638ba3e647ec942220399632ad6dffcef811b80"
+fingerprint = "sha256:4d7ef3164cc5764531c160a2d9a11f9852b9b15530534b5e6f56b5cd83512af3"
 belongs = ["sirno-lake"]
 prerequisite = [
     "query",
@@ -446,7 +446,7 @@ prerequisite = [
 refines = ["query"]
 
 [entries.misty-lake]
-fingerprint = "sha256:c2b6b2f397cd82641c4a6e2fb500b1173124bab8fa378e96f18bbac8d2c7374c"
+fingerprint = "sha256:7150665327a6f3552571e2e08ac52efb326dbb018da815f6b895b8e855e5e977"
 belongs = [
     "sirno-lake",
     "storage",
@@ -510,7 +510,7 @@ belongs = ["project-config"]
 prerequisite = ["project-config"]
 
 [entries.project-config]
-fingerprint = "sha256:7125da799e154df5672cc7cfb1adaf4fdff6aec9921b45ee0d6ecd540c023253"
+fingerprint = "sha256:496546ed0e54918f546a6dbfbc7b86e919a62f5604f9d0c7b847859f0ea74355"
 belongs = ["sirno"]
 prerequisite = ["storage"]
 
@@ -712,7 +712,7 @@ belongs = [
 prerequisite = ["metadata"]
 
 [entries.structural-check]
-fingerprint = "sha256:b6db03e5f9c9ae87f273cf31dbdceddddbdc912fe11d2aca08227ea2bc06cbe8"
+fingerprint = "sha256:e73d6d8555bf2b9b7db6b695319f537f5036c203ebd544318cffde13f4f78c95"
 belongs = ["sirno-lake"]
 prerequisite = [
     "metadata",

@@ -81,6 +81,8 @@ when the manifest is fresh and the projection is editable.
 | `sirno render ...` | Shorthand for `sirno mist render ...` on the default or active mist. |
 
 Mist render forms print changed paths or blocking diagnostics before their summary line.
+The summary counts changed entries,
+not copied artifact files or projection manifest files.
 The override JSON uses link relation names with edge direction lists,
 such as `{"belongs":["to"]}`.
 It does not write the mist spec.

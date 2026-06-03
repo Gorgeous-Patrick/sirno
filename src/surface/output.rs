@@ -505,7 +505,7 @@ fn style_text(value: &str, semantic: SemanticStyle, style: OutputStyle) -> Strin
 // sirno:witness:cli-interface:end
 
 pub(crate) fn format_gen_link_report(
-    root: &Path, entry_count: usize, changed_paths: &[PathBuf],
+    root: &Path, entry_count: usize, changed_entry_count: usize, changed_paths: &[PathBuf],
 ) -> String {
     if changed_paths.is_empty() {
         return format!("No changes in {}", root.display());
@@ -518,7 +518,7 @@ pub(crate) fn format_gen_link_report(
         report.push('\n');
     }
     report.push_str("Total changes: ");
-    report.push_str(&changed_paths.len().to_string());
+    report.push_str(&changed_entry_count.to_string());
     report.push('/');
     report.push_str(&entry_count.to_string());
     report.push_str(" in ");

@@ -171,15 +171,17 @@ pub struct EntryFileDiagnostic {
 pub struct GenLinkDirectoryReport {
     root: PathBuf,
     entry_count: usize,
+    changed_entry_count: usize,
     changed_paths: Vec<PathBuf>,
 }
 
 impl GenLinkDirectoryReport {
     /// Build a generated-link report from an already processed entry set.
     pub(crate) fn new(
-        root: impl Into<PathBuf>, entry_count: usize, changed_paths: Vec<PathBuf>,
+        root: impl Into<PathBuf>, entry_count: usize, changed_entry_count: usize,
+        changed_paths: Vec<PathBuf>,
     ) -> Self {
-        Self { root: root.into(), entry_count, changed_paths }
+        Self { root: root.into(), entry_count, changed_entry_count, changed_paths }
     }
 
     /// Directory whose entries were processed.
@@ -190,6 +192,11 @@ impl GenLinkDirectoryReport {
     /// Number of entries processed.
     pub fn entry_count(&self) -> usize {
         self.entry_count
+    }
+
+    /// Number of entries whose generated-link region or projection changed.
+    pub fn changed_entry_count(&self) -> usize {
+        self.changed_entry_count
     }
 
     /// Entry files whose generated-link region changed.
@@ -1160,6 +1167,7 @@ impl EntryDirectory {
         Ok(GenLinkDirectoryReport {
             root: self.root.clone(),
             entry_count: checked.entries().len(),
+            changed_entry_count: changed_paths.len(),
             changed_paths,
         })
     }
@@ -1218,6 +1226,7 @@ impl EntryDirectory {
         Ok(GenLinkDirectoryReport {
             root: self.root.clone(),
             entry_count: checked.entries().len(),
+            changed_entry_count: changed_paths.len(),
             changed_paths,
         })
     }
