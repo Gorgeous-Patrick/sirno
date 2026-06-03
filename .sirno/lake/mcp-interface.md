@@ -66,7 +66,7 @@ Structural states may use `{ field, state }` objects
 or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 `sirno_entry_query` omits `columns` to select the default `id` and `name` columns.
 An empty `columns` array returns selectable column names and no records.
-A non-empty `columns` array selects built-in columns and configured link relations.
+A non-empty `columns` array selects built-in columns and structural link relations.
 `sirno_status` returns typed check-policy, structural-edge, tide, and mist objects.
 `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
 `sirno_entry_witness` accepts `{ id }` by default.

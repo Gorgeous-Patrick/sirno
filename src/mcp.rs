@@ -1000,10 +1000,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::{
-        CONFIG_FILE_NAME, RepoMember, RepoSettings, SirnoConfig, StructuralEdgeSettings,
-        StructuralFieldSettings, StructuralSettings,
-    };
+    use crate::{CONFIG_FILE_NAME, RepoMember, RepoSettings, SirnoConfig};
 
     // sirno:witness:mcp-interface:begin
     const EXPECTED_TOOLS: &[&str] = &[
@@ -1105,17 +1102,7 @@ Body.
     fn write_open_tide_project(root: &Path) -> PathBuf {
         let config_path = root.join(CONFIG_FILE_NAME);
         let docs = root.join("docs");
-        let config = SirnoConfig {
-            structural: StructuralSettings::from_fields([(
-                "belongs",
-                StructuralFieldSettings::new(
-                    StructuralEdgeSettings::render_only(false),
-                    StructuralEdgeSettings::default(),
-                    StructuralEdgeSettings::default(),
-                ),
-            )]),
-            ..SirnoConfig::new("docs")
-        };
+        let config = SirnoConfig::new("docs");
         config.write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
         fs::write(

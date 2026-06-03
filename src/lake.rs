@@ -26,7 +26,7 @@ use crate::freeze::FrozenPath;
 use crate::identifier::EntryAtom;
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
-use crate::structural::{StructuralEdgeIndex, StructuralSettings};
+use crate::structural::{StructuralEdgeIndex, StructuralRenderSettings, StructuralSettings};
 use crate::witness::{WitnessCheckSettings, WitnessError};
 
 const READONLY_CHECKOUT_WARNING: &str = "\
@@ -55,6 +55,7 @@ pub struct EntryDirectoryReport {
     paths_by_address: BTreeMap<EntryAddress, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
     structural_report: CheckReport,
+    structural: StructuralSettings,
 }
 // sirno:witness:sirno-lake:end
 
@@ -64,10 +65,8 @@ pub struct EntryDirectoryReport {
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
-    /// Check that each configured link relation has a matching structural entry.
-    pub structural_inhabitance: bool,
-    /// Configured link relations and generated footer settings.
-    pub structural: StructuralSettings,
+    /// Generated-footer render policy for discovered structural relations.
+    pub structural_render: StructuralRenderSettings,
     /// Lake-root-relative paths ignored by Sirno.
     pub ignore: Vec<PathBuf>,
     /// Repository witness scan settings.
@@ -79,8 +78,7 @@ impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
         Self {
             render: true,
-            structural_inhabitance: true,
-            structural: StructuralSettings::default(),
+            structural_render: StructuralRenderSettings::default(),
             ignore: Vec::new(),
             witness: None,
         }
@@ -123,6 +121,11 @@ impl EntryDirectoryReport {
     /// Structural check report for successfully parsed entries.
     pub fn structural_report(&self) -> &CheckReport {
         &self.structural_report
+    }
+
+    /// Discovered structural relation settings used by this report.
+    pub fn structural(&self) -> &StructuralSettings {
+        &self.structural
     }
 
     /// Return the path associated with a parsed entry address.
@@ -557,11 +560,7 @@ impl EntryDirectory {
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
         trace!("check_entry_directory begin: root={}", self.root.display());
         let loaded = LoadedEntryDirectory::load(&self.root, mode, settings)?;
-        let structural_report = mode.check_entries_with_structural_inhabitance(
-            &loaded.entries,
-            &settings.structural,
-            settings.structural_inhabitance,
-        );
+        let structural_report = mode.check_entries(&loaded.entries, &loaded.structural);
         trace!(
             "check_entry_directory end: entries={} file_diagnostics={} structural_diagnostics={}",
             loaded.entries.len(),
@@ -575,6 +574,7 @@ impl EntryDirectory {
             paths_by_address: loaded.paths_by_address,
             file_diagnostics: loaded.file_diagnostics,
             structural_report,
+            structural: loaded.structural,
         })
     }
     // sirno:witness:sirno-lake:end
@@ -675,6 +675,10 @@ impl EntryDirectory {
             | Err(source) => return Err(source.into()),
         }
 
+        let renames_structural_relation = checked
+            .entries()
+            .iter()
+            .any(|entry| &entry.id == old_id && entry.metadata.meta.is_structural_relation());
         let mut entries = Vec::<(EntryAddress, Entry, bool)>::new();
         for entry in checked.entries() {
             let original_id = entry.id.clone();
@@ -682,11 +686,16 @@ impl EntryDirectory {
             if &entry.id == old_id {
                 entry.id = new_id.clone();
             }
-            let content_changed = entry.metadata.rename_structural_target(old_id, new_id);
+            let mut content_changed = entry.metadata.rename_structural_target(old_id, new_id);
+            if renames_structural_relation {
+                content_changed |= entry.metadata.rename_structural_field(old_id, new_id);
+            }
             entries.push((original_id, entry, content_changed));
         }
 
         let indexed_entries = entries.iter().map(|(_, entry, _)| entry.clone()).collect::<Vec<_>>();
+        let structural = StructuralSettings::from_entries(&indexed_entries)
+            .with_render_settings(&settings.structural_render);
         let link_index = StructuralEdgeIndex::from_entries(&indexed_entries);
         let mut changed_paths = Vec::new();
 
@@ -699,7 +708,7 @@ impl EntryDirectory {
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(original_id.clone()))?;
             let destination_path =
                 if &original_id == old_id { new_path.as_path() } else { source_path };
-            let footer = link_index.render_entry(&entry, &settings.structural);
+            let footer = link_index.render_entry(&entry, &structural);
             let body = GeneratedLinkBody::new(&entry.body);
             if body.is_stale(&footer)? {
                 entry.body = body.apply(&footer)?;
@@ -959,31 +968,21 @@ impl EntryDirectory {
     pub fn generate_links_with_ignored_paths(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(settings, ignore, true, GenLinkOperation::Write)
+        self.process_generated_links(settings, ignore, GenLinkOperation::Write)
     }
 
     /// Generate Markdown link footers using directory check settings.
     pub fn generate_links_with_check_settings(
         &self, settings: &EntryDirectoryCheckSettings,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(
-            &settings.structural,
-            settings.ignore.clone(),
-            settings.structural_inhabitance,
-            GenLinkOperation::Write,
-        )
+        self.process_generated_links_with_check_settings(settings, GenLinkOperation::Write)
     }
 
     /// Generate Markdown link footers while allowing managed glacier entries to change.
     pub fn generate_links_for_crystallization(
         &self, settings: &EntryDirectoryCheckSettings,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(
-            &settings.structural,
-            settings.ignore.clone(),
-            settings.structural_inhabitance,
-            GenLinkOperation::WriteManaged,
-        )
+        self.process_generated_links_with_check_settings(settings, GenLinkOperation::WriteManaged)
     }
 
     /// Check which generated Markdown link footers would change with ignored paths.
@@ -993,7 +992,7 @@ impl EntryDirectory {
     pub fn check_generated_links_with_ignored_paths(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(settings, ignore, true, GenLinkOperation::Check)
+        self.process_generated_links(settings, ignore, GenLinkOperation::Check)
     }
 
     /// Check generated Markdown link footers using directory check settings.
@@ -1002,31 +1001,48 @@ impl EntryDirectory {
     pub fn check_generated_links_with_check_settings(
         &self, settings: &EntryDirectoryCheckSettings,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
-        self.process_generated_links(
-            &settings.structural,
-            settings.ignore.clone(),
-            settings.structural_inhabitance,
-            GenLinkOperation::Check,
-        )
+        self.process_generated_links_with_check_settings(settings, GenLinkOperation::Check)
     }
 
     fn process_generated_links(
         &self, settings: &StructuralSettings, ignore: impl IntoIterator<Item = PathBuf>,
-        structural_inhabitance: bool, operation: GenLinkOperation,
+        operation: GenLinkOperation,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
+        let check_settings = EntryDirectoryCheckSettings {
+            render: false,
+            structural_render: StructuralRenderSettings::default(),
+            ignore: ignore.into_iter().collect(),
+            witness: None,
+        };
+        self.process_generated_links_inner(&check_settings, settings, operation)
+    }
+
+    fn process_generated_links_with_check_settings(
+        &self, settings: &EntryDirectoryCheckSettings, operation: GenLinkOperation,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
+        let check_settings = EntryDirectoryCheckSettings { render: false, ..settings.clone() };
+        let checked = self.check_with_settings(CheckMode::Review, &check_settings)?;
+        let structural = checked.structural().clone();
+        self.process_checked_generated_links(checked, &structural, operation)
+    }
+
+    fn process_generated_links_inner(
+        &self, check_settings: &EntryDirectoryCheckSettings, structural: &StructuralSettings,
+        operation: GenLinkOperation,
     ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
         trace!(
             "gen_link_entry_directory begin: root={} operation={}",
             self.root.display(),
             operation.label()
         );
-        let check_settings = EntryDirectoryCheckSettings {
-            render: false,
-            structural_inhabitance,
-            structural: settings.clone(),
-            ignore: ignore.into_iter().collect(),
-            witness: None,
-        };
-        let checked = self.check_with_settings(CheckMode::Review, &check_settings)?;
+        let checked = self.check_with_settings(CheckMode::Review, check_settings)?;
+        self.process_checked_generated_links(checked, structural, operation)
+    }
+
+    fn process_checked_generated_links(
+        &self, checked: EntryDirectoryReport, structural: &StructuralSettings,
+        operation: GenLinkOperation,
+    ) -> Result<GenLinkDirectoryReport, EntryDirectoryError> {
         if checked.has_errors() {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
         }
@@ -1038,7 +1054,7 @@ impl EntryDirectory {
                 .entry_file_path(&entry.id)
                 .ok_or_else(|| EntryDirectoryError::MissingEntryFilePath(entry.id.clone()))?;
             let source = fs::read_to_string(path)?;
-            let footer = index.render_entry(entry, settings);
+            let footer = index.render_entry(entry, structural);
             let body = GeneratedLinkBody::new(&entry.body).apply(&footer)?;
             let rendered = Entry::replace_markdown_body(&source, &body)?;
             if rendered != source {
@@ -1083,8 +1099,7 @@ impl EntryDirectory {
         trace!("delete_gen_link_entry_directory begin: root={}", self.root.display());
         let check_settings = EntryDirectoryCheckSettings {
             render: false,
-            structural_inhabitance: true,
-            structural: StructuralSettings::default(),
+            structural_render: StructuralRenderSettings::default(),
             ignore: ignore.into_iter().collect(),
             witness: None,
         };
@@ -1773,6 +1788,7 @@ struct LoadedEntryDirectory {
     artifacts: Vec<EntryArtifact>,
     paths_by_address: BTreeMap<EntryAddress, PathBuf>,
     file_diagnostics: Vec<EntryFileDiagnostic>,
+    structural: StructuralSettings,
 }
 
 impl LoadedEntryDirectory {
@@ -1859,8 +1875,10 @@ impl LoadedEntryDirectory {
         }
 
         entries.sort_by(|left, right| left.id.cmp(&right.id));
+        let structural = StructuralSettings::from_entries(&entries)
+            .with_render_settings(&settings.structural_render);
         let mut loaded =
-            Self { entries, artifacts: Vec::new(), paths_by_address, file_diagnostics };
+            Self { entries, artifacts: Vec::new(), paths_by_address, file_diagnostics, structural };
         loaded.load_artifacts(root, artifact_root.as_deref(), mode)?;
         loaded.add_generated_link_diagnostics(mode, settings)?;
         loaded.add_witness_diagnostics(mode, settings)?;
@@ -1988,7 +2006,7 @@ impl LoadedEntryDirectory {
             let body = GeneratedLinkBody::new(&entry.body);
             match body.validate() {
                 | Ok(()) if settings.render => {
-                    let expected = index.render_entry(entry, &settings.structural);
+                    let expected = index.render_entry(entry, &self.structural);
                     if body.is_stale(&expected)? {
                         self.file_diagnostics.push(EntryFileDiagnostic::new(
                             mode.severity(),
@@ -2366,6 +2384,7 @@ pub enum EntryDirectoryError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::structural::StructuralEdgeDirection;
     use crate::{
         EntryMetadata, RepoMember, StructuralFieldSettings, WitnessCheckSettings, WitnessSettings,
     };
@@ -2434,6 +2453,24 @@ Body.
         fields: impl IntoIterator<Item = (&'static str, StructuralFieldSettings)>,
     ) -> StructuralSettings {
         StructuralSettings::from_fields(fields)
+    }
+
+    fn structural_render_settings(
+        fields: impl IntoIterator<Item = (&'static str, StructuralFieldSettings)>,
+    ) -> StructuralRenderSettings {
+        StructuralRenderSettings::from_fields(fields.into_iter().map(|(field, settings)| {
+            let mut directions = Vec::new();
+            if settings.to.render {
+                directions.push(StructuralEdgeDirection::To);
+            }
+            if settings.from.render {
+                directions.push(StructuralEdgeDirection::From);
+            }
+            if settings.clique.render {
+                directions.push(StructuralEdgeDirection::Clique);
+            }
+            (field, directions)
+        }))
     }
 
     fn all_test_fields_linked() -> StructuralSettings {
@@ -2919,55 +2956,12 @@ kind:
         write_structural_field_entries(temp.path(), &[FIELD_KIND]);
 
         let report = entry_directory(temp.path())
-            .check_with_settings(
-                CheckMode::Review,
-                &EntryDirectoryCheckSettings {
-                    structural: structural_settings([(
-                        FIELD_KIND,
-                        StructuralFieldSettings::default(),
-                    )]),
-                    ..EntryDirectoryCheckSettings::default()
-                },
-            )
+            .check_with_settings(CheckMode::Review, &EntryDirectoryCheckSettings::default())
             .unwrap();
 
         assert!(report.has_errors());
         assert_eq!(report.structural_report().diagnostics().len(), 1);
     }
-
-    #[test]
-    fn check_can_skip_structural_inhabitance() {
-        let temp = tempfile::tempdir().unwrap();
-        write_entry(
-            temp.path(),
-            "concept.md",
-            "\
----
-name: Concept
-desc: A named idea.
----
-
-Body.
-",
-        );
-
-        let report = entry_directory(temp.path())
-            .check_with_settings(
-                CheckMode::Review,
-                &EntryDirectoryCheckSettings {
-                    structural_inhabitance: false,
-                    structural: structural_settings([(
-                        FIELD_KIND,
-                        StructuralFieldSettings::default(),
-                    )]),
-                    ..EntryDirectoryCheckSettings::default()
-                },
-            )
-            .unwrap();
-
-        assert!(report.is_clean());
-    }
-
     #[test]
     fn check_accepts_witness_block_found_by_mosaika() {
         let temp = tempfile::tempdir().unwrap();
@@ -3199,14 +3193,14 @@ Body.
 ",
         );
         let settings = EntryDirectoryCheckSettings {
-            structural: structural_settings([
+            structural_render: structural_render_settings([
                 (FIELD_KIND, StructuralFieldSettings::default()),
                 (FIELD_AREA, render_settings(true, true, false)),
             ]),
             ..EntryDirectoryCheckSettings::default()
         };
         let directory = entry_directory(&root);
-        directory.generate_links(&settings.structural).unwrap();
+        directory.generate_links_with_check_settings(&settings).unwrap();
         let artifact_dir = root.join(ARTIFACT_DIRECTORY_NAME).join("old-entry");
         fs::create_dir_all(&artifact_dir).unwrap();
         fs::write(artifact_dir.join("note.txt"), "artifact").unwrap();
@@ -3242,7 +3236,7 @@ Body.
     }
 
     #[test]
-    fn rename_entry_preserves_structural_field_names() {
+    fn rename_structural_relation_entry_renames_field_names() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
         fs::create_dir(&root).unwrap();
@@ -3274,11 +3268,14 @@ Body.
 ",
         );
         let settings = EntryDirectoryCheckSettings {
-            structural: structural_settings([("refines", render_settings(true, true, false))]),
+            structural_render: structural_render_settings([
+                ("refines", render_settings(true, true, false)),
+                ("prerequisite", render_settings(true, true, false)),
+            ]),
             ..EntryDirectoryCheckSettings::default()
         };
         let directory = entry_directory(&root);
-        directory.generate_links(&settings.structural).unwrap();
+        directory.generate_links_with_check_settings(&settings).unwrap();
 
         directory
             .rename_entry(
@@ -3292,8 +3289,9 @@ Body.
 
         assert!(!root.join("refines.md").exists());
         assert!(root.join("prerequisite.md").exists());
-        assert!(reader_source.contains("refines:\n  - concept\n"));
-        assert!(concept_source.contains("- refines (from):\n  - [reader](reader.md)"));
+        assert!(reader_source.contains("prerequisite:\n  - concept\n"));
+        assert!(!reader_source.contains("refines:"));
+        assert!(concept_source.contains("- prerequisite (from):\n  - [reader](reader.md)"));
     }
 
     #[test]
@@ -3845,7 +3843,6 @@ Body.
                 CheckMode::Review,
                 &EntryDirectoryCheckSettings {
                     render: true,
-                    structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },
             )
@@ -3871,7 +3868,6 @@ Body.
                 CheckMode::Edit,
                 &EntryDirectoryCheckSettings {
                     render: true,
-                    structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },
             )
@@ -3896,7 +3892,6 @@ Body.
                 CheckMode::Review,
                 &EntryDirectoryCheckSettings {
                     render: false,
-                    structural: StructuralSettings::default(),
                     ..EntryDirectoryCheckSettings::default()
                 },
             )

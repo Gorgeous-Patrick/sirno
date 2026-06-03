@@ -15,9 +15,7 @@ use tracing::trace;
 
 use indexmap::IndexMap;
 
-use crate::entry::{DESC_FIELD, FROZEN_FIELD, META_FIELD, NAME_FIELD};
 use crate::identifier::{EntryAddress, EntryAtom};
-use crate::structural::StructuralSettings;
 
 /// Canonical Sirno project config filename.
 pub const CONFIG_FILE_NAME: &str = "Sirno.toml";
@@ -69,9 +67,6 @@ pub struct CheckSettings {
     /// Check generated footer freshness.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub render: Option<bool>,
-    /// Check that each configured link relation has a matching structural entry.
-    #[serde(rename = "structural-inhabitance", skip_serializing_if = "Option::is_none")]
-    pub structural_inhabitance: Option<bool>,
 }
 
 impl CheckSettings {
@@ -80,13 +75,8 @@ impl CheckSettings {
         self.render.unwrap_or(true)
     }
 
-    /// Return whether configured link relations must have matching structural entries.
-    pub fn structural_inhabitance_enabled(&self) -> bool {
-        self.structural_inhabitance.unwrap_or(true)
-    }
-
     fn has_explicit_flags(&self) -> bool {
-        self.render.is_some() || self.structural_inhabitance.is_some()
+        self.render.is_some()
     }
 }
 
@@ -505,7 +495,6 @@ impl WitnessSettings {
 /// `check` controls optional structural check families.
 /// `tutorial`, when present, enables tutorial output for recoverable command failures.
 /// `charm` controls local charm enablement.
-/// `structural` registers structural link relations and their defining entries.
 /// Relative paths are resolved against the directory containing `Sirno.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -530,9 +519,6 @@ pub struct SirnoConfig {
     /// Configured charm execution policy.
     #[serde(default, skip_serializing_if = "CharmSettings::is_empty")]
     pub charm: CharmSettings,
-    /// Structural link metadata relation settings.
-    #[serde(default)]
-    pub structural: StructuralSettings,
 }
 // sirno:witness:project-config:end
 
@@ -548,7 +534,6 @@ impl SirnoConfig {
             check: CheckSettings::default(),
             tutorial: None,
             charm: CharmSettings::default(),
-            structural: StructuralSettings::default(),
         }
     }
     // sirno:witness:project-config:end
@@ -687,25 +672,8 @@ impl SirnoConfig {
         for (domain, upstream) in &self.upstreams {
             upstream.validate(domain)?;
         }
-        self.validate_structural_fields()?;
         self.witness.validate()?;
         self.charm.validate()?;
-        Ok(())
-    }
-
-    fn validate_structural_fields(&self) -> Result<(), ConfigError> {
-        for (field, _) in self.structural.fields() {
-            if field.is_empty()
-                || field.contains('\n')
-                || field.contains('\r')
-                || field.contains(',')
-            {
-                return Err(ConfigError::StructuralFieldName(field.to_owned()));
-            }
-            if matches!(field, NAME_FIELD | DESC_FIELD | META_FIELD | FROZEN_FIELD) {
-                return Err(ConfigError::ReservedStructuralField(field.to_owned()));
-            }
-        }
         Ok(())
     }
 
@@ -784,13 +752,6 @@ impl ConfigRenderer {
                     "Require generated footers to match current metadata during checks.",
                 )?;
             }
-            if let Some(structural_inhabitance) = config.check.structural_inhabitance {
-                self.push_field(
-                    "structural-inhabitance",
-                    &structural_inhabitance,
-                    "Require each configured link relation to have a matching structural relation entry during checks.",
-                )?;
-            }
             // sirno:witness:project-config-comments:end
         }
 
@@ -826,12 +787,6 @@ impl ConfigRenderer {
             )?;
             // sirno:witness:project-config-comments:end
         }
-
-        self.out.push('\n');
-        self.push_table("structural");
-        // sirno:witness:project-config-comments:begin
-        self.push_structural_fields(&config.structural)?;
-        // sirno:witness:project-config-comments:end
 
         Ok(())
     }
@@ -875,37 +830,6 @@ impl ConfigRenderer {
         }
         Ok(())
     }
-    // sirno:witness:project-config-comments:end
-
-    // sirno:witness:project-config-comments:begin
-    fn push_structural_fields(
-        &mut self, structural: &StructuralSettings,
-    ) -> Result<(), toml::ser::Error> {
-        let mut fields = structural.relations().peekable();
-        if fields.peek().is_some() {
-            for comment in [
-                "Structural link relations.",
-                "Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.",
-                "FIELD must be a non-empty single-line metadata key with no comma.",
-                "FIELD cannot be name, desc, meta, or frozen.",
-                "entry names the lake entry that documents the relation.",
-                "Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.",
-                "Tide policy lives in structural relation entry meta.ripple.lake \
-                 and meta.ripple.anchor direction lists.",
-            ] {
-                self.out.push_str("# ");
-                self.out.push_str(comment);
-                self.out.push('\n');
-            }
-        }
-        for (field, entry) in fields {
-            self.out.push('\n');
-            self.push_table(&format!("structural.{field}"));
-            self.push_bare_field("entry", entry)?;
-        }
-        Ok(())
-    }
-
     // sirno:witness:project-config-comments:end
 
     fn push_bare_field<T: Serialize + ?Sized>(
@@ -1122,10 +1046,8 @@ path = "docs"
         assert_eq!(config.witness, test_witness_syntax());
         assert_eq!(config.check, CheckSettings::default());
         assert!(config.check.render_enabled());
-        assert!(config.check.structural_inhabitance_enabled());
         assert_eq!(config.tutorial, None);
         assert_eq!(config.charm, CharmSettings::default());
-        assert_eq!(config.structural, StructuralSettings::default());
     }
 
     #[test]
@@ -1233,16 +1155,11 @@ path = "docs"
 
 [check]
 render = false
-structural-inhabitance = false
 "#,
         );
 
-        assert_eq!(
-            config.check,
-            CheckSettings { render: Some(false), structural_inhabitance: Some(false) }
-        );
+        assert_eq!(config.check, CheckSettings { render: Some(false) });
         assert!(!config.check.render_enabled());
-        assert!(!config.check.structural_inhabitance_enabled());
     }
 
     #[test]
@@ -1253,16 +1170,11 @@ structural-inhabitance = false
 path = "docs"
 
 [check]
-structural-inhabitance = false
 "#,
         );
 
-        assert_eq!(
-            config.check,
-            CheckSettings { render: None, structural_inhabitance: Some(false) }
-        );
+        assert_eq!(config.check, CheckSettings { render: None });
         assert!(config.check.render_enabled());
-        assert!(!config.check.structural_inhabitance_enabled());
     }
 
     #[test]
@@ -1377,122 +1289,6 @@ delimiters = []
 
         assert!(bare.witness.delimiters.is_empty());
         assert!(explicit.witness.delimiters.is_empty());
-    }
-
-    #[test]
-    fn parses_structural_settings() {
-        let config = parse_config(
-            r#"
-[lake]
-path = "docs"
-
-[structural.kind]
-entry = "kind-entry"
-
-[structural.area]
-entry = "area"
-
-[structural.parent]
-entry = "parent"
-"#,
-        );
-
-        assert_eq!(
-            config.structural,
-            StructuralSettings::from_relations([
-                ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
-                ("area", crate::EntryAddress::new("area").unwrap()),
-                ("parent", crate::EntryAddress::new("parent").unwrap()),
-            ])
-        );
-    }
-
-    #[test]
-    fn rejects_old_structural_edge_settings_in_config() {
-        let error = toml::from_str::<SirnoConfig>(&config_source(
-            r#"
-[lake]
-path = "docs"
-
-[structural.topic]
-entry = "topic"
-to = { render = true }
-"#,
-        ))
-        .unwrap_err();
-
-        assert!(error.to_string().contains("unknown field `to`"));
-    }
-
-    #[test]
-    fn structural_relations_default_to_no_rendering() {
-        let config = parse_config(
-            r#"
-[lake]
-path = "docs"
-
-[structural.topic]
-entry = "topic"
-"#,
-        );
-
-        assert_eq!(
-            config.structural,
-            StructuralSettings::from_relations([(
-                "topic",
-                crate::EntryAddress::new("topic").unwrap()
-            )])
-        );
-    }
-
-    #[test]
-    fn parses_structural_subtables() {
-        let config = parse_config(
-            r#"
-[lake]
-path = "docs"
-
-[structural.kind]
-entry = "kind"
-
-[structural.topic]
-entry = "topic-entry"
-"#,
-        );
-
-        assert_eq!(
-            config.structural,
-            StructuralSettings::from_relations([
-                ("kind", crate::EntryAddress::new("kind").unwrap()),
-                ("topic", crate::EntryAddress::new("topic-entry").unwrap()),
-            ])
-        );
-    }
-
-    #[test]
-    fn preserves_configured_structural_field_order() {
-        let config = parse_config(
-            r#"
-[lake]
-path = "docs"
-
-[structural.zeta]
-entry = "zeta"
-
-[structural.alpha]
-entry = "alpha"
-
-[structural.middle]
-entry = "middle"
-"#,
-        );
-
-        let fields = config.structural.fields().map(|(field, _)| field).collect::<Vec<_>>();
-        let rendered = config.to_toml().unwrap();
-
-        assert_eq!(fields, ["zeta", "alpha", "middle"]);
-        assert_before(&rendered, "[structural.zeta]", "[structural.alpha]");
-        assert_before(&rendered, "[structural.alpha]", "[structural.middle]");
     }
 
     #[test]
@@ -1839,7 +1635,7 @@ delimiters = []
         assert!(!source.contains("# Require generated footers"));
         assert!(!source.contains("structural-inhabitance"));
         assert!(!source.contains("[tutorial]"));
-        assert!(source.contains("[structural]"));
+        assert!(!source.contains("[structural]"));
         assert!(!source.contains("# Structural metadata field"));
         assert!(!source.contains("[repo]"));
     }
@@ -1858,17 +1654,12 @@ delimiters = []
             upstreams,
             repo: Some(RepoSettings { members: vec![RepoMember::new("src").unwrap()] }),
             witness: test_witness_syntax(),
-            check: CheckSettings { render: Some(false), structural_inhabitance: Some(false) },
+            check: CheckSettings { render: Some(false) },
             tutorial: Some(TutorialSettings {
                 anchor_update_tide: true,
                 anchor_bootstrap_tide: false,
             }),
             charm: CharmSettings { enabled: vec![EntryAddress::new("format-spell").unwrap()] },
-            structural: StructuralSettings::from_relations([
-                ("kind", crate::EntryAddress::new("kind-entry").unwrap()),
-                ("area", crate::EntryAddress::new("area").unwrap()),
-                ("parent", crate::EntryAddress::new("parent").unwrap()),
-            ]),
         };
 
         let source = config.to_toml().unwrap();
@@ -1900,8 +1691,6 @@ delimiters = []
         assert!(!source.contains("# Closing witness delimiter regex."));
         assert!(source.contains("# Require generated footers"));
         assert!(source.contains("render = false"));
-        assert!(source.contains("# Require each configured link relation"));
-        assert!(source.contains("structural-inhabitance = false"));
         assert!(source.contains("[tutorial]"));
         assert!(source.contains(
             "# Presence of this table enables tutorial text for recoverable command failures."
@@ -1921,37 +1710,11 @@ delimiters = []
                 .contains("# Entry addresses whose charm manifests may resolve and invoke spells.")
         );
         assert!(source.contains("enabled = [\"format-spell\"]"));
-        assert!(source.contains("[structural]"));
-        assert!(source.contains("# Structural link relations."));
-        assert!(source.contains(
-            "# Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure."
-        ));
-        assert!(
-            source.contains("# FIELD must be a non-empty single-line metadata key with no comma.")
-        );
-        assert!(source.contains("# FIELD cannot be name, desc, meta, or frozen."));
-        assert!(source.contains("# entry names the lake entry that documents the relation."));
-        assert!(source.contains(
-            "# Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review."
-        ));
-        assert!(source.contains(
-            "# Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.anchor direction lists."
-        ));
+        assert!(!source.contains("[structural]"));
         assert!(!source.contains("[render]"));
         assert!(!source.contains("[render.structural]"));
         assert_before(&source, "[upstreams.core]", "[repo]");
-        assert_before(&source, "[tutorial]", "[structural]");
-        assert_before(&source, "[charm]", "[structural]");
-        assert_eq!(source.matches("# Structural link relations.").count(), 1);
-        assert_before(&source, "# Structural link relations", "[structural.kind]");
-        assert!(source.contains("[structural.kind]\nentry = \"kind-entry\"\n"));
-        assert!(source.contains("[structural.area]\nentry = \"area\"\n"));
-        assert!(source.contains("[structural.parent]\nentry = \"parent\"\n"));
-        assert!(!source.contains("kind = {"));
-        assert!(!source.contains("area = {"));
-        assert!(!source.contains("parent = {"));
-        assert_before(&source, "[structural.kind]", "[structural.area]");
-        assert_before(&source, "[structural.area]", "[structural.parent]");
+        assert_before(&source, "[tutorial]", "[charm]");
     }
 
     #[test]

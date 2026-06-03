@@ -14,11 +14,13 @@ Structural link policy separates relation registration, projection, and review.
 
 | Owner | Stored form | Controls |
 |---|---|---|
-| `Sirno.toml` | `[structural.FIELD].entry` | Relation registration and relation order. |
+| relation entry | `meta.type: "structural"` | Relation registration. |
 | mist spec | `[render.structural]` lists | Generated navigation in that mist. |
 | relation entry | `meta.ripple.lake` and `meta.ripple.anchor` lists | Sirno Tide review obligations. |
 
 The relation entry declares `meta.type: "structural"`.
+Its entry address is the metadata field name for the relation.
+Sirno orders structural relations by entry address wherever an operational order is needed.
 
 Both owners use the same edge names:
 
@@ -31,20 +33,10 @@ Both owners use the same edge names:
 A mist spec lists rendered edge directions per relation under `[render.structural]`.
 That table belongs to projection settings,
 so different mists can render different structural surfaces.
+Relation order in the mist spec is the rendered relation order.
 In relation metadata,
 edge names may appear in the flat `meta.ripple.lake` and `meta.ripple.anchor` lists.
 Absent render and tide values are false.
-
-```toml
-[structural.belongs]
-entry = "belongs"
-
-[structural.refines]
-entry = "refines"
-
-[structural.prerequisite]
-entry = "prerequisite"
-```
 
 ```toml
 [render.structural]

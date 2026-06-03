@@ -296,7 +296,7 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
     output.push_str(&format!("config: {}\n", result.config_path));
     output.push_str(&format!("lake: {} ({} entries)\n", result.lake_path, result.entry_count));
     output.push_str(&format!(
-        "structure: {} configured {}\n",
+        "structure: {} discovered {}\n",
         result.structural_fields.len(),
         plural(result.structural_fields.len(), "relation", "relations")
     ));

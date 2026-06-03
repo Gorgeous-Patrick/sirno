@@ -26,20 +26,12 @@ The canonical comments are:
 - `Witness delimiter regex pairs; each first capture group is the entry address.`
 - `Canonical entry-address capture: ([^\x00-\x1F\x7F<>:"/\\|?*,\r\n]+)`
 - `Require generated footers to match current metadata during checks.`
-- `Require each configured link relation to have a matching structural relation entry during checks.`
 - `Presence of this table enables tutorial text for recoverable command failures.`
 - `Remove this table to keep CLI errors terse.`
 - `Show tutorial text when anchor update is blocked by open tide workitems.`
 - `Include first-anchor bootstrap context in the anchor update tide tutorial.`
-- `Structural link relations.`
-- `Add one [structural.FIELD] subtable for each metadata relation Sirno treats as structure.`
-- `FIELD must be a non-empty single-line metadata key with no comma.`
-- `FIELD cannot be name, desc, meta, or frozen.`
-- `entry names the lake entry that documents the relation.`
-- `Entry metadata values for FIELD must be lists of entry addresses; targets must exist by review.`
-- `Tide policy lives in structural relation entry meta.ripple.lake and meta.ripple.anchor direction lists.`
 - `Generated-footer structural link render policy.`
-- `Each key names a configured structural relation.`
+- `Each key names a discovered structural relation.`
 - `Values are direction lists: to, from, and clique.`
 
 This list is the canonical source for the strings.

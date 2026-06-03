@@ -462,6 +462,19 @@ Body.
 ",
         )
         .unwrap();
+        fs::write(
+            temp.path().join("belongs.md"),
+            "\
+---
+name: Belongs
+desc: Belongs relation.
+meta.type: \"structural\"
+---
+
+Body.
+",
+        )
+        .unwrap();
         let settings = StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(
@@ -474,9 +487,8 @@ Body.
             .check_with_settings(
                 crate::CheckMode::Edit,
                 &crate::EntryDirectoryCheckSettings {
-                    structural: settings.clone(),
                     render: false,
-                    structural_inhabitance: false,
+                    structural_render: Default::default(),
                     ignore: Vec::new(),
                     witness: None,
                 },

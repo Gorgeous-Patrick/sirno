@@ -24,11 +24,10 @@ use crate::surface::dto::{
     MistIntakeResult, MistStatusResult, MovePathResult, PathRecord, QueryColumn,
     QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
     RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, SpellListResult,
-    SpellRecord, StatusCheckPolicy, StatusResult, StatusTide, StructuralConfigRecord,
-    StructuralConfigSyncResult, StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, TideChangeResult, TideResolveRequest,
-    TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
-    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
+    SpellRecord, StatusCheckPolicy, StatusResult, StatusTide, StructuralEdgeStatus,
+    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
+    UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -161,21 +160,22 @@ impl SurfaceContext {
     pub fn query_entries(&self, request: QueryRequest) -> Result<QueryRun, CommandError> {
         let (lake, mut settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.render = false;
+        settings.witness = None;
+        let report = EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
+        let structural = report.structural();
         // sirno:witness:query:begin
         let columns = match request.columns {
             | QueryColumnSelection::Default => QueryColumns::default_output(),
             | QueryColumnSelection::Options => {
-                return Ok(QueryRun::ColumnOptions(query_column_options(&settings.structural)));
+                return Ok(QueryRun::ColumnOptions(query_column_options(structural)));
             }
             | QueryColumnSelection::Selected(columns) => columns,
         };
         // sirno:witness:query:end
-        let columns = validate_query_columns(columns, &settings.structural)?;
-        settings.render = false;
-        settings.witness = None;
-        let report = EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
+        let columns = validate_query_columns(columns, structural)?;
         if report.has_errors() {
-            return Ok(QueryRun::InvalidLake { columns, report });
+            return Ok(QueryRun::InvalidLake { columns, report: Box::new(report) });
         }
 
         let vague_query = VagueEntryQuery::new().with_text_terms(request.terms);
@@ -183,7 +183,7 @@ impl SurfaceContext {
             EntryQuery::new().with_text_terms(request.exact_terms),
             request.has,
             request.is,
-            &settings.structural,
+            structural,
         )?;
         let vague_matches = vague_query.select_entries(report.entries());
         let matches = filtered_query.select_entries(vague_matches);
@@ -317,14 +317,20 @@ impl SurfaceContext {
 
     /// Create one Markdown entry.
     pub fn entry_new(&self, request: EntryNewRequest) -> Result<EntryFileResult, CommandError> {
-        let (lake, settings) =
+        let (lake, mut settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
+        settings.render = false;
+        settings.witness = None;
+        let report = EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
+        if report.has_errors() {
+            return Err(EntryDirectoryError::InvalidEntryDirectory(lake).into());
+        }
         let mut metadata = EntryMetadata::new(
             request.name.unwrap_or_else(|| title_name_from_id(&request.id)),
             request.desc,
         )?;
         for (field, targets) in
-            structural_targets_by_target(request.structural, &settings.structural)?
+            structural_targets_by_target(request.structural, report.structural())?
         {
             metadata.set_structural_targets(field, targets);
         }
@@ -343,25 +349,10 @@ impl SurfaceContext {
     pub fn entry_rename(
         &self, old_id: EntryAddress, new_id: EntryAddress,
     ) -> Result<EntryRenameResult, CommandError> {
-        let renamed_config = if self.config_path.exists() {
-            let mut config = SirnoConfig::from_file(&self.config_path)?;
-            if config.structural.rename_entry_reference(&old_id, &new_id) {
-                config.validate_for_file(&self.config_path)?;
-                Some(config)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report = EntryDirectory::new(&lake).rename_entry(&old_id, &new_id, &settings)?;
         let mut changed_paths = report.changed_paths().to_vec();
-        if let Some(config) = renamed_config {
-            config.write(&self.config_path)?;
-            changed_paths.push(self.config_path.clone());
-        }
         if let Some(witness) = &settings.witness {
             changed_paths.extend(witness.rename_entry_references(&old_id, &new_id)?);
         }
@@ -656,62 +647,6 @@ impl SurfaceContext {
         })
     }
     // sirno:witness:project-config-comments:end
-
-    /// Discover project-local structural entries and sync `Sirno.toml` relation sections.
-    pub fn config_structural_sync(&self) -> Result<StructuralConfigSyncResult, CommandError> {
-        let mut config = SirnoConfig::from_file(&self.config_path)?;
-        let lake_path = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
-        let mut settings = entry_directory_check_settings(&self.config_path, &config)?;
-        settings.render = false;
-        settings.structural_inhabitance = false;
-        settings.witness = None;
-        let report =
-            EntryDirectory::new(&lake_path).check_with_settings(CheckMode::Edit, &settings)?;
-        if report.has_errors() {
-            return Err(EntryDirectoryError::InvalidEntryDirectory(lake_path).into());
-        }
-
-        let mut records = Vec::new();
-        let mut changed = false;
-        for entry in report.entries() {
-            if !entry.metadata.meta.is_structural_relation() || entry.id.as_str().contains('.') {
-                continue;
-            }
-            let field = entry.id.as_str().to_owned();
-            let row_changed = config.structural.set_relation_entry(field.clone(), entry.id.clone());
-            changed |= row_changed;
-            records.push(StructuralConfigRecord {
-                field,
-                entry: entry.id.to_string(),
-                changed: row_changed,
-            });
-        }
-        if changed {
-            config.write(&self.config_path)?;
-        }
-
-        let count = records.len();
-        let message = if changed {
-            format!(
-                "updated structural config in {} from {count} discovered {}",
-                self.config_path.display(),
-                plural(count, "relation", "relations")
-            )
-        } else {
-            format!(
-                "structural config already matches {count} discovered {}",
-                plural(count, "relation", "relations")
-            )
-        };
-
-        Ok(StructuralConfigSyncResult {
-            ok: true,
-            changed,
-            config_path: display_path(&self.config_path),
-            relations: records,
-            message,
-        })
-    }
 
     /// List artifacts owned by one entry.
     pub fn entry_artifact_list(
@@ -1375,13 +1310,8 @@ impl SurfaceContext {
     ) -> Result<RenderResult, CommandError> {
         let mut mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
         if let Some(override_json) = override_json {
-            apply_structural_override_json(
-                &mut mist.spec.render,
-                &mist.config.structural,
-                override_json,
-            )?;
-            mist.projection_settings.structural =
-                mist.spec.render.structural_settings(&mist.config.structural)?;
+            apply_structural_override_json(&mut mist.spec.render, override_json)?;
+            mist.projection_settings.structural_render = mist.spec.render.structural.clone();
         }
         let projection_settings = mist.projection_render_settings();
 
@@ -1391,6 +1321,7 @@ impl SurfaceContext {
             if check.has_errors() {
                 return Ok(RenderResult::blocked(&check));
             }
+            mist.spec.render.validate(check.structural())?;
             let report =
                 directory.check_generated_links_with_check_settings(&projection_settings)?;
             return Ok(RenderResult::from_report(&report, dry));
@@ -1400,8 +1331,11 @@ impl SurfaceContext {
         if reservoir_report.has_errors() {
             return Ok(RenderResult::blocked(&reservoir_report));
         }
-        let selected =
-            mist.spec.select.select_entries(reservoir_report.entries(), &mist.config.structural)?;
+        mist.spec.render.validate(reservoir_report.structural())?;
+        let selected = mist
+            .spec
+            .select
+            .select_entries(reservoir_report.entries(), reservoir_report.structural())?;
         let selected_ids = selected.iter().map(|entry| entry.id.clone()).collect::<BTreeSet<_>>();
         let selected_entries = selected
             .iter()
@@ -1593,7 +1527,6 @@ impl SurfaceContext {
 
     /// Show the current Sirno project status.
     pub fn status(&self) -> Result<StatusResult, CommandError> {
-        let config = SirnoConfig::from_file(&self.config_path)?;
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report =
@@ -1619,16 +1552,16 @@ impl SurfaceContext {
             lake_path: display_path(report.root()),
             entry_count: report.entries().len(),
             check_policy: StatusCheckPolicy { mode: CheckMode::Review, render: settings.render },
-            structural_fields: settings
-                .structural
+            structural_fields: report
+                .structural()
                 .with_tide_policies_from_entries(report.entries())
                 .fields()
                 .map(|(field, settings)| StructuralFieldStatus {
                     field: field.to_owned(),
-                    entry: config
-                        .structural
+                    entry: report
+                        .structural()
                         .entry_for_field(field)
-                        .expect("effective relation has configured entry")
+                        .expect("effective relation has discovered entry")
                         .to_string(),
                     to: StructuralEdgeStatus::from_settings(&settings.to),
                     from: StructuralEdgeStatus::from_settings(&settings.from),
@@ -1984,13 +1917,13 @@ impl TideContext {
     fn anchor_from_report(
         &self, report: &EntryDirectoryReport,
     ) -> Result<AnchorFile, CommandError> {
-        let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
+        let structural = report.structural().with_tide_policies_from_entries(report.entries());
         Ok(AnchorFile::from_report(&self.anchor_lake_path, report, &structural)?)
     }
 
     fn tide(&self, file: &TideFile) -> Result<Tide, CommandError> {
         let report = self.checked_report(CheckMode::Edit)?;
-        let structural = self.settings.structural.with_tide_policies_from_entries(report.entries());
+        let structural = report.structural().with_tide_policies_from_entries(report.entries());
         let anchor = AnchorFile::from_file_if_exists(&self.anchor_path)?;
         let anchor_snapshots =
             anchor.as_ref().map(anchor_snapshots).transpose()?.unwrap_or_default();
@@ -2216,7 +2149,6 @@ struct ResolvedMist {
     name: EntryAtom,
     spec_path: PathBuf,
     spec: MistSpec,
-    config: SirnoConfig,
     reservoir_path: PathBuf,
     reservoir_settings: EntryDirectoryCheckSettings,
     projection_path: PathBuf,
@@ -2238,12 +2170,11 @@ impl ResolvedMist {
         let reservoir_path = resolve_lake_path(lake_path, config_path, &config);
         let reservoir_settings = entry_directory_check_settings(config_path, &config)?;
         let projection_path = resolve_projection_path(config_path, &spec.projection.path);
-        let projection_settings = projection_check_settings(config_path, &config, &spec)?;
+        let projection_settings = projection_check_settings(config_path, &config, &spec);
         Ok(Self {
             name,
             spec_path,
             spec,
-            config,
             reservoir_path,
             reservoir_settings,
             projection_path,
@@ -2264,7 +2195,6 @@ impl ResolvedMist {
         let mut settings = self.projection_settings.clone();
         settings.render = false;
         settings.witness = None;
-        settings.structural_inhabitance = false;
         settings
     }
 }
@@ -2524,12 +2454,10 @@ fn git_staged_paths_under(
 }
 
 fn apply_structural_override_json(
-    render: &mut MistRenderSettings, registered: &StructuralSettings, override_json: &str,
+    render: &mut MistRenderSettings, override_json: &str,
 ) -> Result<(), CommandError> {
     let structural_render = serde_json::from_str(override_json)?;
-    let override_render = MistRenderSettings { structural: structural_render };
-    override_render.validate(registered)?;
-    *render = override_render;
+    *render = MistRenderSettings { structural: structural_render };
     Ok(())
 }
 
@@ -2583,8 +2511,7 @@ fn entry_directory_check_settings(
 ) -> Result<EntryDirectoryCheckSettings, CommandError> {
     Ok(EntryDirectoryCheckSettings {
         render: false,
-        structural_inhabitance: config.check.structural_inhabitance_enabled(),
-        structural: config.structural.clone(),
+        structural_render: Default::default(),
         ignore: config.lake.ignore.clone(),
         witness: witness_check_settings(config_path, config),
     })
@@ -2592,14 +2519,13 @@ fn entry_directory_check_settings(
 
 fn projection_check_settings(
     config_path: &Path, config: &SirnoConfig, mist: &MistSpec,
-) -> Result<EntryDirectoryCheckSettings, CommandError> {
-    Ok(EntryDirectoryCheckSettings {
+) -> EntryDirectoryCheckSettings {
+    EntryDirectoryCheckSettings {
         render: config.check.render_enabled(),
-        structural_inhabitance: false,
-        structural: mist.render.structural_settings(&config.structural)?,
+        structural_render: mist.render.structural.clone(),
         ignore: projection_ignore_paths(config),
         witness: witness_check_settings(config_path, config),
-    })
+    }
 }
 
 fn projection_ignore_paths(config: &SirnoConfig) -> Vec<PathBuf> {
@@ -2659,7 +2585,7 @@ fn validate_query_columns(
 ) -> Result<QueryColumns, CommandError> {
     for field in columns.structural_fields() {
         if !structural.contains_field(field) {
-            return Err(CommandError::UnconfiguredStructuralField(field.to_owned()));
+            return Err(CommandError::UndefinedStructuralField(field.to_owned()));
         }
     }
     Ok(columns)
@@ -2681,7 +2607,7 @@ fn structural_matchers_by_field(
     let mut matchers_by_field = IndexMap::<String, Vec<EntryStructuralMatcher>>::new();
     for filter in filters {
         if !structural.contains_field(&filter.field) {
-            return Err(CommandError::UnconfiguredStructuralField(filter.field));
+            return Err(CommandError::UndefinedStructuralField(filter.field));
         }
         matchers_by_field
             .entry(filter.field)
@@ -2690,7 +2616,7 @@ fn structural_matchers_by_field(
     }
     for state in states {
         if !structural.contains_field(&state.field) {
-            return Err(CommandError::UnconfiguredStructuralField(state.field));
+            return Err(CommandError::UndefinedStructuralField(state.field));
         }
         matchers_by_field.entry(state.field).or_default().push(state.state.into());
     }
@@ -2703,7 +2629,7 @@ fn structural_targets_by_target(
     let mut targets_by_field = IndexMap::<String, Vec<EntryAddress>>::new();
     for target in targets {
         if !structural.contains_field(&target.field) {
-            return Err(CommandError::UnconfiguredStructuralField(target.field));
+            return Err(CommandError::UndefinedStructuralField(target.field));
         }
         targets_by_field.entry(target.field).or_default().push(target.target);
     }

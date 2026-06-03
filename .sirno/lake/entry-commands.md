@@ -26,7 +26,7 @@ Entry commands operate on Markdown entries and their owner-relative artifact tre
 Entry creation options:
 
 - `-d`, `-n`, and `-b` are short forms for `--desc`, `--name`, and `--body`.
-- `--structural FIELD=ENTRY_ADDRESS` adds configured structural link targets.
+- `--structural FIELD=ENTRY_ADDRESS` adds structural link targets.
 - Creation refuses to overwrite an existing entry file.
 
 Entry rename updates structural link targets,
@@ -111,7 +111,7 @@ Query filters and output follow these rules:
 - Field state filters use `--is FIELD=present`, `--is FIELD=empty`, or `--is FIELD=missing`.
 - Distinct fields narrow results.
 - Same-field target filters and state filters are alternatives.
-- `--columns` selects built-in output columns and configured link relations.
+- `--columns` selects built-in output columns and structural link relations.
 - Without `--columns`, query selects the default `id` and `name` columns.
 - `--columns` with no value prints selectable column names without selecting entries.
 - `-o, --format` selects the output format.

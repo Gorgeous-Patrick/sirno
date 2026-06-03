@@ -18,14 +18,13 @@ use crate::{
     CharmSettings, CheckSettings, ConfigError, RepoSettings, SirnoConfig, TutorialSettings,
 };
 
-const SECTIONS: [ConfigSection; 7] = [
+const SECTIONS: [ConfigSection; 6] = [
     ConfigSection::Lake,
     ConfigSection::Repo,
     ConfigSection::Witness,
     ConfigSection::Check,
     ConfigSection::Tutorial,
     ConfigSection::Charm,
-    ConfigSection::Structural,
 ];
 
 /// Run the interactive config maintenance UI.
@@ -181,7 +180,6 @@ enum ConfigSection {
     Check,
     Tutorial,
     Charm,
-    Structural,
 }
 
 impl ConfigSection {
@@ -193,7 +191,6 @@ impl ConfigSection {
             | "check" => Some(Self::Check),
             | "tutorial" => Some(Self::Tutorial),
             | "charm" => Some(Self::Charm),
-            | "structural" => Some(Self::Structural),
             | _ => None,
         }
     }
@@ -206,7 +203,6 @@ impl ConfigSection {
             | Self::Check => "[check]",
             | Self::Tutorial => "[tutorial]",
             | Self::Charm => "[charm]",
-            | Self::Structural => "[structural]",
         }
     }
 }
@@ -273,15 +269,12 @@ fn config_section_rows(
 
 fn materialize_section(config: &mut SirnoConfig, section: ConfigSection) {
     match section {
-        | ConfigSection::Lake | ConfigSection::Witness | ConfigSection::Structural => {}
+        | ConfigSection::Lake | ConfigSection::Witness => {}
         | ConfigSection::Repo => {
             config.repo.get_or_insert_with(|| RepoSettings { members: Vec::new() });
         }
         | ConfigSection::Check => {
-            config.check = CheckSettings {
-                render: Some(config.check.render_enabled()),
-                structural_inhabitance: Some(config.check.structural_inhabitance_enabled()),
-            };
+            config.check = CheckSettings { render: Some(config.check.render_enabled()) };
         }
         | ConfigSection::Tutorial => {
             config.tutorial.get_or_insert_with(TutorialSettings::all);
@@ -422,7 +415,6 @@ mod tests {
             check: CheckSettings::default(),
             tutorial: None,
             charm: CharmSettings::default(),
-            structural: Default::default(),
         }
     }
 

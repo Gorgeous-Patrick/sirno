@@ -40,7 +40,7 @@ Config utility commands reject `--lake-path`.
 `sirno util entry` and `sirno util entry tui` open an interactive terminal UI
 for common entry defaults.
 Each row is a default entry address with its presence status
-and the structural link relations that would be written under the current `Sirno.toml`.
+and the structural link relations that would be written under the current lake.
 `i` inserts the selected missing entry.
 `a` inserts all missing defaults.
 
@@ -49,11 +49,6 @@ and `narrative`.
 They also include structural vocabulary such as `structural`, `belongs`, `refines`,
 and `prerequisite`.
 The entry utility accepts `--lake-path`.
-
-`sirno util structural` discovers project-local entries with `meta.type: "structural"`.
-It syncs each discovered entry into `Sirno.toml` as `[structural.FIELD].entry`,
-using the entry address as both `FIELD` and `entry`.
-It accepts `--lake-path`.
 
 `sirno util skills init` installs bundled Sirno skill wrappers
 to their `.agents/skills/sirno-*` package targets.

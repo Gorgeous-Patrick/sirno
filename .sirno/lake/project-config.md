@@ -109,8 +109,6 @@ Omitting the table or an individual check flag leaves that check enabled.
 `[check].render` controls generated-footer freshness checks in misty lakes.
 Malformed generated-link sentinels remain errors,
 because malformed sentinels make Sirno ownership ambiguous.
-`[check].structural-inhabitance` controls whether checks require each configured link relation
-to name an existing *entry* with `meta.type: "structural"`.
 When a check flag is present,
 the config UI can restore that flag's canonical comment.
 `sirno util config check` reports when the comment is missing.
@@ -124,26 +122,15 @@ Sirno shows enabled tutorials after matching recoverable command failures.
 `[tutorial].anchor_bootstrap_tide` adds first-anchor context to that tutorial.
 Removing the table silences all tutorial text.
 
-`[structural]` controls which metadata fields define structural link relations.
-Each link relation is written as a `[structural.FIELD]` subtable.
-
-| Part | Rule |
-|---|---|
-| `FIELD` | Names the metadata relation. |
-| field shape | Uses a non-empty single-line metadata key. |
-| reserved names | `FIELD` must not contain a comma or be `name`, `desc`, or `frozen`. |
-| `entry` | Names the *entry* that documents the relation. |
-| relation entry | Checks can require that *entry* to define `meta.type: "structural"`. |
-| key order | Records user-authored project structure and is preserved by rewrites. |
-
-This repository recommends `category`, `belongs`, `prerequisite`, and `refines`.
-When `[check].structural-inhabitance` is enabled,
-checks report configured relation entries that are missing or not structural.
+`Sirno.toml` does not store structural link relation registration.
+Sirno discovers structural relations from lake entries that define `meta.type: "structural"`.
+The relation entry address is the metadata field name.
+Structural relation order is entry-address order.
 
 Generated footer structural rendering belongs to mist settings,
 not to project configuration.
 A mist spec owns `[render.structural]` for that projection.
-Each key names a configured structural relation.
+Each key names a discovered structural relation.
 Each value is a list of rendered edge directions.
 Absent relations render no generated footer groups in that misty lake.
 

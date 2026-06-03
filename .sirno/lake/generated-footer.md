@@ -50,7 +50,7 @@ The *generated footer* is an interoperability layer.
 Some editors and documentation tools navigate Markdown links more naturally than metadata fields.
 Sirno can project selected fields into links so those tools can participate in the *lake*.
 
-The generated body is grouped by configured link relation.
+The generated body is grouped by rendered structural relation.
 Each direction listed in the active mist's structural render settings appears in the region.
 Within one relation,
 groups render in `to`, `from`, then `clique` order.

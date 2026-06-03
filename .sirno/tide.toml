@@ -8,119 +8,175 @@ ripple = "actualization-discipline"
 field = "belongs"
 direction = "to"
 neighbor = "agent-skills"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "agent-skills"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "design-doc-writer-skill"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "internalization-discipline"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "lake-curation-discipline"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "narrative-session-discipline"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "portable-agent-skill-language"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "repository-editing-discipline"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "belongs"
 direction = "clique"
 neighbor = "skill-synthesis-discipline"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "actualize"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "agent-skills"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "methodology"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "portable-agent-skill-language"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "project-config"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "semantic-locality"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "prerequisite"
 direction = "to"
 neighbor = "sirno-witness"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
 
 [[resolved]]
 ripple = "actualization-discipline"
 field = "refines"
 direction = "to"
 neighbor = "actualize"
-fingerprint = "sha256:c72461adfcc22407dd0d8510f4aa3b6d12de35cb79fa6d7775853253456db904"
+fingerprint = "sha256:c6e2e1af6ce535d2b476ef7a47630b4ecc2ac70ebb7ca294d13116422d808d92"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "to"
+neighbor = "narrative"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "documentation-driven-development"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "introduction"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "methodology"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "narrative"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "perspective-and-terms"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "belongs"
+direction = "clique"
+neighbor = "readme"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
+
+[[resolved]]
+ripple = "bootstrap-resolution"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-self-application"
+fingerprint = "sha256:3e02d9fd22d612caf9a84bfa56c75bc4e8a6069a7e0b26357a6d731c6ebd2da3"
 
 [[resolved]]
 ripple = "crystallization"
@@ -191,6 +247,153 @@ field = "prerequisite"
 direction = "from"
 neighbor = "glacier"
 fingerprint = "sha256:77d17f06b185328c7da71df3d2dde46063e297e79636b90bf545af9b04c8bdd2"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "to"
+neighbor = "interfaces"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "charm-and-spell-commands"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "cli-interface"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "extension-system"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mcp-interface"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mist"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "project-commands"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "spell-invocation"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "utility-commands"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "entry-commands"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "sha256:fbe518826abc0547e63fcee3676851562a1360aeaa865f5a9485b5a56d51cf91"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "belongs"
+direction = "to"
+neighbor = "generated-navigation"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "belongs"
+direction = "clique"
+neighbor = "generated-navigation"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "belongs"
+direction = "clique"
+neighbor = "misty-lake"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-edge-policy"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "prerequisite"
+direction = "to"
+neighbor = "structural"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "prerequisite"
+direction = "from"
+neighbor = "generated-navigation"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural-check"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
+
+[[resolved]]
+ripple = "generated-footer"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural-edge-policy"
+fingerprint = "sha256:098b8958460f92ecf0ff79ff358437a93290124a334d09c6424415ab960cfecb"
 
 [[resolved]]
 ripple = "generated-navigation"
@@ -568,91 +771,322 @@ ripple = "mcp-interface"
 field = "belongs"
 direction = "to"
 neighbor = "interfaces"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "charm-and-spell-commands"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "cli-interface"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "entry-commands"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "extension-system"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "interfaces"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "mist"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "project-commands"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-anchor"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "spell-invocation"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "tide-commands"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "belongs"
 direction = "clique"
 neighbor = "utility-commands"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
 
 [[resolved]]
 ripple = "mcp-interface"
 field = "prerequisite"
 direction = "to"
 neighbor = "project-config"
-fingerprint = "sha256:388b2933b9e2bf7cb14637606cd583dc0ec2cddb3a463974e5b71a4cea93629c"
+fingerprint = "sha256:7bb31c40944341bde31f06c7d52c972ac6c92af3e61c66f811dadf1c289e9205"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "to"
+neighbor = "metadata"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "from"
+neighbor = "intrinsic"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "from"
+neighbor = "structural"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "clique"
+neighbor = "intrinsic"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "clique"
+neighbor = "meta"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "belongs"
+direction = "clique"
+neighbor = "structural"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "prerequisite"
+direction = "to"
+neighbor = "metadata"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "meta-type"
+field = "prerequisite"
+direction = "from"
+neighbor = "intrinsic"
+fingerprint = "sha256:972f134f2bf64e330f3b30379fc1615befaea0634ef9dbd9dc924dfc2bb38475"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "from"
+neighbor = "meta"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "from"
+neighbor = "meta-type"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "lake-namespace"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "meta"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "meta-type"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "mist"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "misty-lake"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "reservoir"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lake"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "to"
+neighbor = "entry"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "meta-type"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "query"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
+
+[[resolved]]
+ripple = "metadata"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural-check"
+fingerprint = "sha256:eb8527198470f72d8404ca34c4d1458e5db1aaf103d316526857934c39559d0f"
 
 [[resolved]]
 ripple = "methodology"
@@ -1492,259 +1926,259 @@ ripple = "project-config"
 field = "belongs"
 direction = "to"
 neighbor = "sirno"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "from"
 neighbor = "charm-enablement"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "from"
 neighbor = "project-config-comments"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "agent-skills"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "charm-enablement"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "form"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "future-work"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "interfaces"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "planning"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "project-config-comments"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "project-self-application"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "sirno-witness"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "storage"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "belongs"
 direction = "clique"
 neighbor = "structural"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "to"
 neighbor = "storage"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "actualization-discipline"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "charm-enablement"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "cli-interface"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "entry-commands"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "extension-system"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "interfaces"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "mcp-interface"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "project-commands"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "project-config-comments"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "repository-editing-discipline"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "sirno-anchor"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "sirno-control-files"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "sirno-upstream"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "tide-commands"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "upstream-lake"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "utility-commands"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config"
 field = "prerequisite"
 direction = "from"
 neighbor = "witness-lookup"
-fingerprint = "sha256:e9a49902dcbbfe05a5501548c74a591ea6551b664756fa2aa12ea9387b76570c"
+fingerprint = "sha256:d548f25cd0ddb65b82058e16705ce56a6bef9245ca4beb28b48c25fca4cb961e"
 
 [[resolved]]
 ripple = "project-config-comments"
 field = "belongs"
 direction = "to"
 neighbor = "project-config"
-fingerprint = "sha256:28c61214fc1a0a4af3e5b9373907d276605b94ab9df5416387b158565a4e5d3f"
+fingerprint = "sha256:b69013ccfc6d7aa7bd40dd9a6cfb24611f7c65d70dbb737df85debc7b1cea3ba"
 
 [[resolved]]
 ripple = "project-config-comments"
 field = "belongs"
 direction = "clique"
 neighbor = "charm-enablement"
-fingerprint = "sha256:28c61214fc1a0a4af3e5b9373907d276605b94ab9df5416387b158565a4e5d3f"
+fingerprint = "sha256:b69013ccfc6d7aa7bd40dd9a6cfb24611f7c65d70dbb737df85debc7b1cea3ba"
 
 [[resolved]]
 ripple = "project-config-comments"
 field = "belongs"
 direction = "clique"
 neighbor = "project-config"
-fingerprint = "sha256:28c61214fc1a0a4af3e5b9373907d276605b94ab9df5416387b158565a4e5d3f"
+fingerprint = "sha256:b69013ccfc6d7aa7bd40dd9a6cfb24611f7c65d70dbb737df85debc7b1cea3ba"
 
 [[resolved]]
 ripple = "project-config-comments"
 field = "prerequisite"
 direction = "to"
 neighbor = "project-config"
-fingerprint = "sha256:28c61214fc1a0a4af3e5b9373907d276605b94ab9df5416387b158565a4e5d3f"
+fingerprint = "sha256:b69013ccfc6d7aa7bd40dd9a6cfb24611f7c65d70dbb737df85debc7b1cea3ba"
 
 [[resolved]]
 ripple = "query"
@@ -3147,6 +3581,195 @@ neighbor = "upstream-lake"
 fingerprint = "sha256:f79c544a535b3faccb3d77491f6a70469ad6e7234fc1200fa491c95df9a58d5d"
 
 [[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "from"
+neighbor = "ripple"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "from"
+neighbor = "tide"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "anchor-file"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-artifact"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "lake-namespace"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "mist"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "misty-lake"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "reservoir"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "ripple"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lake"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "structural-check"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "tide"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "to"
+neighbor = "ripple"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "to"
+neighbor = "structural-edge-policy"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "prerequisite"
+direction = "from"
+neighbor = "tide"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
+ripple = "sirno-tide"
+field = "refines"
+direction = "to"
+neighbor = "versioning"
+fingerprint = "sha256:4fcc2bcb68923ad605a4417a696782fd59eca56ca212b8a3411de62319ca4134"
+
+[[resolved]]
 ripple = "sirno-upstream"
 field = "belongs"
 direction = "to"
@@ -3539,6 +4162,405 @@ neighbor = "sirno-control-files"
 fingerprint = "sha256:eae952b893c1626ddf1a2b6fc04dc568a81b03fb19263828dd0224df38fd5bb6"
 
 [[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "to"
+neighbor = "meta-type"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "to"
+neighbor = "sirno"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "from"
+neighbor = "belongs"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "from"
+neighbor = "category"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "from"
+neighbor = "generated-navigation"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "from"
+neighbor = "prerequisite"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "from"
+neighbor = "refines"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "agent-skills"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "belongs"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "category"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "form"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "future-work"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "generated-navigation"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "intrinsic"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "meta-type"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "planning"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "prerequisite"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "project-config"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "project-self-application"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "refines"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-witness"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "belongs"
+direction = "clique"
+neighbor = "storage"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "to"
+neighbor = "metadata"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "belongs"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "category"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "generated-footer"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "prerequisite"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "refines"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural"
+field = "prerequisite"
+direction = "from"
+neighbor = "structural-edge-policy"
+fingerprint = "sha256:567c4e35da2e51d384de84fcf5a6c00f7b8a56cde79debee7e0c43e0fa114318"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "to"
+neighbor = "sirno-lake"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "design-source-authority"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "entry"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "lake-namespace"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "metadata"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "mist"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "misty-lake"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "query"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "refinement"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "reservoir"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-lake"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-tide"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-upstream"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "belongs"
+direction = "clique"
+neighbor = "versioning"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "prerequisite"
+direction = "to"
+neighbor = "generated-footer"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "prerequisite"
+direction = "to"
+neighbor = "metadata"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-check"
+field = "prerequisite"
+direction = "to"
+neighbor = "sirno-witness"
+fingerprint = "sha256:fecbb41a693e4449dc2f03a045226b126f102be41bdf7122fa6bc6dd327fecd0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "belongs"
+direction = "to"
+neighbor = "generated-navigation"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "belongs"
+direction = "clique"
+neighbor = "generated-footer"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "belongs"
+direction = "clique"
+neighbor = "generated-navigation"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "belongs"
+direction = "clique"
+neighbor = "misty-lake"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "prerequisite"
+direction = "to"
+neighbor = "generated-footer"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "prerequisite"
+direction = "to"
+neighbor = "structural"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "prerequisite"
+direction = "from"
+neighbor = "anchor-file"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
+ripple = "structural-edge-policy"
+field = "prerequisite"
+direction = "from"
+neighbor = "sirno-tide"
+fingerprint = "sha256:7b4f0ca124745757270a414cd5d4f78b9942cd1fa28eb5663143a23dc8c4f4d0"
+
+[[resolved]]
 ripple = "tide"
 field = "belongs"
 direction = "to"
@@ -3742,6 +4764,41 @@ neighbor = "tide-resolution"
 fingerprint = "sha256:cc366686dd7c2506ff026dabb17cb91256ceafa634467fc3b8a32d480ed2a2b4"
 
 [[resolved]]
+ripple = "tide-workitem"
+field = "belongs"
+direction = "to"
+neighbor = "tide"
+fingerprint = "sha256:f0ec4b0f13567079aadc35f9a0528a24ca6cba4fa2dc89b2b2a187216484aa72"
+
+[[resolved]]
+ripple = "tide-workitem"
+field = "belongs"
+direction = "clique"
+neighbor = "tide"
+fingerprint = "sha256:f0ec4b0f13567079aadc35f9a0528a24ca6cba4fa2dc89b2b2a187216484aa72"
+
+[[resolved]]
+ripple = "tide-workitem"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-resolution"
+fingerprint = "sha256:f0ec4b0f13567079aadc35f9a0528a24ca6cba4fa2dc89b2b2a187216484aa72"
+
+[[resolved]]
+ripple = "tide-workitem"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-review-file"
+fingerprint = "sha256:f0ec4b0f13567079aadc35f9a0528a24ca6cba4fa2dc89b2b2a187216484aa72"
+
+[[resolved]]
+ripple = "tide-workitem"
+field = "prerequisite"
+direction = "to"
+neighbor = "tide"
+fingerprint = "sha256:f0ec4b0f13567079aadc35f9a0528a24ca6cba4fa2dc89b2b2a187216484aa72"
+
+[[resolved]]
 ripple = "upstream-file"
 field = "belongs"
 direction = "to"
@@ -3915,6 +4972,97 @@ field = "prerequisite"
 direction = "from"
 neighbor = "upstream-file"
 fingerprint = "sha256:20aaf09a49ac54f614205da518cf2bc92f88d0bc54ec76913dd58dfa628ab400"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "to"
+neighbor = "interfaces"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "charm-and-spell-commands"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "cli-interface"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "entry-commands"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "extension-system"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "interfaces"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mcp-interface"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "mist"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "project-commands"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "sirno-anchor"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "spell-invocation"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "belongs"
+direction = "clique"
+neighbor = "tide-commands"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
+
+[[resolved]]
+ripple = "utility-commands"
+field = "prerequisite"
+direction = "to"
+neighbor = "project-config"
+fingerprint = "sha256:0fcd3595d1d14c24238605c2e83dea04f83b22386b9882f36c5751ae0d256c14"
 
 [[resolved]]
 ripple = "versioning"

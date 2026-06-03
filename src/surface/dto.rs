@@ -160,32 +160,6 @@ pub struct ConfigCommentResult {
     pub message: String,
 }
 
-/// One structural relation discovered from project-local entries.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StructuralConfigRecord {
-    /// Metadata relation name.
-    pub field: String,
-    /// Entry configured for the relation.
-    pub entry: String,
-    /// Whether this run changed the config row.
-    pub changed: bool,
-}
-
-/// Result of syncing configured structural relations from local entries.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct StructuralConfigSyncResult {
-    /// Whether the command completed successfully.
-    pub ok: bool,
-    /// Whether `Sirno.toml` changed.
-    pub changed: bool,
-    /// Checked config path.
-    pub config_path: String,
-    /// Discovered structural relation rows.
-    pub relations: Vec<StructuralConfigRecord>,
-    /// Human-readable summary.
-    pub message: String,
-}
-
 /// Request to add or replace one upstream declaration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpstreamAddRequest {
@@ -332,7 +306,7 @@ impl QueryColumn {
 pub enum QueryValue {
     /// Scalar entry field value.
     Text(String),
-    /// Structural link targets for one configured relation.
+    /// Structural link targets for one structural relation.
     ///
     /// `None` means the relation is absent.
     /// `Some([])` means the relation is present and has no targets.
@@ -534,7 +508,7 @@ pub enum QueryRun {
         /// Columns selected for the attempted query.
         columns: QueryColumns,
         /// Lake report that blocked query execution.
-        report: EntryDirectoryReport,
+        report: Box<EntryDirectoryReport>,
     },
     /// The query completed and produced rows.
     Results(QueryResults),
@@ -1321,7 +1295,7 @@ pub struct StatusResult {
     pub entry_count: usize,
     /// Status check policy.
     pub check_policy: StatusCheckPolicy,
-    /// Configured link relation summaries.
+    /// Structural link relation summaries.
     pub structural_fields: Vec<StructuralFieldStatus>,
     /// Tide summary when the lake can be compared against the active review baseline.
     #[serde(skip_serializing_if = "Option::is_none")]

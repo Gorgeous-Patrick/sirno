@@ -18,18 +18,15 @@ Structural checks cover these areas:
 | Area | What it validates |
 |---|---|
 | metadata shape | Required fields and accepted field shapes. |
-| structural targets | References through fields configured by `[structural.FIELD]`. |
-| relation entries | Configured relations have entries with `meta.type: "structural"`. |
+| structural targets | References through fields with structural relation entries. |
+| relation entries | `meta.type: "structural"` entries use valid relation field names. |
 | intrinsic entries | `name` and `desc` carry `meta.type: "intrinsic"` when present. |
 | intrinsic markers | Only `name` and `desc` carry `meta.type: "intrinsic"`. |
 | category targets | Entries used as category targets include `category: category`. |
 | generated footers | Sirno-owned footer boundaries and freshness. |
 | witnesses | Configured witness lookup validity when requested. |
 
-The structural-inhabitance check is controlled by `[check].structural-inhabitance`.
-It is enabled when the flag or the whole `[check]` table is absent.
-
-When `category` metadata is present or `[structural.category]` is configured,
+When `category` metadata is present or the `category` relation entry exists,
 checks warn if the `category` *entry* is missing.
 When `[repo].members` is configured,
 review checks report *repository witness* blocks that name missing *entries*.
@@ -45,9 +42,8 @@ Edit and review modes use different severity boundaries:
 | Diagnostic | Edit mode | Review mode |
 |---|---|---|
 | dangling structural link target | warning | error |
-| list-valued metadata absent from `[structural]` | warning | warning |
-| missing configured relation entry or type | warning | error |
-| structural entry not configured in `Sirno.toml` | warning | error |
+| list-valued metadata without a structural relation entry | warning | warning |
+| invalid structural relation field name | warning | error |
 | intrinsic-field `meta.type` mismatch | warning | error |
 
 Checks keep local movement fast while making review boundaries strict.
@@ -67,17 +63,12 @@ Mixed LF and CRLF line endings warn,
 because a file should keep one line-ending style even when Sirno can still parse it.
 Generated footer sentinels must be well formed.
 Malformed structural link values are errors because tools cannot safely infer target ids from them.
-Unconfigured structural link relations are warnings
-because the *entry* names structure the project config does not enable.
+Uninhabited structural link relations are warnings
+because the *entry* names structure the lake does not define.
 
 Metadata target checks keep the graph navigable.
-If an *entry* names a target through configured structural link metadata,
+If an *entry* names a target through discovered structural link metadata,
 that target should exist by the time the *lake* is reviewed.
-If `Sirno.toml` configures a link relation,
-the configured relation entry should exist.
-That relation entry should define `meta.type: "structural"`,
-even when the relation has no tide behavior.
-`[check].structural-inhabitance` controls that configured-relation entry check.
 This lets query results, generated footers, tide workitems,
 and reader navigation agree about the same set of *entries*.
 

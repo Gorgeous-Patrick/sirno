@@ -20,7 +20,7 @@ Every *entry* has a YAML metadata block.
 | `meta` | mapping | Optional Sirno-managed metadata. |
 | `meta.frozen` | non-empty reason list | Declares that the lake *entry* is protected. |
 | `meta.type: "intrinsic"` | scalar marker | Marks `name` or `desc` as a built-in metadata field. |
-| `meta.type: "structural"` | scalar marker | Marks a configured structural relation definition. |
+| `meta.type: "structural"` | scalar marker | Marks a structural relation definition. |
 | `meta.ripple.lake` | direction list | Defines how waterline *tide* follows a structural relation. |
 | `meta.ripple.anchor` | direction list | Defines how Anchor-side *tide* follows a structural relation. |
 
@@ -29,11 +29,11 @@ The `meta-type` entry groups the `meta.type` discriminator values:
 | Value | Role entry | Valid carriers |
 |---|---|---|
 | `intrinsic` | `intrinsic` | `name` and `desc`. |
-| `structural` | `structural` | Configured structural relation entries. |
+| `structural` | `structural` | Structural relation entries. |
 
 The `name` and `desc` *entries* define the required fields
 and belong to `intrinsic`.
-Configured structural relation entries belong to `structural`.
+Structural relation entries belong to `structural`.
 
 Frozen reasons are:
 
@@ -45,20 +45,22 @@ Frozen reasons are:
 The `reviewed` reason belongs to the deprecated manual freeze design.
 An entry may carry both frozen reasons while the field exists.
 
-Ripple fields are present only on entries that define configured structural link relations.
+Ripple fields are present only on entries that define structural link relations.
 Their `to`, `from`, and `clique` values enable waterline or Anchor-side review workitems.
 Empty `meta.ripple.lake` and `meta.ripple.anchor` lists mean the relation has no tide behavior.
 
-Configured structural link relations are optional.
-This repository configures `category`, `belongs`, `prerequisite`, and `refines`.
+Structural link relations are optional.
+This repository defines `category`, `belongs`, `prerequisite`, and `refines`.
 They follow three rules:
 
 - They are always lists when present.
 - Their values are *entry addresses*.
 - An empty list is a present empty field.
 
-Their relation order is user-authored metadata.
-Sirno preserves it when parsing, rendering, and moving *entries*.
+Structural relation order is entry-address order.
+Rendered relation order belongs to mist settings.
+Structural target order stays user-authored metadata.
+Sirno preserves target order when parsing, rendering, and moving *entries*.
 
 Operational structure is formed only from metadata.
 Prose links may help readers and external tools,
@@ -72,7 +74,7 @@ and structural links are lists of entry addresses.
 The body can explain nuance,
 but the metadata must not require prose parsing.
 If a tool needs to know that one *entry* depends on or refines another,
-the configured structural link metadata must say so.
+the structural link metadata must say so.
 If a tool needs to know that an entry defines an intrinsic metadata field,
 the entry must carry `meta.type: "intrinsic"`.
 If an agent needs to inspect *repository* evidence for an *entry*,
@@ -96,5 +98,5 @@ category:
 
 The schema keeps required scalar fields small.
 New list-valued metadata can become a structural link relation
-when `[structural.FIELD]` configures that field.
-Unconfigured list-valued metadata fields remain visible as check warnings.
+when an entry with the same address declares `meta.type: "structural"`.
+List-valued metadata fields without a matching relation entry remain visible as check warnings.

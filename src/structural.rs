@@ -11,7 +11,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
-use crate::entry::Entry;
+use crate::entry::{DESC_FIELD, Entry, FROZEN_FIELD, META_FIELD, NAME_FIELD};
 use crate::identifier::EntryAddress;
 
 fn is_false(value: &bool) -> bool {
@@ -123,7 +123,7 @@ impl fmt::Display for StructuralEdgeSettings {
     }
 }
 
-/// Direction of one configured structural link.
+/// Direction of one structural link.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StructuralEdgeDirection {
@@ -173,7 +173,7 @@ impl FromStr for StructuralEdgeDirection {
 #[error("unknown structural link direction `{0}`; expected to, from, or clique")]
 pub struct StructuralEdgeDirectionParseError(String);
 
-/// Effective settings for one configured link relation.
+/// Effective settings for one link relation.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 // sirno:witness:structural-edge-policy:begin
@@ -275,7 +275,7 @@ impl StructuralTideSettings {
 /// Tide callers merge `meta.ripple.lake` and `meta.ripple.anchor` from relation entries.
 pub type StructuralFieldMap = IndexMap<String, StructuralFieldSettings>;
 
-/// Ordered configured structural relation entries.
+/// Ordered structural relation entries.
 pub type StructuralRelationMap = IndexMap<String, StructuralRelationSettings>;
 
 /// Configured entry that defines one structural relation.
@@ -311,12 +311,12 @@ impl StructuralRenderSettings {
         }
     }
 
-    /// Iterate configured render policies in user-authored order.
+    /// Iterate render policies in user-authored order.
     pub fn fields(&self) -> impl Iterator<Item = (&str, &[StructuralEdgeDirection])> {
         self.fields.iter().map(|(field, directions)| (field.as_str(), directions.as_slice()))
     }
 
-    /// Return render directions for one configured relation.
+    /// Return render directions for one relation.
     pub fn directions_for(&self, field: &str) -> Option<&[StructuralEdgeDirection]> {
         self.fields.get(field).map(Vec::as_slice)
     }
@@ -327,7 +327,7 @@ impl StructuralRenderSettings {
     }
 }
 
-/// Configured link relations and effective edge policy.
+/// Structural link relations and effective edge policy.
 ///
 /// Each key names a metadata relation that Sirno should treat as structural.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -360,6 +360,25 @@ impl<'de> Deserialize<'de> for StructuralSettings {
 }
 
 impl StructuralSettings {
+    /// Discover structural relations from parsed relation entries.
+    ///
+    /// Relation order is entry-address order.
+    pub fn from_entries(entries: &[Entry]) -> Self {
+        let mut relation_entries = entries
+            .iter()
+            .filter(|entry| {
+                entry.metadata.meta.is_structural_relation()
+                    && validate_structural_field_name(entry.id.as_str()).is_ok()
+            })
+            .map(|entry| entry.id.clone())
+            .collect::<Vec<_>>();
+        relation_entries.sort();
+
+        Self::from_relations(
+            relation_entries.into_iter().map(|entry| (entry.as_str().to_owned(), entry)),
+        )
+    }
+
     /// Construct structural settings from explicit relation settings.
     pub fn from_fields(
         fields: impl IntoIterator<Item = (impl Into<String>, StructuralFieldSettings)>,
@@ -375,7 +394,7 @@ impl StructuralSettings {
         settings
     }
 
-    /// Construct structural settings from configured relation entries.
+    /// Construct structural settings from relation entries.
     pub fn from_relations(
         relations: impl IntoIterator<Item = (impl Into<String>, EntryAddress)>,
     ) -> Self {
@@ -386,32 +405,32 @@ impl StructuralSettings {
         settings
     }
 
-    /// Return configured relation entries in user-authored order.
+    /// Return relation entries in structural order.
     pub fn relations(&self) -> impl Iterator<Item = (&str, &EntryAddress)> {
         self.entries.iter().map(|(field, entry)| (field.as_str(), entry))
     }
 
-    /// Iterate configured relations in user-authored order.
+    /// Iterate relations in structural order.
     pub fn fields(&self) -> impl Iterator<Item = (&str, &StructuralFieldSettings)> {
         self.fields.iter().map(|(field, settings)| (field.as_str(), settings))
     }
 
-    /// Return true when a metadata relation is configured as structural.
+    /// Return true when a metadata relation is defined as structural.
     pub fn contains_field(&self, field: &str) -> bool {
         self.fields.contains_key(field)
     }
 
-    /// Return the entry configured for one structural relation.
+    /// Return the entry that defines one structural relation.
     pub fn entry_for_field(&self, field: &str) -> Option<&EntryAddress> {
         self.entries.get(field)
     }
 
-    /// Return true when the entry defines a configured structural relation.
+    /// Return true when the entry defines a discovered structural relation.
     pub fn contains_entry(&self, entry: &EntryAddress) -> bool {
-        self.entries.values().any(|configured| configured == entry)
+        self.entries.values().any(|defined| defined == entry)
     }
 
-    /// Add or update one configured structural relation entry.
+    /// Add or update one structural relation entry.
     ///
     /// Existing relations keep their original order position.
     pub fn set_relation_entry(&mut self, field: impl Into<String>, entry: EntryAddress) -> bool {
@@ -422,7 +441,7 @@ impl StructuralSettings {
         changed
     }
 
-    /// Rename a configured structural relation entry address.
+    /// Rename a structural relation entry address.
     pub fn rename_entry_reference(&mut self, old_id: &EntryAddress, new_id: &EntryAddress) -> bool {
         let mut changed = false;
         for entry in self.entries.values_mut() {
@@ -434,7 +453,7 @@ impl StructuralSettings {
         changed
     }
 
-    /// Rename one configured link relation.
+    /// Rename one structural link relation.
     ///
     /// The field stays in its original order position.
     pub fn rename_field(&mut self, old_id: &EntryAddress, new_id: &EntryAddress) -> bool {
@@ -466,23 +485,33 @@ impl StructuralSettings {
 
     /// Return effective settings with generated-footer render policy applied.
     pub fn with_render_settings(&self, render: &StructuralRenderSettings) -> Self {
-        let fields = self
-            .fields
-            .keys()
-            .map(|field| {
-                let directions = render.directions_for(field).unwrap_or_default();
-                let field_settings = StructuralFieldSettings::render_only(
+        let mut fields = StructuralFieldMap::new();
+        let mut entries = IndexMap::new();
+        for (field, directions) in render.fields() {
+            let Some(entry) = self.entries.get(field) else {
+                continue;
+            };
+            fields.insert(
+                field.to_owned(),
+                StructuralFieldSettings::render_only(
                     directions.contains(&StructuralEdgeDirection::To),
                     directions.contains(&StructuralEdgeDirection::From),
                     directions.contains(&StructuralEdgeDirection::Clique),
-                );
-                (field.clone(), field_settings)
-            })
-            .collect();
-        Self { fields, entries: self.entries.clone() }
+                ),
+            );
+            entries.insert(field.to_owned(), entry.clone());
+        }
+        for (field, entry) in &self.entries {
+            if fields.contains_key(field) {
+                continue;
+            }
+            fields.insert(field.clone(), StructuralFieldSettings::default());
+            entries.insert(field.clone(), entry.clone());
+        }
+        Self { fields, entries }
     }
 
-    /// Return effective settings with entry-side tide policies merged into configured relations.
+    /// Return effective settings with entry-side tide policies merged into relations.
     // sirno:witness:structural-edge-policy:begin
     pub fn with_tide_policies_from_entries(&self, entries: &[Entry]) -> Self {
         let policies = entries
@@ -521,6 +550,28 @@ impl StructuralSettings {
             })
             .collect()
     }
+}
+
+/// Validate a metadata key used as a structural relation name.
+pub fn validate_structural_field_name(field: &str) -> Result<(), StructuralFieldNameError> {
+    if field.is_empty() || field.contains('\n') || field.contains('\r') || field.contains(',') {
+        return Err(StructuralFieldNameError::Invalid(field.to_owned()));
+    }
+    if matches!(field, NAME_FIELD | DESC_FIELD | META_FIELD | FROZEN_FIELD) {
+        return Err(StructuralFieldNameError::Reserved(field.to_owned()));
+    }
+    Ok(())
+}
+
+/// Error raised when a structural relation entry cannot be used as a metadata key.
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum StructuralFieldNameError {
+    /// The field is empty, multiline, or contains a forbidden separator.
+    #[error("structural relation name must be a non-empty single-line metadata key: {0}")]
+    Invalid(String),
+    /// The field belongs to required or managed metadata.
+    #[error("structural relation name is reserved for Sirno metadata: {0}")]
+    Reserved(String),
 }
 
 /// Lake-wide structural link context.
@@ -651,7 +702,7 @@ mod tests {
     }
 
     #[test]
-    fn config_relations_track_entry_addresses() {
+    fn relations_track_entry_addresses() {
         let mut settings = StructuralSettings::from_relations([(
             "kind",
             EntryAddress::new("metadata.kind").unwrap(),
@@ -674,7 +725,7 @@ mod tests {
     }
 
     #[test]
-    fn render_settings_apply_to_configured_relations() {
+    fn render_settings_apply_to_relations() {
         let settings = StructuralSettings::from_relations([
             ("kind", EntryAddress::new("metadata-kind").unwrap()),
             ("area", EntryAddress::new("area").unwrap()),
@@ -694,7 +745,7 @@ mod tests {
     }
 
     #[test]
-    fn merges_entry_tide_policy_into_config_render_settings() {
+    fn merges_entry_tide_policy_into_render_settings() {
         let settings = StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::render_only(true, true, false),
@@ -721,7 +772,7 @@ mod tests {
     }
 
     #[test]
-    fn ignores_stale_config_tide_policy_without_entry_policy() {
+    fn ignores_render_settings_without_entry_policy() {
         let settings = StructuralSettings::from_fields([(
             "belongs",
             StructuralFieldSettings::new(

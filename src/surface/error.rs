@@ -176,9 +176,11 @@ pub enum CommandError {
     /// Render JSON overrides apply only to generated-link writing.
     #[error("`--override-json` only applies to `sirno mist render` without a subcommand")]
     OverrideJsonWithRenderSubcommand,
-    /// A command named a link relation not configured for this project.
-    #[error("link relation `{0}` is not configured; add [structural.{0}] to Sirno.toml")]
-    UnconfiguredStructuralField(String),
+    /// A command named a link relation not defined in the lake.
+    #[error(
+        "link relation `{0}` is not defined in the lake; add `{0}` with `meta.type: \"structural\"`"
+    )]
+    UndefinedStructuralField(String),
     /// Generated-footer masking cannot compose with another ripgrep preprocessor.
     #[error(
         "generated-footer filtering cannot be combined with `rg --pre`; use `--with-generated-footer`"

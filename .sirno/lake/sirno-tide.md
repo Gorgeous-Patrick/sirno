@@ -27,7 +27,7 @@ Every *entry* that differs between them is a *ripple*.
 
 The subsystem turns that comparison into work.
 Each *ripple* produces a *wave* of *tide workitems*
-through the configured relation entries' tide policies.
+through the structural relation entries' tide policies.
 The *tide* is the union of all open obligations across every *wave*.
 
 The subsystem stays honest through scoped acceptance.

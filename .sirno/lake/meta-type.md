@@ -21,7 +21,7 @@ The current values are documented by their role entries:
 | Value | Role entry | Meaning |
 |---|---|---|
 | `intrinsic` | `intrinsic` | The entry defines a required built-in metadata field. |
-| `structural` | `structural` | The entry defines a configured structural link relation. |
+| `structural` | `structural` | The entry defines a structural link relation. |
 
 The role entries document the allowed carriers for each marker.
 They keep the compact metadata table readable while giving each marker a stable review target.

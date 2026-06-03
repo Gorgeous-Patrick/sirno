@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::entry::{DESC_FIELD, Entry, EntryMetaType, NAME_FIELD};
 use crate::identifier::EntryAddress;
-use crate::structural::StructuralSettings;
+use crate::structural::{StructuralSettings, validate_structural_field_name};
 
 const CATEGORY_FIELD: &str = "category";
 const INTRINSIC_META_FIELDS: [&str; 2] = [NAME_FIELD, DESC_FIELD];
@@ -37,19 +37,9 @@ impl CheckMode {
     /// Check structural link targets for a set of entries.
     ///
     /// Parsing already enforces required fields, accepted field shapes, and valid path syntax.
-    /// This pass checks configured link relation entries, typed metadata, and target addresses.
+    /// This pass checks structural relation entries, typed metadata, and target addresses.
     pub fn check_entries<'a>(
         self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
-    ) -> CheckReport {
-        self.check_entries_with_structural_inhabitance(entries, structural, true)
-    }
-
-    /// Check structural link targets, with explicit structural-inhabitance policy.
-    ///
-    /// Structural inhabitance requires each configured link relation to name a structural entry.
-    pub fn check_entries_with_structural_inhabitance<'a>(
-        self, entries: impl IntoIterator<Item = &'a Entry>, structural: &StructuralSettings,
-        structural_inhabitance: bool,
     ) -> CheckReport {
         let entries = entries.into_iter().collect::<Vec<_>>();
         let entries_by_id =
@@ -57,32 +47,6 @@ impl CheckMode {
         let severity = self.severity();
 
         let mut report = CheckReport::new();
-        if structural_inhabitance {
-            for (field, _) in structural.fields() {
-                let relation_entry = structural
-                    .entry_for_field(field)
-                    .expect("configured relation has defining entry");
-                let Some(entry) = entries_by_id.get(relation_entry).copied() else {
-                    report.push(CheckDiagnostic {
-                        severity,
-                        kind: CheckDiagnosticKind::MissingStructuralFieldEntry,
-                        entry: None,
-                        field: field.to_owned(),
-                        target: Some(relation_entry.clone()),
-                    });
-                    continue;
-                };
-                if !entry.metadata.meta.is_structural_relation() {
-                    report.push(CheckDiagnostic {
-                        severity,
-                        kind: CheckDiagnosticKind::MissingStructuralMeta,
-                        entry: Some(entry.id.clone()),
-                        field: field.to_owned(),
-                        target: Some(relation_entry.clone()),
-                    });
-                }
-            }
-        }
         for entry in &entries {
             if Self::is_intrinsic_meta_field(entry.id.as_str())
                 && !entry.metadata.meta.is_intrinsic_field()
@@ -106,11 +70,12 @@ impl CheckMode {
                     target: None,
                 });
             }
-            if entry.metadata.meta.is_structural_relation() && !structural.contains_entry(&entry.id)
+            if entry.metadata.meta.is_structural_relation()
+                && validate_structural_field_name(entry.id.as_str()).is_err()
             {
                 report.push(CheckDiagnostic {
                     severity,
-                    kind: CheckDiagnosticKind::UnregisteredStructuralMeta,
+                    kind: CheckDiagnosticKind::InvalidStructuralRelationField,
                     entry: Some(entry.id.clone()),
                     field: entry.id.as_str().to_owned(),
                     target: None,
@@ -120,7 +85,7 @@ impl CheckMode {
                 if !structural.contains_field(field) {
                     report.push(CheckDiagnostic {
                         severity: CheckSeverity::Warning,
-                        kind: CheckDiagnosticKind::UnconfiguredStructuralField,
+                        kind: CheckDiagnosticKind::UninhabitedStructuralField,
                         entry: Some(entry.id.clone()),
                         field: field.to_owned(),
                         target: None,
@@ -218,18 +183,14 @@ impl CheckSeverity {
 /// Reason for one structural diagnostic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CheckDiagnosticKind {
-    /// A configured link relation does not name an existing entry.
-    MissingStructuralFieldEntry,
-    /// A configured link relation entry does not define entry-side tide policy.
-    MissingStructuralMeta,
-    /// An entry defines structural type without being a configured link relation.
-    UnregisteredStructuralMeta,
+    /// A structural relation entry cannot be used as a metadata field.
+    InvalidStructuralRelationField,
     /// An intrinsic metadata-field entry does not define the intrinsic meta type.
     MissingIntrinsicMeta,
     /// An entry defines intrinsic metadata-field type without being an intrinsic field entry.
     UnregisteredIntrinsicMeta,
-    /// An entry uses a structural link relation not configured in `Sirno.toml`.
-    UnconfiguredStructuralField,
+    /// An entry uses a structural link relation without a matching relation entry.
+    UninhabitedStructuralField,
     /// A structural link target id does not name an entry.
     MissingTarget,
     /// Category metadata is present but the `category` entry is missing.
@@ -257,20 +218,10 @@ impl CheckDiagnostic {
     /// Human-readable diagnostic message.
     pub fn message(&self) -> String {
         match self.kind {
-            | CheckDiagnosticKind::MissingStructuralFieldEntry => format!(
-                "`Sirno.toml` configures link relation `{}`, but entry `{}` does not exist",
-                self.field,
-                self.target.as_ref().expect("missing structural field entry diagnostic has target")
-            ),
-            | CheckDiagnosticKind::MissingStructuralMeta => format!(
-                "`Sirno.toml` configures link relation `{}`, but entry `{}` does not define \
-                 `meta.type: \"structural\"`",
-                self.field,
-                self.entry.as_ref().expect("missing structural meta diagnostic has entry")
-            ),
-            | CheckDiagnosticKind::UnregisteredStructuralMeta => format!(
-                "`{}` defines `meta.type: \"structural\"`, but it is not configured in `Sirno.toml`",
-                self.entry.as_ref().expect("unregistered structural meta diagnostic has entry")
+            | CheckDiagnosticKind::InvalidStructuralRelationField => format!(
+                "`{}` defines `meta.type: \"structural\"`, but its address is not a valid \
+                 structural relation field",
+                self.entry.as_ref().expect("invalid structural field diagnostic has entry")
             ),
             | CheckDiagnosticKind::MissingIntrinsicMeta => format!(
                 "entry `{}` defines required metadata field `{}`, but does not define \
@@ -282,9 +233,9 @@ impl CheckDiagnostic {
                 "`{}` defines `meta.type: \"intrinsic\"`, but it is not an intrinsic metadata field entry",
                 self.entry.as_ref().expect("unregistered intrinsic meta diagnostic has entry")
             ),
-            | CheckDiagnosticKind::UnconfiguredStructuralField => format!(
-                "`{}` uses link relation `{}` that is not configured in `Sirno.toml`",
-                self.entry.as_ref().expect("unconfigured field diagnostic has entry"),
+            | CheckDiagnosticKind::UninhabitedStructuralField => format!(
+                "`{}` uses link relation `{}` without a structural relation entry",
+                self.entry.as_ref().expect("uninhabited field diagnostic has entry"),
                 self.field
             ),
             | CheckDiagnosticKind::MissingTarget => format!(
@@ -387,25 +338,11 @@ mod tests {
     }
 
     #[test]
-    fn configured_structural_type_without_tide_policy_is_clean() {
+    fn structural_type_without_tide_policy_is_clean() {
         let mut topic = entry(FIELD_TOPIC);
         topic.metadata.meta.entry_type = Some(EntryMetaType::Structural);
 
         let report = CheckMode::Review.check_entries([&topic], &structural_settings());
-
-        assert!(report.is_clean());
-    }
-
-    #[test]
-    fn structural_inhabitance_uses_configured_relation_entry() {
-        let mut relation = entry("metadata-topic");
-        relation.metadata.meta.entry_type = Some(EntryMetaType::Structural);
-        let settings = StructuralSettings::from_relations([(
-            FIELD_TOPIC,
-            EntryAddress::new("metadata-topic").unwrap(),
-        )]);
-
-        let report = CheckMode::Review.check_entries([&relation], &settings);
 
         assert!(report.is_clean());
     }
@@ -435,72 +372,27 @@ mod tests {
     }
 
     #[test]
-    fn edit_mode_reports_missing_structural_field_entry_as_warning() {
-        let concept = entry("concept");
-
-        let report = CheckMode::Edit.check_entries([&concept], &structural_settings());
-
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralFieldEntry);
-        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
-        assert!(!report.has_errors());
-    }
-
-    #[test]
-    fn review_mode_reports_missing_structural_field_entry_as_error() {
-        let concept = entry("concept");
-
-        let report = CheckMode::Review.check_entries([&concept], &structural_settings());
-
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralFieldEntry);
-        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
-        assert!(report.has_errors());
-        assert!(report.diagnostics()[0].message().contains("entry `topic` does not exist"));
-    }
-
-    #[test]
-    fn review_mode_reports_missing_structural_meta_as_error() {
-        let topic = entry(FIELD_TOPIC);
-
-        let report = CheckMode::Review.check_entries([&topic], &structural_settings());
-
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::MissingStructuralMeta);
-        assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
-        assert!(report.has_errors());
-        assert!(report.diagnostics()[0].message().contains("does not define `meta.type"));
-    }
-
-    #[test]
-    fn structural_inhabitance_can_be_skipped() {
-        let concept = entry("concept");
-
-        let report = CheckMode::Review.check_entries_with_structural_inhabitance(
-            [&concept],
-            &structural_settings(),
-            false,
-        );
-
-        assert!(report.is_clean());
-    }
-
-    #[test]
-    fn unconfigured_structural_fields_warn() {
+    fn uninhabited_structural_fields_warn() {
         let mut concept = entry("concept");
         concept.metadata.push_structural_target(FIELD_TOPIC, EntryAddress::new("meta").unwrap());
 
         let report = CheckMode::Review.check_entries([&concept], &StructuralSettings::default());
 
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnconfiguredStructuralField);
+        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UninhabitedStructuralField);
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Warning);
         assert!(!report.has_errors());
     }
 
     #[test]
-    fn review_mode_reports_unregistered_structural_meta_as_error() {
-        let topic = relation_entry(FIELD_TOPIC);
+    fn review_mode_reports_invalid_structural_relation_field_as_error() {
+        let topic = relation_entry("meta");
 
         let report = CheckMode::Review.check_entries([&topic], &StructuralSettings::default());
 
-        assert_eq!(report.diagnostics()[0].kind, CheckDiagnosticKind::UnregisteredStructuralMeta);
+        assert_eq!(
+            report.diagnostics()[0].kind,
+            CheckDiagnosticKind::InvalidStructuralRelationField
+        );
         assert_eq!(report.diagnostics()[0].severity, CheckSeverity::Error);
         assert!(report.has_errors());
     }

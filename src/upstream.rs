@@ -27,6 +27,7 @@ use crate::identifier::{EntryAddress, EntryAtom};
 use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
 use crate::mist::{MIST_SPEC_DIR_NAME, MistSpec};
 use crate::render::GeneratedLinkBody;
+use crate::structural::StructuralSettings;
 
 /// Canonical upstream dependency filename.
 pub const UPSTREAM_FILE_NAME: &str = "upstream.toml";
@@ -726,7 +727,8 @@ fn load_upstream_files(
         entries.push(entry);
     }
 
-    let selected_ids = select_upstream_entry_ids(&entries, mist, &config.structural)?;
+    let structural = StructuralSettings::from_entries(&entries);
+    let selected_ids = select_upstream_entry_ids(&entries, mist, &structural)?;
     let mut entries = entries
         .into_iter()
         .filter(|entry| selected_ids.contains(&entry.id))
@@ -765,7 +767,7 @@ fn load_artifact(
 }
 
 fn select_upstream_entry_ids(
-    entries: &[Entry], mist: Option<&MistSpec>, structural: &crate::StructuralSettings,
+    entries: &[Entry], mist: Option<&MistSpec>, structural: &StructuralSettings,
 ) -> Result<BTreeSet<EntryAddress>, UpstreamError> {
     let selected = match mist {
         | Some(mist) => mist.select.select_entries(entries, structural)?,
@@ -1057,7 +1059,7 @@ mod tests {
     use crate::surface::{
         CommandError, SurfaceContext, UpstreamAddRequest, UpstreamCrystallizeRequest,
     };
-    use crate::{EntryDirectoryError, StructuralSettings, UpstreamSettingsMap};
+    use crate::{EntryDirectoryError, UpstreamSettingsMap};
 
     fn run_git(root: &Path, args: &[&str]) {
         let output = Command::new("git").current_dir(root).args(args).output().unwrap();
@@ -1247,7 +1249,6 @@ Body.
                 domain.clone(),
                 UpstreamSettings::branch(upstream_root.to_string_lossy(), "main"),
             )]),
-            structural: StructuralSettings::default(),
             ..SirnoConfig::new("lake")
         };
         config.write_new(&config_path).unwrap();
@@ -1306,7 +1307,6 @@ Body.
             .with_mist(EntryAtom::new("public").unwrap());
         let config = SirnoConfig {
             upstreams: UpstreamSettingsMap::from([(domain.clone(), settings)]),
-            structural: StructuralSettings::default(),
             ..SirnoConfig::new("lake")
         };
         config.write_new(&config_path).unwrap();

@@ -15,7 +15,7 @@ Its identity is the tuple `(ripple, field, direction, neighbor)`.
 Sirno does not create a separate workitem id.
 
 `ripple` names the changed *entry* that created the obligation.
-`field` names the configured link relation.
+`field` names the structural link relation.
 `direction` is `to`, `from`, or `clique`.
 `neighbor` names the *entry* that must be reviewed.
 

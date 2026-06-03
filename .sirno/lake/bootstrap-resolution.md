@@ -66,7 +66,7 @@ The route through the resolution is:
 
 The implementation keeps the same conclusion in the *lake*,
 not in field-specific code.
-`sirno check` validates configured structural link references
+`sirno check` validates structural link references
 without knowing the recommended field names.
 
 The detail intentionally deferred is local wording.

@@ -364,7 +364,7 @@ impl EntryMeta {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum EntryMetaType {
-    /// Entry defines one configured structural relation.
+    /// Entry defines one structural relation.
     Structural,
     /// Entry defines one intrinsic Sirno metadata field.
     Intrinsic,

@@ -50,12 +50,12 @@ impl MistRenderSettings {
         self.structural.is_empty()
     }
 
-    /// Validate structural render directions against registered project relations.
+    /// Validate structural render directions against discovered structural relations.
     pub fn validate(&self, structural: &StructuralSettings) -> Result<(), MistError> {
         validate_structural_render_settings(&self.structural, structural)
     }
 
-    /// Apply this mist's render policy to registered structural relations.
+    /// Apply this mist's render policy to discovered structural relations.
     pub fn structural_settings(
         &self, structural: &StructuralSettings,
     ) -> Result<StructuralSettings, MistError> {
@@ -463,11 +463,11 @@ pub enum MistError {
     /// The mist file could not be rendered.
     #[error("failed to render mist file")]
     Render(#[source] toml::ser::Error),
-    /// A rendered structural relation is not configured.
-    #[error("render.structural `{0}` must name a configured link relation")]
+    /// A rendered structural relation is not defined in the lake.
+    #[error("render.structural `{0}` must name a discovered structural relation")]
     RenderStructuralField(String),
-    /// A selected structural relation is not configured.
-    #[error("select structural field `{0}` must name a configured link relation")]
+    /// A selected structural relation is not defined in the lake.
+    #[error("select structural field `{0}` must name a discovered structural relation")]
     SelectStructuralField(String),
     /// A rendered structural direction is listed more than once.
     #[error("render.structural `{field}` repeats direction `{direction}`")]
@@ -592,7 +592,7 @@ area = ["clique"]
     }
 
     #[test]
-    fn rejects_render_settings_for_unconfigured_relation() {
+    fn rejects_render_settings_for_undefined_relation() {
         let structural = StructuralSettings::from_relations([(
             "kind",
             crate::EntryAddress::new("kind").unwrap(),

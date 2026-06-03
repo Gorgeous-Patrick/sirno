@@ -259,7 +259,7 @@ enum TopLevelEntryCommand {
         /// Same-relation target filters and state filters are alternatives.
         #[arg(long = "is", value_name = "FIELD=STATE")]
         is: Vec<StructuralStateFilter>,
-        /// Optional comma-separated output columns: id, name, path, desc, or configured link relations.
+        /// Optional comma-separated output columns: id, name, path, desc, or structural link relations.
         #[arg(long = "columns", alias = "column", value_name = "COLUMNS", num_args = 0..=1)]
         columns: Option<Option<QueryColumns>>,
         /// Output format.
@@ -865,10 +865,6 @@ enum UtilCommand {
         #[command(subcommand)]
         command: Option<EntryUtilityCommand>,
     },
-    // sirno:witness:utility-commands:end
-    // sirno:witness:utility-commands:begin
-    /// Sync Sirno.toml structural relations from local structural entries.
-    Structural,
     // sirno:witness:utility-commands:end
     /// Generate a shell completion script.
     Completion {
@@ -2326,16 +2322,6 @@ impl UtilCommand {
             }
             | UtilCommand::Entry { command } => {
                 command.unwrap_or(EntryUtilityCommand::Tui).run(config_path, lake_path)
-            }
-            | UtilCommand::Structural => {
-                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                    .config_structural_sync()?;
-                println!("{}", result.message);
-                for relation in result.relations {
-                    let status = if relation.changed { "updated" } else { "ok" };
-                    println!("{} = {} ({status})", relation.field, relation.entry);
-                }
-                Ok(ExitCode::SUCCESS)
             }
             | UtilCommand::Completion { shell } => {
                 let shell = Shell::from(shell);

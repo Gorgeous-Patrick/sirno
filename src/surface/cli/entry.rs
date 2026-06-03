@@ -134,6 +134,7 @@ struct EntryDefaultsTui {
     lake_override: Option<PathBuf>,
     lake_path: PathBuf,
     settings: EntryDirectoryCheckSettings,
+    structural: StructuralSettings,
     rows: Vec<EntryDefaultRow>,
     selection: TuiSelection,
     message: String,
@@ -146,6 +147,7 @@ impl EntryDefaultsTui {
             lake_override,
             lake_path: PathBuf::new(),
             settings: EntryDirectoryCheckSettings::default(),
+            structural: StructuralSettings::default(),
             rows: Vec::new(),
             selection: TuiSelection::default(),
             message: String::new(),
@@ -160,7 +162,8 @@ impl EntryDefaultsTui {
             resolve_lake_directory(self.lake_override.as_deref(), &self.config_path)?;
         let report =
             EntryDirectory::new(&lake_path).check_with_settings(CheckMode::Review, &settings)?;
-        self.rows = default_entry_rows(report.entries(), &settings.structural);
+        let structural = report.structural().clone();
+        self.rows = default_entry_rows(report.entries(), &structural);
         self.selection.set(
             selected_id
                 .and_then(|id| self.rows.iter().position(|row| row.spec.id == id))
@@ -168,6 +171,7 @@ impl EntryDefaultsTui {
         );
         self.lake_path = lake_path;
         self.settings = settings;
+        self.structural = structural;
         self.message = format!("{action}; {}", review_check_summary(&report));
         Ok(())
     }
@@ -208,7 +212,7 @@ impl EntryDefaultsTui {
     }
 
     fn create_default(&self, spec: &DefaultEntrySpec) -> Result<(), CommandError> {
-        let entry = spec.entry(&self.settings.structural)?;
+        let entry = spec.entry(&self.structural)?;
         EntryDirectory::new(&self.lake_path).create_entry(&entry)?;
         Ok(())
     }
@@ -369,13 +373,13 @@ fn default_entry_rows(entries: &[Entry], structural: &StructuralSettings) -> Vec
                 }
                 | Some(_) => EntryDefaultStatus::Present,
             };
-            EntryDefaultRow { spec, status, default_fields: spec.configured_fields(structural) }
+            EntryDefaultRow { spec, status, default_fields: spec.available_fields(structural) }
         })
         .collect()
 }
 
 impl DefaultEntrySpec {
-    fn configured_fields(self, structural: &StructuralSettings) -> String {
+    fn available_fields(self, structural: &StructuralSettings) -> String {
         let mut fields = Vec::new();
         self.push_field_summary(&mut fields, structural, CATEGORY_FIELD, self.category);
         self.push_field_summary(&mut fields, structural, BELONGS_FIELD, self.belongs);
@@ -426,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn default_entry_uses_only_configured_structural_fields() {
+    fn default_entry_uses_only_discovered_structural_fields() {
         let empty = spec("belongs").entry(&StructuralSettings::default()).unwrap();
         assert_eq!(empty.metadata.structural_fields().count(), 0);
 
