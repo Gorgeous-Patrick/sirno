@@ -1,0 +1,6 @@
+[projection]
+path = "sirno-core-lake"
+editable = true
+
+[render.structural]
+belongs = ["to", "from"]

@@ -1,0 +1,36 @@
+# This file is generated and managed by Sirno.
+# It records the accepted Sirno Lake baseline for Git.
+
+schema = 1
+lake = ".sirno/lake"
+
+[entries.belongs]
+fingerprint = "sha256:09a88bfd7535150323f5f706cb1325dad2dcc6f789539d13f9eab7b69daeed1c"
+belongs = ["category"]
+
+[entries.category]
+fingerprint = "sha256:098fabe93ab7c73337a903c434c4353de93c31557a5713f2bd6d17e9d98a59cf"
+
+[entries.concept]
+fingerprint = "sha256:0c827ef086a644b32895bfdbc068f210736e11ef2978f239e1f1069078302ed1"
+belongs = ["category"]
+
+[entries.desc]
+fingerprint = "sha256:73c49ca6006d08e305a79e0a998c9e933ba057368a70474b4ba743c588e532c9"
+belongs = ["category"]
+
+[entries.meta]
+fingerprint = "sha256:660f921915e0891d44b68d4da94404187476984bf4c1651ce158450663be2087"
+belongs = ["category"]
+
+[entries.name]
+fingerprint = "sha256:2d382489ced3a35abdbd14108e776133007cb716e2341ec0f626b51f63f98910"
+belongs = ["category"]
+
+[entries.narrative]
+fingerprint = "sha256:d8692d2d67a5358e17a5a768ed5512347925f977f6a7c40c4ba80bc91ea28e09"
+belongs = ["category"]
+
+[entries.refines]
+fingerprint = "sha256:cd2f079de4af0f4614f138875d8dd946fa09d7fb831de86ff56140ddf92c0de6"
+belongs = ["category"]

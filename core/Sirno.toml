@@ -1,0 +1,7 @@
+[lake]
+# Sirno Lake path, resolved relative to this config file.
+path = ".sirno/lake"
+
+[witness]
+# Empty delimiter list disables repository witness lookup for this standalone core lake.
+delimiters = []
