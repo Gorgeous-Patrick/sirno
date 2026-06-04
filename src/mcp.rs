@@ -353,21 +353,27 @@ impl SirnoMcpServer {
 
     /// Create a Sirno config and ordinary seed entries.
     #[tool(name = "sirno_lake_init")]
+    // sirno:witness:lake-commands:begin
     fn lake_init(&self, Parameters(params): Parameters<LakeInitParams>) -> McpToolResult {
         result(self.context.lake_init(LakeInitRequest { lake: params.lake }))
     }
+    // sirno:witness:lake-commands:end
 
     /// Move the configured Sirno Lake.
     #[tool(name = "sirno_lake_move")]
+    // sirno:witness:lake-commands:begin
     fn lake_move(&self, Parameters(params): Parameters<LakeMoveParams>) -> McpToolResult {
         result(self.context.lake_move(params.lake))
     }
+    // sirno:witness:lake-commands:end
 
     /// Check current entry structure.
     #[tool(name = "sirno_lake_check")]
+    // sirno:witness:lake-commands:begin
     fn lake_check(&self, Parameters(params): Parameters<LakeCheckParams>) -> McpToolResult {
         result(self.context.lake_check(params.mode.unwrap_or(McpCheckMode::Review).into()))
     }
+    // sirno:witness:lake-commands:end
 
     /// Render Markdown links for one misty lake projection.
     #[tool(name = "sirno_mist_render")]

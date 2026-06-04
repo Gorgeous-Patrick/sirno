@@ -5,7 +5,6 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-lake
   - storage
   - generated-navigation
 prerequisite:
@@ -42,3 +41,8 @@ Generated footers, generated indexes, route files, or other Sirno-owned presenta
 belong in the projected workspace.
 They are computed from the checked reservoir and written onto selected projected entries.
 The reservoir remains the canonical authored store.
+
+The *repository witnesses* for this entry should show projection settings,
+the local manifest shape,
+rendering from the reservoir into the projection,
+and intake from the projection back into the reservoir.

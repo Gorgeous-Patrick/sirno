@@ -295,6 +295,7 @@ impl SurfaceContext {
     }
 
     /// Create a Sirno config and ordinary seed entries.
+    // sirno:witness:lake-commands:begin
     pub fn lake_init(&self, request: LakeInitRequest) -> Result<LakeInitResult, CommandError> {
         let config = SirnoConfig::new(
             request
@@ -318,6 +319,7 @@ impl SurfaceContext {
             ),
         })
     }
+    // sirno:witness:lake-commands:end
 
     /// Create one Markdown entry.
     pub fn entry_new(&self, request: EntryNewRequest) -> Result<EntryFileResult, CommandError> {
@@ -1272,6 +1274,7 @@ impl SurfaceContext {
     }
 
     /// Move the configured Sirno Lake.
+    // sirno:witness:lake-commands:begin
     pub fn lake_move(&self, lake: PathBuf) -> Result<MovePathResult, CommandError> {
         let config = SirnoConfig::from_file(&self.config_path)?;
         let old_lake = config.resolve_lake(&self.config_path);
@@ -1292,14 +1295,17 @@ impl SurfaceContext {
             message: format!("moved lake {} to {}", old_lake.display(), new_lake.display()),
         })
     }
+    // sirno:witness:lake-commands:end
 
     /// Check current entry structure.
+    // sirno:witness:lake-commands:begin
     pub fn lake_check(&self, mode: CheckMode) -> Result<LakeCheckResult, CommandError> {
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report = EntryDirectory::new(lake).check_with_settings(mode, &settings)?;
         Ok(LakeCheckResult::from_report(&report))
     }
+    // sirno:witness:lake-commands:end
 
     /// Render Markdown links for one misty lake projection.
     pub fn mist_render(
@@ -1309,6 +1315,7 @@ impl SurfaceContext {
     }
 
     /// Render Markdown links for one misty lake projection with optional JSON settings.
+    // sirno:witness:misty-lake:begin
     pub fn mist_render_with_override_json(
         &self, mist: Option<EntryAtom>, dry: bool, override_json: Option<&str>,
     ) -> Result<RenderResult, CommandError> {
@@ -1376,6 +1383,7 @@ impl SurfaceContext {
         }
         Ok(RenderResult::from_report_with_extra_changed_paths(&report, dry, &extra_changed_paths))
     }
+    // sirno:witness:misty-lake:end
 
     /// Delete generated Markdown link footers for one misty lake projection.
     pub fn mist_render_delete(
@@ -1404,6 +1412,7 @@ impl SurfaceContext {
     }
 
     /// Intake edited Markdown entry sources from one misty lake into the reservoir.
+    // sirno:witness:misty-lake:begin
     pub fn mist_intake(&self, mist: Option<EntryAtom>) -> Result<MistIntakeResult, CommandError> {
         let mist = ResolvedMist::load(&self.config_path, self.lake_path.as_deref(), mist)?;
         let status = mist_status_for(&self.config_path, &mist)?;
@@ -1448,6 +1457,7 @@ impl SurfaceContext {
             message,
         })
     }
+    // sirno:witness:misty-lake:end
 
     /// Show the current lake ripples against the accepted anchor baseline.
     pub fn anchor_status(&self) -> Result<AnchorStatusResult, CommandError> {

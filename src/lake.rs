@@ -40,15 +40,15 @@ const READONLY_CHECKOUT_WARNING: &str = "\
 ///
 /// Invariant: `root` is the directory containing Sirno Lake Markdown entry files.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:reservoir:begin
 pub struct EntryDirectory {
     root: PathBuf,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:reservoir:end
 
 /// Check report for a Sirno Lake entry directory.
 #[derive(Debug)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:reservoir:begin
 pub struct EntryDirectoryReport {
     root: PathBuf,
     entries: Vec<Entry>,
@@ -59,11 +59,11 @@ pub struct EntryDirectoryReport {
     meta: MetaRegistry,
     structural: StructuralSettings,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:reservoir:end
 
 /// Settings for checking a Sirno Lake entry directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-lake:begin
+// sirno:witness:reservoir:begin
 pub struct EntryDirectoryCheckSettings {
     /// Check generated footer freshness.
     pub render: bool,
@@ -76,7 +76,7 @@ pub struct EntryDirectoryCheckSettings {
     /// Repository witness scan settings.
     pub witness: Option<WitnessCheckSettings>,
 }
-// sirno:witness:sirno-lake:end
+// sirno:witness:reservoir:end
 
 impl Default for EntryDirectoryCheckSettings {
     fn default() -> Self {
@@ -92,14 +92,14 @@ impl Default for EntryDirectoryCheckSettings {
 
 impl EntryDirectoryCheckSettings {
     /// Return true when a root-relative path is ignored.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:reservoir:begin
     pub fn ignores(&self, relative_path: &Path) -> bool {
         self.ignore.iter().any(|ignored| {
             !ignored.as_os_str().is_empty()
                 && (relative_path == ignored || relative_path.starts_with(ignored))
         })
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:reservoir:end
 }
 
 impl EntryDirectoryReport {
@@ -640,7 +640,7 @@ impl EntryDirectory {
     }
 
     /// Check this Sirno Lake entry directory with explicit settings.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:reservoir:begin
     pub fn check_with_settings(
         &self, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
     ) -> Result<EntryDirectoryReport, EntryDirectoryError> {
@@ -664,12 +664,12 @@ impl EntryDirectory {
             structural: loaded.structural,
         })
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:reservoir:end
 
     /// Initialize this directory with ordinary seed entries.
     ///
     /// Existing entry files are never overwritten.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:reservoir:begin
     pub fn init(&self) -> Result<Vec<PathBuf>, EntryDirectoryError> {
         trace!("init_entry_directory begin: root={}", self.root.display());
         fs::create_dir_all(&self.root)?;
@@ -681,13 +681,13 @@ impl EntryDirectory {
         trace!("init_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:reservoir:end
 
     /// Create one Sirno Lake Markdown entry file in this directory.
     ///
     /// The entry directory is created if needed.
     /// Existing entry files are never overwritten.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:reservoir:begin
     pub fn create_entry(&self, entry: &Entry) -> Result<PathBuf, EntryDirectoryError> {
         trace!("create_entry_file begin: root={} id={}", self.root.display(), entry.id);
         fs::create_dir_all(&self.root)?;
@@ -695,7 +695,7 @@ impl EntryDirectory {
         trace!("create_entry_file end: path={}", path.display());
         Ok(path)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:reservoir:end
 
     /// Mark one Sirno Lake Markdown entry as frozen and read-only.
     ///
@@ -876,7 +876,7 @@ impl EntryDirectory {
     /// Write a complete Sirno Lake entry directory.
     ///
     /// The write policy controls how existing target contents are handled.
-    // sirno:witness:sirno-lake:begin
+    // sirno:witness:reservoir:begin
     pub fn write(
         &self, entries: &[Entry], policy: EntryDirectoryWritePolicy,
     ) -> Result<Vec<PathBuf>, EntryDirectoryError> {
@@ -903,7 +903,7 @@ impl EntryDirectory {
         trace!("write_entry_directory end: entries={}", paths.len());
         Ok(paths)
     }
-    // sirno:witness:sirno-lake:end
+    // sirno:witness:reservoir:end
 
     /// Replace one glacier.
     ///

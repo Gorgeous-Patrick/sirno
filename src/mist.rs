@@ -67,12 +67,14 @@ impl MistRenderSettings {
 /// Filesystem target and edit policy for one mist projection.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+// sirno:witness:misty-lake:begin
 pub struct MistProjectionSettings {
     /// Project-root-relative path of the materialized misty lake.
     pub path: PathBuf,
     /// Whether edits in this projection can be intaken into the reservoir.
     pub editable: bool,
 }
+// sirno:witness:misty-lake:end
 
 impl Default for MistProjectionSettings {
     fn default() -> Self {
@@ -279,6 +281,7 @@ impl MistManifestEntry {
 /// Local projection manifest written to `.sirno/mist.toml` inside a misty lake.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:misty-lake:begin
 pub struct MistManifest {
     /// Manifest schema version.
     pub schema: u32,
@@ -298,12 +301,15 @@ pub struct MistManifest {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub entries: Vec<MistManifestEntry>,
 }
+// sirno:witness:misty-lake:end
 
 impl MistManifest {
     /// Resolve the manifest path inside one projected lake workspace.
+    // sirno:witness:misty-lake:begin
     pub fn path_for_projection(lake: impl AsRef<Path>) -> PathBuf {
         lake.as_ref().join(SIRNO_CONTROL_DIR_NAME).join(MIST_MANIFEST_FILE_NAME)
     }
+    // sirno:witness:misty-lake:end
 
     /// Load a projection manifest from a TOML file.
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, MistError> {
@@ -321,6 +327,7 @@ impl MistManifest {
     }
 
     /// Build a projection manifest from checked entries.
+    // sirno:witness:misty-lake:begin
     pub fn from_entries(
         mist: EntryAtom, spec: PathBuf, reservoir: PathBuf, projection: MistProjectionSettings,
         select: MistSelectionSettings, render: MistRenderSettings, entries: &[Entry],
@@ -340,6 +347,7 @@ impl MistManifest {
             entries,
         })
     }
+    // sirno:witness:misty-lake:end
 
     /// Write this manifest only when the on-disk content would change.
     pub fn write_if_changed(&self, path: impl AsRef<Path>) -> Result<bool, MistError> {

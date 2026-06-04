@@ -7,6 +7,8 @@ category:
 belongs:
   - entry
   - sirno-anchor
+  - storage
+  - sirno-lake
 prerequisite:
   - entry
   - sirno-anchor

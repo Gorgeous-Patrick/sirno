@@ -65,7 +65,7 @@ its path option is not accepted.
 
 | Entry | Command area |
 |---|---|
-| `sirno-lake` | Lake initialization and storage movement. |
+| `lake-commands` | Lake initialization, checking, and storage movement. |
 | `sirno-anchor` | Anchor status, check, and update operations. |
 | `sirno-upstream` | Upstream declaration, crystallization, update, and status. |
 | `structural-check` | Structural checking and check-mode selection. |

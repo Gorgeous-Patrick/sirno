@@ -6,15 +6,15 @@ category:
   - implemented
 belongs:
   - storage
-  - sirno-lake
 prerequisite:
   - storage
   - sirno-lake
 refines:
-  - storage
+  - sirno-lake
 ---
 
 A *reservoir* is the canonical Sirno Lake storage surface.
+It refines the Sirno Lake by choosing the tracked directory that stores authored lake content.
 
 The default reservoir path is `.sirno/lake` next to `Sirno.toml`.
 It holds the tracked Markdown *entries* and lake-owned *entry artifacts*
@@ -33,3 +33,6 @@ The reservoir stores authored entry content.
 Rendered output belongs in *misty lakes*.
 This keeps generated navigation, local filters, editor state, and agent workspaces
 from becoming canonical storage concerns.
+
+The *repository witnesses* for this entry should show the entry directory root,
+check settings, report shape, and write path that treat the reservoir as parsed lake storage.

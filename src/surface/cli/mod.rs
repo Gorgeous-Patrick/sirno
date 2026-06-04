@@ -304,7 +304,7 @@ enum TopLevelEntryCommand {
 #[derive(Debug, Subcommand)]
 enum LakeCommand {
     /// Create a Sirno config and ordinary seed entries.
-    // sirno:witness:project-commands:begin
+    // sirno:witness:lake-commands:begin
     Init {
         /// Lake path written to Sirno.toml.
         lake: Option<PathBuf>,
@@ -315,18 +315,20 @@ enum LakeCommand {
     /// Run a top-level lake operation under `sirno lake`.
     #[command(flatten)]
     TopLevel(TopLevelLakeCommand),
-    // sirno:witness:project-commands:end
+    // sirno:witness:lake-commands:end
 }
 
 /// Supported top-level Sirno Lake commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelLakeCommand {
+    // sirno:witness:lake-commands:begin
     /// Check current entry structure.
     Check {
         /// Check boundary.
         #[arg(short = 'm', long, value_enum)]
         mode: Option<CheckModeArg>,
     },
+    // sirno:witness:lake-commands:end
 }
 
 /// Supported Sirno mist commands.
@@ -1417,14 +1419,17 @@ impl MistCommand {
 }
 
 impl LakeMoveArgs {
+    // sirno:witness:lake-commands:begin
     fn run(self, config_path: &Path) -> Result<ExitCode, CommandError> {
         let result = SurfaceContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
     }
+    // sirno:witness:lake-commands:end
 }
 
 impl TopLevelLakeCommand {
+    // sirno:witness:lake-commands:begin
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
             | TopLevelLakeCommand::Check { mode } => {
@@ -1436,6 +1441,7 @@ impl TopLevelLakeCommand {
             }
         }
     }
+    // sirno:witness:lake-commands:end
 }
 
 impl TopLevelMistCommand {

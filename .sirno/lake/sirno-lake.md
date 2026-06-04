@@ -10,6 +10,8 @@ prerequisite:
 ---
 
 The Sirno Lake is the configured set of Markdown *entries*.
+It is the `lake` form in a Sirno-managed project:
+canonical, addressable design knowledge that repository material can actualize or witness.
 The default reservoir path is `.sirno/lake`.
 
 The name keeps Sirno's Cirno influence visible.
@@ -18,51 +20,18 @@ quiet enough to read,
 but structured enough that changes leave visible *ripples*.
 
 The reservoir and mist design keeps *lake* as the conceptual entry set.
-The *reservoir* stores the canonical lake under `.sirno/lake`.
-A *mist* selects entries from that reservoir.
-A *misty lake* is the projected lake-like workspace that people and agents read,
+The *reservoir* stores the canonical lake.
+A *mist* selects entries from the reservoir.
+A *misty lake* is the projected workspace that people and agents read,
 edit, and receive rendered output in.
 
-`Sirno.toml` records the reservoir path under `[lake].path`.
-`sirno lake move PATH` renames the configured reservoir directory
-and writes the new path back to `[lake].path`.
-`sirno lake mv PATH` is its short form.
-`sirno move lake PATH` and `sirno mv lake PATH` select the same path move.
-The move creates missing destination parents and refuses to replace an existing destination.
-When `PATH` is inside the current reservoir path,
-Sirno stages the directory through a temporary sibling
-and recreates the parent path before placing the moved reservoir at `PATH`.
-
-The *lake* is the human-readable intermediate representation:
+The *lake* is a human-readable intermediate representation:
 text first, structured enough for tools,
 and compact enough for humans and agents to inspect locally.
 Anchor records the accepted baseline for the *lake*.
 Git versions the *lake* and Anchor file together.
-Anchor and Git version the reservoir.
+The reservoir is the versioned lake surface.
 Misty lakes remain projected working surfaces.
-
-Each *entry* is an ordinary Markdown file with a YAML metadata block and prose body.
-The filename stem is the local *entry atom*.
-The atom is filename-like by definition.
-Lowercase kebab-case is a convention for readable *lakes*, not a validation boundary.
-The `.` character separates *entry address* segments.
-An *entry address* joins *entry domains* and a local atom into a lookup form.
-The *lake namespace* model explains how domains map to lake folders,
-how lakelets own those folders,
-and how a composed lake resolves them into one addressable surface.
-
-*Sirno Upstream* is the subsystem for declaring *upstream lakes*
-and crystallizing them into the current lake as glaciers.
-A *lake system* is the current project plus its declared *upstream lakes*.
-The *lake sheaf* remains the resolved composition model for the addressable view.
-
-The `.artifacts` directory is reserved for lake-owned *entry artifacts*.
-It is a built-in `.<id>` path, not a project-defined *entry domain*.
-Artifacts live under `.artifacts/<entry-address>/...`.
-The owner directory is the dot-joined path of an existing *entry*.
-Artifact paths below that owner are relative UTF-8 paths with only normal components.
-
-Once established, the reservoir is the preferred structured design source.
 
 The *lake* should feel like a set of well-named design cards.
 Each card has enough prose to be useful on its own,
@@ -70,23 +39,20 @@ but it also participates in a larger graph through metadata.
 The graph is intentionally small:
 classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
-The `meta.frozen` field stores protection reasons.
-`managed` protects content owned by crystallization.
-`reviewed` is an older manual protection reason and remains deprecated.
 
-The misty lake is the collaboration boundary.
-A person can edit an *entry* directly.
-A CLI can check its metadata and links.
-An agent can query a few related *entries* before changing code.
-An editor can use *generated footers* to expose navigation.
-All of those forms use the same filenames and metadata.
+The Sirno Lake entry is the front door for the lake neighborhood.
+Read these entries when changing the lake model:
 
-Humans and agents edit projected files,
-then explicit intake writes accepted edits back to the reservoir.
-All renders happen in misty lakes.
-
-The reservoir is a canonical working form.
-Direct edits become accepted design only after review and `sirno anchor update`.
+| Area | Entry | Local claim |
+|---|---|---|
+| entry shape | `entry` | Markdown files, metadata, prose, and addressable design objects. |
+| canonical storage | `reservoir` | The tracked authored lake store. |
+| projection | `mist`, `misty-lake` | Selection, rendered workspaces, and intake. |
+| namespace | `lake-namespace` | Domains, lakelets, and composed lookup. |
+| commands | `lake-commands` | Lake initialization, checking, and storage movement. |
+| selection and checks | `query`, `structural-check` | Entry lookup, structural validation, and review checks. |
+| review baseline | `sirno-anchor`, `sirno-tide`, `versioning` | Accepted baselines and review obligations. |
+| upstreams | `sirno-upstream` | Git-backed upstream lakes and crystallized glaciers. |
 
 Some files under a *lake* root may belong to adjacent tools.
 `[lake].ignore` lists paths relative to the reservoir root.

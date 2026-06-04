@@ -73,12 +73,7 @@ skip their corresponding setup parts.
 The config is still written when another selected setup part needs it.
 When a setup part is skipped, its path option is not accepted.
 `sirno lake init [PATH]` creates the config and reservoir.
-`sirno lake move PATH` changes `[lake].path` and renames the reservoir directory.
-`sirno lake mv PATH` is its short form.
-`sirno move lake PATH` selects the same path move from the top-level move group.
-`sirno mv ...` is the short form for those wrappers.
-Path moves create missing destination parents and refuse existing destinations.
-A destination inside the moved path is handled through temporary staging.
+The `lake-commands` entry owns lake initialization, checking, and movement command behavior.
 
 `.sirno/upstream.toml` records the resolved upstream state when upstream lakes are configured.
 It pins each upstream to the exact Git commit crystallized into the glacier.
