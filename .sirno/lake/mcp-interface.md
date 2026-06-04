@@ -33,6 +33,7 @@ MCP resources are:
 - `sirno://skills/sirno-narrative-session`
 - `sirno://skills/sirno-skill-synthesizer`
 - `sirno://skills/sirno-curator`
+- `sirno://skills/sirno-finalizer`
 - `sirno://entries/{id}` through the entry resource template
 
 Reading one entry resource returns the full stored Markdown source as `text/markdown`.

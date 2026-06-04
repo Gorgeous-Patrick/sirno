@@ -27,6 +27,7 @@ The durable procedure for each skill lives in its own discipline entry.
 | `sirno-narrative-session` | `narrative-session-discipline` | Adaptive routes through lake knowledge. |
 | `sirno-skill-synthesizer` | `skill-synthesis-discipline` | Rebuilds MCP resources and wrappers. |
 | `sirno-curator` | `lake-curation-discipline` | Audits an existing lake with user approval. |
+| `sirno-finalizer` | `finalization-discipline` | Accepts, stages, and commits reviewed work. |
 
 The roster orients readers; it is not the semantic contract of every skill.
 A new packaged Sirno skill should update this roster and add its own discipline entry,

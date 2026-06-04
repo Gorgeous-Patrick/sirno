@@ -25,7 +25,7 @@ belongs = ["transform"]
 prerequisite = ["transform"]
 
 [entries.agent-skills]
-fingerprint = "sha256:664936fcb2d6270f7c2c04b92aca63f4c13020a986dd4cf2ee11515ffc6a1152"
+fingerprint = "sha256:8d63a62a7f51510aece183460e7f5933c7b465dc48526b80bbe8fbbb1f06239f"
 belongs = ["sirno"]
 prerequisite = [
     "methodology",
@@ -280,6 +280,18 @@ prerequisite = [
 ]
 refines = ["future-work"]
 
+[entries.finalization-discipline]
+fingerprint = "sha256:47318849e364d183c2f026dee95db130307c643ac8f406dc3898987f714936af"
+artifact_fingerprint = "sha256:27808ad5aa13a40d5132709753dfa2ae4244ac77d8ee932baa306c28239fb381"
+belongs = ["agent-skills"]
+prerequisite = [
+    "agent-skills",
+    "repository-editing-discipline",
+    "lake-review",
+    "versioning",
+    "portable-agent-skill-language",
+]
+
 [entries.form]
 fingerprint = "sha256:696d7c991767e67125930bb84db6b6bebd8e438634b3088fe23850dcce2939ec"
 belongs = ["sirno"]
@@ -467,7 +479,7 @@ prerequisite = [
 ]
 
 [entries.mcp-interface]
-fingerprint = "sha256:835077990e1603345e1f13d68c40bc258c88e67389261a0a1f4d9ef60ffb36b1"
+fingerprint = "sha256:0b6dd43079adfa2f94fe6e08697533bdcb7702346059d18b612a9d4169b551c0"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 

@@ -99,6 +99,13 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         description: "Full Sirno curator skill text.",
         content: include_str!("../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.md"),
     },
+    SkillResourceSpec {
+        uri: "sirno://skills/sirno-finalizer",
+        name: "sirno-finalizer",
+        title: "Sirno Finalizer",
+        description: "Full Sirno finalizer skill text.",
+        content: include_str!("../.sirno/lake/.artifacts/finalization-discipline/SKILL.full.md"),
+    },
 ];
 // sirno:witness:agent-skills:end
 
@@ -1422,6 +1429,10 @@ Body.
         }));
         assert!(resources.resources.iter().any(|resource| {
             resource.uri == "sirno://skills/sirno-internalizer"
+                && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
+        }));
+        assert!(resources.resources.iter().any(|resource| {
+            resource.uri == "sirno://skills/sirno-finalizer"
                 && resource.mime_type.as_deref() == Some(SKILL_RESOURCE_MIME_TYPE)
         }));
         assert!(resources.resources.iter().any(|resource| {
