@@ -5,7 +5,7 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-lake
+  - command-families
 prerequisite:
   - sirno-lake
   - project-config

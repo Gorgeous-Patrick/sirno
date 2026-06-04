@@ -5,8 +5,8 @@ category:
   - concept
   - implemented
 belongs:
+  - lake-review
   - sirno-anchor
-  - sirno-lake
 prerequisite:
   - sirno-anchor
   - ripple

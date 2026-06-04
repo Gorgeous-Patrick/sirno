@@ -4,6 +4,7 @@ desc: One Sirno project together with its declared upstream lakes.
 category:
   - concept
 belongs:
+  - lake-composition
   - sirno-upstream
 prerequisite:
   - upstream-lake

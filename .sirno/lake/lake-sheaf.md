@@ -4,6 +4,7 @@ desc: A resolved view that glues multiple lakes into one addressable entry surfa
 category:
   - concept
 belongs:
+  - lake-composition
   - lake-namespace
   - sirno-upstream
 prerequisite:

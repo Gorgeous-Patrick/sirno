@@ -4,6 +4,7 @@ desc: A Git-backed Sirno project declared by the current project.
 category:
   - concept
 belongs:
+  - lake-composition
   - sirno-upstream
 prerequisite:
   - project-config

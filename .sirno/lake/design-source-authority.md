@@ -5,7 +5,7 @@ category:
   - concept
   - meta
 belongs:
-  - sirno-lake
+  - methodology
 prerequisite:
   - form
 ---

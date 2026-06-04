@@ -41,18 +41,18 @@ classification, belonging, prerequisites, refinement, and *witnesses*.
 That small set is enough to navigate without turning the *lake* into a separate database language.
 
 The Sirno Lake entry is the front door for the lake neighborhood.
+It routes readers to smaller review neighborhoods
+instead of owning every leaf concept directly.
 Read these entries when changing the lake model:
 
 | Area | Entry | Local claim |
 |---|---|---|
 | entry shape | `entry` | Markdown files, metadata, prose, and addressable design objects. |
 | canonical storage | `reservoir` | The tracked authored lake store. |
-| projection | `mist`, `misty-lake` | Selection, rendered workspaces, and intake. |
-| namespace | `lake-namespace` | Domains, lakelets, and composed lookup. |
+| projection | `lake-projection` | Selection, rendered workspaces, generated navigation, and intake. |
+| composition | `lake-composition` | Namespaces, lakelets, upstreams, and crystallized glaciers. |
 | commands | `lake-commands` | Lake initialization, checking, and storage movement. |
-| selection and checks | `query`, `structural-check` | Entry lookup, structural validation, and review checks. |
-| review baseline | `sirno-anchor`, `sirno-tide`, `versioning` | Accepted baselines and review obligations. |
-| upstreams | `sirno-upstream` | Git-backed upstream lakes and crystallized glaciers. |
+| review | `lake-review` | Structural validation, accepted baselines, Tide, and versioning. |
 
 Some files under a *lake* root may belong to adjacent tools.
 `[lake].ignore` lists paths relative to the reservoir root.

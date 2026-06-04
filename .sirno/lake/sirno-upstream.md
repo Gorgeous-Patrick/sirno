@@ -4,7 +4,7 @@ desc: The subsystem for Git-backed upstream lakes and crystallization.
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake-composition
 prerequisite:
   - project-config
   - upstream-file

@@ -4,6 +4,7 @@ desc: A folder-backed namespace surface for an entry domain.
 category:
   - concept
 belongs:
+  - lake-composition
   - lake-namespace
 prerequisite:
   - entry-domain

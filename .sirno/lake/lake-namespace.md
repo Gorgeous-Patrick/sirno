@@ -5,6 +5,7 @@ category:
   - concept
 belongs:
   - sirno-lake
+  - lake-composition
 prerequisite:
   - sirno-lake
   - entry-address-resolution

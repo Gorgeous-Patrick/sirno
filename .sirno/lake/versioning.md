@@ -5,7 +5,7 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-lake
+  - lake-review
   - sirno-anchor
 prerequisite:
   - storage

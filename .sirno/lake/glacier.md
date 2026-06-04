@@ -4,6 +4,7 @@ desc: A managed lakelet formed by crystallizing an upstream lake.
 category:
   - concept
 belongs:
+  - lake-composition
   - lake-namespace
   - sirno-upstream
 prerequisite:

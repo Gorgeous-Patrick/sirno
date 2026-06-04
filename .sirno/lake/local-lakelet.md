@@ -4,6 +4,7 @@ desc: A project-owned editable lakelet.
 category:
   - concept
 belongs:
+  - lake-composition
   - lake-namespace
 prerequisite:
   - lakelet

@@ -4,7 +4,7 @@ desc: Validation of entry shape, structural link targets, footers, and witnesses
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake-review
 prerequisite:
   - metadata
   - generated-footer

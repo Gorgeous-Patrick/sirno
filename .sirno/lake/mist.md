@@ -5,7 +5,7 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-lake
+  - lake-projection
 prerequisite:
   - query
   - reservoir
