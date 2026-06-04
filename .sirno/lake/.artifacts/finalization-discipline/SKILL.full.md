@@ -2,7 +2,7 @@
 name: sirno-finalizer
 description: >-
   Finalize reviewed Sirno-managed repository work by validating the lake, resolving Tide,
-  updating Anchor, staging scoped changes, and committing when requested.
+  updating Anchor, staging scoped changes, and committing by default.
 ---
 
 # Sirno Finalizer
@@ -13,11 +13,13 @@ Use this skill at a Sirno review boundary.
 It completes reviewed repository work by validating the active lake,
 walking Tide obligations,
 updating Anchor after the waterline is accepted,
-and creating a scoped Git commit when the user requested a commit.
+and creating a scoped Git commit by default.
 
 The finalizer is not a substitute for repository editing.
 Use the editor, actualizer, internalizer, curator, or synthesizer skill for the work itself.
 Use the finalizer when the remaining task is to accept and commit that work.
+If the user wants validation, Anchor update, or staging without a commit,
+they should say so explicitly.
 
 Repository material covers source, tests, generated artifacts, configuration,
 README files, design documents outside the configured lake, witness blocks, and skill packages.
@@ -77,9 +79,11 @@ Call `sirno_cwd` again before switching projects in the same server process.
    Do not stage misty-lake projection files unless they are intentional repository material.
    Re-check `git status --short` after staging.
 
-7. Commit when requested.
-   Create a commit only when the user asked for a commit
-   or explicitly invoked finalization as a commit boundary.
+7. Commit by default.
+   Treat finalization as an acceptance and commit boundary.
+   Create a commit after validation, Tide review, Anchor update, and scoped staging succeed.
+   Skip the commit only when the user explicitly asks to validate only,
+   update Anchor only, or leave the work staged.
    Use the repository commit-message convention.
    Prefer one logical commit for the accepted change.
    If the finalization discovered unrelated changes, leave them unstaged and report them.

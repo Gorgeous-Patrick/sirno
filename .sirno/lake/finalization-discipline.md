@@ -24,7 +24,7 @@ The editor shapes the change under named entries.
 The finalizer verifies that the waterline is coherent,
 walks Tide obligations,
 updates Anchor when the waterline has been reviewed,
-and commits the scoped repository change when the user requested a commit.
+and commits the scoped repository change by default.
 
 Start from the active project.
 Read repository instructions, `Sirno.toml`, and the entries that govern the current work.
@@ -50,7 +50,9 @@ Update Anchor only after review checks pass, mist state is clean, and Tide is cl
 Anchor records the accepted lake baseline.
 It should be staged with the reservoir, control files, and repository material that made the lake acceptable.
 
-Commit only when the user asked for a commit or explicitly invoked finalization as a commit boundary.
+Commit by default.
+Treat finalization as an acceptance and commit boundary unless the user explicitly asks
+to validate only, update Anchor only, or leave the work staged.
 Stage narrowly:
 include changed entries, entry artifacts, repository files, configuration, generated skill wrappers,
 MCP resource constants, and `.sirno/anchor.toml` only when they belong to the current change.

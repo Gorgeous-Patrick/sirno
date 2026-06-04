@@ -281,8 +281,8 @@ prerequisite = [
 refines = ["future-work"]
 
 [entries.finalization-discipline]
-fingerprint = "sha256:47318849e364d183c2f026dee95db130307c643ac8f406dc3898987f714936af"
-artifact_fingerprint = "sha256:27808ad5aa13a40d5132709753dfa2ae4244ac77d8ee932baa306c28239fb381"
+fingerprint = "sha256:93c665170744dfeeafaf851795da7d6a2cd90e220a6d00d756fd8483c0c2e092"
+artifact_fingerprint = "sha256:bcb1820df4b9e074ede249fb9ee560c6efe7e764dd938c46ceb77245b0345ae8"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
