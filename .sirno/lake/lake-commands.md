@@ -15,7 +15,7 @@ refines:
 ---
 
 Lake commands operate on the configured Sirno Lake as a project surface.
-They keep storage setup, structural checking, and path movement on the lake boundary.
+They keep reservoir setup, structural checking, and path movement on the lake boundary.
 Entry-level mutations stay under entry commands.
 Projection work stays under mist commands.
 

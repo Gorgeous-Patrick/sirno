@@ -7,9 +7,9 @@ category:
 belongs:
   - entry
   - anchor
-  - storage
 prerequisite:
   - entry
+  - reservoir
   - anchor
 ---
 

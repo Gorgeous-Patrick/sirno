@@ -22,7 +22,7 @@ It does not own the behavior of any listed family.
 | `project-status-commands` | Project status reporting. |
 | `project-setup-commands` | Top-level project setup. |
 | `entry-commands` | Entry files, artifacts, freeze and melt, query, search, and witnesses. |
-| `lake-commands` | Lake initialization, checking, and storage movement. |
+| `lake-commands` | Lake initialization, checking, and reservoir movement. |
 | `anchor-commands` | Anchor status, validation, and accepted-baseline updates. |
 | `mist-commands` | Mist status, intake, render, and generated navigation cleanup. |
 | `upstream-commands` | Upstream declaration, crystallization, update, and status. |

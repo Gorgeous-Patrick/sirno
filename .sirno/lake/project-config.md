@@ -6,7 +6,8 @@ category:
 belongs:
   - sirno
 prerequisite:
-  - storage
+  - repo
+  - reservoir
 ---
 
 `Sirno.toml` marks a *repository* as Sirno-managed.

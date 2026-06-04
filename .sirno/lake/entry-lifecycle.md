@@ -110,7 +110,7 @@ Authored prose and metadata are the accepted entry content.
 do not move an entry between lifecycle states.
 They read the lake, report structure, or inspect configured repository evidence.
 
-Storage commands affect the frame around entries.
+Frame commands affect the context around entries.
 `sirno init` prompts for lake and packaged skill wrapper setup.
 `sirno init --all` creates those parts together without prompts.
 `sirno lake move PATH` moves the lake path.

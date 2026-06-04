@@ -48,10 +48,10 @@ Read these entries when changing the lake model:
 | Area | Entry | Local claim |
 |---|---|---|
 | entry shape | `entry` | Markdown files, metadata, prose, and addressable design objects. |
-| canonical storage | `reservoir` | The tracked authored lake store. |
+| canonical store | `reservoir` | The tracked authored lake store. |
 | projection | `lake-projection` | Selection, rendered workspaces, generated navigation, and intake. |
 | composition | `lake-composition` | Namespaces, lakelets, upstreams, and crystallized glaciers. |
-| commands | `lake-commands` | Lake initialization, checking, and storage movement. |
+| commands | `lake-commands` | Lake initialization, checking, and reservoir movement. |
 | review | `lake-review` | Structural validation, accepted baselines, Tide, and versioning. |
 
 Some files under a *lake* root may belong to adjacent tools.

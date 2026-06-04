@@ -24,10 +24,10 @@ Each `resolved` item records the workitem tuple and the ripple fingerprint it re
 schema = 1
 
 [[resolved]]
-ripple = "storage"
-field = "belongs"
-direction = "from"
-neighbor = "methodology"
+ripple = "reservoir"
+field = "prerequisite"
+direction = "to"
+neighbor = "lake"
 fingerprint = "sha256:..."
 ```
 

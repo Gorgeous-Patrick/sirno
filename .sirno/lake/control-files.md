@@ -5,15 +5,14 @@ category:
   - concept
   - proposal
 belongs:
-  - storage
+  - project-config
 prerequisite:
-  - storage
   - project-config
   - anchor-file
   - upstream-file
   - tide-resolution
 refines:
-  - storage
+  - project-config
 ---
 
 Control files are Sirno-owned TOML files under `.sirno/` next to `Sirno.toml`.

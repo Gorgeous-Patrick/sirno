@@ -28,7 +28,7 @@ that change can be internalized into the *lake* before any narrative route is re
 
 The *lake* should name the objects the project expects future work to cite:
 *forms*, *entries*, *structural links*, *transforms*, metadata,
-checks, *generated footers*, *witnesses*, and storage boundaries.
+checks, *generated footers*, *witnesses*, the *reservoir*, and control files.
 Those names become the handles used by code work, documentation work, and review.
 
 Sirno does not just document the project;

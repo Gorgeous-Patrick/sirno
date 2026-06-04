@@ -6,7 +6,6 @@ category:
   - implemented
 belongs:
   - lake-projection
-  - storage
   - generated-navigation
 prerequisite:
   - reservoir

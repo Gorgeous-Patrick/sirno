@@ -35,7 +35,7 @@ Common command aliases keep terminal use compact:
 
 Entry commands live under `sirno entry`.
 Selected common entry operations also have top-level wrappers.
-Storage-wide lake operations also live under `sirno lake`.
+Lake-wide operations also live under `sirno lake`.
 Entry artifact operations also have the top-level `sirno artifact` form.
 Anchor operations live under `sirno anchor`.
 

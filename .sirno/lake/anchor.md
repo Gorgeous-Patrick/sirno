@@ -6,7 +6,6 @@ category:
   - concept
 belongs:
   - lake-review
-  - storage
 prerequisite:
   - lake
   - project-config
@@ -42,7 +41,7 @@ This entry owns the accepted-baseline subsystem contract.
 ## Related Design Entries
 
 Anchor is the subsystem boundary.
-The detailed storage contracts live in smaller entries.
+Smaller entries own the concrete file-state contracts.
 These related entries are the review route through those contracts:
 
 - *Anchor File* defines `.sirno/anchor.toml` and fingerprint semantics.

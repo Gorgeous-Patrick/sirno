@@ -51,7 +51,7 @@ An *entry* should carry enough meaning to help future work.
 Some *entries* define concepts.
 Some *entries* give narrative routes through those concepts.
 Some *entries* name local implementation commitments,
-storage boundaries, generated regions, or *witness* lookup behavior.
+state boundaries, generated regions, or *witness* lookup behavior.
 The point is to preserve the design object that a later edit or review should be able to cite.
 
 Sirno also names movements between forms.
@@ -82,7 +82,8 @@ The default misty workspace renders to `sirno-lake/`.
 The introduction you are reading is the first route through this *lake*.
 The `methodology` *entry* is the compact working guide for acting inside this *lake*.
 The detailed design lives in the *entries* themselves:
-*forms*, *structural links*, *transforms*, storage, checks, *witnesses*, and *generated footers*.
+*forms*, *structural links*, *transforms*, the *reservoir*, checks, *witnesses*,
+and *generated footers*.
 Read this *entry* first,
 then follow `belongs`, `prerequisite`, `refines`, and *witnesses*
 to the local design you need.

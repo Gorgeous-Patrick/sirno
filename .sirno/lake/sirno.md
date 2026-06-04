@@ -33,7 +33,7 @@ and small enough for agents to inspect without carrying the whole project in con
 
 Sirno maintains structure:
 *entry* ids, metadata fields, *structural links*, *generated footers*,
-storage conventions, and *witness* lookup.
+reservoir conventions, control-file conventions, and *witness* lookup.
 People, agents, and other tools still judge design quality and semantic truth.
 
 This division is important.

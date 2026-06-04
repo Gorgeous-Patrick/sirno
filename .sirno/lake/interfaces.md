@@ -1,6 +1,6 @@
 ---
 name: Interfaces
-desc: The interface surface for operating on Sirno project storage.
+desc: The interface surface for operating on Sirno projects.
 category:
   - concept
 belongs:
@@ -9,9 +9,9 @@ prerequisite:
   - project-config
 ---
 
-An interface is an access surface over configured Sirno project storage.
+An interface is an access surface over Sirno project operations.
 It gives a human operator, agent, editor, or other client a stable way to request Sirno operations
-without owning the storage model itself.
+without owning each domain model itself.
 
 The interface contract has three parts:
 

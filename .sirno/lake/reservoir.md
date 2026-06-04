@@ -5,9 +5,8 @@ category:
   - concept
   - implemented
 belongs:
-  - storage
+  - lake
 prerequisite:
-  - storage
   - lake
 refines:
   - lake

@@ -8,7 +8,7 @@ belongs:
   - lake-review
   - anchor
 prerequisite:
-  - storage
+  - reservoir
   - anchor
 ---
 
