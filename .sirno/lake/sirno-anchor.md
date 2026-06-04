@@ -34,24 +34,10 @@ Its local contract is accepted-state comparison:
 - accept a new baseline only after review-mode checks and Tide review pass;
 - clear obsolete Tide review state after the current waterline is accepted.
 
-## Anchor Operations
+## Command Surface
 
-The current CLI and MCP surfaces expose Anchor through these operations:
-
-| Operation | Behavior |
-|---|---|
-| `sirno anchor status` | Shows current lake ripples against `.sirno/anchor.toml`. |
-| `sirno anchor check` | Validates `.sirno/anchor.toml` and compares it with the lake. |
-| `sirno anchor update` | Accepts the current lake as the new baseline. |
-
-`sirno anchor update` runs review-mode lake checks,
-derives Tide from Anchor and the current waterline,
-requires every open workitem to be resolved,
-writes a new Anchor file,
-and clears obsolete Tide review state.
-
-The first update initializes Anchor from the current lake.
-Later updates require a clear Tide.
+`anchor-commands` owns Anchor command spelling and behavior.
+This entry owns the accepted-baseline subsystem contract.
 
 ## Related Design Entries
 

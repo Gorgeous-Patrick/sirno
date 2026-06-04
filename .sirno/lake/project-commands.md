@@ -66,7 +66,7 @@ its path option is not accepted.
 | Entry | Command area |
 |---|---|
 | `lake-commands` | Lake initialization, checking, and storage movement. |
-| `sirno-anchor` | Anchor status, check, and update operations. |
-| `sirno-upstream` | Upstream declaration, crystallization, update, and status. |
+| `anchor-commands` | Anchor status, check, and update operations. |
+| `upstream-commands` | Upstream declaration, crystallization, update, and status. |
 | `structural-check` | Structural checking and check-mode selection. |
-| `mist` | Mist status, intake, render, and generated navigation commands. |
+| `mist-commands` | Mist status, intake, render, and generated navigation commands. |

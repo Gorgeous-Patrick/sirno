@@ -497,6 +497,7 @@ impl SurfaceContext {
         })
     }
 
+    // sirno:witness:upstream-commands:begin
     /// Add or replace one upstream and crystallize it.
     pub fn upstream_add(
         &self, request: UpstreamAddRequest,
@@ -608,6 +609,7 @@ impl SurfaceContext {
             Some((&lake, &settings)),
         )?)
     }
+    // sirno:witness:upstream-commands:end
 
     // sirno:witness:project-config-comments:begin
     /// Check whether `Sirno.toml` contains every canonical config comment.
@@ -1307,6 +1309,7 @@ impl SurfaceContext {
     }
     // sirno:witness:lake-commands:end
 
+    // sirno:witness:mist-commands:begin
     /// Render Markdown links for one misty lake projection.
     pub fn mist_render(
         &self, mist: Option<EntryAtom>, dry: bool,
@@ -1458,7 +1461,9 @@ impl SurfaceContext {
         })
     }
     // sirno:witness:misty-lake:end
+    // sirno:witness:mist-commands:end
 
+    // sirno:witness:anchor-commands:begin
     /// Show the current lake ripples against the accepted anchor baseline.
     pub fn anchor_status(&self) -> Result<AnchorStatusResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
@@ -1540,6 +1545,7 @@ impl SurfaceContext {
             ),
         })
     }
+    // sirno:witness:anchor-commands:end
 
     /// Show the current Sirno project status.
     pub fn status(&self) -> Result<StatusResult, CommandError> {

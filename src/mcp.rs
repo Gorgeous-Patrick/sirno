@@ -375,6 +375,7 @@ impl SirnoMcpServer {
     }
     // sirno:witness:lake-commands:end
 
+    // sirno:witness:mist-commands:begin
     /// Render Markdown links for one misty lake projection.
     #[tool(name = "sirno_mist_render")]
     fn mist_render(&self, Parameters(params): Parameters<MistRenderParams>) -> McpToolResult {
@@ -398,13 +399,17 @@ impl SirnoMcpServer {
     fn mist_render_delete(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
         result(self.context.mist_render_delete(mist_name(params.mist)?))
     }
+    // sirno:witness:mist-commands:end
 
+    // sirno:witness:project-commands:begin
     /// Show the current Sirno project status.
     #[tool(name = "sirno_status")]
     fn status(&self) -> McpToolResult {
         result(self.context.status())
     }
+    // sirno:witness:project-commands:end
 
+    // sirno:witness:upstream-commands:begin
     /// Add or replace one Git-backed upstream and crystallize it.
     #[tool(name = "sirno_upstream_add")]
     fn upstream_add(&self, Parameters(params): Parameters<UpstreamAddParams>) -> McpToolResult {
@@ -440,7 +445,9 @@ impl SirnoMcpServer {
     fn upstream_status(&self) -> McpToolResult {
         result(self.context.upstream_status())
     }
+    // sirno:witness:upstream-commands:end
 
+    // sirno:witness:anchor-commands:begin
     /// Show lake ripples against the accepted anchor baseline.
     #[tool(name = "sirno_anchor_status")]
     fn anchor_status(&self) -> McpToolResult {
@@ -458,6 +465,7 @@ impl SirnoMcpServer {
     fn anchor_update(&self) -> McpToolResult {
         result(self.context.anchor_update())
     }
+    // sirno:witness:anchor-commands:end
 
     // sirno:witness:tide-commands:begin
     /// Show tide review status.
@@ -808,6 +816,7 @@ impl From<McpCheckMode> for CheckMode {
     }
 }
 
+// sirno:witness:mist-commands:begin
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct MistNameParams {
     /// Mist name. Omit for the default mist.
@@ -821,7 +830,9 @@ struct MistRenderParams {
     #[serde(default)]
     dry: bool,
 }
+// sirno:witness:mist-commands:end
 
+// sirno:witness:upstream-commands:begin
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct UpstreamAddParams {
     /// Glacier domain used as the crystallized entry-address prefix.
@@ -895,6 +906,7 @@ impl UpstreamCrystallizeParams {
         Ok(UpstreamCrystallizeRequest { domains: entry_atoms(self.domains)?, locked: self.locked })
     }
 }
+// sirno:witness:upstream-commands:end
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideStatusParams {

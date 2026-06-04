@@ -59,30 +59,15 @@ The misty lake does not need to contain the entries that define those lake seman
 All rendered output belongs in misty lakes,
 so the reservoir remains the authored source for entry metadata, prose, and artifacts.
 
-`sirno mist render` projects selected reservoir entries into the misty lake,
+Mist rendering projects selected reservoir entries into the misty lake,
 copies selected entry artifacts,
 renders generated navigation from the reservoir context,
 and writes the projection manifest.
-`sirno mist status` compares the projection with the reservoir.
-`sirno mist intake` writes changed Markdown entries back to the reservoir
+Mist status compares the projection with the reservoir.
+Mist intake writes changed Markdown entries back to the reservoir
 when the manifest is fresh and the projection is editable.
 
-## Mist Commands
+## Command Surface
 
-| Command | Behavior |
-|---|---|
-| `sirno mist status [MIST]` | Reports pending mist ripples and stale projection state. |
-| `sirno mist intake [MIST]` | Writes accepted misty-lake entry edits back into the reservoir. |
-| `sirno mist render [MIST]` | Projects selected reservoir entries and renders generated navigation. |
-| `sirno mist render -n, --dry` | Reports generated navigation changes without writing files. |
-| `sirno mist render --dry-run` | Alias for `sirno mist render --dry`. |
-| `sirno mist render --override-json JSON` | Uses temporary mist structural render settings for that run. |
-| `sirno mist render delete` | Removes generated navigation regions from a misty lake. |
-| `sirno render ...` | Shorthand for `sirno mist render ...` on the default or active mist. |
-
-Mist render forms print changed paths or blocking diagnostics before their summary line.
-The summary counts changed entries,
-not copied artifact files or projection manifest files.
-The override JSON uses link relation names with edge direction lists,
-such as `{"belongs":["to"]}`.
-It does not write the mist spec.
+`mist-commands` owns mist command spelling and behavior.
+This entry owns selection, projection settings, and render semantics.

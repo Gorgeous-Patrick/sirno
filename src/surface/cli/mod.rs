@@ -69,6 +69,7 @@ pub struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
+    // sirno:witness:project-commands:begin
     /// Create a Sirno config, lake, and skill wrappers.
     Init {
         /// Run non-interactively with the selected init parts.
@@ -87,6 +88,7 @@ enum Command {
         #[arg(long = "claude-skills", conflicts_with = "no_skills")]
         claude_skills: bool,
     },
+    // sirno:witness:project-commands:end
     /// Move an entry or the lake path.
     #[command(visible_alias = "mv")]
     Move {
@@ -147,9 +149,11 @@ enum Command {
     },
     // sirno:witness:tide-commands:end
     // sirno:witness:cli-interface:begin
+    // sirno:witness:project-commands:begin
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
     Status,
+    // sirno:witness:project-commands:end
     /// Run an entry operation at the top level.
     #[command(flatten)]
     TopLevelEntry(TopLevelEntryCommand),
@@ -331,6 +335,7 @@ enum TopLevelLakeCommand {
     // sirno:witness:lake-commands:end
 }
 
+// sirno:witness:mist-commands:begin
 /// Supported Sirno mist commands.
 #[derive(Debug, Subcommand)]
 enum MistCommand {
@@ -346,10 +351,8 @@ enum MistCommand {
 /// Supported top-level Sirno mist commands.
 #[derive(Debug, Subcommand)]
 enum TopLevelMistCommand {
-    // sirno:witness:project-commands:begin
     /// Render Markdown links for a misty lake projection.
     Render(MistRenderArgs),
-    // sirno:witness:project-commands:end
 }
 
 /// Arguments for one named mist.
@@ -361,7 +364,6 @@ struct MistNameArgs {
 }
 
 /// Arguments for rendering one mist projection.
-// sirno:witness:project-commands:begin
 #[derive(Debug, Args)]
 struct MistRenderArgs {
     /// Mist name. Omit for the default mist.
@@ -377,7 +379,7 @@ struct MistRenderArgs {
     #[command(subcommand)]
     command: Option<RenderCommand>,
 }
-// sirno:witness:project-commands:end
+// sirno:witness:mist-commands:end
 
 /// Supported top-level move wrappers.
 // sirno:witness:cli-interface:begin
@@ -612,6 +614,7 @@ impl From<CheckModeArg> for CheckMode {
     }
 }
 
+// sirno:witness:upstream-commands:begin
 /// Supported upstream lake commands.
 #[derive(Debug, Subcommand)]
 enum UpstreamCommand {
@@ -680,6 +683,7 @@ struct UpstreamAddArgs {
     #[arg(long)]
     mist: Option<String>,
 }
+// sirno:witness:upstream-commands:end
 
 /// CLI upstream output renderer.
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
@@ -748,6 +752,7 @@ enum TideCommand {
 }
 // sirno:witness:tide:end
 
+// sirno:witness:anchor-commands:begin
 /// Supported Anchor commands.
 #[derive(Debug, Subcommand)]
 enum AnchorCommand {
@@ -770,6 +775,7 @@ enum AnchorCommand {
         format: Option<AnchorOutputFormat>,
     },
 }
+// sirno:witness:anchor-commands:end
 
 /// Human grouping for tide status output.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
@@ -817,12 +823,14 @@ struct UnresolveArgs {
 }
 // sirno:witness:tide-commands:end
 
+// sirno:witness:mist-commands:begin
 /// Supported rendered-footer commands.
 #[derive(Debug, Subcommand)]
 enum RenderCommand {
     /// Delete generated Markdown link footers.
     Delete,
 }
+// sirno:witness:mist-commands:end
 
 /// CLI shell target for completion generation.
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -971,6 +979,7 @@ impl Cli {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
         match self.command {
+            // sirno:witness:project-commands:begin
             | Command::Init { all, lake, no_lake, no_skills, claude_skills } => {
                 let request = TopLevelInitRequest {
                     lake,
@@ -984,6 +993,7 @@ impl Cli {
                     run_interactive_top_level_init(request, &config_path, lake_path.as_deref())
                 }
             }
+            // sirno:witness:project-commands:end
             | Command::Move { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
@@ -997,7 +1007,9 @@ impl Cli {
                 command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
                 // sirno:witness:tide-commands:end
             }
+            // sirno:witness:project-commands:begin
             | Command::Status => run_status_command(&config_path, lake_path.as_deref()),
+            // sirno:witness:project-commands:end
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelMist(command) => command.run(&config_path, lake_path.as_deref()),
@@ -1016,6 +1028,7 @@ impl MoveCommand {
     }
 }
 
+// sirno:witness:project-commands:begin
 #[derive(Debug)]
 struct TopLevelInitRequest {
     lake: Option<PathBuf>,
@@ -1023,6 +1036,7 @@ struct TopLevelInitRequest {
     init_skills: bool,
     init_claude_skills: bool,
 }
+// sirno:witness:project-commands:end
 
 #[derive(Clone, Copy, Debug)]
 enum PromptDefault {
@@ -1081,6 +1095,7 @@ fn run_prompted_top_level_init<R: BufRead, W: Write>(
     )
 }
 
+// sirno:witness:project-commands:begin
 fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
     mut request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
     output: &mut W, style: OutputStyle,
@@ -1134,6 +1149,7 @@ fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
 
     run_top_level_init(request, config_path, lake_path)
 }
+// sirno:witness:project-commands:end
 
 fn prompt_yes_no<R: BufRead, W: Write>(
     input: &mut R, output: &mut W, question: &str, default: PromptDefault, style: OutputStyle,
@@ -1226,6 +1242,7 @@ fn planned_lake_path(
         .unwrap_or_else(|| default_lake_path(config_path))
 }
 
+// sirno:witness:project-commands:begin
 fn run_top_level_init(
     request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
@@ -1243,6 +1260,7 @@ fn run_top_level_init(
     }
     Ok(ExitCode::SUCCESS)
 }
+// sirno:witness:project-commands:end
 
 fn run_lake_init(
     lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
@@ -1408,6 +1426,7 @@ impl LakeCommand {
     }
 }
 
+// sirno:witness:mist-commands:begin
 impl MistCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
@@ -1417,6 +1436,7 @@ impl MistCommand {
         }
     }
 }
+// sirno:witness:mist-commands:end
 
 impl LakeMoveArgs {
     // sirno:witness:lake-commands:begin
@@ -1444,6 +1464,7 @@ impl TopLevelLakeCommand {
     // sirno:witness:lake-commands:end
 }
 
+// sirno:witness:mist-commands:begin
 impl TopLevelMistCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
@@ -1473,7 +1494,6 @@ impl MistNameArgs {
 }
 
 impl MistRenderArgs {
-    // sirno:witness:project-commands:begin
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let mist = self.mist.as_deref().map(entry_atom).transpose()?;
         let context = SurfaceContext::from_cli_paths(config_path, lake_path);
@@ -1496,17 +1516,20 @@ impl MistRenderArgs {
         print_render_result(&result);
         if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
     }
-    // sirno:witness:project-commands:end
 }
+// sirno:witness:mist-commands:end
 
 fn run_status_command(
     config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
+    // sirno:witness:project-commands:begin
     let result = SurfaceContext::from_cli_paths(config_path, lake_path).status()?;
     print_status_result(&result);
     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+    // sirno:witness:project-commands:end
 }
 
+// sirno:witness:upstream-commands:begin
 impl UpstreamCommand {
     fn run(
         self, config_path: &std::path::Path, lake_path: Option<&Path>,
@@ -1571,6 +1594,7 @@ impl UpstreamAddArgs {
         Ok(UpstreamAddRequest { domain: entry_atom(&self.domain)?, settings })
     }
 }
+// sirno:witness:upstream-commands:end
 
 fn upstream_domains(domain: Option<String>) -> Result<Vec<EntryAtom>, CommandError> {
     domain.map(|domain| entry_atom(&domain)).transpose().map(|domain| domain.into_iter().collect())
@@ -1580,6 +1604,7 @@ fn entry_atom(raw: &str) -> Result<EntryAtom, CommandError> {
     Ok(EntryAtom::new(raw)?)
 }
 
+// sirno:witness:anchor-commands:begin
 impl AnchorCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let context = SurfaceContext::from_cli_paths(config_path, lake_path);
@@ -1611,6 +1636,7 @@ impl AnchorCommand {
         }
     }
 }
+// sirno:witness:anchor-commands:end
 
 impl TideCommand {
     fn run(

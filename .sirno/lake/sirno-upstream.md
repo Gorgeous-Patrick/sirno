@@ -31,19 +31,7 @@ so an unmanaged local folder blocks crystallization for the same domain.
 A lake sheaf remains the composition model for the resolved addressable view.
 Sirno Upstream is the operator-facing feature that produces that local view.
 
-## Upstream Commands
+## Command Surface
 
-| Command | Behavior |
-|---|---|
-| `sirno upstream add DOMAIN --git SOURCE ...` | Declares and crystallizes a Git upstream lake. |
-| `sirno upstream remove DOMAIN` | Removes the declaration and managed glacier content. |
-| `sirno upstream crystallize [DOMAIN]` | Crystallizes upstreams into glaciers. |
-| `sirno upstream crystallize [DOMAIN] --locked` | Uses only existing locks and cache mirrors. |
-| `sirno upstream update [DOMAIN]` | Refreshes upstream locks and glacier content. |
-| `sirno upstream status` | Reports upstream lock, cache, glacier, and drift state. |
-
-`sirno upstream add` accepts exactly one of `--branch NAME`, `--tag NAME`, or `--rev COMMIT`.
-`--project PATH` selects the upstream project root inside the Git tree.
-`--manifest PATH` selects the project config manifest relative to that root.
-It defaults to `Sirno.toml`.
-`--mist MIST` imports only entries selected by that mist in the upstream project.
+`upstream-commands` owns upstream command spelling and behavior.
+This entry owns the subsystem contract and dependency model.
