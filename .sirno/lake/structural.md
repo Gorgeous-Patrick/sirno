@@ -4,7 +4,6 @@ desc: A metadata-backed relation that carries operational Sirno structure.
 category:
   - concept
 belongs:
-  - sirno
   - meta-type
 prerequisite:
   - metadata

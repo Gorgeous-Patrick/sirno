@@ -773,11 +773,8 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.structural]
-fingerprint = "sha256:a5d96626958d0f620f764aa36b200892fbbaf7ed4e73a8ad98e09955442830ee"
-belongs = [
-    "sirno",
-    "meta-type",
-]
+fingerprint = "sha256:13e95b44114cb504124d040c7dd0fe538790cc7d4900912e7ce96eb33fe021fa"
+belongs = ["meta-type"]
 prerequisite = ["metadata"]
 
 [entries.structural-check]
