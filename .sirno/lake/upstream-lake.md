@@ -17,12 +17,17 @@ The current project names each upstream in `Sirno.toml`.
 The declaration chooses a Git source,
 one ref selector,
 an entry-domain atom for the glacier address prefix,
+an optional project root inside the Git tree,
+an optional project config manifest path,
 and optionally a mist name from the upstream project.
 That domain atom is always explicit.
 Sirno does not infer a local upstream name from the Git source.
 The source may be a remote Git URL or a local Git repository source accepted by Git.
 Local repository sources are read through committed Git objects;
 dirty worktree state is ignored.
+The project root defaults to `.`.
+The manifest path is relative to that root and defaults to `Sirno.toml`.
+The manifest may be nested or named differently.
 
 Every upstream is explicitly included by crystallizing it into a glacier.
 Sirno does not have a path-only upstream,

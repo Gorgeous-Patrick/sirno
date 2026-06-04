@@ -828,8 +828,10 @@ struct UpstreamAddParams {
     tag: Option<String>,
     /// Commit-ish to resolve.
     rev: Option<String>,
-    /// Directory inside the Git tree containing `Sirno.toml`.
+    /// Project root directory inside the Git tree.
     project: Option<PathBuf>,
+    /// Project config manifest path relative to `project`.
+    manifest: Option<PathBuf>,
     /// Upstream mist that selects the crystallized entries.
     mist: Option<String>,
 }
@@ -854,6 +856,9 @@ impl UpstreamAddParams {
         };
         if let Some(project) = self.project {
             settings.project = project;
+        }
+        if let Some(manifest) = self.manifest {
+            settings.manifest = manifest;
         }
         if let Some(mist) = self.mist {
             settings.mist = Some(entry_atom(mist)?);

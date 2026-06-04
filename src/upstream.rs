@@ -21,12 +21,12 @@ use tracing::trace;
 use crate::anchor::SIRNO_CONTROL_DIR_NAME;
 use crate::artifact::{ARTIFACT_DIRECTORY_NAME, EntryArtifact, EntryArtifactPath};
 use crate::check::CheckMode;
-use crate::config::{CONFIG_FILE_NAME, SirnoConfig, UpstreamRef, UpstreamSettings};
+use crate::config::{SirnoConfig, UpstreamRef, UpstreamSettings};
 use crate::entry::{Entry, FrozenMarker, RawEntry};
 use crate::identifier::{EntryAddress, EntryAtom};
 use crate::lake::{EntryDirectory, EntryDirectoryCheckSettings, GlacierReport};
 use crate::meta::MetaRegistry;
-use crate::mist::{MIST_SPEC_DIR_NAME, MistSpec};
+use crate::mist::MistSpec;
 use crate::render::GeneratedLinkBody;
 use crate::structural::StructuralSettings;
 
@@ -206,12 +206,16 @@ pub struct UpstreamLock {
     /// Commit-ish copied from `Sirno.toml`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rev: Option<String>,
-    /// Directory inside the Git tree containing `Sirno.toml`.
+    /// Project root directory inside the Git tree.
     pub project: PathBuf,
+    /// Project config manifest path relative to `project`.
+    #[serde(default = "crate::config::default_upstream_manifest_for_serde")]
+    #[serde(skip_serializing_if = "crate::config::is_default_upstream_manifest_for_serde")]
+    pub manifest: PathBuf,
     /// Upstream mist copied from `Sirno.toml`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mist: Option<EntryAtom>,
-    /// Lake path read from the upstream project's `Sirno.toml`.
+    /// Lake path read from the upstream project manifest.
     pub lake: PathBuf,
     /// Exact Git commit crystallized into the glacier.
     pub commit: String,
@@ -226,6 +230,7 @@ impl UpstreamLock {
             tag: settings.tag.clone(),
             rev: settings.rev.clone(),
             project: settings.project.clone(),
+            manifest: settings.manifest.clone(),
             mist: settings.mist.clone(),
             lake,
             commit: commit.into(),
@@ -239,6 +244,7 @@ impl UpstreamLock {
             && self.tag == settings.tag
             && self.rev == settings.rev
             && self.project == settings.project
+            && self.manifest == settings.manifest
             && self.mist == settings.mist
     }
 
@@ -661,12 +667,12 @@ fn load_upstream(
     };
 
     let project = git_tree_path(&settings.project)?;
-    let config_tree_path = join_tree_path(&project, CONFIG_FILE_NAME);
+    let config_tree_path = join_tree_path(&project, &settings.manifest);
     let config_source = git_show_text(&mirror, &commit, &config_tree_path)?;
     let upstream_config = SirnoConfig::from_source(Path::new(&config_tree_path), &config_source)?;
-    let mist = load_upstream_mist_spec(&mirror, &commit, &project, settings)?;
-    let lake = git_tree_path(&upstream_config.lake.path)?;
-    let lake_tree_path = join_tree_path(&project, &lake);
+    let mist = load_upstream_mist_spec(&mirror, &commit, &config_tree_path, settings)?;
+    let lake_tree_path =
+        resolve_config_relative_tree_path(&config_tree_path, &upstream_config.lake.path)?;
     let files = git_list_files(&mirror, &commit, &lake_tree_path)?;
     let loaded = load_upstream_files(
         &mirror,
@@ -819,15 +825,12 @@ fn strip_generated_footer_for_import(body: &str) -> Result<String, UpstreamError
 }
 
 fn load_upstream_mist_spec(
-    mirror: &Path, commit: &str, project: &str, settings: &UpstreamSettings,
+    mirror: &Path, commit: &str, config_tree_path: &str, settings: &UpstreamSettings,
 ) -> Result<Option<MistSpec>, UpstreamError> {
     let Some(mist) = &settings.mist else {
         return Ok(None);
     };
-    let mist_tree_path = join_tree_path(
-        project,
-        PathBuf::from(SIRNO_CONTROL_DIR_NAME).join(MIST_SPEC_DIR_NAME).join(format!("{mist}.toml")),
-    );
+    let mist_tree_path = git_tree_path(&MistSpec::path_for_config(config_tree_path, mist))?;
     let source = git_show_text(mirror, commit, &mist_tree_path)?;
     Ok(Some(MistSpec::from_source(Path::new(&mist_tree_path), &source)?))
 }
@@ -921,6 +924,43 @@ fn join_tree_path(left: &str, right: impl AsRef<Path>) -> String {
         | (_, true) => left.to_owned(),
         | (false, false) => format!("{left}/{right}"),
     }
+}
+
+fn resolve_config_relative_tree_path(
+    config_tree_path: &str, configured_path: &Path,
+) -> Result<String, UpstreamError> {
+    if configured_path.is_absolute() {
+        return Err(UpstreamError::GitTreePath(configured_path.to_path_buf()));
+    }
+    let mut parts = Path::new(config_tree_path)
+        .parent()
+        .map(|parent| {
+            parent
+                .components()
+                .filter_map(|component| match component {
+                    | Component::Normal(part) => Some(part.to_os_string()),
+                    | _ => None,
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    for component in configured_path.components() {
+        match component {
+            | Component::CurDir => {}
+            | Component::Normal(part) => parts.push(part.to_os_string()),
+            | Component::ParentDir => {
+                if parts.pop().is_none() {
+                    return Err(UpstreamError::GitTreePath(configured_path.to_path_buf()));
+                }
+            }
+            | _ => return Err(UpstreamError::GitTreePath(configured_path.to_path_buf())),
+        }
+    }
+    parts
+        .into_iter()
+        .map(|part| part_to_utf8(&part))
+        .collect::<Result<Vec<_>, _>>()
+        .map(|parts| parts.join("/"))
 }
 
 fn strip_tree_prefix<'a>(path: &'a str, prefix: &str) -> Option<&'a str> {
@@ -1068,6 +1108,7 @@ mod tests {
     use std::process::Command;
 
     use super::*;
+    use crate::config::CONFIG_FILE_NAME;
     use crate::surface::{
         CommandError, SurfaceContext, UpstreamAddRequest, UpstreamCrystallizeRequest,
     };
@@ -1107,7 +1148,8 @@ mod tests {
 
     #[test]
     fn renders_upstream_file() {
-        let settings = UpstreamSettings::branch("../core.git", "main");
+        let mut settings = UpstreamSettings::branch("../core.git", "main");
+        settings.manifest = PathBuf::from("config/Core.toml");
         let file = UpstreamFile {
             upstreams: UpstreamLockMap::from([(
                 EntryAtom::new("core").unwrap(),
@@ -1121,6 +1163,7 @@ mod tests {
         assert!(rendered.contains("[upstreams.core]"));
         assert!(rendered.contains("git = \"../core.git\""));
         assert!(rendered.contains("branch = \"main\""));
+        assert!(rendered.contains("manifest = \"config/Core.toml\""));
         assert!(rendered.contains("lake = \"docs\""));
         assert!(rendered.contains("commit = \"0123456789abcdef\""));
     }
@@ -1192,11 +1235,21 @@ fingerprint = "sha256:abc"
     }
 
     fn write_upstream_repo(root: &Path) -> String {
-        fs::create_dir_all(root.join(".sirno/mist")).unwrap();
-        fs::create_dir_all(root.join("docs/.artifacts/design")).unwrap();
-        SirnoConfig::new("docs").write_new(root.join(CONFIG_FILE_NAME)).unwrap();
+        write_upstream_repo_with_manifest(root, CONFIG_FILE_NAME, "docs")
+    }
+
+    fn write_upstream_repo_with_manifest(
+        root: &Path, manifest_path: impl AsRef<Path>, lake_path: impl AsRef<Path>,
+    ) -> String {
+        let manifest_path = root.join(manifest_path);
+        let manifest_parent = manifest_path.parent().unwrap();
+        let lake_path = lake_path.as_ref();
+        let lake_root = manifest_parent.join(lake_path);
+        fs::create_dir_all(manifest_parent.join(".sirno/mist")).unwrap();
+        fs::create_dir_all(lake_root.join(".artifacts/design")).unwrap();
+        SirnoConfig::new(lake_path).write_new(&manifest_path).unwrap();
         fs::write(
-            root.join(".sirno/mist/public.toml"),
+            manifest_parent.join(".sirno/mist/public.toml"),
             "\
 [select]
 exact_terms = [\"Design\"]
@@ -1204,7 +1257,7 @@ exact_terms = [\"Design\"]
         )
         .unwrap();
         fs::write(
-            root.join("docs/name.md"),
+            lake_root.join("name.md"),
             "\
 ---
 name: Name
@@ -1217,7 +1270,7 @@ Body.
         )
         .unwrap();
         fs::write(
-            root.join("docs/desc.md"),
+            lake_root.join("desc.md"),
             "\
 ---
 name: Description
@@ -1230,7 +1283,7 @@ Body.
         )
         .unwrap();
         fs::write(
-            root.join("docs/design.md"),
+            lake_root.join("design.md"),
             "\
 ---
 name: Design
@@ -1247,7 +1300,7 @@ Body.
         )
         .unwrap();
         fs::write(
-            root.join("docs/alpha.md"),
+            lake_root.join("alpha.md"),
             "\
 ---
 name: Alpha
@@ -1258,7 +1311,7 @@ Body.
 ",
         )
         .unwrap();
-        fs::write(root.join("docs/.artifacts/design/logo.bin"), b"logo").unwrap();
+        fs::write(lake_root.join(".artifacts/design/logo.bin"), b"logo").unwrap();
 
         run_git(root, &["init"]);
         run_git(root, &["checkout", "-b", "main"]);
@@ -1330,6 +1383,60 @@ Body.
             .unwrap();
         assert_eq!(result.domains, ["core"]);
         assert_eq!(fs::read_dir(temp.path().join("store/git")).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn crystallizes_upstream_from_custom_manifest_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let upstream_root = temp.path().join("upstream");
+        fs::create_dir(&upstream_root).unwrap();
+        let commit = write_upstream_repo_with_manifest(
+            &upstream_root,
+            "packages/core/config/Core.manifest.toml",
+            "../docs",
+        );
+        let project_root = temp.path().join("project");
+        fs::create_dir(&project_root).unwrap();
+        let config_path = project_root.join(CONFIG_FILE_NAME);
+        let domain = EntryAtom::new("core").unwrap();
+        let mut settings = UpstreamSettings::branch(upstream_root.to_string_lossy(), "main");
+        settings.project = PathBuf::from("packages/core");
+        settings.manifest = PathBuf::from("config/Core.manifest.toml");
+        let config = SirnoConfig {
+            upstreams: UpstreamSettingsMap::from([(domain.clone(), settings)]),
+            ..SirnoConfig::new("lake")
+        };
+        config.write_new(&config_path).unwrap();
+        EntryDirectory::new(project_root.join("lake")).init().unwrap();
+
+        let result = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_crystallize(UpstreamCrystallizeRequest {
+                domains: vec![domain.clone()],
+                locked: false,
+            })
+            .unwrap();
+
+        assert_eq!(result.domains, ["core"]);
+        assert!(project_root.join("lake/core/design.md").exists());
+        assert_eq!(
+            fs::read(project_root.join("lake/.artifacts/core.design/logo.bin")).unwrap(),
+            b"logo"
+        );
+        let upstream_file =
+            UpstreamFile::from_file(UpstreamFile::path_for_config(&config_path)).unwrap();
+        let upstream = upstream_file.upstreams.get(&domain).unwrap();
+        assert_eq!(upstream.project, PathBuf::from("packages/core"));
+        assert_eq!(upstream.manifest, PathBuf::from("config/Core.manifest.toml"));
+        assert_eq!(upstream.lake, PathBuf::from("../docs"));
+        assert_eq!(upstream.commit, commit);
+
+        let status = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_status()
+            .unwrap();
+        assert!(status.ok, "{status:?}");
+        assert_eq!(status.upstreams[0].state, UpstreamStatusState::Ok);
     }
 
     #[test]

@@ -19,7 +19,8 @@ It exists only when the project has crystallized upstream pins.
 When upstream lakes are configured,
 the upstream file contains `[upstreams.DOMAIN]` tables.
 Each table copies the upstream request fields from `Sirno.toml`,
-stores the upstream project path,
+stores the upstream project root,
+the upstream manifest path,
 the optional upstream mist name,
 the configured lake path,
 and records `commit` as the exact Git object crystallized into the glacier.

@@ -15,7 +15,8 @@ prerequisite:
 
 For each selected upstream,
 Sirno resolves the locked Git commit,
-reads the upstream project's configured lake,
+reads the upstream project manifest,
+resolves that manifest's configured lake,
 and writes its entries as a glacier under the declared domain.
 For example, upstream entry `design` under domain `core` becomes `core.design`
 and is written to `lake/core/design.md`.

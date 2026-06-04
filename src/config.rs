@@ -214,9 +214,15 @@ pub struct UpstreamSettings {
     /// Commit-ish to resolve.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rev: Option<String>,
-    /// Directory inside the Git tree that contains `Sirno.toml`.
+    /// Project root directory inside the Git tree.
     #[serde(default = "default_upstream_project", skip_serializing_if = "is_default_project")]
     pub project: PathBuf,
+    /// Project config manifest path relative to `project`.
+    #[serde(
+        default = "default_upstream_manifest_for_serde",
+        skip_serializing_if = "is_default_upstream_manifest_for_serde"
+    )]
+    pub manifest: PathBuf,
     /// Upstream mist that selects the crystallized entries.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mist: Option<EntryAtom>,
@@ -231,6 +237,7 @@ impl UpstreamSettings {
             tag: None,
             rev: None,
             project: default_upstream_project(),
+            manifest: default_upstream_manifest_for_serde(),
             mist: None,
         }
     }
@@ -243,6 +250,7 @@ impl UpstreamSettings {
             tag: Some(tag.into()),
             rev: None,
             project: default_upstream_project(),
+            manifest: default_upstream_manifest_for_serde(),
             mist: None,
         }
     }
@@ -255,6 +263,7 @@ impl UpstreamSettings {
             tag: None,
             rev: Some(rev.into()),
             project: default_upstream_project(),
+            manifest: default_upstream_manifest_for_serde(),
             mist: None,
         }
     }
@@ -297,6 +306,7 @@ impl UpstreamSettings {
             }
         }
         validate_upstream_project_path(domain, &self.project)?;
+        validate_upstream_manifest_path(domain, &self.manifest)?;
         Ok(())
     }
 }
@@ -321,6 +331,14 @@ fn is_default_project(path: &PathBuf) -> bool {
     path == &default_upstream_project()
 }
 
+pub(crate) fn default_upstream_manifest_for_serde() -> PathBuf {
+    PathBuf::from(CONFIG_FILE_NAME)
+}
+
+pub(crate) fn is_default_upstream_manifest_for_serde(path: &PathBuf) -> bool {
+    path == &default_upstream_manifest_for_serde()
+}
+
 fn validate_upstream_project_path(domain: &EntryAtom, path: &Path) -> Result<(), ConfigError> {
     if path.as_os_str().is_empty() || path.is_absolute() {
         return Err(ConfigError::UpstreamProjectPath { domain: domain.clone(), path: path.into() });
@@ -332,6 +350,35 @@ fn validate_upstream_project_path(domain: &EntryAtom, path: &Path) -> Result<(),
                 path: path.into(),
             });
         }
+    }
+    Ok(())
+}
+
+fn validate_upstream_manifest_path(domain: &EntryAtom, path: &Path) -> Result<(), ConfigError> {
+    if path.as_os_str().is_empty() || path.is_absolute() {
+        return Err(ConfigError::UpstreamManifestPath {
+            domain: domain.clone(),
+            path: path.into(),
+        });
+    }
+    let mut has_file_component = false;
+    for component in path.components() {
+        match component {
+            | Component::Normal(_) => has_file_component = true,
+            | Component::CurDir => {}
+            | _ => {
+                return Err(ConfigError::UpstreamManifestPath {
+                    domain: domain.clone(),
+                    path: path.into(),
+                });
+            }
+        }
+    }
+    if !has_file_component {
+        return Err(ConfigError::UpstreamManifestPath {
+            domain: domain.clone(),
+            path: path.into(),
+        });
     }
     Ok(())
 }
@@ -860,6 +907,8 @@ impl ConfigRenderer {
                     .push_str(
                         "# Git-backed upstream lake crystallized into a glacier under this entry domain.\n",
                     );
+                self.out
+                    .push_str("# Optional manifest selects the upstream project config file.\n");
                 self.out.push_str(
                     "# Optional mist selects the imported portion from the upstream project.\n",
                 );
@@ -877,6 +926,9 @@ impl ConfigRenderer {
             }
             if !is_default_project(&upstream.project) {
                 self.push_bare_field("project", &upstream.project)?;
+            }
+            if !is_default_upstream_manifest_for_serde(&upstream.manifest) {
+                self.push_bare_field("manifest", &upstream.manifest)?;
             }
             if let Some(mist) = &upstream.mist {
                 self.push_bare_field("mist", mist)?;
@@ -973,6 +1025,14 @@ pub enum ConfigError {
         /// Glacier domain.
         domain: EntryAtom,
         /// Invalid project path.
+        path: PathBuf,
+    },
+    /// An upstream manifest path is not a normal Git-tree-relative file path.
+    #[error("upstream `{domain}` manifest path must be relative within the Git tree: {path}")]
+    UpstreamManifestPath {
+        /// Glacier domain.
+        domain: EntryAtom,
+        /// Invalid manifest path.
         path: PathBuf,
     },
     /// A charm entry address is enabled more than once.
@@ -1121,6 +1181,7 @@ path = "docs"
 git = "https://example.invalid/core.git"
 branch = "main"
 project = "packages/core"
+manifest = "config/Core.toml"
 mist = "public"
 
 [upstreams.std]
@@ -1137,6 +1198,7 @@ tag = "stable"
                 tag: None,
                 rev: None,
                 project: PathBuf::from("packages/core"),
+                manifest: PathBuf::from("config/Core.toml"),
                 mist: Some(EntryAtom::new("public").unwrap()),
             })
         );
@@ -1445,6 +1507,27 @@ project = "../core"
         assert!(
             matches!(error, ConfigError::UpstreamProjectPath { domain, .. } if domain.as_str() == "core")
         );
+
+        fs::write(
+            &path,
+            config_source(
+                r#"
+[lake]
+path = "docs"
+
+[upstreams.core]
+git = "../core.git"
+branch = "main"
+manifest = "../Sirno.toml"
+"#,
+            ),
+        )
+        .unwrap();
+
+        let error = SirnoConfig::from_file(&path).unwrap_err();
+        assert!(
+            matches!(error, ConfigError::UpstreamManifestPath { domain, .. } if domain.as_str() == "core")
+        );
     }
 
     #[test]
@@ -1644,6 +1727,7 @@ delimiters = []
     fn rendered_config_keeps_selected_comments_and_structural_link_order() {
         let mut upstream = UpstreamSettings::branch("https://example.invalid/core.git", "main");
         upstream.project = PathBuf::from("packages/core");
+        upstream.manifest = PathBuf::from("config/Core.toml");
         upstream.mist = Some(EntryAtom::new("public").unwrap());
         let upstreams = UpstreamSettingsMap::from([(EntryAtom::new("core").unwrap(), upstream)]);
         let config = SirnoConfig {
@@ -1673,6 +1757,7 @@ delimiters = []
         assert!(source.contains(
             "# Git-backed upstream lake crystallized into a glacier under this entry domain."
         ));
+        assert!(source.contains("# Optional manifest selects the upstream project config file."));
         assert!(
             source.contains(
                 "# Optional mist selects the imported portion from the upstream project."
@@ -1681,6 +1766,7 @@ delimiters = []
         assert!(source.contains("git = \"https://example.invalid/core.git\""));
         assert!(source.contains("branch = \"main\""));
         assert!(source.contains("project = \"packages/core\""));
+        assert!(source.contains("manifest = \"config/Core.toml\""));
         assert!(source.contains("mist = \"public\""));
         assert!(source.contains("# Repository files, directories, or globs"));
         assert!(source.contains("# Witness delimiter regex pairs"));

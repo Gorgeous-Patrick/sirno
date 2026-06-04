@@ -44,8 +44,11 @@ Path selection follows three rules:
 It is an explicit local name with no default derived from `SOURCE`.
 Each upstream has `git = "SOURCE"` and exactly one of `branch`, `tag`, or `rev`.
 `SOURCE` is a remote Git URL or local Git repository source accepted by Git.
-`project` optionally names the directory inside the Git tree that contains `Sirno.toml`;
+`project` optionally names the upstream project root inside the Git tree;
 it defaults to `.`.
+`manifest` optionally names the project config manifest relative to `project`;
+it defaults to `Sirno.toml`.
+The manifest path may be nested and may use another filename.
 There is no non-Git path upstream.
 Every declared upstream is included by crystallization.
 The glacier domain shares its reservoir path with implicit local lakelets,

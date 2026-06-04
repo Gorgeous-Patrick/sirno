@@ -43,5 +43,7 @@ Sirno Upstream is the operator-facing feature that produces that local view.
 | `sirno upstream status` | Reports upstream lock, cache, glacier, and drift state. |
 
 `sirno upstream add` accepts exactly one of `--branch NAME`, `--tag NAME`, or `--rev COMMIT`.
-`--project PATH` selects a directory inside the Git tree that contains `Sirno.toml`.
+`--project PATH` selects the upstream project root inside the Git tree.
+`--manifest PATH` selects the project config manifest relative to that root.
+It defaults to `Sirno.toml`.
 `--mist MIST` imports only entries selected by that mist in the upstream project.
