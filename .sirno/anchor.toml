@@ -55,11 +55,10 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.anchor-file]
-fingerprint = "sha256:9aa40435cb80996fa3ec9afdd788de902edba64da6cb5431bcdc0125e7272cda"
+fingerprint = "sha256:758f5220e425f99d7df29b18cef73b89d32b4f1805319a6edfa61648d0b91544"
 belongs = [
     "anchor",
     "control-files",
-    "storage",
 ]
 prerequisite = [
     "anchor",

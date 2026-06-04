@@ -7,7 +7,6 @@ category:
 belongs:
   - anchor
   - control-files
-  - storage
 prerequisite:
   - anchor
   - entry-artifact
