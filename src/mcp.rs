@@ -401,13 +401,13 @@ impl SirnoMcpServer {
     }
     // sirno:witness:mist-commands:end
 
-    // sirno:witness:project-commands:begin
+    // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     #[tool(name = "sirno_status")]
     fn status(&self) -> McpToolResult {
         result(self.context.status())
     }
-    // sirno:witness:project-commands:end
+    // sirno:witness:project-status-commands:end
 
     // sirno:witness:upstream-commands:begin
     /// Add or replace one Git-backed upstream and crystallize it.

@@ -1,6 +1,6 @@
 ---
-name: Anchor Commands
 desc: The command surface for Anchor status, validation, and baseline updates.
+name: Anchor Commands
 category:
   - concept
   - implemented
@@ -11,7 +11,7 @@ prerequisite:
   - cli-interface
   - mcp-interface
 refines:
-  - project-commands
+  - command-families
 ---
 
 Anchor commands operate on the accepted baseline for the current Sirno Lake.

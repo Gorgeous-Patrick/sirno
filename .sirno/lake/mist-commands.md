@@ -1,6 +1,6 @@
 ---
-name: Mist Commands
 desc: The command surface for mist projection status, intake, render, and generated navigation cleanup.
+name: Mist Commands
 category:
   - concept
   - implemented
@@ -11,7 +11,7 @@ prerequisite:
   - cli-interface
   - mcp-interface
 refines:
-  - project-commands
+  - command-families
 ---
 
 Mist commands operate on one mist projection.

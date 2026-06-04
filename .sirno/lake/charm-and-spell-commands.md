@@ -13,6 +13,7 @@ prerequisite:
   - spell-invocation
 refines:
   - extension-system
+  - command-families
 ---
 
 Charm and spell commands separate preparation from invocation.

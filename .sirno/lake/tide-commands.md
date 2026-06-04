@@ -7,6 +7,8 @@ belongs:
   - sirno-tide
 prerequisite:
   - project-config
+refines:
+  - command-families
 ---
 
 Tide commands expose dependency review obligations created by structural changes.

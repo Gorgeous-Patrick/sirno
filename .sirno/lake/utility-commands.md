@@ -7,6 +7,8 @@ belongs:
   - project-config
 prerequisite:
   - project-config
+refines:
+  - command-families
 ---
 
 The `sirno util` command family is the local operator and integration-maintenance surface.

@@ -7,6 +7,8 @@ belongs:
   - entry
 prerequisite:
   - project-config
+refines:
+  - command-families
 ---
 
 Entry commands operate on Markdown entries and their owner-relative artifact trees.

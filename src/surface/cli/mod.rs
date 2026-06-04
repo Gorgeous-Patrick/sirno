@@ -69,7 +69,7 @@ pub struct Cli {
 /// Supported Sirno commands.
 #[derive(Debug, Subcommand)]
 enum Command {
-    // sirno:witness:project-commands:begin
+    // sirno:witness:project-setup-commands:begin
     /// Create a Sirno config, lake, and skill wrappers.
     Init {
         /// Run non-interactively with the selected init parts.
@@ -88,7 +88,7 @@ enum Command {
         #[arg(long = "claude-skills", conflicts_with = "no_skills")]
         claude_skills: bool,
     },
-    // sirno:witness:project-commands:end
+    // sirno:witness:project-setup-commands:end
     /// Move an entry or the lake path.
     #[command(visible_alias = "mv")]
     Move {
@@ -149,11 +149,11 @@ enum Command {
     },
     // sirno:witness:tide-commands:end
     // sirno:witness:cli-interface:begin
-    // sirno:witness:project-commands:begin
+    // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
     Status,
-    // sirno:witness:project-commands:end
+    // sirno:witness:project-status-commands:end
     /// Run an entry operation at the top level.
     #[command(flatten)]
     TopLevelEntry(TopLevelEntryCommand),
@@ -979,7 +979,7 @@ impl Cli {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
         match self.command {
-            // sirno:witness:project-commands:begin
+            // sirno:witness:project-setup-commands:begin
             | Command::Init { all, lake, no_lake, no_skills, claude_skills } => {
                 let request = TopLevelInitRequest {
                     lake,
@@ -993,7 +993,7 @@ impl Cli {
                     run_interactive_top_level_init(request, &config_path, lake_path.as_deref())
                 }
             }
-            // sirno:witness:project-commands:end
+            // sirno:witness:project-setup-commands:end
             | Command::Move { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Entry { command } => command.run(&config_path, lake_path.as_deref()),
             | Command::Lake { command } => command.run(&config_path, lake_path.as_deref()),
@@ -1007,9 +1007,9 @@ impl Cli {
                 command.unwrap_or(TideCommand::Tui).run(&config_path, lake_path.as_deref())
                 // sirno:witness:tide-commands:end
             }
-            // sirno:witness:project-commands:begin
+            // sirno:witness:project-status-commands:begin
             | Command::Status => run_status_command(&config_path, lake_path.as_deref()),
-            // sirno:witness:project-commands:end
+            // sirno:witness:project-status-commands:end
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelMist(command) => command.run(&config_path, lake_path.as_deref()),
@@ -1028,7 +1028,7 @@ impl MoveCommand {
     }
 }
 
-// sirno:witness:project-commands:begin
+// sirno:witness:project-setup-commands:begin
 #[derive(Debug)]
 struct TopLevelInitRequest {
     lake: Option<PathBuf>,
@@ -1036,7 +1036,7 @@ struct TopLevelInitRequest {
     init_skills: bool,
     init_claude_skills: bool,
 }
-// sirno:witness:project-commands:end
+// sirno:witness:project-setup-commands:end
 
 #[derive(Clone, Copy, Debug)]
 enum PromptDefault {
@@ -1095,7 +1095,7 @@ fn run_prompted_top_level_init<R: BufRead, W: Write>(
     )
 }
 
-// sirno:witness:project-commands:begin
+// sirno:witness:project-setup-commands:begin
 fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
     mut request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>, input: &mut R,
     output: &mut W, style: OutputStyle,
@@ -1149,7 +1149,7 @@ fn run_prompted_top_level_init_with_style<R: BufRead, W: Write>(
 
     run_top_level_init(request, config_path, lake_path)
 }
-// sirno:witness:project-commands:end
+// sirno:witness:project-setup-commands:end
 
 fn prompt_yes_no<R: BufRead, W: Write>(
     input: &mut R, output: &mut W, question: &str, default: PromptDefault, style: OutputStyle,
@@ -1242,7 +1242,7 @@ fn planned_lake_path(
         .unwrap_or_else(|| default_lake_path(config_path))
 }
 
-// sirno:witness:project-commands:begin
+// sirno:witness:project-setup-commands:begin
 fn run_top_level_init(
     request: TopLevelInitRequest, config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
@@ -1260,7 +1260,7 @@ fn run_top_level_init(
     }
     Ok(ExitCode::SUCCESS)
 }
-// sirno:witness:project-commands:end
+// sirno:witness:project-setup-commands:end
 
 fn run_lake_init(
     lake: Option<PathBuf>, config_path: &Path, lake_path: Option<&Path>,
@@ -1522,11 +1522,11 @@ impl MistRenderArgs {
 fn run_status_command(
     config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
-    // sirno:witness:project-commands:begin
+    // sirno:witness:project-status-commands:begin
     let result = SurfaceContext::from_cli_paths(config_path, lake_path).status()?;
     print_status_result(&result);
     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
-    // sirno:witness:project-commands:end
+    // sirno:witness:project-status-commands:end
 }
 
 // sirno:witness:upstream-commands:begin

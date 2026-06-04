@@ -1547,6 +1547,7 @@ impl SurfaceContext {
     }
     // sirno:witness:anchor-commands:end
 
+    // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     pub fn status(&self) -> Result<StatusResult, CommandError> {
         let (lake, settings) =
@@ -1595,6 +1596,7 @@ impl SurfaceContext {
             check,
         })
     }
+    // sirno:witness:project-status-commands:end
 
     /// Resolve tide workitems.
     pub fn tide_resolve(

@@ -1,6 +1,6 @@
 ---
-name: Lake Commands
 desc: The command surface for initializing, checking, and moving a Sirno Lake.
+name: Lake Commands
 category:
   - concept
   - implemented
@@ -11,7 +11,7 @@ prerequisite:
   - project-config
   - cli-interface
 refines:
-  - project-commands
+  - command-families
 ---
 
 Lake commands operate on the configured Sirno Lake as a project surface.

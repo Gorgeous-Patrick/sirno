@@ -1,6 +1,6 @@
 ---
-name: Upstream Commands
 desc: The command surface for declaring, crystallizing, updating, and inspecting upstream lakes.
+name: Upstream Commands
 category:
   - concept
   - implemented
@@ -12,7 +12,7 @@ prerequisite:
   - cli-interface
   - mcp-interface
 refines:
-  - project-commands
+  - command-families
 ---
 
 Upstream commands operate on Sirno Upstream as the dependency surface.
