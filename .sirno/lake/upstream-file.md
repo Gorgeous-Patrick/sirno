@@ -5,6 +5,7 @@ category:
   - concept
   - implemented
 belongs:
+  - control-files
   - upstream-lake
 prerequisite:
   - upstream-lake

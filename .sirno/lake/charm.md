@@ -3,7 +3,7 @@ name: Charm
 desc: An entry-owned artifact bundle that can resolve into a spell.
 category:
   - concept
-  - proposal
+  - implemented
 belongs:
   - extension-system
   - entry-artifact
@@ -30,4 +30,5 @@ Charm commands interpret those bytes for setup, check, build, and cache maintena
 A direct charm resolves an artifact script or executable into a spell.
 A source charm builds a spell into Sirno cache state.
 The charm remains the reviewed lake object.
-The spell is the runtime object invoked by hooks.
+The spell is the runtime object invoked by direct commands today
+and by hooks after the hook design is accepted.

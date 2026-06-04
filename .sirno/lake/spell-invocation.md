@@ -1,6 +1,6 @@
 ---
 name: Spell Invocation
-desc: The process execution contract for running spells from hooks.
+desc: The proposed hook execution contract for resolved spells.
 category:
   - concept
   - proposal
@@ -13,7 +13,10 @@ refines:
   - extension-system
 ---
 
-*Spell invocation* runs a resolved spell for a hook or direct operator request.
+*Spell invocation* is the hook execution contract for a resolved spell.
+
+Direct operator execution already runs resolved spells through `sirno spell run`.
+This entry owns the remaining hook contract around the same runtime object.
 
 A hook invocation supplies an event envelope to the spell.
 The envelope contains the hook id, project root, lake root, Sirno version,

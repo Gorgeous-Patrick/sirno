@@ -6,6 +6,7 @@ category:
   - implemented
 belongs:
   - anchor
+  - control-files
   - storage
 prerequisite:
   - anchor

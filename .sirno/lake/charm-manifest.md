@@ -3,7 +3,7 @@ name: Charm Manifest
 desc: The Sirno.charm.toml file that declares how a charm resolves into a spell.
 category:
   - concept
-  - proposal
+  - implemented
 belongs:
   - extension-system
   - entry-artifact
@@ -22,7 +22,7 @@ It records command shapes as argv vectors.
 Sirno should not pass manifest commands through a shell.
 Shell scripts remain supported by making the shell or interpreter the first argv element.
 
-The manifest should contain these concepts:
+The manifest contains these concepts:
 
 | Field | Meaning |
 |---|---|
@@ -37,3 +37,4 @@ The manifest should contain these concepts:
 The manifest makes a charm discoverable.
 It does not make the charm executable project policy.
 Project configuration owns enablement.
+`hooks` and `inputs` are parsed manifest data reserved for later hook payload work.

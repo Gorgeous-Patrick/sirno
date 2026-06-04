@@ -31,8 +31,8 @@ Reserved areas are:
 - Lake dependency management should refine *entry domain* resolution,
   symlink materialization,
   and upstream version selection without making entry names carry all dependency policy.
-- `extension-system` proposes charms that resolve into spells invoked from Sirno hook points.
-  Hook entries still need trigger points, payloads, result contracts, and failure policy.
+- `spell-invocation` reserves hook-driven spell invocation.
+  Hook entries still need trigger points, payloads, result contracts, ordering, and failure policy.
 - Future editing interfaces may provide a direct GUI or Obsidian-style experience.
   They should preserve existing ownership rules:
   metadata is structural,

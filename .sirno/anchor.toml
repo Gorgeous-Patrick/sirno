@@ -55,9 +55,10 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.anchor-file]
-fingerprint = "sha256:6cab799c83f7e3d743abe70e7cd479a08da81276b1e46de100de72ad85e82f34"
+fingerprint = "sha256:9aa40435cb80996fa3ec9afdd788de902edba64da6cb5431bcdc0125e7272cda"
 belongs = [
     "anchor",
+    "control-files",
     "storage",
 ]
 prerequisite = [
@@ -82,7 +83,7 @@ belongs = ["structural"]
 prerequisite = ["structural"]
 
 [entries.charm]
-fingerprint = "sha256:e4354088879d419913a9aeb20033e69da6246a456d75d4d0ff92d3972a375c6c"
+fingerprint = "sha256:064ee1391fab0309ba88e72b4dd2863abf60257981c1f16bc336a3c40d77fac6"
 belongs = [
     "extension-system",
     "entry-artifact",
@@ -123,7 +124,7 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.charm-manifest]
-fingerprint = "sha256:31584e9ecfb11bf86397a0e2a2ca66e3e9fed6cb3d6f89885405d6fb3d5b1f21"
+fingerprint = "sha256:07fb9213132c97aab0ce261fa95879491e0f2b2c1fed513cbb9c5d2a8b53967a"
 belongs = [
     "extension-system",
     "entry-artifact",
@@ -293,16 +294,12 @@ prerequisite = [
 ]
 
 [entries.extension-system]
-fingerprint = "sha256:3c86e40262aad2c926b19d4006c18103b6fd5d7263f0fabecb689b4871065c88"
-belongs = [
-    "future-work",
-    "entry-artifact",
-]
+fingerprint = "sha256:06291f661aad00609303c6301dd84f6b108d3b7b690aa64cd6750f9b97af3bcf"
+belongs = ["entry-artifact"]
 prerequisite = [
     "entry-artifact",
     "project-config",
 ]
-refines = ["future-work"]
 
 [entries.finalization-discipline]
 fingerprint = "sha256:93c665170744dfeeafaf851795da7d6a2cd90e220a6d00d756fd8483c0c2e092"
@@ -322,7 +319,7 @@ belongs = ["sirno"]
 prerequisite = ["sirno"]
 
 [entries.future-work]
-fingerprint = "sha256:6e6841790990a352bdc7ae8d19f44213cd8d30b0d6bed03d391112ffb53c59b9"
+fingerprint = "sha256:84dc3dacfc9320624b65ba325feacea1a62193e8f46e1b4a1f461dd8845df1e8"
 belongs = ["sirno"]
 prerequisite = ["sirno"]
 
@@ -767,13 +764,13 @@ prerequisite = ["concept-driven-development"]
 refines = ["concept-driven-development"]
 
 [entries.spell]
-fingerprint = "sha256:86e7ec6d4b868de4dff986bbf0179170a0895e9aa64040465a73b7be710e77ea"
+fingerprint = "sha256:4d9c0cf1213c70141065b2b01f2199626ad0ea839c31706e1026c57dd98f33a7"
 belongs = ["extension-system"]
 prerequisite = ["charm"]
 refines = ["extension-system"]
 
 [entries.spell-invocation]
-fingerprint = "sha256:178bea2e8bd1f472021256096f5dc7e0af8006c23f00e0aa7335f61d079b4e65"
+fingerprint = "sha256:607b575936ebd4a28aaff93741c0c13bc6af60b5ef8df1cf673b97b4a5c8eee0"
 belongs = ["extension-system"]
 prerequisite = [
     "spell",
@@ -895,8 +892,11 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.upstream-file]
-fingerprint = "sha256:31dfb12504f0a22dfe1db3e25eb8da1a3a21c205419afcfa1fe02dde329cd550"
-belongs = ["upstream-lake"]
+fingerprint = "sha256:301780e203741c8e700c57a5bde4614dcd8cecafb5635183f19456b02318fff6"
+belongs = [
+    "control-files",
+    "upstream-lake",
+]
 prerequisite = ["upstream-lake"]
 refines = ["versioning"]
 

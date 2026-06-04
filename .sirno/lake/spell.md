@@ -3,7 +3,7 @@ name: Spell
 desc: A ready-to-run script or executable resolved from a charm.
 category:
   - concept
-  - proposal
+  - implemented
 belongs:
   - extension-system
 prerequisite:
@@ -18,7 +18,8 @@ A spell may be a direct artifact in the charm tree.
 It may also be a build output written to Sirno cache state.
 In either case,
 the spell is the runtime object.
-Hooks and direct operator commands invoke spells.
+Direct operator commands invoke spells today.
+Hooks should invoke spells after the hook design is accepted.
 
 A spell does not own design intent.
 The charm entry owns that intent,
