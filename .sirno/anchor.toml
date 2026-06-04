@@ -165,14 +165,9 @@ prerequisite = ["concept"]
 refines = ["documentation-driven-development"]
 
 [entries.control-files]
-fingerprint = "sha256:bcfcfcd6ada927ee126fcae457d1a7ee5131626313c7fd3b00d6eb7564b58b27"
+fingerprint = "sha256:a488a4473c874fad0f36655af9f4911efff1916a563e62c62fe5fdada872df8b"
 belongs = ["project-config"]
-prerequisite = [
-    "project-config",
-    "anchor-file",
-    "upstream-file",
-    "tide-resolution",
-]
+prerequisite = ["project-config"]
 refines = ["project-config"]
 
 [entries.crystallization]
