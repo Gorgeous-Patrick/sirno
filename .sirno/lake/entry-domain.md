@@ -1,6 +1,6 @@
 ---
-name: Entry Domain
 desc: A non-final entry-address atom used as a namespace prefix.
+name: Entry Domain
 category:
   - concept
 belongs:
@@ -8,7 +8,7 @@ belongs:
   - lake-namespace
 prerequisite:
   - entry-atom
-  - sirno-lake
+  - lake
 ---
 
 An *entry domain* is a non-final *entry atom* used as an address prefix.

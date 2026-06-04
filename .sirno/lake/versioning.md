@@ -1,15 +1,15 @@
 ---
-name: Versioning
 desc: Git history and Anchor accepted baselines for Sirno Lake changes.
+name: Versioning
 category:
   - concept
   - implemented
 belongs:
   - lake-review
-  - sirno-anchor
+  - anchor
 prerequisite:
   - storage
-  - sirno-anchor
+  - anchor
 ---
 
 Sirno delegates repository history to Git.

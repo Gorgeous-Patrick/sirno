@@ -1,11 +1,11 @@
 ---
-name: Upstream Lake
 desc: A Git-backed Sirno project declared by the current project.
+name: Upstream Lake
 category:
   - concept
 belongs:
   - lake-composition
-  - sirno-upstream
+  - upstream
 prerequisite:
   - project-config
   - upstream-file

@@ -1,6 +1,6 @@
 ---
-name: Sirno Anchor
 desc: The Git-backed accepted baseline for Sirno Lake review.
+name: Anchor
 category:
   - implemented
   - concept
@@ -8,20 +8,20 @@ belongs:
   - lake-review
   - storage
 prerequisite:
-  - sirno-lake
+  - lake
   - project-config
 refines:
   - versioning
 ---
 
-Sirno Anchor is the accepted-baseline subsystem for a Sirno Lake.
+Anchor is the accepted-baseline subsystem for a Sirno Lake.
 
 It records the reviewed Sirno Lake state as tracked semantic fingerprints.
 Git owns history, branching, restore, retention, and destructive history operations.
-Sirno Anchor owns the accepted design baseline
+Anchor owns the accepted design baseline
 and the Tide comparison against that baseline.
 
-Sirno Anchor is intentionally small.
+Anchor is intentionally small.
 It records enough accepted state for comparison,
 then lets Git preserve every historical version of that state.
 It does not store old entry bodies, private snapshots, checkout state, or retention policy.
@@ -41,13 +41,13 @@ This entry owns the accepted-baseline subsystem contract.
 
 ## Related Design Entries
 
-Sirno Anchor is the subsystem boundary.
+Anchor is the subsystem boundary.
 The detailed storage contracts live in smaller entries.
 These related entries are the review route through those contracts:
 
 - *Anchor File* defines `.sirno/anchor.toml` and fingerprint semantics.
-- *Sirno Control Files* defines `.sirno/` placement, target file ownership, and merge validity.
-- *Sirno Tide* defines how Anchor differences become review work.
+- *Control Files* defines `.sirno/` placement, target file ownership, and merge validity.
+- *Tide* defines how Anchor differences become review work.
 - *Tide Resolution* and *Tide Review File* define persisted review state.
 - *Upstream File* defines upstream dependency pins.
 - *Versioning* defines the boundary between Git history and Sirno accepted baselines.
@@ -75,7 +75,7 @@ and tracked upstream dependency `.sirno/upstream.toml`.
 
 ## Excluded Snapshot Responsibilities
 
-Sirno Anchor keeps snapshot responsibilities out of Sirno:
+Anchor keeps snapshot responsibilities out of Sirno:
 
 - private snapshot storage;
 - snapshot commits;

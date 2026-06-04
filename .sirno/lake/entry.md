@@ -1,12 +1,12 @@
 ---
-name: Entry
 desc: A named Markdown document in the Sirno Lake.
+name: Entry
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 prerequisite:
-  - sirno-lake
+  - lake
 ---
 
 An *entry* is a Markdown file in the Sirno Lake.

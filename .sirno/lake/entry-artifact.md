@@ -1,16 +1,16 @@
 ---
-name: Entry Artifact
 desc: A lake-owned file attached to one entry and tracked with the lake.
+name: Entry Artifact
 category:
   - concept
   - implemented
 belongs:
   - entry
-  - sirno-anchor
+  - anchor
   - storage
 prerequisite:
   - entry
-  - sirno-anchor
+  - anchor
 ---
 
 An *entry artifact* is a lake-owned file attached to one *entry*.

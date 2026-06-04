@@ -1,16 +1,16 @@
 ---
-name: Tide Review File
 desc: The tracked TOML file for active Tide resolution state.
+name: Tide Review File
 category:
   - concept
   - implemented
 belongs:
   - tide
-  - sirno-control-files
+  - control-files
 prerequisite:
   - tide-resolution
   - anchor-file
-  - sirno-control-files
+  - control-files
 ---
 
 The Tide review file is `.sirno/tide.toml`.

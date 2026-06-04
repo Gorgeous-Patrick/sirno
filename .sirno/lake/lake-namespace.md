@@ -1,13 +1,13 @@
 ---
-name: Lake Namespace
 desc: The domain and lakelet model for namespaced Sirno Lake entries.
+name: Lake Namespace
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
   - lake-composition
 prerequisite:
-  - sirno-lake
+  - lake
   - entry-address-resolution
 ---
 

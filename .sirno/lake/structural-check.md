@@ -1,6 +1,6 @@
 ---
-name: Structural Link Check
 desc: Validation of entry shape, structural link targets, footers, and witnesses.
+name: Structural Link Check
 category:
   - concept
 belongs:
@@ -8,7 +8,7 @@ belongs:
 prerequisite:
   - metadata
   - generated-footer
-  - sirno-witness
+  - witness
 ---
 
 Sirno checks structure.

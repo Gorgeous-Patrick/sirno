@@ -5,9 +5,9 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-anchor
+  - anchor
 prerequisite:
-  - sirno-anchor
+  - anchor
   - cli-interface
   - mcp-interface
 refines:
@@ -39,8 +39,8 @@ The first update initializes Anchor from the current lake.
 Later updates require a clear Tide.
 
 `anchor-commands` owns Anchor command spelling and behavior.
-`sirno-anchor` owns the accepted-baseline subsystem.
-`sirno-tide` owns review obligations created from Anchor differences.
+`anchor` owns the accepted-baseline subsystem.
+`tide` owns review obligations created from Anchor differences.
 
 The *repository witnesses* for this entry should show CLI and MCP command dispatch
 and the shared surface-context operations that perform Anchor work.

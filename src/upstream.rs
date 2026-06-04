@@ -1,9 +1,9 @@
-// sirno:witness:sirno-upstream:begin
+// sirno:witness:upstream:begin
 //! Upstream lake resolution and crystallization.
 //!
 //! Upstream lakes are Git-backed Sirno projects declared by the current project.
 //! Crystallization materializes each upstream lake into a managed glacier.
-// sirno:witness:sirno-upstream:end
+// sirno:witness:upstream:end
 
 use std::collections::BTreeSet;
 use std::ffi::{OsStr, OsString};

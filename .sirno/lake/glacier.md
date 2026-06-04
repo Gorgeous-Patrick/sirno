@@ -1,12 +1,12 @@
 ---
-name: Glacier
 desc: A managed lakelet formed by crystallizing an upstream lake.
+name: Glacier
 category:
   - concept
 belongs:
   - lake-composition
   - lake-namespace
-  - sirno-upstream
+  - upstream
 prerequisite:
   - upstream-lake
   - lakelet

@@ -1,5 +1,5 @@
 ---
-name: Sirno Upstream
+name: Upstream
 desc: The subsystem for Git-backed upstream lakes and crystallization.
 category:
   - concept
@@ -11,7 +11,7 @@ prerequisite:
   - lake-namespace
 ---
 
-*Sirno Upstream* is the subsystem for declaring Git-backed upstream lakes,
+Upstream is the subsystem for declaring Git-backed upstream lakes,
 locking them to exact Git commits,
 and crystallizing them into glaciers in the current lake.
 
@@ -29,7 +29,7 @@ It shares its lake path with implicit local lakelets,
 so an unmanaged local folder blocks crystallization for the same domain.
 
 A lake sheaf remains the composition model for the resolved addressable view.
-Sirno Upstream is the operator-facing feature that produces that local view.
+Upstream is the operator-facing feature that produces that local view.
 
 ## Command Surface
 

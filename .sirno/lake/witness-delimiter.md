@@ -1,12 +1,12 @@
 ---
-name: Witness Delimiter
 desc: The configured begin/end regex pair that marks a witness block by entry address.
+name: Witness Delimiter
 category:
   - concept
 belongs:
-  - sirno-witness
+  - witness
 prerequisite:
-  - sirno-witness
+  - witness
 ---
 
 A *witness delimiter* is a configured regex pair that marks a block.

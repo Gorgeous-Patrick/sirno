@@ -1,6 +1,6 @@
 ---
 name: Tide Workitem
-desc: One dependency review obligation in a Sirno Tide.
+desc: One dependency review obligation in the Tide worklist.
 category:
   - concept
   - implemented

@@ -1,6 +1,6 @@
 ---
-name: Reservoir
 desc: The canonical tracked lake store kept under .sirno/lake.
+name: Reservoir
 category:
   - concept
   - implemented
@@ -8,9 +8,9 @@ belongs:
   - storage
 prerequisite:
   - storage
-  - sirno-lake
+  - lake
 refines:
-  - sirno-lake
+  - lake
 ---
 
 A *reservoir* is the canonical Sirno Lake storage surface.

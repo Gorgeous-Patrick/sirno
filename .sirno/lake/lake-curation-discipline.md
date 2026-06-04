@@ -1,6 +1,6 @@
 ---
-name: Lake Curation Discipline
 desc: The agent procedure for auditing and curating an existing Sirno-managed lake.
+name: Lake Curation Discipline
 category:
   - meta
 belongs:
@@ -10,7 +10,7 @@ prerequisite:
   - portable-agent-skill-language
   - methodology
   - semantic-locality
-  - sirno-witness
+  - witness
 ---
 
 Lake curation maintains the coherence of an existing Sirno-managed lake.

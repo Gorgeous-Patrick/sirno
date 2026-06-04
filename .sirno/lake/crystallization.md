@@ -1,10 +1,10 @@
 ---
-name: Crystallization
 desc: The operation that materializes upstream lakes as glaciers.
+name: Crystallization
 category:
   - concept
 belongs:
-  - sirno-upstream
+  - upstream
 prerequisite:
   - upstream-lake
   - entry-freeze

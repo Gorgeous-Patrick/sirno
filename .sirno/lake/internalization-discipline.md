@@ -1,6 +1,6 @@
 ---
-name: Internalization Discipline
 desc: The agent procedure for recording durable design facts from repository material into the lake.
+name: Internalization Discipline
 category:
   - meta
 belongs:
@@ -11,7 +11,7 @@ prerequisite:
   - methodology
   - semantic-locality
   - internalize
-  - sirno-witness
+  - witness
 refines:
   - internalize
 ---

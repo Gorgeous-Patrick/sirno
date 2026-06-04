@@ -4,7 +4,7 @@ desc: Commands and MCP tools for dependency review workitems.
 category:
   - concept
 belongs:
-  - sirno-tide
+  - tide
 prerequisite:
   - project-config
 refines:

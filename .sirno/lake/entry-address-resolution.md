@@ -1,13 +1,13 @@
 ---
-name: Entry Address Resolution
 desc: The lookup rule that resolves entry addresses into entries.
+name: Entry Address Resolution
 category:
   - concept
 belongs:
   - entry
 prerequisite:
   - entry
-  - sirno-lake
+  - lake
 ---
 
 *Entry address resolution* is the lookup rule that turns an *entry address* into an *entry*.

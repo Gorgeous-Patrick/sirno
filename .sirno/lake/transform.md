@@ -1,12 +1,12 @@
 ---
-name: Transform
 desc: The concept and review neighborhood for movement between Sirno forms.
+name: Transform
 category:
   - concept
 belongs:
   - form
 prerequisite:
-  - sirno-lake
+  - lake
   - repo
 ---
 

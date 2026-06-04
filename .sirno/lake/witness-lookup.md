@@ -1,10 +1,10 @@
 ---
-name: Witness Lookup
 desc: The mosaika-backed scan that resolves witness blocks by entry address.
+name: Witness Lookup
 category:
   - concept
 belongs:
-  - sirno-witness
+  - witness
 prerequisite:
   - witness-delimiter
   - project-config

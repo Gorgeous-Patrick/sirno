@@ -16,7 +16,7 @@ Structural link policy separates relation registration, projection, and review.
 |---|---|---|
 | relation entry | `meta.type: "structural"` | Relation registration. |
 | mist spec | `[render.structural]` lists | Generated navigation in that mist. |
-| relation entry | `meta.ripple.lake` and `meta.ripple.anchor` lists | Sirno Tide review obligations. |
+| relation entry | `meta.ripple.lake` and `meta.ripple.anchor` lists | Tide review obligations. |
 
 The relation entry declares `meta.type: "structural"`.
 Its entry address is the metadata field name for the relation.

@@ -4,9 +4,9 @@ name: Lake Projection
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 prerequisite:
-  - sirno-lake
+  - lake
   - reservoir
 ---
 

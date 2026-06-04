@@ -1,6 +1,6 @@
 ---
-name: Project Status Commands
 desc: The command surface for summarizing the current Sirno project state.
+name: Project Status Commands
 category:
   - concept
   - implemented
@@ -10,8 +10,8 @@ prerequisite:
   - project-config
   - cli-interface
   - mcp-interface
-  - sirno-lake
-  - sirno-tide
+  - lake
+  - tide
   - mist
 refines:
   - command-families
@@ -42,7 +42,7 @@ MCP status returns typed structural link policy, Tide state, and mist projection
 
 `project-status-commands` owns project status command spelling and behavior.
 `project-config` owns project configuration.
-`sirno-lake`, `sirno-tide`, and `mist` own the status domains being summarized.
+`lake`, `tide`, and `mist` own the status domains being summarized.
 
 The *repository witnesses* for this entry should show CLI and MCP status dispatch
 and the shared surface-context operation that assembles status data.

@@ -5,9 +5,9 @@ category:
   - concept
   - implemented
 belongs:
-  - sirno-upstream
+  - upstream
 prerequisite:
-  - sirno-upstream
+  - upstream
   - project-config
   - cli-interface
   - mcp-interface
@@ -15,7 +15,7 @@ refines:
   - command-families
 ---
 
-Upstream commands operate on Sirno Upstream as the dependency surface.
+Upstream commands operate on Upstream as the dependency surface.
 They declare upstream lakes,
 crystallize them into glaciers,
 refresh lock state,
@@ -44,7 +44,7 @@ It defaults to `Sirno.toml`.
 `--mist MIST` imports only entries selected by that mist in the upstream project.
 
 `upstream-commands` owns upstream command spelling and behavior.
-`sirno-upstream` owns the subsystem and dependency model.
+`upstream` owns the subsystem and dependency model.
 `upstream-file`, `crystallization`, and `glacier` own storage and composition details.
 
 The *repository witnesses* for this entry should show CLI and MCP command dispatch,

@@ -44,7 +44,7 @@ pub type AnchorEntryMap = IndexMap<String, AnchorEntry>;
 /// Accepted lake baseline stored in `.sirno/anchor.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-// sirno:witness:sirno-anchor:begin
+// sirno:witness:anchor:begin
 pub struct AnchorFile {
     /// Anchor schema version.
     pub schema: u32,
@@ -54,7 +54,7 @@ pub struct AnchorFile {
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub entries: AnchorEntryMap,
 }
-// sirno:witness:sirno-anchor:end
+// sirno:witness:anchor:end
 
 /// Accepted state for one live entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

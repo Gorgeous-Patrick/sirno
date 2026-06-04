@@ -1,14 +1,14 @@
 ---
-name: Anchor File
 desc: The tracked TOML file that records the accepted lake baseline.
+name: Anchor File
 category:
   - concept
   - implemented
 belongs:
-  - sirno-anchor
+  - anchor
   - storage
 prerequisite:
-  - sirno-anchor
+  - anchor
   - entry-artifact
   - structural-edge-policy
 ---
@@ -24,7 +24,7 @@ lake = "sirno-lake"
 [entries.methodology]
 fingerprint = "sha256:..."
 belongs = ["narrative"]
-prerequisite = ["introduction", "sirno-witness"]
+prerequisite = ["introduction", "witness"]
 
 [entries.entry-with-artifacts]
 fingerprint = "sha256:..."

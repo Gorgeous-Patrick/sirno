@@ -1,12 +1,12 @@
 ---
-name: Lake Sheaf
 desc: A resolved view that glues multiple lakes into one addressable entry surface.
+name: Lake Sheaf
 category:
   - concept
 belongs:
   - lake-composition
   - lake-namespace
-  - sirno-upstream
+  - upstream
 prerequisite:
   - lake-namespace
   - entry-address

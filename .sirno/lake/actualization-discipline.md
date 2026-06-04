@@ -1,6 +1,6 @@
 ---
-name: Actualization Discipline
 desc: The agent procedure for shaping repository material from the configured lake.
+name: Actualization Discipline
 category:
   - meta
 belongs:
@@ -11,7 +11,7 @@ prerequisite:
   - methodology
   - semantic-locality
   - actualize
-  - sirno-witness
+  - witness
   - project-config
 refines:
   - actualize

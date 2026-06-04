@@ -1,6 +1,6 @@
 ---
-name: Methodology
 desc: A working guide for acting inside the Sirno Lake.
+name: Methodology
 category:
   - concept
   - narrative
@@ -10,7 +10,7 @@ prerequisite:
   - introduction
   - concept-driven-development
   - transform
-  - sirno-witness
+  - witness
 ---
 
 Sirno is a method for keeping design and implementation in conversation.

@@ -1,13 +1,13 @@
 ---
-name: Ripple
 desc: The named delta between two lake states.
+name: Ripple
 category:
   - concept
   - implemented
 belongs:
-  - sirno-tide
+  - tide
 prerequisite:
-  - sirno-anchor
+  - anchor
 ---
 
 A *ripple* is the named delta between Anchor and the waterline.

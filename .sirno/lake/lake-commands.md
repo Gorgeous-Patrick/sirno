@@ -7,7 +7,7 @@ category:
 belongs:
   - command-families
 prerequisite:
-  - sirno-lake
+  - lake
   - project-config
   - cli-interface
 refines:
@@ -40,7 +40,7 @@ When the destination is inside the moved path,
 Sirno stages the directory through a temporary sibling before placing it at the requested path.
 
 `lake-commands` owns lake command spelling and behavior.
-`sirno-lake` owns the conceptual entry set.
+`lake` owns the conceptual entry set.
 `reservoir` owns canonical storage.
 `mist` owns projection commands.
 

@@ -4,19 +4,19 @@ name: Lake Review
 category:
   - concept
 belongs:
-  - sirno-lake
+  - lake
 prerequisite:
-  - sirno-lake
+  - lake
   - structural-check
-  - sirno-anchor
+  - anchor
 ---
 
 Lake review is the review neighborhood for treating a reservoir waterline as coherent.
 
 It gathers the entries that decide whether the lake is ready to accept as a baseline:
 `structural-check` validates entry shape and structural references,
-`sirno-anchor` records the accepted baseline,
-`sirno-tide` reviews ripples against that baseline,
+`anchor` records the accepted baseline,
+`tide` reviews ripples against that baseline,
 and `versioning` explains how Git and Anchor move together.
 
 The review neighborhood owns the route through checks and baselines.

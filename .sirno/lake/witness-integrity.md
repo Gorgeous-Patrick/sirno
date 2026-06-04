@@ -1,10 +1,10 @@
 ---
-name: Witness Integrity
 desc: The check-time failures for mismatched, orphan, or invalid witness delimiters.
+name: Witness Integrity
 category:
   - concept
 belongs:
-  - sirno-witness
+  - witness
 prerequisite:
   - witness-lookup
 ---

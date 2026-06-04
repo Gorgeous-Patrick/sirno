@@ -315,7 +315,7 @@ impl WitnessIndex {
 /// `opening` and `closing` identify the delimiter spans.
 // sirno:witness:witness-lookup:begin
 #[derive(Clone, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-witness:begin
+// sirno:witness:witness:begin
 pub struct WitnessRecord {
     /// Entry address captured from `sirno:witness:<entry-address>:begin`.
     pub entry: EntryAddress,
@@ -332,7 +332,7 @@ pub struct WitnessRecord {
     /// Full witness block body emitted by `mosaika`.
     pub body: String,
 }
-// sirno:witness:sirno-witness:end
+// sirno:witness:witness:end
 // sirno:witness:witness-lookup:end
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -418,7 +418,7 @@ impl WitnessDelimiterKey {
 /// Invariant: line and column values are one-based.
 /// End columns point after the matched span.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-// sirno:witness:sirno-witness:begin
+// sirno:witness:witness:begin
 pub struct WitnessSpan {
     /// One-based starting line.
     pub start_line: usize,
@@ -429,7 +429,7 @@ pub struct WitnessSpan {
     /// One-based column after the span.
     pub end_column: usize,
 }
-// sirno:witness:sirno-witness:end
+// sirno:witness:witness:end
 
 impl From<&SourceSpan> for WitnessSpan {
     fn from(span: &SourceSpan) -> Self {

@@ -1,6 +1,6 @@
 ---
-name: Misty Lake
 desc: A projected, editable lake workspace rendered by a mist.
+name: Misty Lake
 category:
   - concept
   - implemented
@@ -12,7 +12,7 @@ prerequisite:
   - reservoir
   - mist
 refines:
-  - sirno-lake
+  - lake
 ---
 
 A *misty lake* is a materialized projection of reservoir entries.

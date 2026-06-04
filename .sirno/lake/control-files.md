@@ -1,5 +1,5 @@
 ---
-name: Sirno Control Files
+name: Control Files
 desc: The Sirno-owned TOML files stored under .sirno.
 category:
   - concept
@@ -16,7 +16,7 @@ refines:
   - storage
 ---
 
-Sirno control files are TOML files under `.sirno/` next to `Sirno.toml`.
+Control files are Sirno-owned TOML files under `.sirno/` next to `Sirno.toml`.
 They store generated or semi-generated project state.
 
 `Sirno.toml` stays at the repository root because it marks the project

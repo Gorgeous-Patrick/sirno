@@ -1,6 +1,6 @@
 ---
-name: Local Lakelet
 desc: A project-owned editable lakelet.
+name: Local Lakelet
 category:
   - concept
 belongs:
@@ -8,7 +8,7 @@ belongs:
   - lake-namespace
 prerequisite:
   - lakelet
-  - sirno-anchor
+  - anchor
 ---
 
 A *local lakelet* is a project-managed lakelet.

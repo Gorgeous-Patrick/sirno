@@ -1,6 +1,6 @@
 ---
-name: Charm Enablement
 desc: The local opt-in policy that makes a charm executable project policy.
+name: Charm Enablement
 category:
   - concept
   - implemented
@@ -12,7 +12,7 @@ prerequisite:
   - spell
   - project-config
   - entry-freeze
-  - sirno-anchor
+  - anchor
 refines:
   - extension-system
 ---

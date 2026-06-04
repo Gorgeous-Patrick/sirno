@@ -5,7 +5,7 @@ schema = 1
 lake = ".sirno/lake"
 
 [entries.actualization-discipline]
-fingerprint = "sha256:13a1fedf293f0c700c85320380c900ea6cfd21842146c26e699aa7f34e1aff2c"
+fingerprint = "sha256:3b060ccfbad95b7135bab8ca7e6716e093c91b9308a2c1d716839d9aad2fada0"
 artifact_fingerprint = "sha256:f8c819a54a20c4858ef77720117384295f8627b9357cd186ce802884509c9620"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -14,7 +14,7 @@ prerequisite = [
     "methodology",
     "semantic-locality",
     "actualize",
-    "sirno-witness",
+    "witness",
     "project-config",
 ]
 refines = ["actualize"]
@@ -32,24 +32,36 @@ prerequisite = [
     "semantic-locality",
 ]
 
-[entries.anchor-commands]
-fingerprint = "sha256:0024f1c196203657b030b5a259e3dcde39fa08018d9b1b051dde74786338ecee"
-belongs = ["sirno-anchor"]
+[entries.anchor]
+fingerprint = "sha256:fd414a648bc35e32de4868754f549326641d3bab1ef254b11c43bbb873ea6c3b"
+belongs = [
+    "lake-review",
+    "storage",
+]
 prerequisite = [
-    "sirno-anchor",
+    "lake",
+    "project-config",
+]
+refines = ["versioning"]
+
+[entries.anchor-commands]
+fingerprint = "sha256:bcea7927bcf2499f1bd25dca8bfec8ca948ec26a24a35f927b5814e1873b91f0"
+belongs = ["anchor"]
+prerequisite = [
+    "anchor",
     "cli-interface",
     "mcp-interface",
 ]
 refines = ["command-families"]
 
 [entries.anchor-file]
-fingerprint = "sha256:04f02aee7a2dff402b3bcb6f53fd2aec00ed96f09d31ebca04e79d8237046ac9"
+fingerprint = "sha256:6cab799c83f7e3d743abe70e7cd479a08da81276b1e46de100de72ad85e82f34"
 belongs = [
-    "sirno-anchor",
+    "anchor",
     "storage",
 ]
 prerequisite = [
-    "sirno-anchor",
+    "anchor",
     "entry-artifact",
     "structural-edge-policy",
 ]
@@ -96,7 +108,7 @@ refines = [
 ]
 
 [entries.charm-enablement]
-fingerprint = "sha256:1dccf9ac71ec480221645ea528223da37813e0fd1c854108d38bb837e664b82a"
+fingerprint = "sha256:f346f1a3351995ef708fac19ae60876e3302f152a19c235fe4cc8b749fce25f9"
 belongs = [
     "extension-system",
     "project-config",
@@ -106,7 +118,7 @@ prerequisite = [
     "spell",
     "project-config",
     "entry-freeze",
-    "sirno-anchor",
+    "anchor",
 ]
 refines = ["extension-system"]
 
@@ -155,9 +167,21 @@ belongs = ["development-style"]
 prerequisite = ["concept"]
 refines = ["documentation-driven-development"]
 
+[entries.control-files]
+fingerprint = "sha256:7621b0fe00a2747e68f9e2c53f4930f67c0fd8b92e16b4a0a0949205688c8035"
+belongs = ["storage"]
+prerequisite = [
+    "storage",
+    "project-config",
+    "anchor-file",
+    "upstream-file",
+    "tide-resolution",
+]
+refines = ["storage"]
+
 [entries.crystallization]
-fingerprint = "sha256:71c21fde5d76a9ca956379edbab8a32d053ecc83304c4271441707d00115eae8"
-belongs = ["sirno-upstream"]
+fingerprint = "sha256:ac96f047365770c453766e34a760d37681f930e4a25ee4c4f0a8914c1287fbda"
+belongs = ["upstream"]
 prerequisite = [
     "upstream-lake",
     "entry-freeze",
@@ -200,9 +224,9 @@ prerequisite = [
 ]
 
 [entries.entry]
-fingerprint = "sha256:818caf1f367fabb821638273f0a6c97e6287e32df17624fd10d963b54b562ab6"
-belongs = ["sirno-lake"]
-prerequisite = ["sirno-lake"]
+fingerprint = "sha256:a641f5ff9226916bda545f955248991bb5ac14fd4b149ba7a2d8626efe19fe6b"
+belongs = ["lake"]
+prerequisite = ["lake"]
 
 [entries.entry-address]
 fingerprint = "sha256:dfcd272c45c09e4e1e98c4484b6ac3da89b0a2f8663992783f6f5fff61dfd96f"
@@ -214,23 +238,23 @@ prerequisite = [
 ]
 
 [entries.entry-address-resolution]
-fingerprint = "sha256:43b0f53627d8a458f0ea86be97a2857507687cde791ab0c96343785e0d13b5f5"
+fingerprint = "sha256:fb036ac6dfe3f5a0afd63d17068d9aa654ba3d823b3556aa122d8e37f2735061"
 belongs = ["entry"]
 prerequisite = [
     "entry",
-    "sirno-lake",
+    "lake",
 ]
 
 [entries.entry-artifact]
-fingerprint = "sha256:f645a689dca71569ed6257dd90d7fb4ebc6294a14f2937df416d75df96d2efd5"
+fingerprint = "sha256:ef79e17bf0b049b946849ba74a345be45b09da85c1f9083bfd29c9c95c08d69d"
 belongs = [
     "entry",
-    "sirno-anchor",
+    "anchor",
     "storage",
 ]
 prerequisite = [
     "entry",
-    "sirno-anchor",
+    "anchor",
 ]
 
 [entries.entry-atom]
@@ -245,14 +269,14 @@ prerequisite = ["project-config"]
 refines = ["command-families"]
 
 [entries.entry-domain]
-fingerprint = "sha256:c945cd0c1b6df1c14a4c6ea28bd69adb8fe78e3b067ac59348c20a4ee8d1531a"
+fingerprint = "sha256:cda38e6c56a33021c65713d72bc55db59d9a4b114a738a8680440df718b6cf25"
 belongs = [
     "entry-address-resolution",
     "lake-namespace",
 ]
 prerequisite = [
     "entry-atom",
-    "sirno-lake",
+    "lake",
 ]
 
 [entries.entry-freeze]
@@ -261,11 +285,11 @@ belongs = ["entry"]
 prerequisite = ["entry"]
 
 [entries.entry-lifecycle]
-fingerprint = "sha256:bed3d3e829ee480591e8c421264272a0f00a236775a3a89796360c78632b6c69"
+fingerprint = "sha256:8952e4221cedb07a63990fed2a8f5b84e2e51230bc5cd79c93f0f7c0d430d49d"
 belongs = ["entry"]
 prerequisite = [
     "entry",
-    "sirno-anchor",
+    "anchor",
 ]
 
 [entries.extension-system]
@@ -316,11 +340,11 @@ belongs = [
 prerequisite = ["generated-footer"]
 
 [entries.glacier]
-fingerprint = "sha256:2e19ae45fda84aaeb960a804a8b4643249290c0f3f5e7a58af095bd505ea2b1e"
+fingerprint = "sha256:edcce0562d8b1b71b7709a32575d97aa64f1e60985a6f134385c255fb7362457"
 belongs = [
     "lake-composition",
     "lake-namespace",
-    "sirno-upstream",
+    "upstream",
 ]
 prerequisite = [
     "upstream-lake",
@@ -351,7 +375,7 @@ belongs = ["sirno"]
 prerequisite = ["project-config"]
 
 [entries.internalization-discipline]
-fingerprint = "sha256:e8a3629e922e26af9fb84de82b53e7252e4d522489921e6e54d68ec7579ad702"
+fingerprint = "sha256:cc0123c38cc8848de5d035eee790f0714b1595aa116d3fa2ac5e031c36827efc"
 artifact_fingerprint = "sha256:694ad01df6228e820939b6a2988310276641a509396b6eb0015360a2a6d4f60e"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -360,7 +384,7 @@ prerequisite = [
     "methodology",
     "semantic-locality",
     "internalize",
-    "sirno-witness",
+    "witness",
 ]
 refines = ["internalize"]
 
@@ -378,26 +402,31 @@ prerequisite = ["meta-type"]
 fingerprint = "sha256:5a846c713c9ad507cafe687976c3dd1399aa84760efb3e424567d15745728ca0"
 belongs = ["narrative"]
 
+[entries.lake]
+fingerprint = "sha256:4f2d4766e41c174ad8323fa6e464b50ecba96f9568b674ec433f1080286f2f6b"
+belongs = ["form"]
+prerequisite = ["form"]
+
 [entries.lake-commands]
-fingerprint = "sha256:93ffa77e9162782002d10b8696aaa0881af3e35a2d7b47d0d3c0b968d33568ba"
+fingerprint = "sha256:5b06c813b879d362c58822a5af2305f14cf4330880d2e0969483b969cd81f798"
 belongs = ["command-families"]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "project-config",
     "cli-interface",
 ]
 refines = ["command-families"]
 
 [entries.lake-composition]
-fingerprint = "sha256:6ef6f1d7bf908fdffa175ecd8751265f442646ef8fb8358db96ee79bb9ddd101"
-belongs = ["sirno-lake"]
+fingerprint = "sha256:3ee22fcb1479ee9027677bc0e0231badee95c805b7989d9f145bc6a793613b86"
+belongs = ["lake"]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "lake-namespace",
 ]
 
 [entries.lake-curation-discipline]
-fingerprint = "sha256:1805eccf41ec82597c4e31d66e99b16042aae42c78a5b6d9cd4bb337b6e2775d"
+fingerprint = "sha256:3e7f8444da67f57501b39b264a689da639fae7eb4f5f8bebb06d727967d60d0e"
 artifact_fingerprint = "sha256:27d6de21ab3ec1b4f681c74d2d1286c3ef701a5753d6ffcf0ce6ee7997011315"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -405,43 +434,43 @@ prerequisite = [
     "portable-agent-skill-language",
     "methodology",
     "semantic-locality",
-    "sirno-witness",
+    "witness",
 ]
 
 [entries.lake-namespace]
-fingerprint = "sha256:914babde129027001726ecfb81ef67b5134e492d0077584d3fcd158164b46144"
+fingerprint = "sha256:79702205cd055c30d2c740915ccb5c73bd01c76e6357d66a1a34e910406c1256"
 belongs = [
-    "sirno-lake",
+    "lake",
     "lake-composition",
 ]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "entry-address-resolution",
 ]
 
 [entries.lake-projection]
-fingerprint = "sha256:dee9bad53ff2f2f5433e2c7d4a6ad6b51fc8579033c5214c0c50769bd0901908"
-belongs = ["sirno-lake"]
+fingerprint = "sha256:57d1fe32072edcb07c956f92838ea9863ed1cf79336a396f9a23567e13a63e1e"
+belongs = ["lake"]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "reservoir",
 ]
 
 [entries.lake-review]
-fingerprint = "sha256:67e908b6fc72efcfc95d7cdcbe74ab20f0bfcbd78ce807bb6016697486a97805"
-belongs = ["sirno-lake"]
+fingerprint = "sha256:576bc924cd5cc561701537e0c979e47f52537da0521d13fbd3b72a8694434656"
+belongs = ["lake"]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "structural-check",
-    "sirno-anchor",
+    "anchor",
 ]
 
 [entries.lake-sheaf]
-fingerprint = "sha256:b1e68eed4ff037bc059b49f2f3f7a9ad57e28120f2e929f3ad0efebcca4014d9"
+fingerprint = "sha256:9590bb847bd605b761b64c6816d86340a7249ea315224d345fc761b2ea5372be"
 belongs = [
     "lake-composition",
     "lake-namespace",
-    "sirno-upstream",
+    "upstream",
 ]
 prerequisite = [
     "lake-namespace",
@@ -449,10 +478,10 @@ prerequisite = [
 ]
 
 [entries.lake-system]
-fingerprint = "sha256:fd5852a3a2c5aa2a96f4c19288bc7033bc993239d2163a718449d2aec21fa0b7"
+fingerprint = "sha256:20a20cb9591b4d98942b3d747ed1818421b7659f685d7929bdff98d3e7891238"
 belongs = [
     "lake-composition",
-    "sirno-upstream",
+    "upstream",
 ]
 prerequisite = ["upstream-lake"]
 
@@ -468,14 +497,14 @@ prerequisite = [
 ]
 
 [entries.local-lakelet]
-fingerprint = "sha256:30edf436e2cda9ae6cf2d6080fe728e8eccbf91e5c33515ce09df35484a7761c"
+fingerprint = "sha256:8be83a6eb755338300a3afe0583aef390c09fc3acb8a8758dbec3c0e4f39ad76"
 belongs = [
     "lake-composition",
     "lake-namespace",
 ]
 prerequisite = [
     "lakelet",
-    "sirno-anchor",
+    "anchor",
 ]
 
 [entries.mcp-interface]
@@ -492,10 +521,10 @@ belongs = [
 prerequisite = ["category"]
 
 [entries.meta-registry]
-fingerprint = "sha256:394beb21f188093d7f18c5d689db6c338109d1f989ec223dd8b6eb93928d07aa"
+fingerprint = "sha256:bbc262a69046d9505e5e7ccad9a57150beb7328ea422cc368e35f92d17e2d8d3"
 belongs = [
     "metadata",
-    "sirno-control-files",
+    "control-files",
 ]
 prerequisite = [
     "meta-type",
@@ -514,13 +543,13 @@ belongs = ["entry"]
 prerequisite = ["entry"]
 
 [entries.methodology]
-fingerprint = "sha256:44aed2351f44458b3b8e4c524be451d7a4d9edd9ec7a9cd2661263a9f4ba3acd"
+fingerprint = "sha256:8995076fe8c63c994a4fdc3764caf942022a7fbc4588326b023eaefab164f397"
 belongs = ["narrative"]
 prerequisite = [
     "introduction",
     "concept-driven-development",
     "transform",
-    "sirno-witness",
+    "witness",
 ]
 
 [entries.mist]
@@ -543,7 +572,7 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.misty-lake]
-fingerprint = "sha256:d1a59526afc86469272e459bffdf234ad0e2d57a63f68080cf587a995964350f"
+fingerprint = "sha256:1efe9cb8230314a403d054f509152855c9ec445e009c1781b36b8d1063677b20"
 belongs = [
     "lake-projection",
     "storage",
@@ -553,7 +582,7 @@ prerequisite = [
     "reservoir",
     "mist",
 ]
-refines = ["sirno-lake"]
+refines = ["lake"]
 
 [entries.name]
 fingerprint = "sha256:1af5ba6c878a5db18924bb833575fd990ccee1f327c431fec2ea3e0f95d678e0"
@@ -628,14 +657,14 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.project-status-commands]
-fingerprint = "sha256:9a319eeb12859cfc2ad989521ea7a7bdf268bd7e3aa000dad0424959c81d4301"
+fingerprint = "sha256:61614f41dc559f2d70e696fbcb1b8fcb7386ce984fe9f0ac52d6d99b6379990a"
 belongs = ["project-config"]
 prerequisite = [
     "project-config",
     "cli-interface",
     "mcp-interface",
-    "sirno-lake",
-    "sirno-tide",
+    "lake",
+    "tide",
     "mist",
 ]
 refines = ["command-families"]
@@ -680,7 +709,7 @@ belongs = ["form"]
 prerequisite = ["form"]
 
 [entries.repository-editing-discipline]
-fingerprint = "sha256:8cb7cdd30a3f907d630ba9f753e220b629062eac094ee853cf70963fbacc5207"
+fingerprint = "sha256:256d4910b35c07c5df6211a464e21d1e6a106977b2fab63342e81b16429f3bf3"
 artifact_fingerprint = "sha256:3d9eb3dd72a3305981f03958dc94775f4f0d9cb079975497ec3e34363ccc7458"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -689,24 +718,24 @@ prerequisite = [
     "methodology",
     "semantic-locality",
     "actualize",
-    "sirno-witness",
+    "witness",
     "project-config",
 ]
 refines = ["methodology"]
 
 [entries.reservoir]
-fingerprint = "sha256:15dcd1d78aa2569656662caa5cd01d543cd87c97dc0601dd52c1ac880294968f"
+fingerprint = "sha256:bd5efbdb4f31afa6d31a627f11cc697b02daf803fa1ee9780b6943a1c686aa30"
 belongs = ["storage"]
 prerequisite = [
     "storage",
-    "sirno-lake",
+    "lake",
 ]
-refines = ["sirno-lake"]
+refines = ["lake"]
 
 [entries.ripple]
-fingerprint = "sha256:722a0f5216fa698e51b1cf16dfdbe0e8da7f8f4b487effdfb22319a1c6b5f88a"
-belongs = ["sirno-tide"]
-prerequisite = ["sirno-anchor"]
+fingerprint = "sha256:139f6244801de4e852553503ecffb2ff1ec9ee64df38172a37c5aef0fd314636"
+belongs = ["tide"]
+prerequisite = ["anchor"]
 
 [entries.semantic-locality]
 fingerprint = "sha256:f06a55f248ea18e370d1c87236011f1821978904c321f2476082743240e381e5"
@@ -720,65 +749,6 @@ refines = ["methodology"]
 
 [entries.sirno]
 fingerprint = "sha256:17ed2646f8ec320ffaf9bcda7ea5836fe0ef3f05ba9c303fa99196ce158c0c4e"
-
-[entries.sirno-anchor]
-fingerprint = "sha256:b925fd24080a3db214061859ff63fb8a183bf469281f01c4eba6ed02b65afbda"
-belongs = [
-    "lake-review",
-    "storage",
-]
-prerequisite = [
-    "sirno-lake",
-    "project-config",
-]
-refines = ["versioning"]
-
-[entries.sirno-control-files]
-fingerprint = "sha256:a8ff7fef6cd768dc84b55a9523a266f98a1cb5812bd4a8e449105a09cfbd8e8e"
-belongs = ["storage"]
-prerequisite = [
-    "storage",
-    "project-config",
-    "anchor-file",
-    "upstream-file",
-    "tide-resolution",
-]
-refines = ["storage"]
-
-[entries.sirno-lake]
-fingerprint = "sha256:4f2d4766e41c174ad8323fa6e464b50ecba96f9568b674ec433f1080286f2f6b"
-belongs = ["form"]
-prerequisite = ["form"]
-
-[entries.sirno-tide]
-fingerprint = "sha256:0fb9248d501b781738ea44ce14db68a35e980eedd4c2377b49533d8f0f8ec4c7"
-belongs = [
-    "lake-review",
-    "sirno-anchor",
-]
-prerequisite = [
-    "sirno-anchor",
-    "ripple",
-    "structural-edge-policy",
-]
-refines = ["versioning"]
-
-[entries.sirno-upstream]
-fingerprint = "sha256:7e657059ae315b3a6b7bb4e3028a1e9d281f4402d318b5a6f2028f12f5f2adf1"
-belongs = ["lake-composition"]
-prerequisite = [
-    "project-config",
-    "upstream-file",
-    "lake-namespace",
-]
-
-[entries.sirno-witness]
-fingerprint = "sha256:1dba041133ec266c85aca45cd6ed257675ab797e402afdd900c095625504654b"
-belongs = ["sirno"]
-prerequisite = [
-    "entry",
-    "repo",
-]
 
 [entries.skill-synthesis-discipline]
 fingerprint = "sha256:1675a1541bfb023fad4df303f96543bbcfa09641dbea0411d50e5da9c99ee5a4"
@@ -825,16 +795,16 @@ belongs = [
 prerequisite = ["metadata"]
 
 [entries.structural-check]
-fingerprint = "sha256:292d9dcadd556c258745a81f6b9588bfd0fb3993dc8e7ed664468c628ae12705"
+fingerprint = "sha256:1f2bd69d8bdde22920f6cddfdeb24d1ad6ea89c01efa8d382d32a3037911ab0c"
 belongs = ["lake-review"]
 prerequisite = [
     "metadata",
     "generated-footer",
-    "sirno-witness",
+    "witness",
 ]
 
 [entries.structural-edge-policy]
-fingerprint = "sha256:b5d13654d368ba69bea0bd0916c8503e79a54f4b5c18568f59a21ba288ad5e15"
+fingerprint = "sha256:bd70eb76ff48e0c1bdcb96be2e5df1a2271d23f64883fb56f827e4a9ffdbb492"
 belongs = ["generated-navigation"]
 prerequisite = [
     "structural",
@@ -848,13 +818,21 @@ prerequisite = ["concept-driven-development"]
 refines = ["concept-driven-development"]
 
 [entries.tide]
-fingerprint = "sha256:be8bbecc231d207f8f14b8e094ec3382d67d8448d36c2473d680abf167bccff8"
-belongs = ["sirno-tide"]
-prerequisite = ["sirno-tide"]
+fingerprint = "sha256:dd1299b9229a78bf518a7d6e858ccbae3a0a8c599bed0588dd372dfa27b4cc76"
+belongs = [
+    "lake-review",
+    "anchor",
+]
+prerequisite = [
+    "anchor",
+    "ripple",
+    "structural-edge-policy",
+]
+refines = ["versioning"]
 
 [entries.tide-commands]
-fingerprint = "sha256:ed955d208f7fb21fc19531782cc3698e8757e8ac8523124888f633b851e2f25b"
-belongs = ["sirno-tide"]
+fingerprint = "sha256:06c5c7f2f3044875263185210de3c4d78fc1fe3387e5b5ced2e2d19287ebec76"
+belongs = ["tide"]
 prerequisite = ["project-config"]
 refines = ["command-families"]
 
@@ -867,27 +845,27 @@ prerequisite = [
 ]
 
 [entries.tide-review-file]
-fingerprint = "sha256:29f65d9bc0c89e321a74b407452c25214b17311b489e31a4c93cbef9236ae23c"
+fingerprint = "sha256:b707144673e1dd4dc0535f9657f8a7774219614c2a3182aea0283b6e9b2ccc34"
 belongs = [
     "tide",
-    "sirno-control-files",
+    "control-files",
 ]
 prerequisite = [
     "tide-resolution",
     "anchor-file",
-    "sirno-control-files",
+    "control-files",
 ]
 
 [entries.tide-workitem]
-fingerprint = "sha256:1f34359c97c814c9d06c2f01660fdbe7457400ac7df1e1294595441c10849dc9"
+fingerprint = "sha256:a368710b27b6e7990e34c7b757cc7c48415dfc6618a64a2806bba0957a64c563"
 belongs = ["tide"]
 prerequisite = ["tide"]
 
 [entries.transform]
-fingerprint = "sha256:b0ec569a1ae983a2d642794d817e1afc52744489c6157911f7bd61026eb775ee"
+fingerprint = "sha256:0c35ec671774d63a115f341ec3158fc56bb7176bbbe22736cbc137057a8139da"
 belongs = ["form"]
 prerequisite = [
-    "sirno-lake",
+    "lake",
     "repo",
 ]
 
@@ -896,11 +874,20 @@ fingerprint = "sha256:57e84e12f9192a5a5b2b3f04c19a0665efb6c521c344b80c31ba6e5580
 belongs = ["category"]
 prerequisite = ["category"]
 
-[entries.upstream-commands]
-fingerprint = "sha256:2eb91563464b597c3edad7397e74affc7c89bf2f2b57601a2b6bfa599a67ed53"
-belongs = ["sirno-upstream"]
+[entries.upstream]
+fingerprint = "sha256:d9910481d194e052ef6b79798c1a81fd5817586400d46769810cc8db6e071069"
+belongs = ["lake-composition"]
 prerequisite = [
-    "sirno-upstream",
+    "project-config",
+    "upstream-file",
+    "lake-namespace",
+]
+
+[entries.upstream-commands]
+fingerprint = "sha256:038f2a0ea217d4b3adc20b2e5ee5132ffc10675c44b5e1648aee1300af344588"
+belongs = ["upstream"]
+prerequisite = [
+    "upstream",
     "project-config",
     "cli-interface",
     "mcp-interface",
@@ -914,10 +901,10 @@ prerequisite = ["upstream-lake"]
 refines = ["versioning"]
 
 [entries.upstream-lake]
-fingerprint = "sha256:e98e7cd44e38fc4315e9bc84c4b5fcce8813f22dee4f040dc4d99ad0ebd194c8"
+fingerprint = "sha256:8db6bb61bd5d76323bb266a99d07997118f82c4fec04830084eeaf3504efa76b"
 belongs = [
     "lake-composition",
-    "sirno-upstream",
+    "upstream",
 ]
 prerequisite = [
     "project-config",
@@ -932,29 +919,37 @@ prerequisite = ["project-config"]
 refines = ["command-families"]
 
 [entries.versioning]
-fingerprint = "sha256:0df97922192450ef36cc9f66473d14a876c48835c95d1708354c4395a9a84c83"
+fingerprint = "sha256:a38be60bdf18dbcb9c50bd64d4363be6cb9829cc1c94c6b315b16efdd3847b90"
 belongs = [
     "lake-review",
-    "sirno-anchor",
+    "anchor",
 ]
 prerequisite = [
     "storage",
-    "sirno-anchor",
+    "anchor",
+]
+
+[entries.witness]
+fingerprint = "sha256:1dba041133ec266c85aca45cd6ed257675ab797e402afdd900c095625504654b"
+belongs = ["sirno"]
+prerequisite = [
+    "entry",
+    "repo",
 ]
 
 [entries.witness-delimiter]
-fingerprint = "sha256:2e0a19e9e608257f8adc3b08da70f2b3b274a0d53a18fab1e3fb76789b1a37a8"
-belongs = ["sirno-witness"]
-prerequisite = ["sirno-witness"]
+fingerprint = "sha256:786f7d03ec7372b0e5277aef73b40ed79954854ea57cc535a6ccff78a41b1120"
+belongs = ["witness"]
+prerequisite = ["witness"]
 
 [entries.witness-integrity]
-fingerprint = "sha256:606fa9d3b909a7ef1ec0325918882675f0b91dcec1ace2cc985f922fc807b81a"
-belongs = ["sirno-witness"]
+fingerprint = "sha256:64591e4a0e9e064fd493a738780ccfbc9e2283cea54ba1b30e377d4cc87e7302"
+belongs = ["witness"]
 prerequisite = ["witness-lookup"]
 
 [entries.witness-lookup]
-fingerprint = "sha256:ec89e6f8b9f57ff34fc1884ccd14759c5af2fee6a6c78f4bdde806eb0ae2af9e"
-belongs = ["sirno-witness"]
+fingerprint = "sha256:667dc0be62dc4b43f11f904e41b144283da346a274f1985e0a2ddd0f982dd3ed"
+belongs = ["witness"]
 prerequisite = [
     "witness-delimiter",
     "project-config",

@@ -1,12 +1,12 @@
 ---
-name: Meta Registry
 desc: The generated lockfile used between raw and typed lake parsing.
+name: Meta Registry
 category:
   - concept
   - meta
 belongs:
   - metadata
-  - sirno-control-files
+  - control-files
 prerequisite:
   - meta-type
   - intrinsic

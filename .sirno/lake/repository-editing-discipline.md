@@ -1,6 +1,6 @@
 ---
-name: Repository Editing Discipline
 desc: The agent procedure for codebase changes that start in the Sirno Lake and keep documentation synced.
+name: Repository Editing Discipline
 category:
   - meta
 belongs:
@@ -11,7 +11,7 @@ prerequisite:
   - methodology
   - semantic-locality
   - actualize
-  - sirno-witness
+  - witness
   - project-config
 refines:
   - methodology

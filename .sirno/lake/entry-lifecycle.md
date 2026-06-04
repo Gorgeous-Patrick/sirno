@@ -1,13 +1,13 @@
 ---
-name: Entry Lifecycle
 desc: The state model for one lake entry file.
+name: Entry Lifecycle
 category:
   - concept
 belongs:
   - entry
 prerequisite:
   - entry
-  - sirno-anchor
+  - anchor
 ---
 
 An *entry lifecycle* describes how one lake Markdown *entry* moves through the editable lake.

@@ -1,11 +1,11 @@
 ---
-name: Lake System
 desc: One Sirno project together with its declared upstream lakes.
+name: Lake System
 category:
   - concept
 belongs:
   - lake-composition
-  - sirno-upstream
+  - upstream
 prerequisite:
   - upstream-lake
 ---
