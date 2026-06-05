@@ -393,7 +393,7 @@ impl EntryDirectory {
             return Err(EntryDirectoryError::InvalidEntryDirectory(self.root.clone()));
         }
 
-        let mut entries = Vec::new();
+        let mut raw_entries = Vec::new();
         for path in entry_paths {
             let relative_path =
                 path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
@@ -403,7 +403,16 @@ impl EntryDirectory {
                 })?;
             let id = EntryAddress::from_lake_relative_path(relative_path)?;
             let source = fs::read_to_string(&path)?;
-            let entry = RawEntry::from_markdown(id, &source)?.into_entry(meta)?;
+            raw_entries.push(RawEntry::from_markdown(id, &source)?);
+        }
+
+        raw_entries.sort_by(|left, right| left.id.cmp(&right.id));
+        let registry_scopes =
+            EntryRegistryScopes::from_registry_and_raw_entries(meta, &raw_entries);
+        let mut entries = Vec::new();
+        for raw_entry in raw_entries {
+            let registry = registry_scopes.registry_for(&raw_entry);
+            let entry = raw_entry.into_entry(registry)?;
             GeneratedLinkBody::new(&entry.body).validate()?;
             entries.push(entry);
         }
@@ -1406,15 +1415,7 @@ impl EntryDirectory {
             {
                 return Err(EntryDirectoryError::CheckoutConflict(path));
             }
-            let relative =
-                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
-                    path: path.clone(),
-                    root: self.root.clone(),
-                    source,
-                })?;
-            let id = EntryAddress::from_lake_relative_path(relative)?;
-            let entry = self.read_entry(&id)?;
-            if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+            if !Self::is_managed_frozen_entry_file(&path)? {
                 return Err(EntryDirectoryError::UnmanagedGlacierPath(path));
             }
             melt_path_best_effort(&path)?;
@@ -1458,15 +1459,7 @@ impl EntryDirectory {
             {
                 return Err(EntryDirectoryError::CheckoutConflict(path));
             }
-            let relative =
-                path.strip_prefix(&self.root).map_err(|source| EntryDirectoryError::StripRoot {
-                    path: path.clone(),
-                    root: self.root.clone(),
-                    source,
-                })?;
-            let id = EntryAddress::from_lake_relative_path(relative)?;
-            let entry = self.read_entry(&id)?;
-            if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+            if !Self::is_managed_frozen_entry_file(&path)? {
                 return Err(EntryDirectoryError::UnmanagedGlacierPath(path));
             }
         }
@@ -1496,11 +1489,8 @@ impl EntryDirectory {
                 continue;
             }
             let owner_entry = self.entry_file_path(&owner);
-            if owner_entry.exists() {
-                let entry = self.read_entry(&owner)?;
-                if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                    return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
-                }
+            if owner_entry.exists() && !Self::is_managed_frozen_entry_file(&owner_entry)? {
+                return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
             }
             melt_tree_best_effort(&owner_root)?;
             fs::remove_dir_all(&owner_root)?;
@@ -1531,11 +1521,8 @@ impl EntryDirectory {
                 continue;
             }
             let owner_entry = self.entry_file_path(&owner);
-            if owner_entry.exists() {
-                let entry = self.read_entry(&owner)?;
-                if !entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
-                    return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
-                }
+            if owner_entry.exists() && !Self::is_managed_frozen_entry_file(&owner_entry)? {
+                return Err(EntryDirectoryError::UnmanagedGlacierPath(owner_root));
             }
         }
         Ok(())
@@ -1607,6 +1594,20 @@ impl EntryDirectory {
         Ok(RawEntry::from_markdown(id, &source)
             .and_then(|entry| entry.entry_meta())
             .map(|meta| meta.frozen.is_some())
+            .unwrap_or(false))
+    }
+
+    fn is_managed_frozen_entry_file(path: &Path) -> Result<bool, EntryDirectoryError> {
+        let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
+            return Ok(false);
+        };
+        let Ok(id) = EntryAddress::new(stem) else {
+            return Ok(false);
+        };
+        let source = fs::read_to_string(path)?;
+        Ok(RawEntry::from_markdown(id, &source)
+            .and_then(|entry| entry.entry_meta())
+            .map(|meta| meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()))
             .unwrap_or(false))
     }
 
@@ -1885,6 +1886,55 @@ struct LoadedEntryDirectory {
     structural: StructuralSettings,
 }
 
+#[derive(Debug)]
+struct EntryRegistryScopes {
+    local: MetaRegistry,
+    managed_by_domain: BTreeMap<EntryAtom, MetaRegistry>,
+}
+
+impl EntryRegistryScopes {
+    fn from_raw_entries(raw_entries: &[RawEntry]) -> Self {
+        let meta = MetaRegistry::from_raw_entries(raw_entries);
+        Self::from_registry_and_raw_entries(&meta, raw_entries)
+    }
+
+    fn from_registry_and_raw_entries(meta: &MetaRegistry, raw_entries: &[RawEntry]) -> Self {
+        let mut domains = BTreeSet::<EntryAtom>::new();
+        for entry in raw_entries {
+            if let Some(domain) = managed_glacier_domain(entry) {
+                domains.insert(domain);
+            }
+        }
+        let local = meta.without_domains(domains.iter());
+        let managed_by_domain = domains
+            .into_iter()
+            .map(|domain| {
+                let registry = meta.only_domain(&domain);
+                (domain, registry)
+            })
+            .collect();
+        Self { local, managed_by_domain }
+    }
+
+    fn registry_for(&self, entry: &RawEntry) -> &MetaRegistry {
+        let Some(domain) = managed_glacier_domain(entry) else {
+            return &self.local;
+        };
+        self.managed_by_domain
+            .get(&domain)
+            .expect("managed glacier domain registry was built from the same raw entries")
+    }
+}
+
+fn managed_glacier_domain(entry: &RawEntry) -> Option<EntryAtom> {
+    let meta = entry.entry_meta().ok()?;
+    if !meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()) {
+        return None;
+    }
+    let domain = entry.id.as_str().split_once('.')?.0;
+    Some(EntryAtom::new(domain).expect("entry address segment is a valid atom"))
+}
+
 impl LoadedEntryDirectory {
     fn load(
         root: &Path, mode: CheckMode, settings: &EntryDirectoryCheckSettings,
@@ -1974,6 +2024,7 @@ impl LoadedEntryDirectory {
         if let Some(path) = &settings.meta_path {
             meta.write(path)?;
         }
+        let registry_scopes = EntryRegistryScopes::from_raw_entries(&raw_entries);
         let mut entries = Vec::new();
         for raw_entry in raw_entries {
             let id = raw_entry.id.clone();
@@ -1981,7 +2032,8 @@ impl LoadedEntryDirectory {
                 .get(&id)
                 .expect("raw entry path was recorded before typed parsing")
                 .clone();
-            let entry = match raw_entry.into_entry(&meta) {
+            let registry = registry_scopes.registry_for(&raw_entry);
+            let entry = match raw_entry.into_entry(registry) {
                 | Ok(entry) => entry,
                 | Err(source) => {
                     file_diagnostics.push(EntryFileDiagnostic::new(
@@ -2721,11 +2773,43 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         write_entry(
             temp.path(),
+            "core/name.md",
+            "\
+---
+core.name: Name
+core.desc: The required title field.
+meta:
+  frozen:
+    - managed
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
+            "core/desc.md",
+            "\
+---
+core.name: Description
+core.desc: The required summary field.
+meta:
+  frozen:
+    - managed
+meta.type: \"intrinsic\"
+---
+
+Body.
+",
+        );
+        write_entry(
+            temp.path(),
             "core/design.md",
             "\
 ---
-name: Design
-desc: Managed upstream entry.
+core.name: Design
+core.desc: Managed upstream entry.
 meta:
   frozen:
     - reviewed

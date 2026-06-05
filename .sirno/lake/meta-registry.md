@@ -20,8 +20,10 @@ That phase reads every entry file as raw Markdown frontmatter,
 then records entries with `meta.type: "intrinsic"` or `meta.type: "structural"`.
 It does not require typed intrinsic fields yet.
 
-The second phase parses entries with the registry.
-Discovered intrinsic fields become required plain-string fields.
+The second phase parses entries with the registry for their ownership scope.
+Local entries use the local registry.
+Managed glacier entries use the registry discovered inside their glacier domain.
+Discovered intrinsic fields become required plain-string fields inside that scope.
 Discovered structural fields become list-valued entry-address relations.
 
 The project control copy lives at `.sirno/meta.toml`.

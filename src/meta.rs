@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::entry::{EntryMetaType, FROZEN_FIELD, META_FIELD, META_TYPE_FIELD, RawEntry};
-use crate::identifier::EntryAddress;
+use crate::identifier::{EntryAddress, EntryAtom};
 use crate::structural::StructuralSettings;
 
 /// Generated meta registry lockfile name under `.sirno/`.
@@ -162,6 +162,45 @@ impl MetaRegistry {
     /// Return the entry that defines one intrinsic metadata field.
     pub fn intrinsic_entry_for_field(&self, field: &str) -> Option<&EntryAddress> {
         self.intrinsics.get(field)
+    }
+
+    /// Return registry entries defined inside one managed domain.
+    pub fn only_domain(&self, domain: &EntryAtom) -> Self {
+        Self {
+            intrinsics: self
+                .intrinsics
+                .iter()
+                .filter(|(_, entry)| entry.starts_with_domain(domain))
+                .map(|(field, entry)| (field.clone(), entry.clone()))
+                .collect(),
+            structural: StructuralSettings::from_relations(
+                self.structural
+                    .relations()
+                    .filter(|(_, entry)| entry.starts_with_domain(domain))
+                    .map(|(field, entry)| (field.to_owned(), entry.clone())),
+            ),
+        }
+    }
+
+    /// Return registry entries outside the given managed domains.
+    pub fn without_domains<'a>(&self, domains: impl IntoIterator<Item = &'a EntryAtom>) -> Self {
+        let domains = domains.into_iter().collect::<Vec<_>>();
+        Self {
+            intrinsics: self
+                .intrinsics
+                .iter()
+                .filter(|(_, entry)| !domains.iter().any(|domain| entry.starts_with_domain(domain)))
+                .map(|(field, entry)| (field.clone(), entry.clone()))
+                .collect(),
+            structural: StructuralSettings::from_relations(
+                self.structural
+                    .relations()
+                    .filter(|(_, entry)| {
+                        !domains.iter().any(|domain| entry.starts_with_domain(domain))
+                    })
+                    .map(|(field, entry)| (field.to_owned(), entry.clone())),
+            ),
+        }
     }
 
     /// Add or update one intrinsic field.

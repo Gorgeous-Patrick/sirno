@@ -244,14 +244,18 @@ impl SurfaceContext {
         let path = directory.entry_file_path(&id);
         let source = directory.read_entry_source(&id)?;
         let report = directory.check_with_settings(CheckMode::Edit, &settings)?;
-        let entry = Entry::from_markdown_with_registry(id.clone(), &source, report.meta())?;
+        let entry = report
+            .entries()
+            .iter()
+            .find(|entry| entry.id == id)
+            .ok_or_else(|| EntryDirectoryError::EntryNotFound(id.clone()))?;
         Ok(EntryReadResult {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
             name: entry.metadata.name().to_owned(),
             desc: entry.metadata.desc().to_owned(),
-            body: entry.body,
+            body: entry.body.clone(),
             source,
             message: format!("read entry {id} from {}", path.display()),
         })

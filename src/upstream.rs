@@ -744,14 +744,13 @@ fn load_upstream_files(
         .collect::<Result<Vec<_>, UpstreamError>>()?;
 
     let structural = meta.structural().clone();
-    let selected_ids = select_upstream_entry_ids(&entries, mist, &structural)?;
+    let mut selected_ids = select_upstream_entry_ids(&entries, mist, &structural)?;
+    selected_ids.extend(entries.iter().filter_map(meta_definition_id));
     let mut entries = entries
         .into_iter()
-        .filter(|entry| {
-            selected_ids.contains(&entry.id) && !entry.metadata.meta.is_intrinsic_field()
-        })
+        .filter(|entry| selected_ids.contains(&entry.id))
         .map(|mut entry| {
-            rebase_entry_for_glacier(&mut entry, domain);
+            rebase_entry_for_glacier(&mut entry, domain, &meta);
             entry
         })
         .collect::<Vec<_>>();
@@ -770,6 +769,11 @@ fn load_upstream_files(
     Ok(LoadedUpstreamFiles { entries, artifacts })
 }
 // sirno:witness:lake-sheaf:end
+
+fn meta_definition_id(entry: &Entry) -> Option<EntryAddress> {
+    (entry.metadata.meta.is_intrinsic_field() || entry.metadata.meta.is_structural_relation())
+        .then(|| entry.id.clone())
+}
 
 fn load_artifact(
     mirror: &Path, commit: &str, file: &str, relative: &str,
@@ -794,12 +798,35 @@ fn select_upstream_entry_ids(
     Ok(selected.into_iter().map(|entry| entry.id.clone()).collect())
 }
 
-fn rebase_entry_for_glacier(entry: &mut Entry, domain: &EntryAtom) {
+fn rebase_entry_for_glacier(entry: &mut Entry, domain: &EntryAtom, meta: &MetaRegistry) {
+    rebase_intrinsic_fields(entry, domain, meta);
+    rebase_structural_fields(entry, domain, meta);
     entry.id = entry.id.under_domain(domain);
     rebase_structural_targets(entry, domain);
     match &mut entry.metadata.meta.frozen {
         | Some(marker) => marker.insert_managed(),
         | None => entry.metadata.meta.frozen = Some(FrozenMarker::managed()),
+    }
+}
+
+fn rebase_intrinsic_fields(entry: &mut Entry, domain: &EntryAtom, meta: &MetaRegistry) {
+    let fields = meta
+        .intrinsic_fields()
+        .map(|(field, definition)| (field.to_owned(), definition.under_domain(domain)))
+        .collect::<Vec<_>>();
+    for (field, definition) in fields {
+        entry.metadata.rename_intrinsic_field(&field, definition.as_str());
+    }
+}
+
+fn rebase_structural_fields(entry: &mut Entry, domain: &EntryAtom, meta: &MetaRegistry) {
+    let relations = meta
+        .structural()
+        .relations()
+        .map(|(_, definition)| (definition.clone(), definition.under_domain(domain)))
+        .collect::<Vec<_>>();
+    for (field, definition) in relations {
+        entry.metadata.rename_structural_field(&field, &definition);
     }
 }
 
@@ -1235,11 +1262,22 @@ fingerprint = "sha256:abc"
     }
 
     fn write_upstream_repo(root: &Path) -> String {
-        write_upstream_repo_with_manifest(root, CONFIG_FILE_NAME, "docs")
+        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", false)
+    }
+
+    fn write_upstream_repo_with_field_definitions(root: &Path) -> String {
+        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", true)
     }
 
     fn write_upstream_repo_with_manifest(
         root: &Path, manifest_path: impl AsRef<Path>, lake_path: impl AsRef<Path>,
+    ) -> String {
+        write_upstream_repo_with_options(root, manifest_path, lake_path, false)
+    }
+
+    fn write_upstream_repo_with_options(
+        root: &Path, manifest_path: impl AsRef<Path>, lake_path: impl AsRef<Path>,
+        include_belongs_relation: bool,
     ) -> String {
         let manifest_path = root.join(manifest_path);
         let manifest_parent = manifest_path.parent().unwrap();
@@ -1282,6 +1320,21 @@ Body.
 ",
         )
         .unwrap();
+        if include_belongs_relation {
+            fs::write(
+                lake_root.join("belongs.md"),
+                "\
+---
+name: Belongs
+desc: A structural relation.
+meta.type: \"structural\"
+---
+
+Body.
+",
+            )
+            .unwrap();
+        }
         fs::write(
             lake_root.join("design.md"),
             "\
@@ -1317,6 +1370,7 @@ Body.
         run_git(root, &["checkout", "-b", "main"]);
         run_git(root, &["config", "user.email", "sirno@example.invalid"]);
         run_git(root, &["config", "user.name", "Sirno Test"]);
+        run_git(root, &["config", "commit.gpgsign", "false"]);
         run_git(root, &["add", "."]);
         run_git(root, &["commit", "-m", "seed"]);
         let output =
@@ -1330,7 +1384,7 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let upstream_root = temp.path().join("upstream");
         fs::create_dir(&upstream_root).unwrap();
-        let commit = write_upstream_repo(&upstream_root);
+        let commit = write_upstream_repo_with_field_definitions(&upstream_root);
         let project_root = temp.path().join("project");
         fs::create_dir(&project_root).unwrap();
         let config_path = project_root.join(CONFIG_FILE_NAME);
@@ -1355,9 +1409,26 @@ Body.
 
         assert_eq!(result.domains, ["core"]);
         let design = fs::read_to_string(project_root.join("lake/core/design.md")).unwrap();
+        assert!(design.contains("core.name: Design"));
+        assert!(design.contains("core.desc: Upstream design entry."));
         assert!(design.contains("  - reviewed"));
         assert!(design.contains("  - managed"));
-        assert!(design.contains("belongs:\n  - core.alpha"));
+        assert!(design.contains("core.belongs:\n  - core.alpha"));
+        for entry in ["alpha", "belongs", "desc", "design", "name"] {
+            let source =
+                fs::read_to_string(project_root.join(format!("lake/core/{entry}.md"))).unwrap();
+            assert!(source.contains("  - managed"), "{entry} was not managed");
+        }
+        let name = fs::read_to_string(project_root.join("lake/core/name.md")).unwrap();
+        assert!(name.contains("meta.type: \"intrinsic\""));
+        assert!(name.contains("core.name: Name"));
+        let belongs = fs::read_to_string(project_root.join("lake/core/belongs.md")).unwrap();
+        assert!(belongs.contains("meta.type: \"structural\""));
+        assert!(belongs.contains("core.name: Belongs"));
+        let meta = fs::read_to_string(project_root.join(".sirno/meta.toml")).unwrap();
+        assert!(meta.contains("field = \"core.name\""));
+        assert!(meta.contains("field = \"core.desc\""));
+        assert!(meta.contains("field = \"core.belongs\""));
         assert_eq!(
             fs::read(project_root.join("lake/.artifacts/core.design/logo.bin")).unwrap(),
             b"logo"

@@ -27,7 +27,8 @@ Metadata belongs to `entry` because it describes the schema surface of each entr
 Sirno resolves metadata in two phases.
 The first phase scans raw entry frontmatter for `meta.type`.
 It writes the generated `meta-registry` lockfile.
-The second phase uses that registry to parse intrinsic fields and structural relations.
+The second phase uses the entry's ownership-scope registry
+to parse intrinsic fields and structural relations.
 
 The `meta-type` entry groups the `meta.type` discriminator values:
 
@@ -82,7 +83,7 @@ the structural link metadata must say so.
 If a tool needs to know that an entry defines an intrinsic metadata field,
 the entry must carry `meta.type: "intrinsic"`.
 If a tool needs typed intrinsic or structural fields,
-it must use the registry discovered from the current lake.
+it must use the registry discovered for the entry's ownership scope.
 If an agent needs to inspect *repository* evidence for an *entry*,
 it should use the agent-facing MCP tool.
 If a human needs the same evidence,

@@ -171,7 +171,7 @@ prerequisite = ["project-config"]
 refines = ["project-config"]
 
 [entries.crystallization]
-fingerprint = "sha256:ac96f047365770c453766e34a760d37681f930e4a25ee4c4f0a8914c1287fbda"
+fingerprint = "sha256:4146c19f5149c455f0388298904a0a9a4ca53208da102de9328cf59fac05ead0"
 belongs = ["upstream"]
 prerequisite = [
     "upstream-lake",
@@ -381,7 +381,7 @@ belongs = ["transform"]
 prerequisite = ["transform"]
 
 [entries.intrinsic]
-fingerprint = "sha256:a0f0898e6cad3f856b39242fb0efd493a2cc5451f154d47e7023de528106e1c7"
+fingerprint = "sha256:cf429fa5a54b0cf673ae5880caa8f3585ebed6bdc5433ffc383c5b9931dff364"
 belongs = ["meta-type"]
 prerequisite = ["meta-type"]
 
@@ -508,7 +508,7 @@ belongs = [
 prerequisite = ["category"]
 
 [entries.meta-registry]
-fingerprint = "sha256:bbc262a69046d9505e5e7ccad9a57150beb7328ea422cc368e35f92d17e2d8d3"
+fingerprint = "sha256:0ec6875fbafa7d45b340ac5db432f29a445f1f4a10027628fb80e308d2cc238a"
 belongs = [
     "metadata",
     "control-files",
@@ -525,7 +525,7 @@ belongs = ["metadata"]
 prerequisite = ["metadata"]
 
 [entries.metadata]
-fingerprint = "sha256:e1e363f9317ac23c1f54a89550e0f7d51bf93f359cd66c0cf7ebcbc3c15d9e59"
+fingerprint = "sha256:607a222f7fa1bd6b3d5d1868b161d5b9bcab7ec76bd57eb99279505d92341151"
 belongs = ["entry"]
 prerequisite = ["entry"]
 
@@ -882,7 +882,7 @@ prerequisite = ["upstream-lake"]
 refines = ["versioning"]
 
 [entries.upstream-lake]
-fingerprint = "sha256:8db6bb61bd5d76323bb266a99d07997118f82c4fec04830084eeaf3504efa76b"
+fingerprint = "sha256:1a943f6d5c8fefdef7c993389c15f811b284f9dfdd67c60b5322ff9db2a1f02e"
 belongs = [
     "lake-composition",
     "upstream",

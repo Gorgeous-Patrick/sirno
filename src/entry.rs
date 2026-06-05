@@ -350,12 +350,23 @@ impl EntryMetadata {
 
     /// Human-readable entry name used by current Sirno surfaces.
     pub fn name(&self) -> &str {
-        self.intrinsic_field(NAME_FIELD).unwrap_or("")
+        self.intrinsic_field(NAME_FIELD)
+            .or_else(|| self.intrinsic_field_with_local_atom(NAME_FIELD))
+            .unwrap_or("")
     }
 
     /// Short prose summary used by current Sirno surfaces.
     pub fn desc(&self) -> &str {
-        self.intrinsic_field(DESC_FIELD).unwrap_or("")
+        self.intrinsic_field(DESC_FIELD)
+            .or_else(|| self.intrinsic_field_with_local_atom(DESC_FIELD))
+            .unwrap_or("")
+    }
+
+    fn intrinsic_field_with_local_atom(&self, atom: &str) -> Option<&str> {
+        self.intrinsic
+            .iter()
+            .find(|(field, _)| field.rsplit('.').next() == Some(atom))
+            .map(|(_, value)| value.as_str())
     }
 
     /// Set the targets for one link relation.
@@ -388,6 +399,27 @@ impl EntryMetadata {
             }
         }
         changed
+    }
+
+    /// Rename one intrinsic metadata field.
+    pub fn rename_intrinsic_field(
+        &mut self, old_field: &str, new_field: impl Into<String>,
+    ) -> bool {
+        if !self.intrinsic.contains_key(old_field) {
+            return false;
+        }
+
+        let new_field = new_field.into();
+        let mut renamed = EntryIntrinsicFields::with_capacity(self.intrinsic.len());
+        for (field, value) in std::mem::take(&mut self.intrinsic) {
+            if field == old_field {
+                renamed.insert(new_field.clone(), value);
+            } else {
+                renamed.insert(field, value);
+            }
+        }
+        self.intrinsic = renamed;
+        true
     }
 
     /// Rename one structural link relation.

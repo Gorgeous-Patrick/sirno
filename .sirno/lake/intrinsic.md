@@ -14,7 +14,7 @@ prerequisite:
 It marks an *entry* as the definition of one required field.
 
 Sirno discovers intrinsic fields during the raw meta-registry scan.
-Each discovered intrinsic field is required on every typed *entry*,
+Each discovered intrinsic field is required on every typed *entry* in its ownership scope,
 and its value is a plain string.
 
 This lake currently defines `name` and `desc` as intrinsic fields.

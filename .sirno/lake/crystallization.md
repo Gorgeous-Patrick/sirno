@@ -22,6 +22,9 @@ For example, upstream entry `design` under domain `core` becomes `core.design`
 and is written to `lake/core/design.md`.
 
 Glacier artifacts are written under `.artifacts/<domain>.<entry-address>/...`.
+Intrinsic and structural metadata fields from the upstream lake are rebased through the glacier domain.
+For example,
+upstream field `name` becomes `core.name` when the upstream is crystallized under `core`.
 Structural metadata targets inside the upstream lake are rebased through the glacier domain.
 Generated footer regions are stripped during import
 and regenerated for the current lake view.
