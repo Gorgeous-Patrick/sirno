@@ -27,6 +27,7 @@
             lockFile = ./Cargo.lock;
             allowBuiltinFetchGit = true;
           };
+          nativeCheckInputs = [ pkgs.git ];
         };
 
         devShells.default = pkgs.mkShell {
