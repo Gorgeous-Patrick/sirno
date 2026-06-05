@@ -2577,6 +2577,10 @@ mod tests {
 
     fn write_entry(root: &Path, name: &str, body: &str) {
         ensure_intrinsic_field_entries(root);
+        write_entry_without_intrinsics(root, name, body);
+    }
+
+    fn write_entry_without_intrinsics(root: &Path, name: &str, body: &str) {
         let path = root.join(name);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).unwrap();
@@ -2827,6 +2831,79 @@ Body.
         assert!(source.contains("  - managed"));
         let entry = directory.read_entry(&EntryAddress::new("core.design").unwrap()).unwrap();
         assert!(entry.metadata.meta.frozen.as_ref().is_some_and(|marker| marker.is_managed()));
+    }
+
+    #[test]
+    fn read_entries_with_registry_applies_scoped_meta_to_glacier_projection() {
+        let temp = tempfile::tempdir().unwrap();
+        let reservoir = temp.path().join("reservoir");
+        let projection = temp.path().join("projection");
+        let local_source = "\
+---
+name: Local
+desc: Local projected entry.
+---
+
+Body.
+";
+        let core_name_source = "\
+---
+core.name: Name
+core.desc: The required title field.
+meta:
+  frozen:
+    - managed
+meta.type: \"intrinsic\"
+---
+
+Body.
+";
+        let core_desc_source = "\
+---
+core.name: Description
+core.desc: The required summary field.
+meta:
+  frozen:
+    - managed
+meta.type: \"intrinsic\"
+---
+
+Body.
+";
+        let core_design_source = "\
+---
+core.name: Design
+core.desc: Managed upstream entry.
+meta:
+  frozen:
+    - managed
+---
+
+Body.
+";
+        write_entry(&reservoir, "local.md", local_source);
+        write_entry(&reservoir, "core/name.md", core_name_source);
+        write_entry(&reservoir, "core/desc.md", core_desc_source);
+        write_entry(&reservoir, "core/design.md", core_design_source);
+        let report = entry_directory(reservoir).check(CheckMode::Review).unwrap();
+        assert!(report.is_clean(), "{report:?}");
+
+        write_entry_without_intrinsics(&projection, "local.md", local_source);
+        write_entry_without_intrinsics(&projection, "core/name.md", core_name_source);
+        write_entry_without_intrinsics(&projection, "core/desc.md", core_desc_source);
+        write_entry_without_intrinsics(&projection, "core/design.md", core_design_source);
+
+        let entries = entry_directory(projection)
+            .read_entries_with_registry(report.meta(), Vec::<PathBuf>::new())
+            .unwrap();
+
+        assert_eq!(entries.len(), 4);
+        let local = entries.iter().find(|entry| entry.id.as_str() == "local").unwrap();
+        assert_eq!(local.metadata.name(), "Local");
+        assert_eq!(local.metadata.desc(), "Local projected entry.");
+        let design = entries.iter().find(|entry| entry.id.as_str() == "core.design").unwrap();
+        assert_eq!(design.metadata.name(), "Design");
+        assert_eq!(design.metadata.desc(), "Managed upstream entry.");
     }
 
     #[test]

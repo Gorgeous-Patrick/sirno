@@ -1262,22 +1262,26 @@ fingerprint = "sha256:abc"
     }
 
     fn write_upstream_repo(root: &Path) -> String {
-        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", false)
+        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", false, true)
     }
 
     fn write_upstream_repo_with_field_definitions(root: &Path) -> String {
-        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", true)
+        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", true, true)
+    }
+
+    fn write_upstream_repo_with_unused_field_definitions(root: &Path) -> String {
+        write_upstream_repo_with_options(root, CONFIG_FILE_NAME, "docs", true, false)
     }
 
     fn write_upstream_repo_with_manifest(
         root: &Path, manifest_path: impl AsRef<Path>, lake_path: impl AsRef<Path>,
     ) -> String {
-        write_upstream_repo_with_options(root, manifest_path, lake_path, false)
+        write_upstream_repo_with_options(root, manifest_path, lake_path, false, true)
     }
 
     fn write_upstream_repo_with_options(
         root: &Path, manifest_path: impl AsRef<Path>, lake_path: impl AsRef<Path>,
-        include_belongs_relation: bool,
+        include_belongs_relation: bool, design_has_belongs: bool,
     ) -> String {
         let manifest_path = root.join(manifest_path);
         let manifest_parent = manifest_path.parent().unwrap();
@@ -1335,21 +1339,30 @@ Body.
             )
             .unwrap();
         }
+        let belongs_field = if design_has_belongs {
+            "\
+belongs:
+  - alpha
+"
+        } else {
+            ""
+        };
         fs::write(
             lake_root.join("design.md"),
-            "\
+            format!(
+                "\
 ---
 name: Design
 desc: Upstream design entry.
 meta:
   frozen:
     - reviewed
-belongs:
-  - alpha
+{belongs_field}\
 ---
 
 Body.
-",
+"
+            ),
         )
         .unwrap();
         fs::write(
@@ -1538,8 +1551,20 @@ Body.
             .unwrap();
 
         assert_eq!(result.domains, ["core"]);
-        assert!(project_root.join("lake/core/design.md").exists());
+        let design = fs::read_to_string(project_root.join("lake/core/design.md")).unwrap();
+        assert!(design.contains("core.name: Design"));
+        assert!(design.contains("core.desc: Upstream design entry."));
+        assert!(design.contains("belongs:\n  - core.alpha"));
+        for entry in ["desc", "name"] {
+            let source =
+                fs::read_to_string(project_root.join(format!("lake/core/{entry}.md"))).unwrap();
+            assert!(source.contains("meta.type: \"intrinsic\""));
+            assert!(source.contains("  - managed"), "{entry} was not managed");
+        }
         assert!(!project_root.join("lake/core/alpha.md").exists());
+        let meta = fs::read_to_string(project_root.join(".sirno/meta.toml")).unwrap();
+        assert!(meta.contains("field = \"core.name\""));
+        assert!(meta.contains("field = \"core.desc\""));
         assert_eq!(
             fs::read(project_root.join("lake/.artifacts/core.design/logo.bin")).unwrap(),
             b"logo"
@@ -1555,6 +1580,78 @@ Body.
             .unwrap();
         assert!(status.ok, "{status:?}");
         assert_eq!(status.upstreams[0].state, UpstreamStatusState::Ok);
+    }
+
+    #[test]
+    fn crystallizes_metadata_definitions_outside_upstream_mist_selection() {
+        let temp = tempfile::tempdir().unwrap();
+        let upstream_root = temp.path().join("upstream");
+        fs::create_dir(&upstream_root).unwrap();
+        write_upstream_repo_with_unused_field_definitions(&upstream_root);
+        let project_root = temp.path().join("project");
+        fs::create_dir(&project_root).unwrap();
+        let config_path = project_root.join(CONFIG_FILE_NAME);
+        let domain = EntryAtom::new("core").unwrap();
+        let settings = UpstreamSettings::branch(upstream_root.to_string_lossy(), "main")
+            .with_mist(EntryAtom::new("public").unwrap());
+        let config = SirnoConfig {
+            upstreams: UpstreamSettingsMap::from([(domain.clone(), settings)]),
+            ..SirnoConfig::new("lake")
+        };
+        config.write_new(&config_path).unwrap();
+        EntryDirectory::new(project_root.join("lake")).init().unwrap();
+
+        let result = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_crystallize(UpstreamCrystallizeRequest {
+                domains: vec![domain],
+                locked: false,
+            })
+            .unwrap();
+
+        assert_eq!(result.domains, ["core"]);
+        assert!(project_root.join("lake/core/design.md").exists());
+        assert!(project_root.join("lake/core/belongs.md").exists());
+        assert!(!project_root.join("lake/core/alpha.md").exists());
+        let belongs = fs::read_to_string(project_root.join("lake/core/belongs.md")).unwrap();
+        assert!(belongs.contains("meta.type: \"structural\""));
+        assert!(belongs.contains("core.name: Belongs"));
+        let meta = fs::read_to_string(project_root.join(".sirno/meta.toml")).unwrap();
+        assert!(meta.contains("field = \"core.belongs\""));
+    }
+
+    #[test]
+    fn crystallize_mist_reports_selected_structural_targets_outside_selection() {
+        let temp = tempfile::tempdir().unwrap();
+        let upstream_root = temp.path().join("upstream");
+        fs::create_dir(&upstream_root).unwrap();
+        write_upstream_repo_with_field_definitions(&upstream_root);
+        let project_root = temp.path().join("project");
+        fs::create_dir(&project_root).unwrap();
+        let config_path = project_root.join(CONFIG_FILE_NAME);
+        let domain = EntryAtom::new("core").unwrap();
+        let settings = UpstreamSettings::branch(upstream_root.to_string_lossy(), "main")
+            .with_mist(EntryAtom::new("public").unwrap());
+        let config = SirnoConfig {
+            upstreams: UpstreamSettingsMap::from([(domain.clone(), settings)]),
+            ..SirnoConfig::new("lake")
+        };
+        config.write_new(&config_path).unwrap();
+        EntryDirectory::new(project_root.join("lake")).init().unwrap();
+
+        let error = SurfaceContext::new(&config_path)
+            .with_upstream_store_path(temp.path().join("store"))
+            .upstream_crystallize(UpstreamCrystallizeRequest {
+                domains: vec![domain],
+                locked: false,
+            })
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            CommandError::EntryDirectory(EntryDirectoryError::InvalidEntryDirectory(path))
+                if path.ends_with("lake")
+        ));
     }
 
     #[test]
