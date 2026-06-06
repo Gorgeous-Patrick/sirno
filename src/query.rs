@@ -85,7 +85,7 @@ impl EntryQuery {
         Self::default()
     }
 
-    /// Set text terms matched against id, name, desc, and body.
+    /// Set text terms matched against id, intrinsic field values, and body.
     pub fn with_text_terms(mut self, terms: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.text_terms =
             terms.into_iter().map(EntryTextTerm::new).filter(|term| !term.is_empty()).collect();
@@ -150,7 +150,7 @@ impl EntryQuery {
 
 /// Vague predicate over Sirno entries.
 ///
-/// Vague text terms match an entry plus the ids, names, and desc values of structural link targets.
+/// Vague text terms match an entry plus the ids and intrinsic values of structural link targets.
 /// Each text term must match somewhere in that expanded text.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 // sirno:witness:query:begin
@@ -200,10 +200,14 @@ impl VagueEntryQuery {
     // sirno:witness:query:end
 }
 
+// sirno:witness:query:begin
 impl Entry {
     fn query_text(&self) -> String {
-        format!("{}\n{}\n{}\n{}", self.id, self.metadata.name(), self.metadata.desc(), self.body)
-            .to_lowercase()
+        let mut text = self.id.to_string();
+        push_intrinsic_values(&mut text, self);
+        text.push('\n');
+        text.push_str(&self.body);
+        text.to_lowercase()
     }
 
     fn vague_query_text(&self, entries_by_id: &BTreeMap<&EntryAddress, &Entry>) -> String {
@@ -212,15 +216,20 @@ impl Entry {
             text.push('\n');
             text.push_str(target.as_str());
             if let Some(target_entry) = entries_by_id.get(target) {
-                text.push('\n');
-                text.push_str(target_entry.metadata.name());
-                text.push('\n');
-                text.push_str(target_entry.metadata.desc());
+                push_intrinsic_values(&mut text, target_entry);
             }
         }
         text.to_lowercase()
     }
 }
+
+fn push_intrinsic_values(text: &mut String, entry: &Entry) {
+    for (_, value) in entry.metadata.intrinsic_fields() {
+        text.push('\n');
+        text.push_str(value);
+    }
+}
+// sirno:witness:query:end
 
 #[cfg(test)]
 mod tests {
@@ -258,6 +267,19 @@ mod tests {
 
         assert!(query.matches(&concept));
         assert!(!EntryQuery::new().with_text_terms(["missing"]).matches(&concept));
+    }
+
+    #[test]
+    fn text_terms_match_dynamic_intrinsic_fields() {
+        let mut concept = entry("concept", "Concept", "A named idea.", "");
+        concept
+            .metadata
+            .intrinsic
+            .insert("summary".to_owned(), "Dynamic project route.".to_owned());
+
+        let query = EntryQuery::new().with_text_terms(["dynamic"]);
+
+        assert!(query.matches(&concept));
     }
 
     #[test]
@@ -364,6 +386,22 @@ mod tests {
 
         let matches =
             VagueEntryQuery::new().with_text_terms(["vocabulary"]).select_entries(&entries);
+
+        assert_eq!(
+            matches.iter().map(|entry| &entry.id).collect::<Vec<_>>(),
+            vec![&id("concept"), &id("meta")]
+        );
+    }
+
+    #[test]
+    fn vague_query_matches_structural_target_dynamic_intrinsic_fields() {
+        let mut meta = entry("meta", "Meta", "Project vocabulary.", "");
+        meta.metadata.intrinsic.insert("summary".to_owned(), "Dynamic glossary.".to_owned());
+        let mut concept = entry("concept", "Concept", "A named idea.", "");
+        concept.metadata.push_structural_target(FIELD_KIND, id("meta"));
+        let entries = vec![concept, meta];
+
+        let matches = VagueEntryQuery::new().with_text_terms(["glossary"]).select_entries(&entries);
 
         assert_eq!(
             matches.iter().map(|entry| &entry.id).collect::<Vec<_>>(),

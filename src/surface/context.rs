@@ -38,7 +38,7 @@ use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
     EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
-    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MistManifest,
+    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MetaRegistry, MistManifest,
     MistManifestEntry, MistRenderSettings, MistSpec, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY,
     SirnoConfig, StructuralEdgeIndex, StructuralSettings, Tide, TideEntrySnapshot, TideFile,
     TideStatus, UpstreamCrystallizeReport, UpstreamFile, UpstreamGitCache, UpstreamStatusReport,
@@ -172,17 +172,18 @@ impl SurfaceContext {
         settings.render = false;
         settings.witness = None;
         let report = EntryDirectory::new(&lake).check_with_settings(CheckMode::Edit, &settings)?;
+        let meta = report.meta();
         let structural = report.structural();
         // sirno:witness:query:begin
         let columns = match request.columns {
             | QueryColumnSelection::Default => QueryColumns::default_output(),
             | QueryColumnSelection::Options => {
-                return Ok(QueryRun::ColumnOptions(query_column_options(structural)));
+                return Ok(QueryRun::ColumnOptions(query_column_options(meta, structural)));
             }
             | QueryColumnSelection::Selected(columns) => columns,
         };
         // sirno:witness:query:end
-        let columns = validate_query_columns(columns, structural)?;
+        let columns = validate_query_columns(columns, meta, structural)?;
         if report.has_errors() {
             return Ok(QueryRun::InvalidLake { columns, report: Box::new(report) });
         }
@@ -2686,21 +2687,23 @@ pub(crate) fn entry_query_from_filters(
 }
 
 fn validate_query_columns(
-    columns: QueryColumns, structural: &StructuralSettings,
+    columns: QueryColumns, meta: &MetaRegistry, structural: &StructuralSettings,
 ) -> Result<QueryColumns, CommandError> {
-    for field in columns.structural_fields() {
-        if !structural.contains_field(field) {
-            return Err(CommandError::UndefinedStructuralField(field.to_owned()));
+    for field in columns.fields() {
+        if !meta.contains_intrinsic_field(field) && !structural.contains_field(field) {
+            return Err(CommandError::UndefinedQueryColumn(field.to_owned()));
         }
     }
     Ok(columns)
 }
 
-fn query_column_options(structural: &StructuralSettings) -> QueryColumns {
-    let mut columns =
-        vec![QueryColumn::Id, QueryColumn::Name, QueryColumn::Path, QueryColumn::Desc];
+fn query_column_options(meta: &MetaRegistry, structural: &StructuralSettings) -> QueryColumns {
+    let mut columns = vec![QueryColumn::Id, QueryColumn::Path];
     columns.extend(
-        structural.fields().map(|(field, _)| QueryColumn::Structural { field: field.to_owned() }),
+        meta.intrinsic_fields().map(|(field, _)| QueryColumn::Field { field: field.to_owned() }),
+    );
+    columns.extend(
+        structural.fields().map(|(field, _)| QueryColumn::Field { field: field.to_owned() }),
     );
     QueryColumns::new(columns)
 }
@@ -2780,6 +2783,7 @@ fn tide_statuses_for_output(tide: &Tide, all: bool) -> Vec<TideStatus> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::surface::QueryValue;
 
     fn initialized_context() -> (tempfile::TempDir, SurfaceContext) {
         let temp = tempfile::tempdir().unwrap();
@@ -2787,6 +2791,22 @@ mod tests {
         let context = SurfaceContext::new(&config_path);
         context.lake_init(LakeInitRequest { lake: Some(temp.path().join("lake")) }).unwrap();
         (temp, context)
+    }
+
+    fn create_alpha_entry(context: &SurfaceContext) {
+        context
+            .entry_new(EntryNewRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                name: Some("Alpha".to_owned()),
+                desc: "Alpha entry.".to_owned(),
+                structural: Vec::new(),
+                body: Some("Body.".to_owned()),
+            })
+            .unwrap();
+    }
+
+    fn query_request(columns: QueryColumnSelection) -> QueryRequest {
+        QueryRequest { terms: vec!["alpha".to_owned()], columns, ..QueryRequest::default() }
     }
 
     fn create_charm_entry(
@@ -2824,6 +2844,73 @@ mod tests {
                 })
                 .unwrap();
         }
+    }
+
+    #[test]
+    fn query_defaults_to_id_and_path_columns() {
+        let (_temp, context) = initialized_context();
+        create_alpha_entry(&context);
+
+        let response = context.entry_query(query_request(QueryColumnSelection::Default)).unwrap();
+
+        assert_eq!(response.columns, vec!["id".to_owned(), "path".to_owned()]);
+        assert_eq!(response.records.len(), 1);
+        assert_eq!(
+            response.records[0].get("id"),
+            Some(&QueryValue::Text(Some("alpha".to_owned())))
+        );
+        assert!(
+            matches!(response.records[0].get("path"), Some(QueryValue::Text(Some(path))) if path.ends_with("alpha.md"))
+        );
+    }
+
+    #[test]
+    fn query_column_options_include_discovered_intrinsic_fields() {
+        let (_temp, context) = initialized_context();
+
+        let response = context
+            .entry_query(QueryRequest {
+                columns: QueryColumnSelection::Options,
+                ..QueryRequest::default()
+            })
+            .unwrap();
+
+        assert!(response.columns.starts_with(&["id".to_owned(), "path".to_owned()]));
+        assert!(response.columns.contains(&"desc".to_owned()));
+        assert!(response.columns.contains(&"name".to_owned()));
+    }
+
+    #[test]
+    fn query_selected_intrinsic_field_renders_as_scalar_value() {
+        let (_temp, context) = initialized_context();
+        create_alpha_entry(&context);
+
+        let response = context
+            .entry_query(query_request(QueryColumnSelection::Selected(QueryColumns::new(vec![
+                QueryColumn::Id,
+                QueryColumn::Field { field: "desc".to_owned() },
+            ]))))
+            .unwrap();
+
+        assert_eq!(response.columns, vec!["id".to_owned(), "desc".to_owned()]);
+        assert_eq!(
+            response.records[0].get("desc"),
+            Some(&QueryValue::Text(Some("Alpha entry.".to_owned())))
+        );
+    }
+
+    #[test]
+    fn query_rejects_unknown_column_fields() {
+        let (_temp, context) = initialized_context();
+        create_alpha_entry(&context);
+
+        let error = context
+            .query_entries(query_request(QueryColumnSelection::Selected(QueryColumns::new(vec![
+                QueryColumn::Field { field: "unknown".to_owned() },
+            ]))))
+            .unwrap_err();
+
+        assert!(matches!(error, CommandError::UndefinedQueryColumn(field) if field == "unknown"));
     }
 
     #[test]

@@ -185,7 +185,7 @@ belongs = ["category"]
 prerequisite = ["category"]
 
 [entries.desc]
-fingerprint = "sha256:3a336fef88bcc7ddcf50da08465c7a1280f4cb662c61d384b7d50f96e7fdca08"
+fingerprint = "sha256:d962b62c8e726e445a7a5e4f78c33ebe9aff92fd26df79740a64a6c71d24455c"
 belongs = ["intrinsic"]
 
 [entries.design-doc-writer-skill]
@@ -254,7 +254,7 @@ belongs = ["entry-address-resolution"]
 prerequisite = ["entry"]
 
 [entries.entry-commands]
-fingerprint = "sha256:ae7b4d8002bceaffaacab45826ec78caba4f228abe802942dda692f8d324fcc8"
+fingerprint = "sha256:8fba401edd6e257ea29eb883eb66ee559a75f4f87791e1cb17981fc2849ee200"
 belongs = ["entry"]
 prerequisite = ["project-config"]
 refines = ["command-families"]
@@ -495,7 +495,7 @@ prerequisite = [
 ]
 
 [entries.mcp-interface]
-fingerprint = "sha256:0b6dd43079adfa2f94fe6e08697533bdcb7702346059d18b612a9d4169b551c0"
+fingerprint = "sha256:450dbcf007b714f5e23a19d19dc952bf72072dcc83a6ee6a09384de07b100c07"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -571,7 +571,7 @@ prerequisite = [
 refines = ["lake"]
 
 [entries.name]
-fingerprint = "sha256:1af5ba6c878a5db18924bb833575fd990ccee1f327c431fec2ea3e0f95d678e0"
+fingerprint = "sha256:3f81a77c6244da2ab1a7d62256c522a770e316e51ff4a78a2a5c7a83bbdd2792"
 belongs = ["intrinsic"]
 
 [entries.narrative]
@@ -664,7 +664,7 @@ belongs = ["category"]
 prerequisite = ["category"]
 
 [entries.query]
-fingerprint = "sha256:e63a86ae9ec7da809fb5527ac348beb63a25f59c16228a1392f29462a38c2a1b"
+fingerprint = "sha256:5f73bd97ebf7908ef0babc2af8b50bae799feaeb3528eaae924a4f86029abbc6"
 belongs = ["lake-projection"]
 prerequisite = [
     "interfaces",

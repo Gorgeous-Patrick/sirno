@@ -181,6 +181,12 @@ pub enum CommandError {
         "link relation `{0}` is not defined in the lake; add `{0}` with `meta.type: \"structural\"`"
     )]
     UndefinedStructuralField(String),
+    /// A command named a query column that is not built-in or discovered in the lake.
+    #[error(
+        "query column `{0}` is not defined in the lake; select `id`, `path`, a discovered \
+         intrinsic field, or a structural relation"
+    )]
+    UndefinedQueryColumn(String),
     /// Generated-footer masking cannot compose with another ripgrep preprocessor.
     #[error(
         "generated-footer filtering cannot be combined with `rg --pre`; use `--with-generated-footer`"

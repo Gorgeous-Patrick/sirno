@@ -200,21 +200,21 @@ impl QueryColumns {
         self.columns.iter().map(|column| column.label().to_owned()).collect()
     }
 
-    /// Return selected structural link relation columns.
-    pub(crate) fn structural_fields(&self) -> impl Iterator<Item = &str> {
-        self.columns.iter().filter_map(QueryColumn::structural_field)
+    /// Return selected metadata field columns.
+    pub(crate) fn fields(&self) -> impl Iterator<Item = &str> {
+        self.columns.iter().filter_map(QueryColumn::field)
     }
 
-    /// Build the default query output columns.
+    /// Build the default `id` and `path` query output columns.
     pub fn default_output() -> Self {
-        Self { columns: vec![QueryColumn::Id, QueryColumn::Name] }
+        Self { columns: vec![QueryColumn::Id, QueryColumn::Path] }
     }
 }
 
 /// Query column mode requested by a caller.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub enum QueryColumnSelection {
-    /// Select the standard query output columns.
+    /// Select the default `id` and `path` query output columns.
     #[default]
     Default,
     /// Print selectable column names without selecting entries.
@@ -250,15 +250,11 @@ impl FromStr for QueryColumns {
 pub enum QueryColumn {
     /// Entry address.
     Id,
-    /// Human-readable entry name.
-    Name,
     /// Markdown path.
     Path,
-    /// Short entry desc.
-    Desc,
-    /// Configured structural link relation.
-    Structural {
-        /// Metadata relation to read from each entry.
+    /// Discovered intrinsic field or structural link relation.
+    Field {
+        /// Metadata field to read from each entry.
         field: String,
     },
 }
@@ -270,10 +266,8 @@ impl FromStr for QueryColumn {
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
         match raw {
             | "id" => Ok(Self::Id),
-            | "name" => Ok(Self::Name),
             | "path" => Ok(Self::Path),
-            | "desc" => Ok(Self::Desc),
-            | column => Ok(Self::Structural { field: column.to_owned() }),
+            | column => Ok(Self::Field { field: column.to_owned() }),
         }
     }
 }
@@ -283,18 +277,16 @@ impl QueryColumn {
     pub fn label(&self) -> &str {
         match self {
             | Self::Id => "id",
-            | Self::Name => "name",
             | Self::Path => "path",
-            | Self::Desc => "desc",
-            | Self::Structural { field } => field,
+            | Self::Field { field } => field,
         }
     }
 
-    /// Return the link relation name when this column selects structural metadata.
-    pub fn structural_field(&self) -> Option<&str> {
+    /// Return the metadata field name when this column selects entry metadata.
+    pub fn field(&self) -> Option<&str> {
         match self {
-            | Self::Structural { field } => Some(field),
-            | Self::Id | Self::Name | Self::Path | Self::Desc => None,
+            | Self::Field { field } => Some(field),
+            | Self::Id | Self::Path => None,
         }
     }
 }
@@ -305,7 +297,9 @@ impl QueryColumn {
 // sirno:witness:query:begin
 pub enum QueryValue {
     /// Scalar entry field value.
-    Text(String),
+    ///
+    /// `None` means the scalar field is absent from that entry's ownership scope.
+    Text(Option<String>),
     /// Structural link targets for one structural relation.
     ///
     /// `None` means the relation is absent.
@@ -317,7 +311,12 @@ pub enum QueryValue {
 impl QueryValue {
     /// Build a scalar query value.
     pub fn text(value: impl Into<String>) -> Self {
-        Self::Text(value.into())
+        Self::Text(Some(value.into()))
+    }
+
+    /// Build an optional scalar query value.
+    pub fn optional_text(value: Option<&str>) -> Self {
+        Self::Text(value.map(str::to_owned))
     }
 
     /// Build a structural link target query value.
@@ -330,7 +329,8 @@ impl QueryValue {
     /// Return the human table display string for this value.
     pub(crate) fn display(&self) -> String {
         match self {
-            | Self::Text(value) => value.clone(),
+            | Self::Text(Some(value)) => value.clone(),
+            | Self::Text(None) => String::new(),
             | Self::Targets(Some(targets)) => targets.join(", "),
             | Self::Targets(None) => String::new(),
         }
@@ -339,7 +339,7 @@ impl QueryValue {
 
 impl From<String> for QueryValue {
     fn from(value: String) -> Self {
-        Self::Text(value)
+        Self::Text(Some(value))
     }
 }
 

@@ -194,7 +194,7 @@ sirno mist status                            # pending mist ripples and stale pr
 sirno mist intake                            # accept edited misty-lake entries into the reservoir
 sirno mist render                            # render the default misty lake workspace
 sirno check --mode review                    # review boundary; dangling refs are errors
-sirno query --columns id,desc                # list entry ids and desc as a table
+sirno query --columns id,desc                # list entry ids and the discovered desc field
 sirno query --has category=meta              # filter by structural link target
 sirno witness readme --full                  # show how this README witnesses its own intention
 ```

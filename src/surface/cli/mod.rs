@@ -246,9 +246,9 @@ enum TopLevelEntryCommand {
     // sirno:witness:entry-commands:begin
     #[command(visible_alias = "q")]
     Query {
-        /// Vague text terms matched against entries and structural link target summaries.
+        /// Vague text terms matched against entries and structural link target intrinsic values.
         terms: Vec<String>,
-        /// Exact text term matched against id, name, desc, and body.
+        /// Exact text term matched against id, intrinsic field values, and body.
         #[arg(long = "exact-term")]
         exact_terms: Vec<String>,
         /// Structural link target filter as FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS].
@@ -263,7 +263,7 @@ enum TopLevelEntryCommand {
         /// Same-relation target filters and state filters are alternatives.
         #[arg(long = "is", value_name = "FIELD=STATE")]
         is: Vec<StructuralStateFilter>,
-        /// Optional comma-separated output columns: id, name, path, desc, or structural link relations.
+        /// Optional comma-separated output columns: id, path, intrinsic fields, or structural relations.
         #[arg(long = "columns", alias = "column", value_name = "COLUMNS", num_args = 0..=1)]
         columns: Option<Option<QueryColumns>>,
         /// Output format.

@@ -26,8 +26,11 @@ A *mist* uses the same selector to render selected reservoir entries into a *mis
 Filters and projection should not become separate languages.
 
 The default query mode is vague text query.
-It matches an *entry*'s address, local atom, name, desc, and body.
-It also matches the paths, names, and `desc` values of *entries* named by structural links.
+It matches an *entry*'s address,
+intrinsic field values,
+and body.
+It also matches the addresses and intrinsic field values
+of *entries* named by structural links.
 
 Vague query is for recall.
 A user can search for nearby language without choosing the exact link relation first.
@@ -46,10 +49,17 @@ comma-separated values, repeated `--has` flags, and `--is` states use any-of log
 or a present empty `refines` field.
 
 Query output is presentation.
-The default output columns are `id` and `name`.
+The default output columns are `id` and `path`.
 `sirno query --columns COLUMNS` accepts a comma-separated list of columns.
-The printable built-in columns are `id`, `name`, `path`, and `desc`.
-Configured link relation names are printable columns too.
+The built-in columns are `id` and `path`.
+Discovered intrinsic metadata fields are printable scalar columns.
+Configured structural link relation names are printable relation columns.
+`name` and `desc` are selectable in this lake
+because they are discovered intrinsic fields.
+Query does not define them as built-in columns.
+Intrinsic columns print plain strings when present in an *entry*'s ownership scope.
+When a selected intrinsic field is absent from that scope,
+JSON prints `null` and human tables print a blank cell.
 Structural link columns print target entry addresses in metadata order.
 When `sirno query --columns` has no value,
 query prints every selectable column name and does not select entries.

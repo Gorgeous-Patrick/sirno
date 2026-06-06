@@ -14,6 +14,6 @@ belongs:
 The value is a single-line plain string.
 It should say what the entry is,
 not narrate why it was edited.
-Sirno uses it in query output,
-status surfaces,
+It can be selected in query output like other discovered intrinsic fields.
+Sirno uses it in status surfaces
 and human review routes where opening the full entry would be too much.
