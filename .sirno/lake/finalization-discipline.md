@@ -20,45 +20,30 @@ Its packaged wrapper lives in `.artifacts/finalization-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-finalizer/SKILL.md`.
 
 The finalizer is the review-boundary counterpart to repository editing.
-The editor shapes the change under named entries.
-The finalizer verifies that the waterline is coherent,
-walks Tide obligations,
-updates Anchor when the waterline has been reviewed,
-and commits the scoped repository change by default.
+It treats the current agent session as continuous reviewed context:
+the agent may rely on its own reads, edits, and validations from this session
+unless the current repository state contradicts them.
+It refreshes Sirno status and Git state before acceptance,
+but it should not restart work or invent interruption risk merely because it is finalizing.
 
-Start from the active project.
-Read repository instructions, `Sirno.toml`, and the entries that govern the current work.
-Call `sirno_status` to see mist state, Tide state, and review checks.
-Inspect `git status` before staging anything.
+Acceptance is a design judgment before it is a mechanical closeout.
+Read the changed entries in their design neighborhood.
+Check that the change lives at the right level,
+uses structural links for review, navigation, or accountability,
+and preserves semantic locality.
+Read the lake as a person would:
+definitions should precede rules,
+broad entries should lead cleanly to refinements,
+routes should say what they are for,
+and neighboring prose should not overlap or fight the local claim.
+If the design is awkward, transitional, or less fluent after the change,
+return to the appropriate editing skill before accepting the waterline.
+
+After that reader pass,
+validate the lake and changed repository material,
+walk Tide obligations that the reviewed change explains,
+update Anchor only when checks pass and Tide is clear,
+then stage and commit the scoped change by default.
 Unrelated dirty files belong to the user and stay outside the finalization set.
-
-Validate before acceptance.
-Run mist render when reservoir metadata changed.
-Run lake checks in edit and review modes.
-Run witness checks for entries whose evidence changed.
-Run the repository formatter, tests, or checks that fit the changed material.
-For Rust changes in this repository, that means `cargo fmt` and `cargo clippy` at minimum.
-
-Walk Tide rather than bypassing it.
-If Tide reports open workitems,
-read the workitems and resolve only obligations that the current review explains.
-Inference is appropriate when the changed ripple and neighbor were reviewed together.
-If an obligation points to unrelated work, stale projection state, or unclear design impact,
-stop and report the blocker instead of forcing acceptance.
-
-Update Anchor only after review checks pass, mist state is clean, and Tide is clear.
-Anchor records the accepted lake baseline.
-It should be staged with the reservoir, control files, and repository material that made the lake acceptable.
-
-Commit by default.
-Treat finalization as an acceptance and commit boundary unless the user explicitly asks
-to validate only, update Anchor only, or leave the work staged.
-Stage narrowly:
-include changed entries, entry artifacts, repository files, configuration, generated skill wrappers,
-MCP resource constants, and `.sirno/anchor.toml` only when they belong to the current change.
-Use the repository commit-message convention.
-After committing, confirm a clean worktree, current Anchor, clear Tide, and clean mist status.
-
 If finalization cannot complete,
-report the exact blocker and leave the worktree staged only when staging was already part of the
-requested operation.
+report the exact blocker and leave the worktree staged only when staging was already requested.

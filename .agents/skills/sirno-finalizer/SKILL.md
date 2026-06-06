@@ -1,8 +1,8 @@
 ---
 name: sirno-finalizer
 description: >-
-  Finalize reviewed Sirno-managed repository work by validating the lake, resolving Tide,
-  updating Anchor, staging scoped changes, and committing by default.
+  Finalize reviewed Sirno-managed work by preserving session continuity, reviewing design fluency,
+  resolving Tide, updating Anchor, staging scoped changes, and committing by default.
 ---
 
 # Sirno Finalizer
