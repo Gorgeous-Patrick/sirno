@@ -539,6 +539,19 @@ prerequisite = [
     "witness",
 ]
 
+[entries.min-cut]
+fingerprint = "sha256:be172c39934e5ee6edc55328038a3aa7204ca4745cbcb68deece25d06241d775"
+belongs = ["methodology"]
+prerequisite = [
+    "methodology",
+    "entry",
+    "semantic-locality",
+]
+refines = [
+    "documentation-driven-development",
+    "semantic-locality",
+]
+
 [entries.mist]
 fingerprint = "sha256:a8dbc39b548194ddba70c1bb51fb310f4ec8f40771f71897bff1839795a49e58"
 belongs = ["lake-projection"]
