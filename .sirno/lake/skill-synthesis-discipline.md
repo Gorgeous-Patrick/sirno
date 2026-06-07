@@ -77,8 +77,7 @@ The full artifact must include the discipline's failure paths:
 missing sources, unavailable tools, blocked validation,
 absent evidence, and design changes that must be internalized into the lake.
 The wrapper `SKILL.md` artifact keeps the same frontmatter,
-names the matching `sirno://skills/sirno-*` resource,
-and instructs the agent to read that resource before working.
+then uses a one-sentence body that points to the matching `sirno://skills/sirno-*` resource.
 Do not duplicate the full procedure in the wrapper.
 Project configuration maintenance lives in the editor skill.
 Other full resources should point back to the repository editing workflow

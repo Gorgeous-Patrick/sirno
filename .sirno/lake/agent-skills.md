@@ -79,5 +79,5 @@ When a resource or wrapper and the lake disagree,
 the lake and `Sirno.toml` win,
 and the artifact should be corrected.
 Failure handling belongs in the full resource.
-A wrapper should only direct the agent to the MCP resource,
+A wrapper body should be one sentence that directs the agent to the MCP resource,
 so installed skills stay small while the full method remains source-controlled.
