@@ -15,7 +15,7 @@ Recommended fields:
   "pressure": "the reader needs a route before editing code",
   "pull": "why a stable entry id matters before the edit begins",
   "known_terms": ["entry", "lake"],
-  "missing_terms": ["belongs", "refines", "witness"],
+  "missing_terms": ["structural relation", "witness"],
   "route": [
     {
       "entry": "introduction",
@@ -30,15 +30,18 @@ Recommended fields:
   "aftertaste": "name the thing before the work becomes local",
   "artifact": {
     "id": "new-contributor-route",
-    "name": "New Contributor Route",
-    "desc": "A narrative route for a new contributor learning Sirno."
+    "intrinsic": {
+      "name": "New Contributor Route",
+      "desc": "A narrative route for a new contributor learning Sirno."
+    }
   }
 }
 ```
 
 ## Entry Metadata
 
-Use this shape for a materialized narrative entry:
+Use the active project's discovered intrinsic and structural fields.
+This example uses the current Sirno source lake fields:
 
 ```yaml
 ---
@@ -83,8 +86,10 @@ Name the entries and explain why they appear in that order.
 ```json
 {
   "id": "new-contributor-route",
-  "name": "New Contributor Route",
-  "desc": "A narrative route for a new contributor learning Sirno.",
+  "intrinsic": {
+    "name": "New Contributor Route",
+    "desc": "A narrative route for a new contributor learning Sirno."
+  },
   "structural": {
     "category": ["narrative"],
     "belongs": ["sirno"],
@@ -100,5 +105,7 @@ Name the entries and explain why they appear in that order.
 }
 ```
 
+The script writes intrinsic fields exactly as supplied in `intrinsic`.
+Omit `intrinsic` or pass an empty object when the active project has no intrinsic fields.
 The script writes structural links exactly as supplied in `structural`.
 It refuses to overwrite an existing entry unless `--force` is passed.

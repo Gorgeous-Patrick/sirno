@@ -15,7 +15,7 @@ from typing import Any
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 FIELD_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 WRAP_WIDTH = 96
-RESERVED_FIELDS = {"name", "desc", "frozen"}
+MANAGED_FIELDS = {"meta", "frozen", "witness"}
 
 
 def fail(message: str) -> None:
@@ -48,12 +48,32 @@ def structural_fields(data: dict[str, Any]) -> dict[str, list[str]]:
         fail("structural must be an object from link relation names to entry-id lists")
 
     fields: dict[str, list[str]] = {}
+    intrinsic = intrinsic_fields(data)
     for field, targets in value.items():
         if not isinstance(field, str) or not FIELD_RE.match(field):
             fail("link relation names must be ASCII identifiers")
-        if field in RESERVED_FIELDS:
-            fail(f"{field} is reserved metadata, not a link relation")
+        if field in MANAGED_FIELDS:
+            fail(f"{field} is managed metadata, not a link relation")
+        if field in intrinsic:
+            fail(f"{field} is intrinsic metadata, not a link relation")
         fields[field] = string_list_value(targets, f"structural.{field}")
+    return fields
+
+
+def intrinsic_fields(data: dict[str, Any]) -> dict[str, str]:
+    value = data.get("intrinsic", {})
+    if not isinstance(value, dict):
+        fail("intrinsic must be an object from field names to scalar strings")
+
+    fields: dict[str, str] = {}
+    for field, raw in value.items():
+        if not isinstance(field, str) or not FIELD_RE.match(field):
+            fail("intrinsic field names must be ASCII identifiers")
+        if field in MANAGED_FIELDS:
+            fail(f"{field} is managed metadata, not an intrinsic field")
+        if not isinstance(raw, str) or not raw.strip():
+            fail(f"intrinsic.{field} must be a non-empty string")
+        fields[field] = raw.strip()
     return fields
 
 
@@ -92,17 +112,14 @@ def render_entry(data: dict[str, Any]) -> str:
     if not ID_RE.match(entry_id):
         fail("id must be lowercase kebab-case")
 
-    name = required_string(data, "name")
-    desc = required_string(data, "desc")
+    intrinsic = intrinsic_fields(data)
     body = data.get("body")
     if not isinstance(body, list) or not all(isinstance(item, str) for item in body):
         fail("body must be a list of paragraph strings")
 
-    lines = [
-        "---",
-        f"name: {scalar(name)}",
-        f"desc: {scalar(desc)}",
-    ]
+    lines = ["---"]
+    for field, value in intrinsic.items():
+        lines.append(f"{field}: {scalar(value)}")
     for field, targets in structural_fields(data).items():
         lines.extend(render_list_field(field, targets))
     lines.extend(["---", ""])

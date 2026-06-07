@@ -18,8 +18,9 @@ refines:
 ---
 
 Actualization shapes repository material from the configured lake.
-Its full MCP resource text lives in `.artifacts/actualization-discipline/SKILL.full.md`
-and is embedded by `src/mcp.rs` as `sirno://skills/sirno-actualizer`.
+Its static full-resource template lives in
+`.artifacts/actualization-discipline/SKILL.full.template.md`
+and is rendered by `src/mcp.rs` as `sirno://skills/sirno-actualizer`.
 Its packaged wrapper lives in `.artifacts/actualization-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-actualizer/SKILL.md`.
 
@@ -58,7 +59,8 @@ Query the active lake with `sirno_entry_query`,
 then read the few candidate entries that govern the request.
 Read frozen entries with the same weight as mutable ones;
 let the freeze mark guide care rather than skipping.
-Follow structural link relations such as `category`, `belongs`, `prerequisite`, and `refines`.
+Follow the active project's configured structural relations.
+Read each relation's defining entry before relying on its semantics.
 Use `sirno_entry_witness` to inspect existing evidence before touching repository material.
 
 Confirm the entries name the work.

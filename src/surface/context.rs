@@ -23,11 +23,12 @@ use crate::surface::dto::{
     EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult,
     MistIntakeResult, MistStatusResult, MovePathResult, PathRecord, QueryColumn,
     QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
-    RenderResult, RgRequest, RgResult, SkillWrapperRecord, SkillWrapperResult, SpellListResult,
-    SpellRecord, StatusCheckPolicy, StatusResult, StatusTide, StructuralEdgeStatus,
-    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
-    UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
+    RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
+    SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
+    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
+    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
+    WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -38,11 +39,11 @@ use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
     EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
-    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MetaRegistry, MistManifest,
-    MistManifestEntry, MistRenderSettings, MistSpec, SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY,
-    SirnoConfig, StructuralEdgeIndex, StructuralSettings, Tide, TideEntrySnapshot, TideFile,
-    TideStatus, UpstreamCrystallizeReport, UpstreamFile, UpstreamGitCache, UpstreamStatusReport,
-    VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MetaFile, MetaRegistry,
+    MistManifest, MistManifestEntry, MistRenderSettings, MistSpec, SIRNO_CONTROL_DIR_NAME,
+    SPELL_CACHE_DIRECTORY, SirnoConfig, StructuralEdgeIndex, StructuralSettings, Tide,
+    TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport, UpstreamFile,
+    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -51,7 +52,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-editor",
         entry_id: "repository-editing-discipline",
         wrapper_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-editor/SKILL.md",
         content: include_str!(
             "../../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.md"
@@ -61,7 +62,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-actualizer",
         entry_id: "actualization-discipline",
         wrapper_path: ".sirno/lake/.artifacts/actualization-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/actualization-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/actualization-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-actualizer/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/actualization-discipline/SKILL.md"),
     },
@@ -69,7 +70,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-internalizer",
         entry_id: "internalization-discipline",
         wrapper_path: ".sirno/lake/.artifacts/internalization-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/internalization-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/internalization-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-internalizer/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/internalization-discipline/SKILL.md"),
     },
@@ -77,7 +78,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-narrative-session",
         entry_id: "narrative-session-discipline",
         wrapper_path: ".sirno/lake/.artifacts/narrative-session-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-narrative-session/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/narrative-session-discipline/SKILL.md"),
     },
@@ -85,7 +86,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-skill-synthesizer",
         entry_id: "skill-synthesis-discipline",
         wrapper_path: ".sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-skill-synthesizer/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.md"),
     },
@@ -93,7 +94,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-curator",
         entry_id: "lake-curation-discipline",
         wrapper_path: ".sirno/lake/.artifacts/lake-curation-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-curator/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.md"),
     },
@@ -101,7 +102,7 @@ const SKILL_WRAPPERS: &[SkillWrapperSpec] = &[
         name: "sirno-finalizer",
         entry_id: "finalization-discipline",
         wrapper_path: ".sirno/lake/.artifacts/finalization-discipline/SKILL.md",
-        full_path: ".sirno/lake/.artifacts/finalization-discipline/SKILL.full.md",
+        full_path: ".sirno/lake/.artifacts/finalization-discipline/SKILL.full.template.md",
         target_path: ".agents/skills/sirno-finalizer/SKILL.md",
         content: include_str!("../../.sirno/lake/.artifacts/finalization-discipline/SKILL.md"),
     },
@@ -1610,6 +1611,21 @@ impl SurfaceContext {
         })
     }
     // sirno:witness:project-status-commands:end
+
+    /// Return active project metadata needed to render MCP skill resource templates.
+    pub fn skill_resource_context(&self) -> Result<SkillResourceContext, CommandError> {
+        let config = SirnoConfig::from_file(&self.config_path)?;
+        let lake = resolve_lake_path(self.lake_path.as_deref(), &self.config_path, &config);
+        let meta_path = meta_file_path_for_config(&self.config_path);
+        let meta = MetaFile::from_file(&meta_path)?;
+        Ok(SkillResourceContext {
+            config_path: display_path(&self.config_path),
+            lake_path: display_path(&lake),
+            meta_path: display_path(&meta_path),
+            intrinsic_fields: meta.intrinsics,
+            structural_fields: meta.structural,
+        })
+    }
 
     /// Resolve tide workitems.
     pub fn tide_resolve(

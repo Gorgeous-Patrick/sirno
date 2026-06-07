@@ -226,8 +226,9 @@ mod tests {
             name: name.to_owned(),
             wrapper_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.md"
                 .to_owned(),
-            full_path: ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md"
-                .to_owned(),
+            full_path:
+                ".sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.template.md"
+                    .to_owned(),
             target_path: target_path.to_owned(),
             status: status.to_owned(),
             changed: false,

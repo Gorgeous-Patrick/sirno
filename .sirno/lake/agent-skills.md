@@ -35,8 +35,10 @@ artifacts, package, and structural links.
 It should not require existing discipline entries to rewrite their local meaning.
 
 Each rostered discipline owns two lake artifacts.
-`SKILL.full.md` is the full Markdown skill text embedded by `src/mcp.rs`
-and served as a `sirno://skills/sirno-*` MCP resource.
+`SKILL.full.template.md` is the static full-resource template read by `src/mcp.rs`.
+MCP renders it when an agent reads the matching `sirno://skills/sirno-*` resource.
+The rendered resource injects active-project metadata,
+including intrinsic fields and structural relations loaded from `.sirno/meta.toml`.
 `SKILL.md` is the small wrapper copied into `.agents/skills/sirno-*/SKILL.md`.
 The wrapper tells an agent to read the MCP resource before doing skill work.
 When Claude skill integration is selected,
@@ -74,8 +76,8 @@ an agent should report the needed human CLI action.
 The editor skill may call CLI `sirno util config fix`
 to canonicalize `Sirno.toml` comments during repository editing.
 
-A full skill resource is an operational rendering of lake method, not a separate authority.
-When a resource or wrapper and the lake disagree,
+A full skill resource is a runtime rendering of lake method, not a separate authority.
+When a resource template, rendered resource, wrapper, and the lake disagree,
 the lake and `Sirno.toml` win,
 and the artifact should be corrected.
 Failure handling belongs in the full resource.

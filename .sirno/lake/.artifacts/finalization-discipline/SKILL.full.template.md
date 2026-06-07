@@ -23,6 +23,8 @@ update Anchor only, or leave the work staged.
 This full skill text is served as `sirno://skills/sirno-finalizer`.
 Apply it to the project currently bound through Sirno MCP.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Session Stance
 
 Treat the current agent session as continuous and safe review context.

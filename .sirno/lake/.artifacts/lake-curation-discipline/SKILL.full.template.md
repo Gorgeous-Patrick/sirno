@@ -26,6 +26,8 @@ and keeps the lake's claims honest about the repository.
 This full skill text is served as `sirno://skills/sirno-curator`.
 Apply it to the project currently bound through Sirno MCP.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Project Binding
 
 Bind the MCP server to the repository before calling project tools.
@@ -43,9 +45,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
    and any pending review entries.
    Run `sirno_entry_query` to enumerate the lake.
    Read the narrative routes first: introduction, methodology, the README entry,
-   and any other entries categorized as narrative.
+   and any other entries that the project presents as narrative routes.
    Read the meta entries to learn the project's own principles, vocabulary,
-   and category conventions before judging any entry against them.
+   and structural conventions before judging any entry against them.
 
 2. Audit each entry against a rubric.
    An entry should state one durable design fact and stay focused enough to read in place.
@@ -64,15 +66,16 @@ Call `sirno_cwd` again before switching projects in the same server process.
    an inventory, workflow, comparison, or relationship is buried in prose
    that bullets, steps, tables, or a simple diagram would make easier to scan;
    another entry already covers the same material;
-   the entry's role does not match its configured category, belongs, or refines edges;
-   or the entry sits outside a structural neighborhood that its peers all join.
+   the entry's role does not match its configured structural relations;
+   or the entry sits outside a configured review neighborhood that its peers all join.
 
 3. Discover missing structure.
+   Read the active project's structural relation entries before judging missing edges.
    When one entry's prose claims to make another more concrete,
-   check that `refines` carries that edge in metadata.
+   use the configured specialization relation if one exists.
    When a family of peers shares a theme,
-   check that `belongs` places them in the same review neighborhood.
-   When an entry sits outside a neighborhood that its category peers all join,
+   use the configured review-neighborhood relation if one exists.
+   When an entry sits outside a neighborhood that comparable peers all join,
    the absence is usually an oversight, not a design choice.
    A vertical specialization edge and a horizontal review neighborhood can both apply,
    but they should not collapse onto the same target.
@@ -144,7 +147,7 @@ Prefer many small commits over one large pass.
 ## Stance
 
 The curator proposes, the human disposes.
-Deleting an entry, restructuring a refines chain,
+Deleting an entry, restructuring a specialization chain,
 or changing a frozen entry are not unilateral acts.
 This skill is a maintenance partner for the human reviewer,
 not an autonomous rewriter of the lake.

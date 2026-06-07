@@ -20,6 +20,8 @@ say so instead of inventing a layout.
 This full skill text is served as `sirno://skills/sirno-skill-synthesizer`.
 It follows the project's skill-synthesis discipline.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Project Binding
 
 Bind the MCP server to the repository before calling project tools.
@@ -56,23 +58,24 @@ correct the artifact or wrapper, never the lake.
    List the Sirno MCP tools available in the active server before writing tool names into a skill.
    A full resource that names a missing tool is worse than one that only names the procedure.
 
-4. Render full resources.
-   The full resource operationalizes its discipline plus the shared method it depends on.
+4. Render full-resource templates.
+   The template operationalizes its discipline plus the shared method it depends on.
+   Include the runtime metadata slot when a skill depends on active project fields.
    Add nothing the lake does not commit.
-   Include semantic locality when the resource creates, edits, audits, or materializes entries:
+   Include semantic locality when the rendered resource creates, edits, audits, or materializes entries:
    entries should preserve their own local meaning,
    and useful lists should not be confused for semantic contracts.
    A route, index, roster, or review front door may enumerate children
    when that list is part of that entry's local claim.
    Preserve shared documentation habits such as reader-aware bullets, diagrams,
-   conceptual ordering, and declarative precision when the full resource touches prose.
+   conceptual ordering, and declarative precision when the rendered resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,
    absent evidence, and design changes that must be internalized into the lake.
    Defer project configuration maintenance to the editor skill rather than copying its checklist.
 
 5. Render wrappers.
    The wrapper keeps the same frontmatter as the full resource.
-   Its body only states that it is a wrapper and requires the matching MCP resource before work begins.
+   Its body is one sentence that points to the matching MCP resource.
    Copy the wrapper artifact exactly into the installed package.
 
 6. Update exposed surfaces.
@@ -86,7 +89,7 @@ correct the artifact or wrapper, never the lake.
 
 Run `sirno_mist_render` after reservoir metadata changes.
 Run `sirno_lake_check` in edit mode and review mode.
-Confirm each generated `SKILL.md` and `SKILL.full.md` has valid frontmatter.
+Confirm each generated `SKILL.md` and `SKILL.full.template.md` has valid frontmatter.
 Compare installed wrappers against their artifacts byte for byte.
 Confirm every rostered discipline has the artifacts, resources, and packages
 that the active project expects.

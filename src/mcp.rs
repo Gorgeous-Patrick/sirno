@@ -5,6 +5,7 @@
 //! into typed surface requests and converts surface DTOs into MCP tool results.
 
 use std::error::Error;
+use std::fmt::Write as _;
 use std::future::{self, Future};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -27,8 +28,8 @@ use serde::{Deserialize, Serialize};
 use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathsRequest, LakeInitRequest, PathSelection, QueryColumn, QueryColumnSelection,
-    QueryColumns, QueryRequest, RgRequest, StructuralFieldState, StructuralFilter,
-    StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
+    QueryColumns, QueryRequest, RgRequest, SkillResourceContext, StructuralFieldState,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
     TideSelectionRequest, TideStatusMode, UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
 use crate::{
@@ -36,6 +37,7 @@ use crate::{
 };
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
+const SKILL_PROJECT_CONTEXT_TOKEN: &str = "{{SIRNO_ACTIVE_PROJECT_METADATA}}";
 const ENTRY_RESOURCE_MIME_TYPE: &str = "text/markdown";
 const ENTRY_RESOURCE_URI_PREFIX: &str = "sirno://entries/";
 const ENTRY_RESOURCE_URI_TEMPLATE: &str = "sirno://entries/{id}";
@@ -46,7 +48,9 @@ const DESIGN_DOC_WRITER_SKILL_RESOURCE: SkillResourceSpec = SkillResourceSpec {
     name: "design-doc-writer",
     title: "Design Doc Writer",
     description: "Full design-doc-writer skill text.",
-    content: include_str!("../.sirno/lake/.artifacts/design-doc-writer-skill/SKILL.full.md"),
+    template: include_str!(
+        "../.sirno/lake/.artifacts/design-doc-writer-skill/SKILL.full.template.md"
+    ),
 };
 // sirno:witness:design-doc-writer-skill:end
 
@@ -58,8 +62,8 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-editor",
         title: "Sirno Editor",
         description: "Full Sirno editor skill text.",
-        content: include_str!(
-            "../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.md"
+        template: include_str!(
+            "../.sirno/lake/.artifacts/repository-editing-discipline/SKILL.full.template.md"
         ),
     },
     SkillResourceSpec {
@@ -67,22 +71,26 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-actualizer",
         title: "Sirno Actualizer",
         description: "Full Sirno actualizer skill text.",
-        content: include_str!("../.sirno/lake/.artifacts/actualization-discipline/SKILL.full.md"),
+        template: include_str!(
+            "../.sirno/lake/.artifacts/actualization-discipline/SKILL.full.template.md"
+        ),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-internalizer",
         name: "sirno-internalizer",
         title: "Sirno Internalizer",
         description: "Full Sirno internalizer skill text.",
-        content: include_str!("../.sirno/lake/.artifacts/internalization-discipline/SKILL.full.md"),
+        template: include_str!(
+            "../.sirno/lake/.artifacts/internalization-discipline/SKILL.full.template.md"
+        ),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-narrative-session",
         name: "sirno-narrative-session",
         title: "Sirno Narrative Session",
         description: "Full Sirno narrative-session skill text.",
-        content: include_str!(
-            "../.sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.md"
+        template: include_str!(
+            "../.sirno/lake/.artifacts/narrative-session-discipline/SKILL.full.template.md"
         ),
     },
     SkillResourceSpec {
@@ -90,21 +98,27 @@ const SKILL_RESOURCES: &[SkillResourceSpec] = &[
         name: "sirno-skill-synthesizer",
         title: "Sirno Skill Synthesizer",
         description: "Full Sirno skill-synthesizer text.",
-        content: include_str!("../.sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.md"),
+        template: include_str!(
+            "../.sirno/lake/.artifacts/skill-synthesis-discipline/SKILL.full.template.md"
+        ),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-curator",
         name: "sirno-curator",
         title: "Sirno Curator",
         description: "Full Sirno curator skill text.",
-        content: include_str!("../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.md"),
+        template: include_str!(
+            "../.sirno/lake/.artifacts/lake-curation-discipline/SKILL.full.template.md"
+        ),
     },
     SkillResourceSpec {
         uri: "sirno://skills/sirno-finalizer",
         name: "sirno-finalizer",
         title: "Sirno Finalizer",
         description: "Full Sirno finalizer skill text.",
-        content: include_str!("../.sirno/lake/.artifacts/finalization-discipline/SKILL.full.md"),
+        template: include_str!(
+            "../.sirno/lake/.artifacts/finalization-discipline/SKILL.full.template.md"
+        ),
     },
 ];
 // sirno:witness:agent-skills:end
@@ -115,7 +129,7 @@ struct SkillResourceSpec {
     name: &'static str,
     title: &'static str,
     description: &'static str,
-    content: &'static str,
+    template: &'static str,
 }
 
 impl SkillResourceSpec {
@@ -133,9 +147,81 @@ impl SkillResourceSpec {
         )
     }
 
-    fn as_resource_contents(&self) -> ResourceContents {
-        ResourceContents::text(self.content, self.uri).with_mime_type(SKILL_RESOURCE_MIME_TYPE)
+    fn as_resource_contents(&self, context: &SurfaceContext) -> ResourceContents {
+        ResourceContents::text(self.render(context), self.uri)
+            .with_mime_type(SKILL_RESOURCE_MIME_TYPE)
     }
+
+    fn render(&self, context: &SurfaceContext) -> String {
+        if !self.template.contains(SKILL_PROJECT_CONTEXT_TOKEN) {
+            return self.template.to_owned();
+        }
+        self.template.replace(SKILL_PROJECT_CONTEXT_TOKEN, &render_skill_project_context(context))
+    }
+}
+
+fn render_skill_project_context(context: &SurfaceContext) -> String {
+    match context.skill_resource_context() {
+        | Ok(context) => render_available_skill_project_context(&context),
+        | Err(error) => format!(
+            "## Active Project Metadata\n\n\
+             This section is generated by Sirno MCP when the resource is read.\n\
+             The active project metadata is unavailable: {error}.\n\
+             Bind the server with `sirno_cwd` and run `sirno_lake_check` to refresh \
+             `.sirno/meta.toml` before relying on project field names.\n"
+        ),
+    }
+}
+
+fn render_available_skill_project_context(context: &SkillResourceContext) -> String {
+    let mut out = String::new();
+    out.push_str("## Active Project Metadata\n\n");
+    out.push_str("This section is generated by Sirno MCP when the resource is read.\n");
+    out.push_str("Use these fields for the active project.\n");
+    out.push_str("Do not assume another project has the same intrinsic or structural fields.\n\n");
+    writeln!(out, "Config path: {}.", inline_code(&context.config_path)).unwrap();
+    writeln!(out, "Lake path: {}.", inline_code(&context.lake_path)).unwrap();
+    writeln!(out, "Meta registry: {}.", inline_code(&context.meta_path)).unwrap();
+    out.push_str("Default query columns: `id`, `path`.\n\n");
+
+    out.push_str("Discovered intrinsic fields:\n");
+    if context.intrinsic_fields.is_empty() {
+        out.push_str("- none\n");
+    } else {
+        for field in &context.intrinsic_fields {
+            writeln!(
+                out,
+                "- {} defined by {}",
+                inline_code(&field.field),
+                inline_code(field.entry.as_str())
+            )
+            .unwrap();
+        }
+    }
+
+    out.push_str("\nDiscovered structural relations:\n");
+    if context.structural_fields.is_empty() {
+        out.push_str("- none\n");
+    } else {
+        for field in &context.structural_fields {
+            writeln!(
+                out,
+                "- {} defined by {}",
+                inline_code(&field.field),
+                inline_code(field.entry.as_str())
+            )
+            .unwrap();
+        }
+    }
+    out.push_str(
+        "\nThese fields come from `.sirno/meta.toml`.\n\
+         Read a field's defining entry before relying on that field's semantics.\n",
+    );
+    out
+}
+
+fn inline_code(value: &str) -> String {
+    if value.contains('`') { format!("`` {value} ``") } else { format!("`{value}`") }
 }
 
 fn entry_resource_template() -> ResourceTemplate {
@@ -203,7 +289,7 @@ impl ServerHandler for SirnoMcpServer {
         &self, request: ReadResourceRequestParams, _context: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ReadResourceResult, McpError>> + MaybeSendFuture + '_ {
         let result = if let Some(resource) = SkillResourceSpec::for_uri(&request.uri) {
-            Ok(ReadResourceResult::new(vec![resource.as_resource_contents()]))
+            Ok(ReadResourceResult::new(vec![resource.as_resource_contents(&self.context)]))
         } else if let Some(raw_id) = request.uri.strip_prefix(ENTRY_RESOURCE_URI_PREFIX) {
             entry_address(raw_id.to_owned())
                 .map_err(|error| McpError::invalid_params(error, None))
@@ -1030,7 +1116,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::{CONFIG_FILE_NAME, RepoMember, RepoSettings, SirnoConfig};
+    use crate::{CONFIG_FILE_NAME, MetaRegistry, RepoMember, RepoSettings, SirnoConfig};
 
     // sirno:witness:mcp-interface:begin
     const EXPECTED_TOOLS: &[&str] = &[
@@ -1076,6 +1162,7 @@ mod tests {
         let docs = root.join("docs");
         SirnoConfig::new("docs").write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
+        MetaRegistry::standard().write(root.join(".sirno").join("meta.toml")).unwrap();
         write_intrinsic_entries(&docs);
         fs::write(
             docs.join("alpha.md"),
@@ -1460,6 +1547,10 @@ Body.
         assert_eq!(mime_type.as_deref(), Some(SKILL_RESOURCE_MIME_TYPE));
         assert!(text.contains("# Sirno Editor"));
         assert!(text.contains("## Workflow"));
+        assert!(text.contains("Meta registry:"));
+        assert!(text.contains(".sirno/meta.toml"));
+        assert!(text.contains("- `desc` defined by `desc`"));
+        assert!(!text.contains(SKILL_PROJECT_CONTEXT_TOKEN));
 
         let design_skill = client
             .peer()

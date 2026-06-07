@@ -67,6 +67,26 @@ impl MetaFieldRecord {
     }
 }
 
+impl MetaFile {
+    /// Load a generated meta registry lockfile from a specific path.
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, MetaRegistryError> {
+        let path = path.as_ref();
+        let source = fs::read_to_string(path)
+            .map_err(|source| MetaRegistryError::Read { path: path.to_path_buf(), source })?;
+        let file: Self = toml::from_str(&source)
+            .map_err(|source| MetaRegistryError::Parse { path: path.to_path_buf(), source })?;
+        file.validate()?;
+        Ok(file)
+    }
+
+    fn validate(&self) -> Result<(), MetaRegistryError> {
+        if self.schema != META_FILE_SCHEMA {
+            return Err(MetaRegistryError::UnsupportedSchema { schema: self.schema });
+        }
+        Ok(())
+    }
+}
+
 impl MetaRegistry {
     /// Construct an empty registry.
     pub fn new() -> Self {
@@ -289,7 +309,7 @@ pub enum MetaFieldNameError {
     Reserved(String),
 }
 
-/// Error raised while writing the generated meta registry lockfile.
+/// Error raised while reading or writing the generated meta registry lockfile.
 #[derive(Debug, Error)]
 pub enum MetaRegistryError {
     /// The control directory could not be created.
@@ -304,6 +324,21 @@ pub enum MetaRegistryError {
     /// TOML rendering failed.
     #[error("failed to render meta registry lockfile")]
     Render(#[source] toml::ser::Error),
+    /// TOML parsing failed.
+    #[error("failed to parse meta registry lockfile {path}")]
+    Parse {
+        /// Registry path.
+        path: PathBuf,
+        /// Underlying TOML error.
+        #[source]
+        source: toml::de::Error,
+    },
+    /// The registry lockfile schema is unsupported.
+    #[error("unsupported meta registry lockfile schema {schema}")]
+    UnsupportedSchema {
+        /// Unsupported schema version.
+        schema: u32,
+    },
     /// The existing registry file could not be read.
     #[error("failed to read meta registry lockfile {path}")]
     Read {

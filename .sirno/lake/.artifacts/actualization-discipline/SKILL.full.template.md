@@ -21,6 +21,8 @@ use `sirno://skills/sirno-editor`.
 This full skill text is served as `sirno://skills/sirno-actualizer`.
 Apply it to the project currently bound through Sirno MCP.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Project Binding
 
 Bind the MCP server to the repository before calling project tools.

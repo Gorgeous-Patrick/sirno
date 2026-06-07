@@ -47,7 +47,7 @@ and uses definition by negation only when it prevents a likely confusion.
 It uses bullets, numbered steps, tables, or simple diagrams when those forms make
 structure easier for a human co-worker to scan and review.
 
-The artifact at `.artifacts/design-doc-writer-skill/SKILL.full.md`
-is the canonical source for the MCP resource
+The artifact at `.artifacts/design-doc-writer-skill/SKILL.full.template.md`
+is the canonical template source for the MCP resource
 and stays in sync with `.agents/skills/design-doc-writer/SKILL.md`.
-`src/mcp.rs` embeds it as `sirno://skills/design-doc-writer`.
+`src/mcp.rs` renders it as `sirno://skills/design-doc-writer`.

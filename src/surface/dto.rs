@@ -15,8 +15,8 @@ use crate::surface::output::{
 };
 use crate::{
     CheckMode, EntryAddress, EntryAddressError, EntryAtom, EntryDirectoryReport,
-    EntryStructuralMatcher, GenLinkDirectoryReport, StructuralEdgeSettings, Tide, TideStatus,
-    TideWorkitem, UpstreamSettings, WitnessRecord,
+    EntryStructuralMatcher, GenLinkDirectoryReport, MetaFieldRecord, StructuralEdgeSettings, Tide,
+    TideStatus, TideWorkitem, UpstreamSettings, WitnessRecord,
 };
 
 /// Shared human-or-JSON output renderer.
@@ -1014,7 +1014,7 @@ pub struct SkillWrapperRecord {
     pub name: String,
     /// Lake-owned wrapper artifact path or link source path.
     pub wrapper_path: String,
-    /// Lake-owned full resource artifact path.
+    /// Lake-owned full resource template artifact path.
     pub full_path: String,
     /// Repository-relative package or link target path.
     pub target_path: String,
@@ -1022,6 +1022,21 @@ pub struct SkillWrapperRecord {
     pub status: String,
     /// Whether the package target differs or was rewritten.
     pub changed: bool,
+}
+
+/// Active project context injected into dynamic MCP skill resources.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillResourceContext {
+    /// Config path used by the MCP server.
+    pub config_path: String,
+    /// Configured lake path resolved from the active project.
+    pub lake_path: String,
+    /// Generated meta registry lockfile path.
+    pub meta_path: String,
+    /// Discovered intrinsic metadata fields.
+    pub intrinsic_fields: Vec<MetaFieldRecord>,
+    /// Discovered structural relation fields.
+    pub structural_fields: Vec<MetaFieldRecord>,
 }
 
 /// Result of listing, checking, or installing Sirno skill wrappers.

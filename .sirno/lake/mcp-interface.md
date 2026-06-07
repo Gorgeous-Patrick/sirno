@@ -20,8 +20,13 @@ MCP is the agent-facing project interface:
 - it serves lake-owned skill instructions as resources
 - it keeps host setup and package maintenance as explicit human CLI actions
 
-Skill resources are `text/markdown` payloads embedded by `src/mcp.rs`
-from the lake-owned `SKILL.full.md` artifacts.
+Skill resources are `text/markdown` payloads rendered by `src/mcp.rs`
+from lake-owned `SKILL.full.template.md` artifacts.
+Templates may carry a runtime metadata slot.
+When present,
+MCP fills it with the configured lake path,
+the default query columns,
+and the active project's intrinsic and structural fields from `.sirno/meta.toml`.
 Packaged `.agents/skills/sirno-*` wrappers tell agents to read these resources.
 
 MCP resources are:

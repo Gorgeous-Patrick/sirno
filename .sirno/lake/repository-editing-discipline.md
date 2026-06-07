@@ -18,8 +18,9 @@ refines:
 ---
 
 Repository editing is the default agent procedure for changing a Sirno-managed repository.
-Its full MCP resource text lives in `.artifacts/repository-editing-discipline/SKILL.full.md`
-and is embedded by `src/mcp.rs` as `sirno://skills/sirno-editor`.
+Its static full-resource template lives in
+`.artifacts/repository-editing-discipline/SKILL.full.template.md`
+and is rendered by `src/mcp.rs` as `sirno://skills/sirno-editor`.
 Its packaged wrapper lives in `.artifacts/repository-editing-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
@@ -29,7 +30,7 @@ If `Sirno.toml` is missing, report that the repository is not currently Sirno-ma
 then prompt the user to start with `sirno init`.
 Call `sirno_status` early to surface the lake path, tide blockers, and pending review entries.
 Use `sirno_entry_query` for discovery,
-follow `category`, `belongs`, `prerequisite`, and `refines`,
+follow the active project's configured structural relations,
 and inspect existing evidence with `sirno_entry_witness` before editing repository material.
 This applies to source, tests, generated artifacts, skill packages, README files,
 configuration, and design documents outside the configured lake.
@@ -42,8 +43,7 @@ Apply semantic locality when creating or revising entries.
 The body should state the local meaning in place,
 and any route, index, roster, or review front door should say what the list is for.
 Keep the semantic contract separate from the current route through children.
-Use `category`, `belongs`, `prerequisite`, and `refines` only when they improve navigation,
-review, or accountability.
+Use configured structural relations only when they improve navigation, review, or accountability.
 Leave generated footer regions untouched.
 
 Actualize from the updated entries into repository material.

@@ -22,6 +22,8 @@ Any important local commitment should trace back to an entry in the active proje
 This full skill text is served as `sirno://skills/sirno-editor`.
 Apply it to the project currently bound through Sirno MCP.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Project Binding
 
 Bind the MCP server to the repository before calling project tools.
@@ -39,7 +41,8 @@ Call `sirno_cwd` again before switching projects in the same server process.
    and any pending review entries.
    Query the active lake with `sirno_entry_query`,
    then read the few candidate entries that govern the request.
-   Follow configured link relations such as `category`, `belongs`, `prerequisite`, and `refines`.
+   Follow the active project's configured link relations.
+   Read each relation's defining entry before relying on its semantics.
    Use `sirno_entry_witness` to inspect existing evidence before touching repository material.
 
 2. Choose the design handle.

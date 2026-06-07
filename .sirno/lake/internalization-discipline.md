@@ -17,8 +17,9 @@ refines:
 ---
 
 Internalization records durable design facts from repository material into the configured lake.
-Its full MCP resource text lives in `.artifacts/internalization-discipline/SKILL.full.md`
-and is embedded by `src/mcp.rs` as `sirno://skills/sirno-internalizer`.
+Its static full-resource template lives in
+`.artifacts/internalization-discipline/SKILL.full.template.md`
+and is rendered by `src/mcp.rs` as `sirno://skills/sirno-internalizer`.
 Its packaged wrapper lives in `.artifacts/internalization-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-internalizer/SKILL.md`.
 
@@ -77,7 +78,7 @@ A frozen entry that already names the fact remains user-reviewed truth;
 surface any proposed revision to the user for double review
 before melting it with `sirno_entry_melt`,
 rather than writing a parallel entry past it.
-Read candidate entries and walk `belongs`, `prerequisite`, and `refines`
+Read candidate entries and walk configured structural relations
 to find the closest existing neighbor.
 If a mutable entry names the right claim,
 revise it in place to record the sharper design fact.
@@ -104,8 +105,7 @@ Use paragraphs for continuous claims.
 Use bullets, numbered steps, tables, or simple diagrams when the fact is easier to scan
 as an inventory, workflow, comparison, or relationship.
 Prefer positive definition over defensive negation.
-Attach `category`, `belongs`, `prerequisite`, and `refines` only when they improve
-navigation, review, or accountability.
+Attach configured structural relations only when they improve navigation, review, or accountability.
 
 Connect to evidence without manufacturing it.
 The entry holds the claim;

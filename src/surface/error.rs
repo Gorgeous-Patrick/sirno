@@ -7,8 +7,8 @@ use thiserror::Error;
 
 use crate::{
     AnchorError, CharmError, ConfigError, EntryAddress, EntryAddressError, EntryArtifactPathError,
-    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, MistError, TideError,
-    TideFileError, UpstreamError, UpstreamFileError, WitnessError,
+    EntryAtomError, EntryDirectoryError, EntryParseError, GeneratedLinkError, MetaRegistryError,
+    MistError, TideError, TideFileError, UpstreamError, UpstreamFileError, WitnessError,
 };
 
 /// Error raised while running the CLI.
@@ -308,6 +308,9 @@ pub enum CommandError {
     /// Sirno Lake entry directory command failed.
     #[error(transparent)]
     EntryDirectory(#[from] EntryDirectoryError),
+    /// Meta registry lockfile handling failed.
+    #[error(transparent)]
+    MetaRegistry(#[from] MetaRegistryError),
     /// Entry address parsing failed.
     #[error(transparent)]
     EntryAddress(#[from] EntryAddressError),

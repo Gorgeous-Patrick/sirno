@@ -5,8 +5,8 @@ schema = 1
 lake = ".sirno/lake"
 
 [entries.actualization-discipline]
-fingerprint = "sha256:3b060ccfbad95b7135bab8ca7e6716e093c91b9308a2c1d716839d9aad2fada0"
-artifact_fingerprint = "sha256:f8c819a54a20c4858ef77720117384295f8627b9357cd186ce802884509c9620"
+fingerprint = "sha256:1b9baa4f87d174ce88cd96db7a6204924238c7e2b5530b74374613c6ca6aba22"
+artifact_fingerprint = "sha256:86773ff481f0afc03de9a78d2643c4a21347b581761aa1582ce9683be4a6d4e6"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -25,7 +25,7 @@ belongs = ["transform"]
 prerequisite = ["transform"]
 
 [entries.agent-skills]
-fingerprint = "sha256:8d63a62a7f51510aece183460e7f5933c7b465dc48526b80bbe8fbbb1f06239f"
+fingerprint = "sha256:ca9c08e6fb93763b60ddcf9a17ef100b54e59fda246e06b50e8e3404ed210342"
 belongs = ["sirno"]
 prerequisite = [
     "methodology",
@@ -189,8 +189,8 @@ fingerprint = "sha256:d962b62c8e726e445a7a5e4f78c33ebe9aff92fd26df79740a64a6c71d
 belongs = ["intrinsic"]
 
 [entries.design-doc-writer-skill]
-fingerprint = "sha256:af12b7cdd2e3c56753ff74990c4928dbaca9df27ff411fa77d7b5cd4a4d8c024"
-artifact_fingerprint = "sha256:c02b35f528550b1cd2410a76232e56d50254123375f20d9e979a1f2f4c9e959d"
+fingerprint = "sha256:805e96a10d02684e206fe13dabaf29f4475b46998a18519b8ae9a40e829607f0"
+artifact_fingerprint = "sha256:14867c87f07524c24fabba2ce6a7de5f77438338aaf86307066d85720b7a2771"
 belongs = ["agent-skills"]
 prerequisite = ["agent-skills"]
 
@@ -292,8 +292,8 @@ prerequisite = [
 ]
 
 [entries.finalization-discipline]
-fingerprint = "sha256:c04c5652245d053e90efc170111a2bf54d13677f6e0fb67e340fdf9a1c97d997"
-artifact_fingerprint = "sha256:52e4d263d3fc31ece4b4e3c57db6f4b34bf4d18b5d5d7daf4b31f57efbc29975"
+fingerprint = "sha256:10e2a806a4012dd53f789574dd1657945b36bbecbdb3fb4eedb08305a8b2e5e0"
+artifact_fingerprint = "sha256:8cde19330c7f8c30e1a525fbd1deb3fe4259ffb6524e9d738aaed64b77fca2ee"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -362,8 +362,8 @@ belongs = ["sirno"]
 prerequisite = ["project-config"]
 
 [entries.internalization-discipline]
-fingerprint = "sha256:cc0123c38cc8848de5d035eee790f0714b1595aa116d3fa2ac5e031c36827efc"
-artifact_fingerprint = "sha256:694ad01df6228e820939b6a2988310276641a509396b6eb0015360a2a6d4f60e"
+fingerprint = "sha256:93916d076c38e3efadf2ecf7162afe9bcce7d8701bd006431f0f28cb999a1277"
+artifact_fingerprint = "sha256:e9ced4f0b527dc61ea37ae8611c85564f96baa3d0353e8d16601fb4efe34eb15"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -413,8 +413,8 @@ prerequisite = [
 ]
 
 [entries.lake-curation-discipline]
-fingerprint = "sha256:3e7f8444da67f57501b39b264a689da639fae7eb4f5f8bebb06d727967d60d0e"
-artifact_fingerprint = "sha256:27d6de21ab3ec1b4f681c74d2d1286c3ef701a5753d6ffcf0ce6ee7997011315"
+fingerprint = "sha256:b9afbf299b785e3092723057e4a2b329e32b7439017d7872713fc22d709e1d1c"
+artifact_fingerprint = "sha256:1debe5f568f7a940e107f03d7be5bec80295fdfe19f9894f9cd6686f4f04e33d"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -495,7 +495,7 @@ prerequisite = [
 ]
 
 [entries.mcp-interface]
-fingerprint = "sha256:450dbcf007b714f5e23a19d19dc952bf72072dcc83a6ee6a09384de07b100c07"
+fingerprint = "sha256:22b1b96b4d6e3a1a207b417118ae32575aafcfc0e8c087672de5a11e633dbf55"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -593,13 +593,13 @@ belongs = ["category"]
 prerequisite = ["category"]
 
 [entries.narrative-serializer]
-fingerprint = "sha256:5227f4ef4bb08e11a9d762d6428217d71165a2c8b6f2b06fdff24fc1760f7088"
+fingerprint = "sha256:99cb83a6b97a9fab860c511dd416876c3b7f91275b1db41108c61c710d5c7243"
 belongs = ["interactive-narrative-session"]
 prerequisite = ["interactive-narrative-session"]
 
 [entries.narrative-session-discipline]
-fingerprint = "sha256:49a1025957dde9fb1a439019cef26c0fb687b1b75e6fe58c861cc46318265b72"
-artifact_fingerprint = "sha256:b225f371a2bac8dede775ec10017ecf7838fe059fc3cf2d8e74442bc635cc8af"
+fingerprint = "sha256:85e9810a6036788c91ecc0b4be944fbf07af75e3e7eda6b1c4f8f46cdad1ee11"
+artifact_fingerprint = "sha256:70d755338739f55722df7c42b9dd4c8255e1e7b82eee527d306e6b607c6ad63a"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -711,8 +711,8 @@ belongs = ["form"]
 prerequisite = ["form"]
 
 [entries.repository-editing-discipline]
-fingerprint = "sha256:256d4910b35c07c5df6211a464e21d1e6a106977b2fab63342e81b16429f3bf3"
-artifact_fingerprint = "sha256:3d9eb3dd72a3305981f03958dc94775f4f0d9cb079975497ec3e34363ccc7458"
+fingerprint = "sha256:9301c4b8625f68f4c5029e9bb14287be60d237e500a13203cee08108f900386d"
+artifact_fingerprint = "sha256:1731521e64cd88f19d4e15dbdd02772213b9fe922510c53ade552bd062d65b78"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
@@ -750,8 +750,8 @@ refines = ["methodology"]
 fingerprint = "sha256:305f4c0f0c6253e2981521eceb530abe94c8219f1df10e15b935437aba3f828e"
 
 [entries.skill-synthesis-discipline]
-fingerprint = "sha256:1675a1541bfb023fad4df303f96543bbcfa09641dbea0411d50e5da9c99ee5a4"
-artifact_fingerprint = "sha256:c3b176ecd486920aa06ebe37b545c0fa40aecc98b8c798b971abd7649c5d90a3"
+fingerprint = "sha256:e5310a29d9a043a55d9f9d253a10d2617d5c3a8f35995e49f65d5c0b2b22ca6f"
+artifact_fingerprint = "sha256:c0e4aaafef9300ba48cbd5210eb4ec1b40e429e8a08dc29fc7bd5399758422c8"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",

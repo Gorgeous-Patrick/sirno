@@ -14,8 +14,9 @@ prerequisite:
 ---
 
 Finalization completes a reviewed Sirno-managed repository change.
-Its full MCP resource text lives in `.artifacts/finalization-discipline/SKILL.full.md`
-and is embedded by `src/mcp.rs` as `sirno://skills/sirno-finalizer`.
+Its static full-resource template lives in
+`.artifacts/finalization-discipline/SKILL.full.template.md`
+and is rendered by `src/mcp.rs` as `sirno://skills/sirno-finalizer`.
 Its packaged wrapper lives in `.artifacts/finalization-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-finalizer/SKILL.md`.
 

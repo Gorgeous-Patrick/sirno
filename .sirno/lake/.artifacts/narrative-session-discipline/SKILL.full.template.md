@@ -20,6 +20,8 @@ It points to entries instead of copying the whole lake.
 This full skill text is served as `sirno://skills/sirno-narrative-session`.
 It follows the project's narrative-session discipline.
 
+{{SIRNO_ACTIVE_PROJECT_METADATA}}
+
 ## Project Binding
 
 Bind the MCP server to the repository before calling project tools.
@@ -101,7 +103,7 @@ or when the session produces a reusable way through a design region.
 
 Choose a lowercase kebab-case id.
 Use structural metadata that the active project already configures.
-If the project has no narrative category or equivalent convention,
+If the project has no narrative relation or equivalent convention,
 use the simplest valid metadata and explain the choice.
 
 The entry body should state:
