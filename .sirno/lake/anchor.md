@@ -51,39 +51,18 @@ These related entries are the review route through those contracts:
 - *Upstream File* defines upstream dependency pins.
 - *Versioning* defines the boundary between Git history and Sirno accepted baselines.
 
-## Current Implementation Notes
+## Accepted Baseline Behavior
 
-The first Anchor implementation provides `.sirno/anchor.toml`,
-entry and artifact-tree fingerprints,
-`sirno anchor status`,
-`sirno anchor check`,
-and `sirno anchor update`.
-Tide compares the waterline against Anchor when the Anchor file exists.
+Anchor status and check compare the current waterline against `.sirno/anchor.toml`.
 If Anchor is absent, Tide treats the current lake as added against an empty baseline.
+Anchor update writes a new `.sirno/anchor.toml`
+after review-mode checks pass,
+Tide has no open workitems,
+and the default editable mist has no pending ripples or blockers.
+The update also clears active Tide review state
+because the current waterline has become the accepted baseline.
 
-Temporary implementation surfaces remain while the target control-file split is actualized:
-
-- structural relation entries spell the baseline-side policy as `meta.ripple.anchor`;
-- merge drivers for `.sirno/anchor.toml`, `.sirno/tide.toml`, and `.sirno/upstream.toml`
-  are not installed yet.
-
-These surfaces are implementation debt, not new design direction.
-The target design remains tracked `.sirno/anchor.toml`,
-tracked active `.sirno/tide.toml`,
-and tracked upstream dependency `.sirno/upstream.toml`.
-
-## Excluded Snapshot Responsibilities
-
-Anchor keeps snapshot responsibilities out of Sirno:
-
-- private snapshot storage;
-- snapshot commits;
-- snapshot checkouts;
-- snapshot garbage collection;
-- Anchor-backed entry freeze checks;
-- snapshot coordinates in lock state.
-
+Anchor keeps history responsibilities in Git.
+It stores accepted fingerprints for comparison,
+not old entry bodies, private snapshots, checkout state, or retention policy.
 Entry-owned artifacts stay part of the lake state through owner artifact-tree fingerprints.
-Upstream glaciers may still use managed local protection.
-The manual `reviewed` freeze reason belongs to the deprecated entry-freeze design,
-not to Anchor.

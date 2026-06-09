@@ -44,6 +44,7 @@ pub type AnchorEntryMap = IndexMap<String, AnchorEntry>;
 /// Accepted lake baseline stored in `.sirno/anchor.toml`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+// sirno:witness:anchor-file:begin
 // sirno:witness:anchor:begin
 pub struct AnchorFile {
     /// Anchor schema version.
@@ -68,6 +69,7 @@ pub struct AnchorEntry {
     #[serde(default, flatten, skip_serializing_if = "IndexMap::is_empty")]
     pub structural: IndexMap<String, Vec<EntryAddress>>,
 }
+// sirno:witness:anchor-file:end
 
 impl AnchorEntry {
     /// Construct a validated anchor entry record.
@@ -81,6 +83,7 @@ impl AnchorEntry {
 
 impl AnchorFile {
     /// Resolve the anchor file path next to the config file.
+    // sirno:witness:anchor-file:begin
     pub fn path_for_config(config_path: impl AsRef<Path>) -> PathBuf {
         config_path
             .as_ref()
@@ -89,8 +92,10 @@ impl AnchorFile {
             .join(SIRNO_CONTROL_DIR_NAME)
             .join(ANCHOR_FILE_NAME)
     }
+    // sirno:witness:anchor-file:end
 
     /// Build an anchor from a checked lake report.
+    // sirno:witness:anchor-file:begin
     pub fn from_report(
         lake: impl Into<PathBuf>, report: &EntryDirectoryReport, settings: &StructuralSettings,
     ) -> Result<Self, AnchorError> {
@@ -115,6 +120,7 @@ impl AnchorFile {
         anchor.validate()?;
         Ok(anchor)
     }
+    // sirno:witness:anchor-file:end
 
     /// Load an anchor from a specific file path.
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, AnchorError> {
@@ -141,6 +147,7 @@ impl AnchorFile {
     }
 
     /// Write this anchor file atomically.
+    // sirno:witness:anchor-file:begin
     pub fn write(&self, path: impl AsRef<Path>) -> Result<(), AnchorError> {
         let path = path.as_ref();
         trace!("sirno anchor write begin: path={}", path.display());
@@ -174,6 +181,7 @@ impl AnchorFile {
         trace!("sirno anchor write end");
         Ok(())
     }
+    // sirno:witness:anchor-file:end
 
     /// Validate the anchor shape and fingerprint syntax.
     pub fn validate(&self) -> Result<(), AnchorError> {
@@ -218,6 +226,7 @@ impl AnchorFile {
 }
 
 /// Fingerprint one entry using Anchor schema 1 canonical rendering.
+// sirno:witness:anchor-file:begin
 pub fn entry_fingerprint(entry: &Entry) -> Result<String, AnchorError> {
     Ok(sha256_fingerprint(canonical_entry_source(entry)?.as_bytes()))
 }
@@ -229,8 +238,10 @@ pub fn canonical_entry_source(entry: &Entry) -> Result<String, AnchorError> {
     let entry = Entry::new(entry.id.clone(), entry.metadata.clone(), body);
     Ok(entry.to_markdown()?)
 }
+// sirno:witness:anchor-file:end
 
 /// Fingerprint one owner artifact tree.
+// sirno:witness:anchor-file:begin
 pub fn artifact_tree_fingerprint<'a>(
     artifacts: impl IntoIterator<Item = &'a EntryArtifact>,
 ) -> String {
@@ -249,6 +260,7 @@ pub fn artifact_tree_fingerprint<'a>(
     }
     format!("{FINGERPRINT_PREFIX}{}", hex_digest(hasher.finalize().as_slice()))
 }
+// sirno:witness:anchor-file:end
 
 fn structural_fields_for_anchor(
     entry: &Entry, settings: &StructuralSettings,

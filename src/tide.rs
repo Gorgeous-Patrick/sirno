@@ -384,6 +384,7 @@ impl Tide {
         let water_by_id = snapshots_by_id(waterline);
         let mut ripple_ids = BTreeSet::new();
 
+        // sirno:witness:ripple:begin
         for id in anchor_by_id.keys().chain(water_by_id.keys()) {
             if anchor_by_id.get(id).map(|snapshot| &snapshot.fingerprint)
                 != water_by_id.get(id).map(|snapshot| &snapshot.fingerprint)
@@ -391,6 +392,7 @@ impl Tide {
                 ripple_ids.insert((*id).clone());
             }
         }
+        // sirno:witness:ripple:end
 
         let anchor_entries = snapshot_entries(anchor);
         let water_entries = snapshot_entries(waterline);
@@ -399,6 +401,7 @@ impl Tide {
         let mut sources_by_workitem = BTreeMap::<TideWorkitem, BTreeSet<TideSource>>::new();
         let mut fingerprint_by_ripple = BTreeMap::<EntryAddress, String>::new();
 
+        // sirno:witness:ripple:begin
         // sirno:witness:tide:begin
         for ripple in &ripple_ids {
             let fingerprint = ripple_fingerprint(anchor_by_id.get(ripple), water_by_id.get(ripple));
@@ -434,6 +437,7 @@ impl Tide {
             }
         }
         // sirno:witness:tide:end
+        // sirno:witness:ripple:end
 
         let mut statuses = sources_by_workitem
             .into_iter()
@@ -572,10 +576,13 @@ fn insert_workitems(
 fn ripple_fingerprint(
     anchor: Option<&&TideEntrySnapshot>, waterline: Option<&&TideEntrySnapshot>,
 ) -> String {
+    // sirno:witness:ripple:begin
     let mut source = String::new();
     push_fingerprint_entry(&mut source, "anchor", anchor.copied());
     push_fingerprint_entry(&mut source, "lake", waterline.copied());
-    format!("sha256:{:x}", sha2::Sha256::digest(source.as_bytes()))
+    let fingerprint = format!("sha256:{:x}", sha2::Sha256::digest(source.as_bytes()));
+    // sirno:witness:ripple:end
+    fingerprint
 }
 
 fn push_fingerprint_entry(out: &mut String, label: &str, entry: Option<&TideEntrySnapshot>) {

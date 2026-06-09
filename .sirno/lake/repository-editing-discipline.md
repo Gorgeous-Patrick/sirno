@@ -18,6 +18,7 @@ refines:
 ---
 
 Repository editing is the default agent procedure for changing a Sirno-managed repository.
+It is also the shared method home for actualization and internalization.
 Its static full-resource template lives in
 `.artifacts/repository-editing-discipline/SKILL.full.template.md`
 and is rendered by `src/mcp.rs` as `sirno://skills/sirno-editor`.

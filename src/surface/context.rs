@@ -1523,6 +1523,7 @@ impl SurfaceContext {
     }
 
     /// Accept the current lake as the new anchor baseline.
+    // sirno:witness:versioning:begin
     pub fn anchor_update(&self) -> Result<AnchorUpdateResult, CommandError> {
         let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
         let report = context.checked_report(CheckMode::Review)?;
@@ -1559,6 +1560,7 @@ impl SurfaceContext {
             ),
         })
     }
+    // sirno:witness:versioning:end
     // sirno:witness:anchor-commands:end
 
     // sirno:witness:project-status-commands:begin
@@ -2536,6 +2538,7 @@ fn mist_intake_blockers(status: &MistStatusResult) -> Vec<String> {
 fn git_staged_paths_under(
     config_path: &Path, projection_path: &Path,
 ) -> Result<Vec<PathBuf>, CommandError> {
+    // sirno:witness:versioning:begin
     let root = config_parent(config_path);
     let probe = ProcessCommand::new("git")
         .arg("-C")
@@ -2566,7 +2569,10 @@ fn git_staged_paths_under(
         return Err(CommandError::GitFailed { stderr });
     }
     let stdout = String::from_utf8(output.stdout).map_err(CommandError::GitOutput)?;
-    Ok(stdout.lines().filter(|line| !line.trim().is_empty()).map(|line| root.join(line)).collect())
+    let paths =
+        stdout.lines().filter(|line| !line.trim().is_empty()).map(|line| root.join(line)).collect();
+    // sirno:witness:versioning:end
+    Ok(paths)
 }
 
 fn apply_structural_override_json(

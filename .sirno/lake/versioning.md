@@ -45,8 +45,7 @@ Tide compares the current lake against Anchor.
 A ripple is an entry-level delta between the accepted baseline and the current waterline.
 Review status is valid only while the involved entry fingerprints and ripple fingerprints match.
 After `sirno anchor update`, the current waterline becomes the accepted baseline.
-In the target split,
-unintaken mist ripples, stale state, conflicts, or staged misty-lake files block Anchor update
+Unintaken mist ripples, stale state, conflicts, or staged misty-lake files block Anchor update
 until those ripples are intaken or discarded.
 
 Entry artifacts are versioned by Git as ordinary files under the lake `.artifacts` tree.
@@ -54,4 +53,4 @@ Anchor stores an owner artifact-tree fingerprint for entries that own artifacts.
 This lets Tide notice artifact changes without storing artifact bytes in a private Sirno store.
 
 Sirno-owned control files must remain valid TOML across Git operations.
-The *Sirno Control Files* entry defines merge-driver policy for those files.
+The `control-files` entry defines merge-driver policy for those files.

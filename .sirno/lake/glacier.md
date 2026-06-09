@@ -17,9 +17,7 @@ prerequisite:
 A *glacier* is a managed lakelet formed by crystallizing an upstream lake.
 
 A glacier occupies the declared glacier domain in the current lake.
-For example,
-crystallizing upstream entry `design` under domain `core` writes the glacier entry
-as `lake/core/design.md` with entry address `core.design`.
+That domain supplies the rebased entry-address prefix for imported upstream entries.
 
 Glacier entries carry the `managed` frozen reason.
 Crystallization owns adding, replacing, and removing that managed content.

@@ -5,7 +5,7 @@ schema = 1
 lake = ".sirno/lake"
 
 [entries.actualization-discipline]
-fingerprint = "sha256:1b9baa4f87d174ce88cd96db7a6204924238c7e2b5530b74374613c6ca6aba22"
+fingerprint = "sha256:6b3b2b3b205b1518f4415a298da68e026868de1997b6f06755b1fbc3e732c2fb"
 artifact_fingerprint = "sha256:86773ff481f0afc03de9a78d2643c4a21347b581761aa1582ce9683be4a6d4e6"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -33,7 +33,7 @@ prerequisite = [
 ]
 
 [entries.anchor]
-fingerprint = "sha256:ac5b76a3de8883254d71bbeac1fcb90b31c40f3bb9413feb8f10274006b6097c"
+fingerprint = "sha256:00404a00db15760dc5692c2bc30a7883bc244688a8dc5299ae6c9d324779d0f6"
 belongs = ["lake-review"]
 prerequisite = [
     "lake",
@@ -284,7 +284,7 @@ prerequisite = [
 ]
 
 [entries.extension-system]
-fingerprint = "sha256:06291f661aad00609303c6301dd84f6b108d3b7b690aa64cd6750f9b97af3bcf"
+fingerprint = "sha256:98463f011a2a972d8beb0089201f1038cee06b3a4a37450dded9b22c583a4cfc"
 belongs = ["entry-artifact"]
 prerequisite = [
     "entry-artifact",
@@ -327,7 +327,7 @@ belongs = [
 prerequisite = ["generated-footer"]
 
 [entries.glacier]
-fingerprint = "sha256:edcce0562d8b1b71b7709a32575d97aa64f1e60985a6f134385c255fb7362457"
+fingerprint = "sha256:f65dddfbbea1e87e1b77a5e8cda801f40037ea882a723481fd3498295d7fb1a0"
 belongs = [
     "lake-composition",
     "lake-namespace",
@@ -362,7 +362,7 @@ belongs = ["sirno"]
 prerequisite = ["project-config"]
 
 [entries.internalization-discipline]
-fingerprint = "sha256:93916d076c38e3efadf2ecf7162afe9bcce7d8701bd006431f0f28cb999a1277"
+fingerprint = "sha256:d61c94d5d287c84a124d44aba479e90b440b5de7f8b31d62a97ac98b60dff845"
 artifact_fingerprint = "sha256:e9ced4f0b527dc61ea37ae8611c85564f96baa3d0353e8d16601fb4efe34eb15"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -473,7 +473,7 @@ belongs = [
 prerequisite = ["upstream-lake"]
 
 [entries.lakelet]
-fingerprint = "sha256:90c26c7516cf23f7e5c029c2c27e41f30ca9fb5173157a6751eca37fcf4f9a3f"
+fingerprint = "sha256:6ecad163a0d684686a088aa47b9d79b82aea48667b6f0aeb1d2c50cc27000db0"
 belongs = [
     "lake-composition",
     "lake-namespace",
@@ -484,7 +484,7 @@ prerequisite = [
 ]
 
 [entries.local-lakelet]
-fingerprint = "sha256:8be83a6eb755338300a3afe0583aef390c09fc3acb8a8758dbec3c0e4f39ad76"
+fingerprint = "sha256:1a309cc5666cbb41b1936e065c58e161bd33b73e2b00140e0201e1ea8e859ed5"
 belongs = [
     "lake-composition",
     "lake-namespace",
@@ -630,7 +630,7 @@ belongs = ["structural"]
 prerequisite = ["structural"]
 
 [entries.project-config]
-fingerprint = "sha256:8af54de39a1fe95304dd4c67f6e33d85af4ab5f9c88e9090db134f74d49fb1d0"
+fingerprint = "sha256:382824e675b0e2281eb3e9f40dc1cbb6dbedc1182973e1f21008e7263811fb03"
 belongs = ["sirno"]
 prerequisite = [
     "repo",
@@ -711,7 +711,7 @@ belongs = ["form"]
 prerequisite = ["form"]
 
 [entries.repository-editing-discipline]
-fingerprint = "sha256:9301c4b8625f68f4c5029e9bb14287be60d237e500a13203cee08108f900386d"
+fingerprint = "sha256:68c9bf5acd92aa47c208ea3ca6b412b1d12471b7f303877cf78baefa976bfd0b"
 artifact_fingerprint = "sha256:1731521e64cd88f19d4e15dbdd02772213b9fe922510c53ade552bd062d65b78"
 belongs = ["agent-skills"]
 prerequisite = [
@@ -913,7 +913,7 @@ prerequisite = ["project-config"]
 refines = ["command-families"]
 
 [entries.versioning]
-fingerprint = "sha256:66fe031c3e314930047d3b7567942787ba894c6abf48a435f441a74f068d71fe"
+fingerprint = "sha256:70b85819c3afb024156ea1a0b5cc7d662118bc735291c4d31b46b25735def290"
 belongs = [
     "lake-review",
     "anchor",

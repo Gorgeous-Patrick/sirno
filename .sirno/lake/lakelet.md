@@ -13,14 +13,10 @@ prerequisite:
 
 A *lakelet* is the folder-backed namespace surface for an *entry domain*.
 
-A lakelet gives a group of entries a shared entry-address prefix.
-For example, `lake/core/design.md` places `design` inside the `core.` lakelet
-and gives it entry address `core.design`.
-Nested domains can also be lakelets.
-For example, `lake/core/runtime/scheduler.md` creates the nested `core.runtime.` lakelet
-and gives the entry address `core.runtime.scheduler`.
-The lakelet boundary is the namespace,
-not its depth in the lake directory.
+A lakelet gives entries under one domain prefix a shared storage and ownership boundary.
+It may contain entries and nested lakelets.
+The lakelet boundary is the namespace, not its depth in the lake directory.
+`lake-namespace` owns the path examples for this model.
 
 A lakelet can be project-managed or crystallization-managed.
 A project-managed lakelet is a local lakelet.

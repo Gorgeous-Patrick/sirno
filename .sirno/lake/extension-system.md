@@ -3,7 +3,6 @@ name: Charm And Spell System
 desc: The route for entry-owned charms, resolved spells, and future hook invocation.
 category:
   - concept
-  - implemented
 belongs:
   - entry-artifact
 prerequisite:
