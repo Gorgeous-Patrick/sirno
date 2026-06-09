@@ -142,7 +142,7 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.cli-interface]
-fingerprint = "sha256:3acdd9406e452205e2cfe16fadce6e0fd1527e2850ec70cd838ec3af3a65c3bb"
+fingerprint = "sha256:212ee24438dcd34684ee5918ead14ff7eca3a827a2b8920d92847ac89f534d0e"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -654,7 +654,7 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.project-status-commands]
-fingerprint = "sha256:81beea7953bd743dfb3f6b39530283e68f4c25fa5dc017dcd3653bccd264f98e"
+fingerprint = "sha256:55292f9f16ca30dae424765ff7c38b38b7d10b958e7d5fbfa106a0c922b8a6d0"
 belongs = ["project-config"]
 prerequisite = [
     "project-config",

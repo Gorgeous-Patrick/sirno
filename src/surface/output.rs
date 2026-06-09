@@ -221,8 +221,8 @@ pub(crate) fn diagnostics_from_entry_report(
 }
 // sirno:witness:diagnostics:end
 
-pub(crate) fn print_status_result(result: &StatusResult) {
-    anstream::print!("{}", format_status_result_with_style(result, OutputStyle::Styled));
+pub(crate) fn print_status_result(result: &StatusResult, quiet: bool) {
+    anstream::print!("{}", format_status_result_with_style(result, quiet, OutputStyle::Styled));
 }
 
 pub(crate) fn print_upstream_crystallize_report(result: &UpstreamCrystallizeReport) {
@@ -303,12 +303,13 @@ fn upstream_status_state_label(state: UpstreamStatusState) -> &'static str {
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
-pub(crate) fn format_status_result(result: &StatusResult) -> String {
-    format_status_result_with_style(result, OutputStyle::Plain)
+pub(crate) fn format_status_result(result: &StatusResult, quiet: bool) -> String {
+    format_status_result_with_style(result, quiet, OutputStyle::Plain)
 }
 
-fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) -> String {
+fn format_status_result_with_style(
+    result: &StatusResult, quiet: bool, style: OutputStyle,
+) -> String {
     let mut output = String::new();
     output.push_str(&format!("config: {}\n", result.config_path));
     output.push_str(&format!("lake: {} ({} entries)\n", result.lake_path, result.entry_count));
@@ -327,7 +328,7 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
         .as_ref()
         .map(|policy| if policy.render { "render links checked" } else { "render links skipped" });
     let mode = result.check_policy.as_ref().map(|policy| check_mode_label(policy.mode));
-    if let Some(check) = result.check.as_ref().filter(|check| !check.ok) {
+    if !quiet && let Some(check) = result.check.as_ref().filter(|check| !check.ok) {
         output.push_str(&format_diagnostics_with_style(&check.diagnostics, style));
     }
     let check_ok =

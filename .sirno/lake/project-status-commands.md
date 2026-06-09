@@ -51,6 +51,10 @@ blocker counts, and a short message.
 Normal status adds check policy, Tide summary, Anchor summary, and default mist status.
 Full status adds structural link policy, selected-mode check output, and Anchor ripples.
 
+A failed lake check carries its check output at every detail level,
+so a failing status can always explain itself.
+CLI status prints the check diagnostic block unless `--quiet` is set.
+
 `project-status-commands` owns project status command spelling and behavior.
 `project-config` owns project configuration.
 `lake`, `anchor`, `tide`, and `mist` own the status domains being summarized.

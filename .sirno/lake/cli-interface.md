@@ -19,6 +19,7 @@ before the CLI renders human text or JSON.
 When a command displays entry metadata,
 it renders discovered intrinsic fields instead of fixed title or summary fields.
 Human output prints records, tables, or diagnostics before command summary lines.
+Diagnostics print whenever a command reports a failure, independent of detail level.
 Commands with no detail may print only their summary.
 Terminal output may color semantic labels such as setup choices, diagnostic severity,
 check state, tide state, and wrapper status.
@@ -31,6 +32,8 @@ should spell Sirno operations as MCP tools when the agent performs them.
 The global `-C, --config PATH` option selects the Sirno project config file.
 The global `-L, --lake-path PATH` option overrides the configured lake
 for commands that read or write the active lake.
+The global `-q, --quiet` flag mutes diagnostic detail blocks in human output,
+keeping summary lines.
 
 Common command aliases keep terminal use compact:
 `q` for `query`, `st` for `status`, and `w` or `wit` for `witness`.

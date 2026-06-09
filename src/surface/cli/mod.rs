@@ -63,6 +63,9 @@ pub struct Cli {
     /// Sirno Lake path override.
     #[arg(short = 'L', long = "lake-path", global = true)]
     lake_path: Option<PathBuf>,
+    /// Mute diagnostic detail blocks in human output.
+    #[arg(short = 'q', long, global = true)]
+    quiet: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -993,6 +996,7 @@ impl Cli {
     pub fn run(self) -> Result<ExitCode, CommandError> {
         let config_path = self.config.unwrap_or_else(default_config_path);
         let lake_path = self.lake_path;
+        let quiet = self.quiet;
         match self.command {
             // sirno:witness:project-setup-commands:begin
             | Command::Init { all, lake, no_lake, no_skills, claude_skills } => {
@@ -1023,7 +1027,7 @@ impl Cli {
                 // sirno:witness:tide-commands:end
             }
             // sirno:witness:project-status-commands:begin
-            | Command::Status(args) => args.run(&config_path, lake_path.as_deref()),
+            | Command::Status(args) => args.run(&config_path, lake_path.as_deref(), quiet),
             // sirno:witness:project-status-commands:end
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelMist(command) => command.run(&config_path, lake_path.as_deref()),
@@ -1527,12 +1531,14 @@ impl MistRenderArgs {
 
 impl StatusArgs {
     // sirno:witness:project-status-commands:begin
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+    fn run(
+        self, config_path: &Path, lake_path: Option<&Path>, quiet: bool,
+    ) -> Result<ExitCode, CommandError> {
         let result = SurfaceContext::from_cli_paths(config_path, lake_path)
             .status(StatusRequest::new(self.show, self.mode.into()))?;
         match self.format.unwrap_or_default() {
             | StatusOutputFormat::Json => print_json(&result)?,
-            | StatusOutputFormat::Human => print_status_result(&result),
+            | StatusOutputFormat::Human => print_status_result(&result, quiet),
         }
         if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
     }

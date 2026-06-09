@@ -1572,7 +1572,9 @@ impl SurfaceContext {
             tide: show.includes_domain_details().then_some(tide).flatten(),
             anchor: show.includes_domain_details().then_some(anchor).flatten(),
             mist: show.includes_domain_details().then_some(mist).flatten(),
-            check: show.includes_full_details().then_some(check),
+            // Note: a failed check always carries its diagnostics, at every show mode,
+            // so a failing status can explain itself. Full mode also keeps the clean check.
+            check: (show.includes_full_details() || !check.ok).then_some(check),
         })
     }
     // sirno:witness:project-status-commands:end
@@ -3019,6 +3021,43 @@ mod tests {
             .unwrap_err();
 
         assert!(matches!(error, CommandError::UndefinedQueryColumn(field) if field == "unknown"));
+    }
+
+    #[test]
+    fn status_carries_check_diagnostics_outside_full_mode() {
+        use crate::surface::dto::StatusMode;
+
+        let (temp, context) = initialized_context();
+        fs::write(temp.path().join("lake").join("bad.md"), "no frontmatter\n").unwrap();
+
+        let result =
+            context.status(StatusRequest::new(StatusMode::Normal, CheckMode::Review)).unwrap();
+
+        assert!(!result.ok);
+        let check = result.check.as_ref().expect("a failed status carries its check result");
+        assert!(!check.ok);
+        assert!(!check.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn status_rendering_mutes_diagnostics_only_when_quiet() {
+        use crate::surface::dto::StatusMode;
+        use crate::surface::output::format_status_result;
+
+        let (temp, context) = initialized_context();
+        fs::write(temp.path().join("lake").join("bad.md"), "no frontmatter\n").unwrap();
+
+        let result =
+            context.status(StatusRequest::new(StatusMode::Normal, CheckMode::Review)).unwrap();
+        let message = result.check.as_ref().unwrap().diagnostics[0].message.clone();
+
+        let loud = format_status_result(&result, false);
+        assert!(loud.contains("lake check"));
+        assert!(loud.contains(&message));
+
+        let quiet = format_status_result(&result, true);
+        assert!(quiet.contains("lake check"));
+        assert!(!quiet.contains(&message));
     }
 
     #[test]
