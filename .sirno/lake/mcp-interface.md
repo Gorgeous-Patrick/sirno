@@ -81,8 +81,9 @@ Default records contain `entry`, `location`, and `body`.
 The `verbose_json` (`--verbose-json`) option keeps separate `path` and `region` fields.
 Delimiter spans stay internal and CLI-oriented.
 
-Successful tool calls return structured JSON content.
-They also include the same JSON as pretty text content for clients that read only text.
+Successful tool calls return structured JSON content as their authoritative result.
+They may also include concise text content for clients that read only text.
+Text content summarizes the result instead of mirroring the full JSON payload.
 Domain failures such as failed checks, dirty query preconditions,
 and nonzero `rg` exits return structured results with `ok: false`.
 Command failures return MCP tool errors with concise text.

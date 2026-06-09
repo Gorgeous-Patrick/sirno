@@ -589,17 +589,33 @@ impl SirnoMcpServer {
 
 type McpToolResult = Result<CallToolResult, String>;
 
+// sirno:witness:mcp-interface:begin
 fn result<T: Serialize>(result: Result<T, impl ToString>) -> McpToolResult {
     result.map_err(|error| error.to_string()).and_then(structured_result)
 }
 
 fn structured_result<T: Serialize>(value: T) -> McpToolResult {
     let structured = serde_json::to_value(&value).map_err(|error| error.to_string())?;
-    let text = serde_json::to_string_pretty(&value).map_err(|error| error.to_string())?;
+    let text = tool_result_text(&structured);
     let mut result = CallToolResult::structured(structured);
-    result.content = vec![Content::text(text)];
+    if let Some(text) = text {
+        result.content = vec![Content::text(text)];
+    }
     Ok(result)
 }
+
+fn tool_result_text(value: &serde_json::Value) -> Option<String> {
+    let message = value
+        .get("message")
+        .and_then(serde_json::Value::as_str)
+        .filter(|message| !message.is_empty());
+    if let Some(message) = message {
+        return Some(message.to_owned());
+    }
+
+    value.get("ok").and_then(serde_json::Value::as_bool).map(|ok| format!("ok: {ok}"))
+}
+// sirno:witness:mcp-interface:end
 
 fn entry_address(raw: String) -> Result<EntryAddress, String> {
     EntryAddress::new(raw).map_err(|error| error.to_string())
@@ -1332,7 +1348,7 @@ Body.
     }
 
     #[test]
-    fn direct_tool_call_returns_structured_content_and_pretty_text() {
+    fn direct_tool_call_returns_structured_content_and_summary_text() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let server = SirnoMcpServer::new(SurfaceContext::new(&config_path));
@@ -1367,7 +1383,9 @@ Body.
         assert_eq!(structured(&entry)["id"], "alpha");
         assert_eq!(structured(&read)["body"], "Body.");
         assert!(structured(&read)["source"].as_str().unwrap().contains("desc: Alpha entry."));
-        assert!(text.contains("\n  \"ok\": true,"));
+        assert!(text.starts_with("created "));
+        assert!(text.contains("alpha.md"));
+        assert!(!text.contains("\"ok\""));
     }
 
     #[test]
