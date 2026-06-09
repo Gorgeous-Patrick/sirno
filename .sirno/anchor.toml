@@ -924,8 +924,8 @@ prerequisite = [
 ]
 
 [entries.witness]
-fingerprint = "sha256:1dba041133ec266c85aca45cd6ed257675ab797e402afdd900c095625504654b"
-belongs = ["sirno"]
+fingerprint = "sha256:2b5088039c70e8bcf98064cb6aca3310a8c74869222554009243b67a688cb4f8"
+belongs = ["repo"]
 prerequisite = [
     "entry",
     "repo",

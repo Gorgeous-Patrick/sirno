@@ -4,7 +4,7 @@ desc: Repository evidence for a design entry.
 category:
   - concept
 belongs:
-  - sirno
+  - repo
 prerequisite:
   - entry
   - repo
