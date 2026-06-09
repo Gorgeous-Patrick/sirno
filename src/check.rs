@@ -199,6 +199,23 @@ pub struct CheckDiagnostic {
 }
 
 impl CheckDiagnostic {
+    // sirno:witness:diagnostics:begin
+    /// Stable diagnostic code.
+    pub fn code(&self) -> &'static str {
+        match self.kind {
+            | CheckDiagnosticKind::InvalidStructuralRelationField => {
+                "check.structural.field.invalid"
+            }
+            | CheckDiagnosticKind::InvalidIntrinsicField => "check.intrinsic.field.invalid",
+            | CheckDiagnosticKind::UninhabitedStructuralField => "check.structural.field.undefined",
+            | CheckDiagnosticKind::MissingTarget => "check.structural.target.missing",
+            | CheckDiagnosticKind::MissingCategoryEntry => "check.category.entry.missing",
+            | CheckDiagnosticKind::CategoryTargetMissingCategoryMarker => {
+                "check.category.marker.missing"
+            }
+        }
+    }
+
     /// Human-readable diagnostic message.
     pub fn message(&self) -> String {
         match self.kind {
@@ -234,6 +251,36 @@ impl CheckDiagnostic {
             ),
         }
     }
+
+    /// Repair hint for human and agent-facing output.
+    pub fn help(&self) -> Option<String> {
+        match self.kind {
+            | CheckDiagnosticKind::InvalidStructuralRelationField => {
+                Some("Rename the entry to a valid structural metadata field name.".to_owned())
+            }
+            | CheckDiagnosticKind::InvalidIntrinsicField => {
+                Some("Rename the entry to a valid intrinsic metadata field name.".to_owned())
+            }
+            | CheckDiagnosticKind::UninhabitedStructuralField => Some(format!(
+                "Add entry `{}` with `meta.type: \"structural\"`, or remove this metadata field.",
+                self.field
+            )),
+            | CheckDiagnosticKind::MissingTarget => Some(format!(
+                "Create entry `{}` or remove it from `{}`.",
+                self.target.as_ref().expect("missing target diagnostic has target"),
+                self.field
+            )),
+            | CheckDiagnosticKind::MissingCategoryEntry => {
+                Some("Create the default category entry with `sirno util entry`.".to_owned())
+            }
+            | CheckDiagnosticKind::CategoryTargetMissingCategoryMarker => Some(format!(
+                "Add `category: [{}]` to `{}`.",
+                self.target.as_ref().expect("category target diagnostic has target"),
+                self.entry.as_ref().expect("category target diagnostic has entry")
+            )),
+        }
+    }
+    // sirno:witness:diagnostics:end
 }
 
 /// Result of checking a set of entries.

@@ -33,6 +33,7 @@ use crate::surface::{
     StructuralTarget, SurfaceContext, TideResolveRequest, TideSelectionRequest, TideStatusMode,
     UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
+use crate::surface::{CommandError, format_command_error};
 use crate::{
     CheckMode, EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings,
 };
@@ -602,8 +603,8 @@ impl SirnoMcpServer {
 type McpToolResult = Result<CallToolResult, String>;
 
 // sirno:witness:mcp-interface:begin
-fn result<T: Serialize>(result: Result<T, impl ToString>) -> McpToolResult {
-    result.map_err(|error| error.to_string()).and_then(structured_result)
+fn result<T: Serialize>(result: Result<T, CommandError>) -> McpToolResult {
+    result.map_err(|error| format_command_error(&error)).and_then(structured_result)
 }
 
 fn structured_result<T: Serialize>(value: T) -> McpToolResult {

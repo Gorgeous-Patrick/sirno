@@ -31,9 +31,7 @@ use crate::surface::dto::{
     UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
-use crate::surface::output::{
-    diagnostics_from_entry_report, display_path, display_paths, output_path, query_result_rows,
-};
+use crate::surface::output::{display_path, display_paths, output_path, query_result_rows};
 use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
@@ -449,24 +447,11 @@ impl SurfaceContext {
     /// Query entries and return an MCP-friendly JSON result.
     pub fn entry_query(&self, request: QueryRequest) -> Result<QueryResponse, CommandError> {
         match self.query_entries(request)? {
-            | QueryRun::ColumnOptions(columns) => Ok(QueryResponse {
-                ok: true,
-                columns: columns.labels(),
-                records: Vec::new(),
-                diagnostics: Vec::new(),
-            }),
-            | QueryRun::InvalidLake { columns, report } => Ok(QueryResponse {
-                ok: false,
-                columns: columns.labels(),
-                records: Vec::new(),
-                diagnostics: diagnostics_from_entry_report(&report),
-            }),
-            | QueryRun::Results(results) => Ok(QueryResponse {
-                ok: true,
-                columns: results.columns.labels(),
-                records: results.records(),
-                diagnostics: Vec::new(),
-            }),
+            | QueryRun::ColumnOptions(columns) => Ok(QueryResponse::column_options(columns)),
+            | QueryRun::InvalidLake { columns, report } => {
+                Ok(QueryResponse::invalid_lake(columns, &report))
+            }
+            | QueryRun::Results(results) => Ok(QueryResponse::results(results)),
         }
     }
 

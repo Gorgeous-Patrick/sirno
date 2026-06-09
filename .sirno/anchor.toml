@@ -204,6 +204,11 @@ fingerprint = "sha256:82fd48c55882aba5d5f94ca8704445cf973af5429b84574f20d7d83246
 belongs = ["methodology"]
 prerequisite = ["methodology"]
 
+[entries.diagnostics]
+fingerprint = "sha256:e6e683fb0870eee9ac1a42bbe357da80a0ecebeeb983944c9d22e42522a8e82c"
+belongs = ["interfaces"]
+refines = ["structural-check"]
+
 [entries.documentation-driven-development]
 fingerprint = "sha256:60d27d5eb322e6f98b1b274a39812a047ed609c8332acdd14eb085119b4da7d3"
 belongs = ["narrative"]

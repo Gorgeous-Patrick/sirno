@@ -20,7 +20,8 @@ use crate::artifact::{
 };
 use crate::check::{CheckMode, CheckReport, CheckSeverity};
 use crate::entry::{
-    Entry, EntryParseError, EntryRenderError, FrozenMarker, RawEntry, has_mixed_line_endings,
+    DESC_FIELD, Entry, EntryParseError, EntryRenderError, FrozenMarker, NAME_FIELD, RawEntry,
+    has_mixed_line_endings,
 };
 use crate::freeze::FrozenPath;
 use crate::identifier::EntryAtom;
@@ -157,14 +158,24 @@ impl EntryDirectoryReport {
 
 /// Diagnostic produced while loading the Sirno Lake.
 #[derive(Clone, Debug, PartialEq, Eq)]
+// sirno:witness:diagnostics:begin
 pub struct EntryFileDiagnostic {
     /// Diagnostic severity.
     pub severity: CheckSeverity,
+    /// Stable diagnostic code.
+    pub code: &'static str,
     /// Path responsible for the diagnostic.
     pub path: PathBuf,
+    /// One-based line number when the diagnostic has a source position.
+    pub line: Option<usize>,
+    /// One-based column number when the diagnostic has a source position.
+    pub column: Option<usize>,
     /// Human-readable diagnostic message.
     pub message: String,
+    /// Repair hint for human and agent-facing output.
+    pub help: Option<String>,
 }
+// sirno:witness:diagnostics:end
 
 /// Result of generating link footers for an entry directory.
 #[derive(Debug)]
@@ -289,13 +300,92 @@ pub enum EntryDirectoryWritePolicy {
 }
 
 impl EntryFileDiagnostic {
+    // sirno:witness:diagnostics:begin
     /// Construct a diagnostic for one path.
     pub fn new(
         severity: CheckSeverity, path: impl Into<PathBuf>, message: impl Into<String>,
     ) -> Self {
-        Self { severity, path: path.into(), message: message.into() }
+        Self {
+            severity,
+            code: "lake.file",
+            path: path.into(),
+            line: None,
+            column: None,
+            message: message.into(),
+            help: None,
+        }
     }
+
+    /// Return this diagnostic with a stable code.
+    pub fn with_code(mut self, code: &'static str) -> Self {
+        self.code = code;
+        self
+    }
+
+    /// Return this diagnostic with a source position.
+    pub fn with_position(mut self, line: usize, column: usize) -> Self {
+        self.line = Some(line);
+        self.column = Some(column);
+        self
+    }
+
+    /// Return this diagnostic with a repair hint.
+    pub fn with_help(mut self, help: impl Into<String>) -> Self {
+        self.help = Some(help.into());
+        self
+    }
+    // sirno:witness:diagnostics:end
 }
+
+// sirno:witness:diagnostics:begin
+fn entry_parse_diagnostic(
+    path: &Path, source: &EntryParseError, registry: Option<&MetaRegistry>,
+) -> EntryFileDiagnostic {
+    if let Some(diagnostic) = undefined_intrinsic_diagnostic(path, source, registry) {
+        return diagnostic;
+    }
+    let mut diagnostic = EntryFileDiagnostic::new(
+        CheckSeverity::Error,
+        path,
+        format!("failed to parse entry: {source}"),
+    )
+    .with_code(source.code());
+    if let Some((line, column)) = source.position() {
+        diagnostic = diagnostic.with_position(line + 1, column);
+    }
+    if let Some(help) = source.help() {
+        diagnostic = diagnostic.with_help(help);
+    }
+    diagnostic
+}
+
+fn undefined_intrinsic_diagnostic(
+    path: &Path, source: &EntryParseError, registry: Option<&MetaRegistry>,
+) -> Option<EntryFileDiagnostic> {
+    let EntryParseError::FieldMustBeList(field) = source else {
+        return None;
+    };
+    if field != NAME_FIELD && field != DESC_FIELD {
+        return None;
+    }
+    if registry.is_some_and(|registry| registry.contains_intrinsic_field(field)) {
+        return None;
+    }
+    Some(
+        EntryFileDiagnostic::new(
+            CheckSeverity::Error,
+            path,
+            format!(
+                "metadata field `{field}` is scalar, but this lake does not define `{field}` as an intrinsic field"
+            ),
+        )
+        .with_code("entry.metadata.intrinsic.undefined")
+        .with_help(format!(
+            "Create entry `{field}` with `meta.type: \"intrinsic\"`, or restore the seed entry."
+        )),
+    )
+}
+// sirno:witness:diagnostics:end
 
 impl EntryDirectory {
     /// Construct an entry directory rooted at `root`.
@@ -1973,11 +2063,15 @@ impl LoadedEntryDirectory {
             let id = match EntryAddress::from_lake_relative_path(relative_path) {
                 | Ok(id) => id,
                 | Err(source) => {
-                    file_diagnostics.push(EntryFileDiagnostic::new(
-                        CheckSeverity::Error,
-                        &path,
-                        format!("entry file path is not a valid entry address: {source}"),
-                    ));
+                    file_diagnostics.push(
+                        EntryFileDiagnostic::new(
+                            CheckSeverity::Error,
+                            &path,
+                            format!("entry file path is not a valid entry address: {source}"),
+                        )
+                        .with_code("lake.entry.path.invalid")
+                        .with_help("Rename the file to a valid lake-relative Markdown entry path."),
+                    );
                     continue;
                 }
             };
@@ -1987,30 +2081,34 @@ impl LoadedEntryDirectory {
                     .get(&id)
                     .map(|path| path.display().to_string())
                     .unwrap_or_else(|| "<unknown>".to_owned());
-                file_diagnostics.push(EntryFileDiagnostic::new(
-                    CheckSeverity::Error,
-                    &path,
-                    format!("entry address `{id}` also appears at {first_path}"),
-                ));
+                file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        CheckSeverity::Error,
+                        &path,
+                        format!("entry address `{id}` also appears at {first_path}"),
+                    )
+                    .with_code("lake.entry.duplicate")
+                    .with_help("Keep one Markdown file for each entry address."),
+                );
                 continue;
             }
 
             let source = fs::read_to_string(&path)?;
             if has_mixed_line_endings(&source) {
-                file_diagnostics.push(EntryFileDiagnostic::new(
-                    CheckSeverity::Warning,
-                    &path,
-                    "entry file uses mixed LF and CRLF line endings",
-                ));
+                file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        CheckSeverity::Warning,
+                        &path,
+                        "entry file uses mixed LF and CRLF line endings",
+                    )
+                    .with_code("lake.entry.line-ending.mixed")
+                    .with_help("Rewrite the file with one line-ending style."),
+                );
             }
             let raw_entry = match RawEntry::from_markdown(id.clone(), &source) {
                 | Ok(entry) => entry,
                 | Err(source) => {
-                    file_diagnostics.push(EntryFileDiagnostic::new(
-                        CheckSeverity::Error,
-                        &path,
-                        format!("failed to parse entry: {source}"),
-                    ));
+                    file_diagnostics.push(entry_parse_diagnostic(&path, &source, None));
                     continue;
                 }
             };
@@ -2036,11 +2134,7 @@ impl LoadedEntryDirectory {
             let entry = match raw_entry.into_entry(registry) {
                 | Ok(entry) => entry,
                 | Err(source) => {
-                    file_diagnostics.push(EntryFileDiagnostic::new(
-                        CheckSeverity::Error,
-                        &path,
-                        format!("failed to parse entry: {source}"),
-                    ));
+                    file_diagnostics.push(entry_parse_diagnostic(&path, &source, Some(registry)));
                     continue;
                 }
             };
@@ -2073,11 +2167,14 @@ impl LoadedEntryDirectory {
         let severity = mode.severity();
         let file_type = fs::symlink_metadata(artifact_root)?.file_type();
         if !file_type.is_dir() {
-            self.file_diagnostics.push(EntryFileDiagnostic::new(
-                severity,
-                artifact_root,
-                "entry artifact storage must be a directory",
-            ));
+            self.file_diagnostics.push(
+                EntryFileDiagnostic::new(
+                    severity,
+                    artifact_root,
+                    "entry artifact storage must be a directory",
+                )
+                .with_code("lake.artifact.root.not-directory"),
+            );
             return Ok(());
         }
 
@@ -2085,20 +2182,26 @@ impl LoadedEntryDirectory {
         for owner_path in sorted_directory_paths(artifact_root)? {
             let owner_type = fs::symlink_metadata(&owner_path)?.file_type();
             if !owner_type.is_dir() {
-                self.file_diagnostics.push(EntryFileDiagnostic::new(
-                    severity,
-                    &owner_path,
-                    "entry artifact storage contains an unsupported filesystem item",
-                ));
+                self.file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        severity,
+                        &owner_path,
+                        "entry artifact storage contains an unsupported filesystem item",
+                    )
+                    .with_code("lake.artifact.owner.unsupported"),
+                );
                 continue;
             }
 
             let Some(owner_name) = owner_path.file_name().and_then(|name| name.to_str()) else {
-                self.file_diagnostics.push(EntryFileDiagnostic::new(
-                    CheckSeverity::Error,
-                    &owner_path,
-                    "entry artifact directory name must be valid UTF-8",
-                ));
+                self.file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        CheckSeverity::Error,
+                        &owner_path,
+                        "entry artifact directory name must be valid UTF-8",
+                    )
+                    .with_code("lake.artifact.owner.utf8"),
+                );
                 continue;
             };
             let owner = match EntryAddress::new(owner_name) {
@@ -2110,16 +2213,23 @@ impl LoadedEntryDirectory {
                         format!(
                             "entry artifact directory name is not a valid entry address: {source}"
                         ),
-                    ));
+                    )
+                    .with_code("lake.artifact.owner.invalid"));
                     continue;
                 }
             };
             if !ids.contains(&owner) {
-                self.file_diagnostics.push(EntryFileDiagnostic::new(
-                    severity,
-                    &owner_path,
-                    format!("entry artifact directory references missing entry `{owner}`"),
-                ));
+                self.file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        severity,
+                        &owner_path,
+                        format!("entry artifact directory references missing entry `{owner}`"),
+                    )
+                    .with_code("lake.artifact.owner.missing")
+                    .with_help(format!(
+                        "Create entry `{owner}` or remove this artifact directory."
+                    )),
+                );
                 continue;
             }
 
@@ -2140,11 +2250,14 @@ impl LoadedEntryDirectory {
                 continue;
             }
             if !file_type.is_file() {
-                self.file_diagnostics.push(EntryFileDiagnostic::new(
-                    severity,
-                    &path,
-                    "entry artifact tree contains an unsupported filesystem item",
-                ));
+                self.file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        severity,
+                        &path,
+                        "entry artifact tree contains an unsupported filesystem item",
+                    )
+                    .with_code("lake.artifact.path.unsupported"),
+                );
                 continue;
             }
 
@@ -2157,11 +2270,14 @@ impl LoadedEntryDirectory {
             let artifact_path = match EntryArtifactPath::new(relative_path) {
                 | Ok(path) => path,
                 | Err(source) => {
-                    self.file_diagnostics.push(EntryFileDiagnostic::new(
-                        CheckSeverity::Error,
-                        &path,
-                        format!("invalid entry artifact path: {source}"),
-                    ));
+                    self.file_diagnostics.push(
+                        EntryFileDiagnostic::new(
+                            CheckSeverity::Error,
+                            &path,
+                            format!("invalid entry artifact path: {source}"),
+                        )
+                        .with_code("lake.artifact.path.invalid"),
+                    );
                     continue;
                 }
             };
@@ -2186,20 +2302,28 @@ impl LoadedEntryDirectory {
                 | Ok(()) if settings.render => {
                     let expected = index.render_entry(entry, &self.structural);
                     if body.is_stale(&expected)? {
-                        self.file_diagnostics.push(EntryFileDiagnostic::new(
-                            mode.severity(),
-                            path,
-                            "generated links are stale; run `sirno mist render`",
-                        ));
+                        self.file_diagnostics.push(
+                            EntryFileDiagnostic::new(
+                                mode.severity(),
+                                path,
+                                "generated links are stale; run `sirno mist render`",
+                            )
+                            .with_code("lake.generated-links.stale")
+                            .with_help("Run `sirno mist render` to refresh generated links."),
+                        );
                     }
                 }
                 | Ok(()) => {}
                 | Err(source) => {
-                    self.file_diagnostics.push(EntryFileDiagnostic::new(
-                        CheckSeverity::Error,
-                        path,
-                        format!("malformed generated links: {source}"),
-                    ));
+                    self.file_diagnostics.push(
+                        EntryFileDiagnostic::new(
+                            CheckSeverity::Error,
+                            path,
+                            format!("malformed generated links: {source}"),
+                        )
+                        .with_code("lake.generated-links.malformed")
+                        .with_help("Repair the generated-link guard block before rendering."),
+                    );
                 }
             }
         }
@@ -2225,20 +2349,32 @@ impl LoadedEntryDirectory {
                 continue;
             }
             for record in index.records_for(witness_path) {
-                self.file_diagnostics.push(EntryFileDiagnostic::new(
-                    severity,
-                    &record.path,
-                    format!("repository witness block references missing entry `{witness_path}`"),
-                ));
+                self.file_diagnostics.push(
+                    EntryFileDiagnostic::new(
+                        severity,
+                        &record.path,
+                        format!(
+                            "repository witness block references missing entry `{witness_path}`"
+                        ),
+                    )
+                    .with_code("lake.witness.entry.missing")
+                    .with_position(record.opening.start_line, record.opening.start_column)
+                    .with_help(format!(
+                        "Create entry `{witness_path}` or update the witness marker."
+                    )),
+                );
             }
         }
         // sirno:witness:structural-check:begin
         for delimiter in index.orphan_delimiters() {
-            self.file_diagnostics.push(EntryFileDiagnostic::new(
-                severity,
-                delimiter.path(),
-                delimiter.diagnostic_message(),
-            ));
+            self.file_diagnostics.push(
+                EntryFileDiagnostic::new(
+                    severity,
+                    delimiter.path(),
+                    delimiter.diagnostic_message(),
+                )
+                .with_code("lake.witness.delimiter.orphan"),
+            );
         }
         // sirno:witness:structural-check:end
 
@@ -2266,11 +2402,14 @@ fn collect_entry_file_paths(
             continue;
         }
         if is_reserved_builtin_root(relative_path) {
-            diagnostics.push(EntryFileDiagnostic::new(
-                severity,
-                &path,
-                "entry directory contains reserved built-in path",
-            ));
+            diagnostics.push(
+                EntryFileDiagnostic::new(
+                    severity,
+                    &path,
+                    "entry directory contains reserved built-in path",
+                )
+                .with_code("lake.path.reserved"),
+            );
             continue;
         }
         if file_type.is_dir() {
@@ -2285,19 +2424,25 @@ fn collect_entry_file_paths(
             continue;
         }
         if !file_type.is_file() {
-            diagnostics.push(EntryFileDiagnostic::new(
-                severity,
-                &path,
-                "entry directory contains unsupported filesystem item",
-            ));
+            diagnostics.push(
+                EntryFileDiagnostic::new(
+                    severity,
+                    &path,
+                    "entry directory contains unsupported filesystem item",
+                )
+                .with_code("lake.path.unsupported"),
+            );
             continue;
         }
         if path.extension().and_then(|extension| extension.to_str()) != Some("md") {
-            diagnostics.push(EntryFileDiagnostic::new(
-                severity,
-                &path,
-                "entry directory contains non-Markdown file",
-            ));
+            diagnostics.push(
+                EntryFileDiagnostic::new(
+                    severity,
+                    &path,
+                    "entry directory contains non-Markdown file",
+                )
+                .with_code("lake.path.non-markdown"),
+            );
             continue;
         }
         entries.push(path);

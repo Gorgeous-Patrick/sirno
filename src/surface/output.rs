@@ -1,6 +1,7 @@
 //! Human and JSON rendering helpers for command results.
 
 use std::env;
+use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use anstyle::{AnsiColor, Style};
@@ -79,10 +80,32 @@ impl SemanticStyle {
 }
 
 pub(crate) fn print_cli_error(error: &CommandError) {
-    anstream::eprintln!(
-        "{} {error}",
-        style_text("sirno:", SemanticStyle::Error, OutputStyle::Styled)
-    );
+    anstream::eprint!("{}", format_cli_error(error, OutputStyle::Styled));
+}
+
+pub(crate) fn format_command_error(error: &CommandError) -> String {
+    let mut output = format!("{error}\n");
+    append_error_sources(&mut output, error);
+    output.trim_end().to_owned()
+}
+
+fn format_cli_error(error: &CommandError, style: OutputStyle) -> String {
+    let mut output = format!("{} {error}\n", style_text("sirno:", SemanticStyle::Error, style));
+    append_error_sources(&mut output, error);
+    output
+}
+
+fn append_error_sources(output: &mut String, error: &CommandError) {
+    let mut rendered = error.to_string();
+    let mut source = error.source();
+    while let Some(error) = source {
+        let source_text = error.to_string();
+        if !source_text.is_empty() && !rendered.contains(&source_text) {
+            output.push_str(&format!("  caused by: {source_text}\n"));
+            rendered.push_str(&source_text);
+        }
+        source = error.source();
+    }
 }
 
 pub(crate) fn format_success_text(value: &str, style: OutputStyle) -> String {
@@ -151,6 +174,7 @@ pub(crate) fn display_paths(paths: &[PathBuf]) -> Vec<String> {
     paths.iter().map(|path| display_path(path)).collect()
 }
 
+// sirno:witness:diagnostics:begin
 pub(crate) fn diagnostics_from_entry_report(
     report: &EntryDirectoryReport,
 ) -> Vec<DiagnosticRecord> {
@@ -158,23 +182,38 @@ pub(crate) fn diagnostics_from_entry_report(
     for diagnostic in report.file_diagnostics() {
         diagnostics.push(DiagnosticRecord {
             severity: diagnostic.severity.label().to_owned(),
+            code: diagnostic.code.to_owned(),
             path: Some(display_path(&diagnostic.path)),
+            line: diagnostic.line,
+            column: diagnostic.column,
+            entry: None,
+            field: None,
+            target: None,
             message: diagnostic.message.clone(),
+            help: diagnostic.help.clone(),
         });
     }
     for diagnostic in report.structural_report().diagnostics() {
         diagnostics.push(DiagnosticRecord {
             severity: diagnostic.severity.label().to_owned(),
+            code: diagnostic.code().to_owned(),
             path: diagnostic
                 .entry
                 .as_ref()
                 .and_then(|entry| report.entry_file_path(entry))
                 .map(display_path),
+            line: None,
+            column: None,
+            entry: diagnostic.entry.as_ref().map(ToString::to_string),
+            field: Some(diagnostic.field.clone()),
+            target: diagnostic.target.as_ref().map(ToString::to_string),
             message: diagnostic.message(),
+            help: diagnostic.help(),
         });
     }
     diagnostics
 }
+// sirno:witness:diagnostics:end
 
 pub(crate) fn print_status_result(result: &StatusResult) {
     anstream::print!("{}", format_status_result_with_style(result, OutputStyle::Styled));
@@ -494,18 +533,44 @@ fn format_config_comment_result_with_style(
     output
 }
 
+// sirno:witness:diagnostics:begin
 fn format_diagnostics_with_style(diagnostics: &[DiagnosticRecord], style: OutputStyle) -> String {
     let mut output = String::new();
     for diagnostic in diagnostics {
         let severity = styled_diagnostic_severity(&diagnostic.severity, style);
-        if let Some(path) = &diagnostic.path {
-            output.push_str(&format!("{severity}: {path}: {}\n", diagnostic.message));
-        } else {
-            output.push_str(&format!("{severity}: {}\n", diagnostic.message));
+        let location = format_diagnostic_location(diagnostic);
+        match location {
+            | Some(location) => {
+                output.push_str(&format!(
+                    "{severity}[{}]: {location}: {}\n",
+                    diagnostic.code, diagnostic.message
+                ));
+            }
+            | None => {
+                output.push_str(&format!(
+                    "{severity}[{}]: {}\n",
+                    diagnostic.code, diagnostic.message
+                ));
+            }
+        }
+        if let Some(help) = &diagnostic.help {
+            output.push_str(&format!("  help: {help}\n"));
         }
     }
     output
 }
+
+fn format_diagnostic_location(diagnostic: &DiagnosticRecord) -> Option<String> {
+    let path = diagnostic.path.as_ref()?;
+    let Some(line) = diagnostic.line else {
+        return Some(path.clone());
+    };
+    let Some(column) = diagnostic.column else {
+        return Some(format!("{path}:{line}"));
+    };
+    Some(format!("{path}:{line}:{column}"))
+}
+// sirno:witness:diagnostics:end
 
 // sirno:witness:cli-interface:begin
 fn styled_diagnostic_severity(severity: &str, style: OutputStyle) -> String {
@@ -826,34 +891,8 @@ pub(crate) fn print_entry_directory_report(report: &EntryDirectoryReport) {
 fn format_entry_directory_report_with_style(
     report: &EntryDirectoryReport, style: OutputStyle,
 ) -> String {
-    let mut output = String::new();
-    for diagnostic in report.file_diagnostics() {
-        output.push_str(&format!(
-            "{}: {}: {}\n",
-            styled_diagnostic_severity(diagnostic.severity.label(), style),
-            diagnostic.path.display(),
-            diagnostic.message
-        ));
-    }
-
-    for diagnostic in report.structural_report().diagnostics() {
-        if let Some(path) =
-            diagnostic.entry.as_ref().and_then(|entry| report.entry_file_path(entry))
-        {
-            output.push_str(&format!(
-                "{}: {}: {}\n",
-                styled_diagnostic_severity(diagnostic.severity.label(), style),
-                path.display(),
-                diagnostic.message()
-            ));
-        } else {
-            output.push_str(&format!(
-                "{}: {}\n",
-                styled_diagnostic_severity(diagnostic.severity.label(), style),
-                diagnostic.message()
-            ));
-        }
-    }
+    let diagnostics = diagnostics_from_entry_report(report);
+    let mut output = format_diagnostics_with_style(&diagnostics, style);
     output.push_str(&format!("{}\n", entry_directory_report_summary(report, style)));
     output
 }

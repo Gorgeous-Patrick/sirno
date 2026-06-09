@@ -15,5 +15,6 @@ pub use crate::surface::cli::{Cli, run_cli_from_env};
 pub use crate::surface::context::SurfaceContext;
 pub use crate::surface::dto::*;
 pub use crate::surface::error::CommandError;
+pub(crate) use crate::surface::output::format_command_error;
 pub use crate::surface::output::format_json;
 // sirno:witness:interfaces:end

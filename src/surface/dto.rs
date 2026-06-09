@@ -738,6 +738,30 @@ pub struct QueryResponse {
     pub diagnostics: Vec<DiagnosticRecord>,
 }
 
+impl QueryResponse {
+    pub(crate) fn column_options(columns: QueryColumns) -> Self {
+        Self { ok: true, columns: columns.labels(), records: Vec::new(), diagnostics: Vec::new() }
+    }
+
+    pub(crate) fn invalid_lake(columns: QueryColumns, report: &EntryDirectoryReport) -> Self {
+        Self {
+            ok: false,
+            columns: columns.labels(),
+            records: Vec::new(),
+            diagnostics: diagnostics_from_entry_report(report),
+        }
+    }
+
+    pub(crate) fn results(results: QueryResults) -> Self {
+        Self {
+            ok: true,
+            columns: results.columns.labels(),
+            records: results.records(),
+            diagnostics: Vec::new(),
+        }
+    }
+}
+
 /// Ripgrep request shared by typed callers.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RgRequest {
@@ -1115,14 +1139,37 @@ pub struct MovePathResult {
 
 /// One JSON-ready diagnostic.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+// sirno:witness:diagnostics:begin
 pub struct DiagnosticRecord {
     /// Diagnostic severity.
     pub severity: String,
+    /// Stable diagnostic code.
+    pub code: String,
     /// Optional path responsible for the diagnostic.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    /// One-based line number when the diagnostic has a source position.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+    /// One-based column number when the diagnostic has a source position.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub column: Option<usize>,
+    /// Entry address responsible for the diagnostic when one is known.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entry: Option<String>,
+    /// Metadata or relation field responsible for the diagnostic when one is known.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<String>,
+    /// Target entry address responsible for the diagnostic when one is known.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
     /// Human-readable diagnostic message.
     pub message: String,
+    /// Concise repair hint.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub help: Option<String>,
 }
+// sirno:witness:diagnostics:end
 
 /// JSON-ready lake check result.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

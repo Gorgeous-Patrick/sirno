@@ -25,10 +25,10 @@ use crate::surface::dto::{
     AnchorOutputFormat, ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest,
     CharmListResult, CharmProcessResult, CharmShowResult, EntryNewRequest, EntryPathsRequest,
     LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection, QueryColumnSelection,
-    QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
-    SpellListResult, StatusRequest, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
-    UpstreamCrystallizeRequest,
+    QueryColumns, QueryOutputFormat, QueryRequest, QueryResponse, QueryRun, RgRequest,
+    SkillWrapperResult, SpellListResult, StatusRequest, StructuralFilter, StructuralStateFilter,
+    StructuralTarget, TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -1391,8 +1391,13 @@ impl TopLevelEntryCommand {
                         print_query_column_options(&columns, format)?;
                         return Ok(ExitCode::SUCCESS);
                     }
-                    | QueryRun::InvalidLake { report, .. } => {
-                        print_entry_directory_report(&report);
+                    | QueryRun::InvalidLake { columns, report } => {
+                        match format {
+                            | QueryOutputFormat::Json => {
+                                print_json(&QueryResponse::invalid_lake(columns, &report))?;
+                            }
+                            | QueryOutputFormat::Human => print_entry_directory_report(&report),
+                        }
                         return Ok(ExitCode::FAILURE);
                     }
                     | QueryRun::Results(results) => results,

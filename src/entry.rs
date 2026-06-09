@@ -446,6 +446,70 @@ impl EntryMetadata {
     }
 }
 
+impl EntryParseError {
+    /// Stable diagnostic code for this parse error.
+    pub fn code(&self) -> &'static str {
+        match self {
+            | Self::MissingFrontmatter => "entry.frontmatter.missing",
+            | Self::UnterminatedFrontmatter => "entry.frontmatter.unterminated",
+            | Self::Yaml(_) => "entry.metadata.yaml",
+            | Self::MetadataMustBeMapping => "entry.metadata.mapping",
+            | Self::MetadataKeyMustBeString => "entry.metadata.key",
+            | Self::MetaMustBeMapping => "entry.metadata.meta.mapping",
+            | Self::MetaKeyMustBeString => "entry.metadata.meta.key",
+            | Self::UnknownMetaField(_) => "entry.metadata.meta.unknown",
+            | Self::InvalidMetaType => "entry.metadata.meta.type",
+            | Self::StructuralTideWithoutType(_) => "entry.metadata.tide.type",
+            | Self::MissingField(_) => "entry.metadata.field.missing",
+            | Self::FieldMustBeString(_) => "entry.metadata.field.string",
+            | Self::FieldMustBePlainString(_) => "entry.metadata.field.plain-string",
+            | Self::FieldMustBeList(_) => "entry.metadata.field.list",
+            | Self::ListItemMustBeString(_) => "entry.metadata.field.item-string",
+            | Self::InvalidStructuralId { .. } => "entry.metadata.structural.target",
+            | Self::InvalidFrozenMarker => "entry.metadata.frozen",
+            | Self::InvalidStructuralTideField(_) => "entry.metadata.tide.direction",
+            | Self::TopLevelFrozenMarker => "entry.metadata.frozen.legacy",
+        }
+    }
+
+    /// Source position for this parse error when the parser reported one.
+    pub fn position(&self) -> Option<(usize, usize)> {
+        match self {
+            | Self::Yaml(error) => {
+                let location = error.location()?;
+                Some((location.line(), location.column()))
+            }
+            | _ => None,
+        }
+    }
+
+    /// Repair hint for this parse error when a concise next step is known.
+    pub fn help(&self) -> Option<&'static str> {
+        match self {
+            | Self::MissingFrontmatter => {
+                Some("Start the entry with a YAML frontmatter block delimited by `---`.")
+            }
+            | Self::UnterminatedFrontmatter => {
+                Some("Add a closing `---` line before the Markdown body.")
+            }
+            | Self::MissingField(_) => Some("Add the required field to the entry frontmatter."),
+            | Self::FieldMustBeString(_) => Some("Use a single YAML string value for this field."),
+            | Self::FieldMustBePlainString(_) => {
+                Some("Keep this field on one line without nested YAML structure.")
+            }
+            | Self::FieldMustBeList(_) => Some("Use a YAML list for structural link fields."),
+            | Self::ListItemMustBeString(_) => Some("Use string entry addresses as list items."),
+            | Self::InvalidStructuralId { .. } => {
+                Some("Use a normal lake-relative Markdown entry address without the `.md` suffix.")
+            }
+            | Self::TopLevelFrozenMarker => {
+                Some("Move the protection reasons under `meta.frozen`.")
+            }
+            | _ => None,
+        }
+    }
+}
+
 /// Sirno-managed metadata for one entry.
 ///
 /// Empty managed metadata is omitted from rendered entry frontmatter.
