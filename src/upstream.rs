@@ -1017,7 +1017,14 @@ fn run_git<const N: usize>(args: [&str; N]) -> Result<(), UpstreamError> {
 }
 
 fn run_git_output<const N: usize>(args: [&str; N]) -> Result<Vec<u8>, UpstreamError> {
-    let output = Command::new("git").args(args).output().map_err(UpstreamError::StartGit)?;
+    // Note: upstream mirrors are bare clones in our own cache. Force `safe.bareRepository=all`
+    // so the clone and its later reads work even when the host or sandbox defaults the setting
+    // to `explicit`, which otherwise refuses an auto-discovered bare repository.
+    let output = Command::new("git")
+        .args(["-c", "safe.bareRepository=all"])
+        .args(args)
+        .output()
+        .map_err(UpstreamError::StartGit)?;
     if output.status.success() {
         return Ok(output.stdout);
     }
