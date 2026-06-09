@@ -24,11 +24,11 @@ use crate::surface::dto::{
     LocalProtectionResult, MistIntakeResult, MistStatusResult, MovePathResult, PathRecord,
     QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
     QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
-    SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
-    StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
-    StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    TideStatusResult, UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult,
-    WitnessResult,
+    SkillWrapperResult, SpellListResult, SpellRecord, StatusBlockers, StatusCheckPolicy,
+    StatusRequest, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
+    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
@@ -1570,7 +1570,7 @@ impl SurfaceContext {
 
     // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
-    pub fn status(&self) -> Result<StatusResult, CommandError> {
+    pub fn status(&self, request: StatusRequest) -> Result<StatusResult, CommandError> {
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         let report =
@@ -1590,31 +1590,44 @@ impl SurfaceContext {
             None
         };
         let ok = check.ok && mist.as_ref().is_none_or(|mist| mist.ok || !mist.manifest_present);
+        let structural_fields = report
+            .structural()
+            .with_tide_policies_from_entries(report.entries())
+            .fields()
+            .map(|(field, settings)| StructuralFieldStatus {
+                field: field.to_owned(),
+                entry: report
+                    .structural()
+                    .entry_for_field(field)
+                    .expect("effective relation has discovered entry")
+                    .to_string(),
+                to: StructuralEdgeStatus::from_settings(&settings.to),
+                from: StructuralEdgeStatus::from_settings(&settings.from),
+                clique: StructuralEdgeStatus::from_settings(&settings.clique),
+            })
+            .collect::<Vec<_>>();
+        let structural_field_count = structural_fields.len();
+        let check_policy = StatusCheckPolicy { mode: CheckMode::Review, render: settings.render };
+        let blockers = StatusBlockers::from_parts(&check, tide.as_ref(), mist.as_ref());
+        let message = status_message(ok, report.entries().len(), report.root(), &blockers);
+        let show = request.show;
         Ok(StatusResult {
             ok,
             config_path: display_path(&self.config_path),
             lake_path: display_path(report.root()),
             entry_count: report.entries().len(),
-            check_policy: StatusCheckPolicy { mode: CheckMode::Review, render: settings.render },
-            structural_fields: report
-                .structural()
-                .with_tide_policies_from_entries(report.entries())
-                .fields()
-                .map(|(field, settings)| StructuralFieldStatus {
-                    field: field.to_owned(),
-                    entry: report
-                        .structural()
-                        .entry_for_field(field)
-                        .expect("effective relation has discovered entry")
-                        .to_string(),
-                    to: StructuralEdgeStatus::from_settings(&settings.to),
-                    from: StructuralEdgeStatus::from_settings(&settings.from),
-                    clique: StructuralEdgeStatus::from_settings(&settings.clique),
-                })
-                .collect(),
-            tide,
-            mist,
-            check,
+            structural_field_count,
+            blockers,
+            message,
+            check_policy: show.includes_domain_details().then_some(check_policy),
+            structural_fields: if show.includes_full_details() {
+                structural_fields
+            } else {
+                Vec::new()
+            },
+            tide: show.includes_domain_details().then_some(tide).flatten(),
+            mist: show.includes_domain_details().then_some(mist).flatten(),
+            check: show.includes_full_details().then_some(check),
         })
     }
     // sirno:witness:project-status-commands:end
@@ -1684,6 +1697,43 @@ impl SurfaceContext {
             count,
             message: format!("cleared {count} tide resolutions"),
         })
+    }
+}
+
+fn status_message(ok: bool, entry_count: usize, lake: &Path, blockers: &StatusBlockers) -> String {
+    if ok {
+        return format!(
+            "status clean: {entry_count} {} in {}",
+            plural(entry_count, "entry", "entries"),
+            lake.display()
+        );
+    }
+
+    let mut parts = Vec::new();
+    if blockers.check_errors > 0 {
+        parts.push(format!(
+            "{} check {}",
+            blockers.check_errors,
+            plural(blockers.check_errors, "error", "errors")
+        ));
+    }
+    if let Some(open_workitems) =
+        blockers.tide_open_workitems.filter(|open_workitems| *open_workitems > 0)
+    {
+        parts.push(format!(
+            "{open_workitems} tide {}",
+            plural(open_workitems, "workitem", "workitems")
+        ));
+    }
+    let mist_blockers = blockers.mist_blocker_count();
+    if mist_blockers > 0 {
+        parts
+            .push(format!("{mist_blockers} mist {}", plural(mist_blockers, "blocker", "blockers")));
+    }
+    if parts.is_empty() {
+        "status has blockers".to_owned()
+    } else {
+        format!("status has blockers: {}", parts.join(", "))
     }
 }
 

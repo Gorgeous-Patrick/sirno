@@ -29,9 +29,9 @@ use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathsRequest, EntryReadContent, EntryReadRequest, LakeInitRequest, PathSelection,
     QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, RgRequest, SkillResourceContext,
-    StructuralFieldState, StructuralFilter, StructuralStateFilter, StructuralTarget,
-    SurfaceContext, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
-    UpstreamCrystallizeRequest,
+    StatusMode, StatusRequest, StructuralFieldState, StructuralFilter, StructuralStateFilter,
+    StructuralTarget, SurfaceContext, TideResolveRequest, TideSelectionRequest, TideStatusMode,
+    UpstreamAddRequest, UpstreamCrystallizeRequest,
 };
 use crate::{
     CheckMode, EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings,
@@ -509,8 +509,8 @@ impl SirnoMcpServer {
     // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     #[tool(name = "sirno_status")]
-    fn status(&self) -> McpToolResult {
-        result(self.context.status())
+    fn status(&self, Parameters(params): Parameters<StatusParams>) -> McpToolResult {
+        result(self.context.status(StatusRequest::new(params.show.into())))
     }
     // sirno:witness:project-status-commands:end
 
@@ -985,6 +985,35 @@ struct MistRenderParams {
     dry: bool,
 }
 // sirno:witness:mist-commands:end
+
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+struct StatusParams {
+    /// Select summary, normal, or full status detail.
+    #[serde(default)]
+    show: McpStatusMode,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+enum McpStatusMode {
+    /// Include paths, counts, blockers, and message.
+    #[default]
+    Summary,
+    /// Include compact status plus domain summaries.
+    Normal,
+    /// Include every status detail.
+    Full,
+}
+
+impl From<McpStatusMode> for StatusMode {
+    fn from(value: McpStatusMode) -> Self {
+        match value {
+            | McpStatusMode::Summary => Self::Summary,
+            | McpStatusMode::Normal => Self::Normal,
+            | McpStatusMode::Full => Self::Full,
+        }
+    }
+}
 
 // sirno:witness:upstream-commands:begin
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
@@ -1516,6 +1545,46 @@ Body.
     }
 
     #[test]
+    fn status_defaults_to_summary_detail() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = write_project(temp.path());
+        let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
+
+        let summary = server.status(Parameters(StatusParams::default())).unwrap();
+        let normal =
+            server.status(Parameters(StatusParams { show: McpStatusMode::Normal })).unwrap();
+        let full = server.status(Parameters(StatusParams { show: McpStatusMode::Full })).unwrap();
+
+        assert_eq!(structured(&summary)["ok"], true);
+        assert_eq!(structured(&summary)["entry_count"], 3);
+        assert_eq!(structured(&summary)["blockers"]["check_errors"], 0);
+        assert!(structured(&summary)["message"].as_str().unwrap().starts_with("status clean:"));
+        assert!(structured(&summary).get("check_policy").is_none());
+        assert!(structured(&summary).get("structural_fields").is_none());
+        assert!(structured(&summary).get("tide").is_none());
+        assert!(structured(&summary).get("mist").is_none());
+        assert!(structured(&summary).get("check").is_none());
+
+        assert_eq!(structured(&normal)["check_policy"]["mode"], "review");
+        assert!(structured(&normal).get("tide").is_some());
+        assert!(structured(&normal).get("mist").is_some());
+        assert!(structured(&normal).get("structural_fields").is_none());
+        assert!(structured(&normal).get("check").is_none());
+
+        assert_eq!(structured(&full)["check"]["ok"], true);
+        let structural_field_count =
+            structured(&full)["structural_field_count"].as_u64().unwrap() as usize;
+        if structural_field_count == 0 {
+            assert!(structured(&full).get("structural_fields").is_none());
+        } else {
+            assert_eq!(
+                structured(&full)["structural_fields"].as_array().unwrap().len(),
+                structural_field_count
+            );
+        }
+    }
+
+    #[test]
     fn tide_status_defaults_to_review_entries() {
         let temp = tempfile::tempdir().unwrap();
         let config_path = write_open_tide_project(temp.path());
@@ -1706,8 +1775,22 @@ Body.
         let status = result.structured_content.as_ref().unwrap();
         assert_eq!(status["ok"], true);
         assert_eq!(status["entry_count"], 3);
-        assert_eq!(status["check_policy"]["mode"], "review");
+        assert_eq!(status["blockers"]["check_errors"], 0);
+        assert!(status["message"].as_str().unwrap().starts_with("status clean:"));
+        assert!(status.get("check_policy").is_none());
         assert!(status.get("anchor").is_none());
+
+        let full_result = client
+            .peer()
+            .call_tool(
+                CallToolRequestParams::new("sirno_status")
+                    .with_arguments(json!({ "show": "full" }).as_object().unwrap().clone()),
+            )
+            .await
+            .unwrap();
+        let full_status = full_result.structured_content.as_ref().unwrap();
+        assert_eq!(full_status["check_policy"]["mode"], "review");
+        assert_eq!(full_status["check"]["ok"], true);
 
         let cwd = client
             .peer()

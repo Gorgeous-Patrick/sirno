@@ -26,8 +26,8 @@ use crate::surface::dto::{
     CharmListResult, CharmProcessResult, CharmShowResult, EntryNewRequest, EntryPathsRequest,
     LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection, QueryColumnSelection,
     QueryColumns, QueryOutputFormat, QueryRequest, QueryRun, RgRequest, SkillWrapperResult,
-    SpellListResult, StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    SpellListResult, StatusRequest, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
     UpstreamCrystallizeRequest,
 };
 use crate::surface::error::CommandError;
@@ -1523,7 +1523,8 @@ fn run_status_command(
     config_path: &Path, lake_path: Option<&Path>,
 ) -> Result<ExitCode, CommandError> {
     // sirno:witness:project-status-commands:begin
-    let result = SurfaceContext::from_cli_paths(config_path, lake_path).status()?;
+    let result =
+        SurfaceContext::from_cli_paths(config_path, lake_path).status(StatusRequest::full())?;
     print_status_result(&result);
     if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
     // sirno:witness:project-status-commands:end

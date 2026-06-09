@@ -295,24 +295,45 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
     let mut output = String::new();
     output.push_str(&format!("config: {}\n", result.config_path));
     output.push_str(&format!("lake: {} ({} entries)\n", result.lake_path, result.entry_count));
+    let structural_field_count = if result.structural_fields.is_empty() {
+        result.structural_field_count
+    } else {
+        result.structural_fields.len()
+    };
     output.push_str(&format!(
         "structure: {} discovered {}\n",
-        result.structural_fields.len(),
-        plural(result.structural_fields.len(), "relation", "relations")
+        structural_field_count,
+        plural(structural_field_count, "relation", "relations")
     ));
-    let render =
-        if result.check_policy.render { "render links checked" } else { "render links skipped" };
-    if !result.check.ok {
-        output.push_str(&format_diagnostics_with_style(&result.check.diagnostics, style));
+    let render = result
+        .check_policy
+        .as_ref()
+        .map(|policy| if policy.render { "render links checked" } else { "render links skipped" });
+    if let Some(check) = result.check.as_ref().filter(|check| !check.ok) {
+        output.push_str(&format_diagnostics_with_style(&check.diagnostics, style));
     }
-    if result.check.ok {
+    let check_ok =
+        result.check.as_ref().map_or(result.blockers.check_errors == 0, |check| check.ok);
+    if check_ok {
+        if let Some(render) = render {
+            output.push_str(&format!(
+                "lake check: {} (review; {render})\n",
+                style_text("ok", SemanticStyle::Success, style)
+            ));
+        } else {
+            output.push_str(&format!(
+                "lake check: {}\n",
+                style_text("ok", SemanticStyle::Success, style)
+            ));
+        }
+    } else if let Some(render) = render {
         output.push_str(&format!(
             "lake check: {} (review; {render})\n",
-            style_text("ok", SemanticStyle::Success, style)
+            style_text("failed", SemanticStyle::Error, style)
         ));
     } else {
         output.push_str(&format!(
-            "lake check: {} (review; {render})\n",
+            "lake check: {}\n",
             style_text("failed", SemanticStyle::Error, style)
         ));
     }

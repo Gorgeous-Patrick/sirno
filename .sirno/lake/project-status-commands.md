@@ -38,7 +38,12 @@ Status reports:
 - default mist projection state.
 
 CLI status keeps structural policy collapsed.
-MCP status returns typed structural link policy, Tide state, and mist projection state.
+MCP status accepts `show: summary | normal | full`.
+Omitting `show` selects `summary`.
+Summary status returns `ok`, project paths, entry and structural-field counts,
+blocker counts, and a short message.
+Normal status adds check policy, Tide summary, and default mist status.
+Full status adds structural link policy and review-mode check output.
 
 `project-status-commands` owns project status command spelling and behavior.
 `project-config` owns project configuration.

@@ -1346,6 +1346,109 @@ impl StatusTide {
     }
 }
 
+/// Project status detail selected by command callers.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StatusMode {
+    /// Return the compact project dashboard.
+    #[default]
+    Summary,
+    /// Return the compact dashboard plus domain summaries.
+    Normal,
+    /// Return every status detail.
+    Full,
+}
+
+impl StatusMode {
+    /// Return true when domain summary objects should be included.
+    pub fn includes_domain_details(self) -> bool {
+        matches!(self, Self::Normal | Self::Full)
+    }
+
+    /// Return true when verbose status objects should be included.
+    pub fn includes_full_details(self) -> bool {
+        matches!(self, Self::Full)
+    }
+}
+
+/// Project status request shared by interface surfaces.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct StatusRequest {
+    /// Status detail selected by the caller.
+    pub show: StatusMode,
+}
+
+impl StatusRequest {
+    /// Build a status request from explicit typed fields.
+    pub fn new(show: StatusMode) -> Self {
+        Self { show }
+    }
+
+    /// Build a compact status request.
+    pub fn summary() -> Self {
+        Self { show: StatusMode::Summary }
+    }
+
+    /// Build a full status request.
+    pub fn full() -> Self {
+        Self { show: StatusMode::Full }
+    }
+}
+
+/// Compact status blocker counts.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StatusBlockers {
+    /// Number of review-mode lake check errors.
+    pub check_errors: usize,
+    /// Number of open Tide workitems, when Tide could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tide_open_workitems: Option<usize>,
+    /// Number of open Tide waves, when Tide could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tide_open_waves: Option<usize>,
+    /// Number of entries that need Tide review, when Tide could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tide_review_entries: Option<usize>,
+    /// Number of changed mist entries, when mist status could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mist_changed_entries: Option<usize>,
+    /// Number of stale mist entries, when mist status could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mist_stale_entries: Option<usize>,
+    /// Number of missing mist entries, when mist status could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mist_missing_entries: Option<usize>,
+    /// Number of staged mist paths, when mist status could be loaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mist_staged_paths: Option<usize>,
+}
+
+impl StatusBlockers {
+    pub(crate) fn from_parts(
+        check: &LakeCheckResult, tide: Option<&StatusTide>, mist: Option<&MistStatusResult>,
+    ) -> Self {
+        let check_errors = check.diagnostics.iter().filter(|item| item.severity == "error").count();
+        let check_errors = if check_errors == 0 && check.has_errors { 1 } else { check_errors };
+        Self {
+            check_errors,
+            tide_open_workitems: tide.map(|tide| tide.open_workitems),
+            tide_open_waves: tide.map(|tide| tide.open_waves),
+            tide_review_entries: tide.map(|tide| tide.review_entries),
+            mist_changed_entries: mist.map(|mist| mist.changed_entries.len()),
+            mist_stale_entries: mist.map(|mist| mist.stale_entries.len()),
+            mist_missing_entries: mist.map(|mist| mist.missing_entries.len()),
+            mist_staged_paths: mist.map(|mist| mist.staged_paths.len()),
+        }
+    }
+
+    /// Return the number of pending mist blocker items.
+    pub fn mist_blocker_count(&self) -> usize {
+        self.mist_changed_entries.unwrap_or(0)
+            + self.mist_stale_entries.unwrap_or(0)
+            + self.mist_missing_entries.unwrap_or(0)
+            + self.mist_staged_paths.unwrap_or(0)
+    }
+}
+
 /// JSON-ready project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusResult {
@@ -1357,9 +1460,17 @@ pub struct StatusResult {
     pub lake_path: String,
     /// Number of parsed entries.
     pub entry_count: usize,
+    /// Number of discovered structural link relations.
+    pub structural_field_count: usize,
+    /// Compact blocker counts.
+    pub blockers: StatusBlockers,
+    /// Concise human-readable summary.
+    pub message: String,
     /// Status check policy.
-    pub check_policy: StatusCheckPolicy,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub check_policy: Option<StatusCheckPolicy>,
     /// Structural link relation summaries.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub structural_fields: Vec<StructuralFieldStatus>,
     /// Tide summary when the lake can be compared against the active review baseline.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1368,7 +1479,8 @@ pub struct StatusResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mist: Option<MistStatusResult>,
     /// Review-mode check result.
-    pub check: LakeCheckResult,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub check: Option<LakeCheckResult>,
 }
 
 /// Tide workitem selection by exact workitems or neighbor ids.

@@ -78,7 +78,12 @@ or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 An empty `columns` array returns selectable column names and no records.
 A non-empty `columns` array selects `id`, `path`, discovered intrinsic fields,
 or structural link relations.
-`sirno_status` returns typed check-policy, structural-edge, tide, and mist objects.
+`sirno_status` accepts `show: summary | normal | full`.
+Omitting `show` selects `summary`,
+which returns project paths, entry and structural-field counts,
+blocker counts, and a short message.
+`normal` adds check policy, Tide summary, and default mist status.
+`full` adds structural link policy and review-mode check output.
 `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
 `sirno_entry_witness` accepts `{ id }` by default.
 Default records contain `entry`, `location`, and `body`.

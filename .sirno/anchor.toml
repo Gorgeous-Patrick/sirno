@@ -487,7 +487,7 @@ prerequisite = [
 ]
 
 [entries.mcp-interface]
-fingerprint = "sha256:0ac66fe7c31c2a6ec1fa02246d4edd74d142877ec5744ef89e32e6cc26e72e2c"
+fingerprint = "sha256:7968b9b297dc08dd5384ee27b63ee69d61f9a72b615f0d6d99a53b93e34fdd5f"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -649,7 +649,7 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.project-status-commands]
-fingerprint = "sha256:61614f41dc559f2d70e696fbcb1b8fcb7386ce984fe9f0ac52d6d99b6379990a"
+fingerprint = "sha256:a9100d0ed2f24ffff1f8e07f400bbadbb28cd6447c9e57b0284172a545846ca7"
 belongs = ["project-config"]
 prerequisite = [
     "project-config",
