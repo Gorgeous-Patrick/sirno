@@ -4,7 +4,7 @@ desc: The review neighborhood for Sirno-owned generated footer navigation.
 category:
   - concept
 belongs:
-  - lake-projection
+  - misty-lake
   - structural
 prerequisite:
   - generated-footer

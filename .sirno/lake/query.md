@@ -4,7 +4,7 @@ desc: Selection of Sirno entries through vague text and structural filters.
 category:
   - concept
 belongs:
-  - lake-projection
+  - misty-lake
 prerequisite:
   - interfaces
   - metadata

@@ -319,9 +319,9 @@ belongs = ["generated-navigation"]
 prerequisite = ["structural"]
 
 [entries.generated-navigation]
-fingerprint = "sha256:9e716a9787181bcfce019ffbd3179f26d5cbb424e95ba2e0d99f6c2043d29af8"
+fingerprint = "sha256:fc0c7569cec46804d407331f959b088a0402aa697f3b853bb9e70c2fdade8bca"
 belongs = [
-    "lake-projection",
+    "misty-lake",
     "structural",
 ]
 prerequisite = ["generated-footer"]
@@ -390,7 +390,7 @@ fingerprint = "sha256:bbfe9c700bfe0d9fdad1d28334980a970a66f95bd069c35be41e5d755c
 belongs = ["narrative"]
 
 [entries.lake]
-fingerprint = "sha256:03506fa04d3cef7a3de5e54f629f2d7e8ecdecf76d115d986e44f8e061f40c54"
+fingerprint = "sha256:e7830527329637c8460c6c54f3f4ca5d1e93f2f2e7b96c1cbccc2f4560ce72a5"
 belongs = ["form"]
 prerequisite = ["form"]
 
@@ -433,14 +433,6 @@ belongs = [
 prerequisite = [
     "lake",
     "entry-address-resolution",
-]
-
-[entries.lake-projection]
-fingerprint = "sha256:57d1fe32072edcb07c956f92838ea9863ed1cf79336a396f9a23567e13a63e1e"
-belongs = ["lake"]
-prerequisite = [
-    "lake",
-    "reservoir",
 ]
 
 [entries.lake-review]
@@ -553,8 +545,8 @@ refines = [
 ]
 
 [entries.mist]
-fingerprint = "sha256:a8dbc39b548194ddba70c1bb51fb310f4ec8f40771f71897bff1839795a49e58"
-belongs = ["lake-projection"]
+fingerprint = "sha256:b030fd3c75ac38b81f62839056880d7bd2efbcbf766de625f30505058684a5be"
+belongs = ["misty-lake"]
 prerequisite = [
     "query",
     "reservoir",
@@ -572,12 +564,10 @@ prerequisite = [
 refines = ["command-families"]
 
 [entries.misty-lake]
-fingerprint = "sha256:fbdfd97d5d989e407707d3e7118325502341ee1f76563f742d4a69b9fbc09d4e"
-belongs = [
-    "lake-projection",
-    "generated-navigation",
-]
+fingerprint = "sha256:6123c29ce53210b354b9943ac9c905c83544ea6f287a8bcc44760f1140276934"
+belongs = ["lake"]
 prerequisite = [
+    "lake",
     "reservoir",
     "mist",
 ]
@@ -677,8 +667,8 @@ belongs = ["category"]
 prerequisite = ["category"]
 
 [entries.query]
-fingerprint = "sha256:5f73bd97ebf7908ef0babc2af8b50bae799feaeb3528eaae924a4f86029abbc6"
-belongs = ["lake-projection"]
+fingerprint = "sha256:ea298e0eb4818ac6c5e3e11d61d8ae602d26a7ddde26135019671fd2867e6279"
+belongs = ["misty-lake"]
 prerequisite = [
     "interfaces",
     "metadata",

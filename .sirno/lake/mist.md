@@ -5,7 +5,7 @@ category:
   - concept
   - implemented
 belongs:
-  - lake-projection
+  - misty-lake
 prerequisite:
   - query
   - reservoir

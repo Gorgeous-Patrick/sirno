@@ -49,7 +49,7 @@ Read these entries when changing the lake model:
 |---|---|---|
 | entry shape | `entry` | Markdown files, metadata, prose, and addressable design objects. |
 | canonical store | `reservoir` | The tracked authored lake store. |
-| projection | `lake-projection` | Selection, rendered workspaces, generated navigation, and intake. |
+| projection | `misty-lake` | Selection, rendered workspaces, generated navigation, and intake. |
 | composition | `lake-composition` | Namespaces, lakelets, upstreams, and crystallized glaciers. |
 | commands | `lake-commands` | Lake initialization, checking, and reservoir movement. |
 | review | `lake-review` | Structural validation, accepted baselines, Tide, and versioning. |

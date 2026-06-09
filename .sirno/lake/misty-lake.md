@@ -1,23 +1,46 @@
 ---
-desc: A projected, editable lake workspace rendered by a mist.
+desc: A reservoir view rendered through a mist.
 name: Misty Lake
 category:
   - concept
   - implemented
 belongs:
-  - lake-projection
-  - generated-navigation
+  - lake
 prerequisite:
+  - lake
   - reservoir
   - mist
 refines:
   - lake
 ---
 
-A *misty lake* is a materialized projection of reservoir entries.
+A *misty lake* is a reservoir viewed through a mist.
 
-A misty lake is produced by a *mist*.
-It uses the same entry-address layout as the reservoir by default,
+A misty lake is the established form for working with a reservoir without making
+the reservoir itself carry local presentation state.
+The reservoir is quiet canonical storage.
+People, agents, editors, and local tools need a readable working surface.
+The mist supplies the selector, projection settings, and render settings.
+The misty lake is the resulting view:
+selected entries,
+generated navigation,
+editable workspace state,
+and intake back into the reservoir.
+
+The concept includes the projection pieces that make a lake visible outside its canonical store:
+`query` selects entries,
+`mist` stores a reusable selector and render settings,
+and `generated-navigation` owns the Sirno-generated navigation surface.
+Changes to selection, rendered layout, editable projections, generated navigation,
+or intake behavior should read those entries together.
+
+The misty lake is the view.
+It does not own canonical entry content.
+The reservoir remains the authored lake store.
+Mist render and intake are the operations that move between the authored store
+and one projected view.
+
+A misty lake uses the same entry-address layout as the reservoir by default,
 so existing lake reading habits still work.
 A default project mist may render into `sirno-lake/`
 while the canonical reservoir lives at `.sirno/lake`.
