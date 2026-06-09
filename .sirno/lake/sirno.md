@@ -1,6 +1,6 @@
 ---
 name: Sirno
-desc: The project model that gives design a nominal intermediate form.
+desc: The project model that keeps design and repository work connected through nominal entries.
 category:
   - concept
 ---
@@ -23,21 +23,22 @@ and uses the *repository* as the material surface those entries shape.
 The central problem is project memory.
 Design tends to begin as a narrative, then scatter across code, tests, comments,
 review threads, and the working memory of whoever touched the project last.
-Sirno gives that memory a named intermediate form.
-It keeps the design readable as prose while making its pieces small enough to index,
-query, revise, and cite during implementation.
+Sirno answers by naming the forms design takes:
+the canonical *lake* and the material *repository*.
+The `form` *entry* is the main bridge into that polarity.
+The `transform` *entry* names the intentional movements across it.
 
-Sirno gives design a nominal intermediate form.
-The names are readable by humans, stable for tools,
-and small enough for agents to inspect without carrying the whole project in context.
+Those names are readable by humans, stable for tools,
+and small enough for agents to inspect, query, revise, and cite during implementation.
 
 Sirno maintains structure:
 *entry* ids, metadata fields, *structural links*, *generated footers*,
 reservoir conventions, control-file conventions, and *witness* lookup.
-People, agents, and other tools still judge design quality and semantic truth.
+People judge design quality and semantic truth.
+Agents and tools use the handles to keep work bounded.
 
-This division is important.
-Sirno does not claim to know whether an architecture is elegant,
+That boundary keeps review honest.
+Sirno does not decide whether an architecture is elegant,
 whether a test proves the right property,
 or whether a *repository* path truly satisfies a design claim.
 It gives those claims stable handles.
@@ -47,6 +48,9 @@ a reviewer can ask for the *witness* of an *entry*,
 and an agent can inspect a bounded set of related *entries* before editing code.
 
 The result should feel like a project with good names for its important ideas.
+The reader spine is `form`, then `transform`.
+`form` explains where project knowledge lives.
+`transform` explains how work crosses those places.
 Narratives give the reader routes through the design.
 The *lake* gives the project durable local objects.
 The *repository* gives those objects consequences and evidence.

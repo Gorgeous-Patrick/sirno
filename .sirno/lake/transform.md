@@ -6,11 +6,12 @@ category:
 belongs:
   - form
 prerequisite:
-  - lake
-  - repo
+  - form
 ---
 
 A *transform* names intentional movement between Sirno *forms*.
+Read `form` first:
+it defines the *lake* and *repository* roles that a transform crosses.
 It gives a direction, a source form, a target form, and a review habit.
 A *transform* may be a command, a skill workflow, a manual editing practice, or a narrative route.
 

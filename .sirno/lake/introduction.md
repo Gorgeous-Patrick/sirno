@@ -21,6 +21,11 @@ Its tracked reservoir lives at `.sirno/lake`.
 Its default misty workspace renders to `sirno-lake/`.
 The `perspective-and-terms` *entry* states this convention directly.
 
+The main reader spine is `form`, then `transform`.
+`form` explains the two shapes project knowledge takes:
+the *lake* as canonical design source and the *repository* as material surface.
+`transform` explains how work moves between them through `actualize` and `internalize`.
+
 Design needs a form that humans can read,
 tools can index,
 and agents can manipulate without carrying a whole project in context.
@@ -85,7 +90,8 @@ The detailed design lives in the *entries* themselves:
 *forms*, *structural links*, *transforms*, the *reservoir*, checks, *witnesses*,
 and *generated footers*.
 Read this *entry* first,
-then follow `belongs`, `prerequisite`, `refines`, and *witnesses*
+then use `form` and `transform` as the main conceptual bridge
+before following `belongs`, `prerequisite`, `refines`, and *witnesses*
 to the local design you need.
 
 Agents act inside this *lake* through a packaged skill set;

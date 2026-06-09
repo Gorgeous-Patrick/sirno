@@ -386,7 +386,7 @@ belongs = ["meta-type"]
 prerequisite = ["meta-type"]
 
 [entries.introduction]
-fingerprint = "sha256:bbfe9c700bfe0d9fdad1d28334980a970a66f95bd069c35be41e5d755c59b642"
+fingerprint = "sha256:bb02f666b41cbbb9e937222c83428f4c82786d50e6ac5d2ba77a77f3bc83bd14"
 belongs = ["narrative"]
 
 [entries.lake]
@@ -737,7 +737,7 @@ prerequisite = [
 refines = ["methodology"]
 
 [entries.sirno]
-fingerprint = "sha256:305f4c0f0c6253e2981521eceb530abe94c8219f1df10e15b935437aba3f828e"
+fingerprint = "sha256:d6fed283be37710a2119cd98111520fd5fa544fadadfed144984af18af893145"
 
 [entries.skill-synthesis-discipline]
 fingerprint = "sha256:e5310a29d9a043a55d9f9d253a10d2617d5c3a8f35995e49f65d5c0b2b22ca6f"
@@ -843,12 +843,9 @@ belongs = ["tide"]
 prerequisite = ["tide"]
 
 [entries.transform]
-fingerprint = "sha256:0c35ec671774d63a115f341ec3158fc56bb7176bbbe22736cbc137057a8139da"
+fingerprint = "sha256:a966603f21c352514d6f744437583da306603ac025d60ec4d8178daf915a516e"
 belongs = ["form"]
-prerequisite = [
-    "lake",
-    "repo",
-]
+prerequisite = ["form"]
 
 [entries.uninhabited]
 fingerprint = "sha256:57e84e12f9192a5a5b2b3f04c19a0665efb6c521c344b80c31ba6e5580b5f9a5"
