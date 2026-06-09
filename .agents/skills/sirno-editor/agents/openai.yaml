@@ -1,4 +1,4 @@
 interface:
   display_name: "Sirno Editor"
-  short_description: "Edit Sirno-managed codebases from the lake first"
-  default_prompt: "Use $sirno-editor to start this edit in the lake, sync entries and witnesses, then validate."
+  short_description: "Edit Sirno repository material from the lake first"
+  default_prompt: "Use $sirno-editor for repository-material edits that start in the lake, then validate."

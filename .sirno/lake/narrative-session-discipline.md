@@ -29,8 +29,9 @@ Also read any entries the user named or the task implies.
 Do not assume any standard entry address exists.
 If a source entry is missing,
 state the gap and continue only with the route that can be grounded in existing entries.
-Switch to the editor skill if a session discovers a necessary repository,
-configuration, witness, or lake maintenance edit.
+Switch to the curator skill if a session discovers standalone lake curation.
+Switch to the editor skill if it discovers a repository-material,
+configuration, witness, or skill-package edit.
 
 Maintain a small private session state.
 It holds the reader and task,

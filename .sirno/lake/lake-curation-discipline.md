@@ -1,5 +1,5 @@
 ---
-desc: The agent procedure for auditing and curating an existing Sirno-managed lake.
+desc: The agent procedure for lake-shape audits and approved curation.
 name: Lake Curation Discipline
 category:
   - meta
@@ -13,18 +13,21 @@ prerequisite:
   - witness
 ---
 
-Lake curation maintains the coherence of an existing Sirno-managed lake.
+Lake curation maintains the shape and coherence of an existing Sirno-managed lake.
 Its static full-resource template lives in
 `.artifacts/lake-curation-discipline/SKILL.full.template.md`
 and is rendered by `src/mcp.rs` as `sirno://skills/sirno-curator`.
 Its packaged wrapper lives in `.artifacts/lake-curation-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-curator/SKILL.md`.
 
-Lake curation is the proactive counterpart to repository editing.
-The editor skill responds to a request to change repository material.
-The curator skill is invoked when no code change drives the work,
-but the lake itself needs a pass for clarity, focus, accurate structure,
+Use this discipline when the lake itself is the work:
+entry focus, entry framing, structural relation fit, review-neighborhood placement,
 or witness alignment.
+Repository editing owns source, tests, configuration, generated artifacts,
+non-lake documentation, witness blocks, and skill packages when those materials are being changed
+from named lake design.
+Lake curation may inspect repository evidence and propose evidence-link changes,
+but it does not add repository features.
 
 Orient to the project first.
 Read repository instructions and `Sirno.toml`.

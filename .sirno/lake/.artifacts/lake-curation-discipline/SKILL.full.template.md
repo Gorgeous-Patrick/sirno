@@ -1,26 +1,24 @@
 ---
 name: sirno-curator
 description: >-
-  Audit an existing Sirno-managed lake for clarity, focus, accurate structure, and witness
-  alignment, then act on findings only with the user's approval.
+  Assess and improve an existing Sirno Lake's entry framing, structure, review neighborhoods,
+  and witness alignment. Propose first; edit only after approval.
 ---
 
 # Sirno Curator
 
 ## Purpose
 
-Use this skill to optimize an existing Sirno-managed lake.
-The editor skill responds to a request to change repository material.
-The curator skill is the proactive counterpart.
-It audits entries for focus and framing,
-discovers missing structural links,
-identifies witness gaps and witness drift,
-and acts on the user's approved findings.
+Use this skill for standalone lake curation.
+Assess entry focus, entry framing, structural relation fit,
+review-neighborhood placement, witness gaps, and witness drift.
+Propose findings before acting.
 
 Repository material covers source, tests, configuration, generated files, witness blocks,
 and skill packages.
-Curation does not edit repository material to add a feature.
-It edits the lake to keep design legible
+Use `sirno://skills/sirno-editor` when those materials are being changed from named lake design.
+Curation may inspect repository evidence and propose evidence-link changes,
+but it edits the lake to keep design legible
 and keeps the lake's claims honest about the repository.
 
 This full skill text is served as `sirno://skills/sirno-curator`.

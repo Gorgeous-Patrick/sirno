@@ -1,5 +1,5 @@
 ---
-desc: The agent procedure for codebase changes that start in the Sirno Lake and keep documentation synced.
+desc: The agent procedure for repository-material edits that start in the Sirno Lake.
 name: Repository Editing Discipline
 category:
   - meta
@@ -17,7 +17,7 @@ refines:
   - methodology
 ---
 
-Repository editing is the default agent procedure for changing a Sirno-managed repository.
+Repository editing is the procedure for editing repository material in a Sirno-managed project.
 It is also the shared method home for actualization and internalization.
 Its static full-resource template lives in
 `.artifacts/repository-editing-discipline/SKILL.full.template.md`
@@ -25,6 +25,8 @@ and is rendered by `src/mcp.rs` as `sirno://skills/sirno-editor`.
 Its packaged wrapper lives in `.artifacts/repository-editing-discipline/SKILL.md`
 and renders to `.agents/skills/sirno-editor/SKILL.md`.
 
+Use this discipline when source, tests, configuration, generated artifacts, README files,
+design documents outside the lake, witness blocks, or skill packages are being changed.
 Start every repository edit in the configured lake.
 Read repository instructions, `Sirno.toml`, and the entries that govern the requested work.
 If `Sirno.toml` is missing, report that the repository is not currently Sirno-managed,
@@ -33,8 +35,9 @@ Call `sirno_status` early to surface the lake path, tide blockers, and pending r
 Use `sirno_entry_query` for discovery,
 follow the active project's configured structural relations,
 and inspect existing evidence with `sirno_entry_witness` before editing repository material.
-This applies to source, tests, generated artifacts, skill packages, README files,
-configuration, and design documents outside the configured lake.
+Standalone lake curation belongs to `lake-curation-discipline`.
+Use that discipline for entry framing, structure, review-neighborhood placement,
+or witness-alignment assessment when no repository-material change drives the work.
 
 Name or revise the durable design fact before the repository change settles.
 If an entry already states the right claim, keep the code change under that entry.

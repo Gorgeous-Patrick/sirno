@@ -1,8 +1,8 @@
 ---
 name: sirno-narrative-session
 description: >-
-  Conduct adaptive Sirno narrative sessions in the active repository and materialize the route as a
-  narrative entry when the route should persist.
+  Guide a reader through active lake knowledge and save the route as a narrative entry when it
+  should persist.
 ---
 
 # Sirno Narrative Session
@@ -43,8 +43,9 @@ when the project carries those concepts.
 
 If a source entry is missing,
 state the gap and continue only with the route that existing entries can ground.
-Hand off to `sirno-editor` if the session reveals a needed repository,
-configuration, witness, or lake maintenance edit.
+Hand off to `sirno-curator` if the session reveals standalone lake curation.
+Hand off to `sirno-editor` if it reveals a repository-material,
+configuration, witness, or skill-package edit.
 
 ## Reader Pull
 

@@ -1,8 +1,8 @@
 ---
 name: sirno-editor
 description: >-
-  Edit a Sirno-managed repository by reading its configured lake before source, docs, config,
-  witness, or skill edits, then syncing entries and validating the result.
+  Edit repository material in a Sirno-managed project. Use for source, tests, docs, config,
+  witness blocks, or skill packages that must start from the configured lake.
 ---
 
 Read the full skill text from the MCP resource `sirno://skills/sirno-editor`.

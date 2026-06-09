@@ -1,7 +1,7 @@
 ---
 name: sirno-actualizer
 description: >-
-  Shape repository material from the configured lake when the governing design entry is clear.
+  Actualize lake entries into repository material when the governing design entry is known.
 ---
 
 # Sirno Actualizer

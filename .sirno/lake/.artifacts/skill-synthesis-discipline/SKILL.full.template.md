@@ -1,8 +1,8 @@
 ---
 name: sirno-skill-synthesizer
 description: >-
-  Rebuild packaged Sirno skill wrappers and MCP skill resources from the active project's lake,
-  when that project owns such a skill surface.
+  Rebuild Sirno skill templates, MCP resources, wrappers, and installed packages from the active
+  project's lake.
 ---
 
 # Sirno Skill Synthesizer

@@ -1,15 +1,15 @@
 ---
 name: sirno-editor
 description: >-
-  Edit a Sirno-managed repository by reading its configured lake before source, docs, config,
-  witness, or skill edits, then syncing entries and validating the result.
+  Edit repository material in a Sirno-managed project. Use for source, tests, docs, config,
+  witness blocks, or skill packages that must start from the configured lake.
 ---
 
 # Sirno Editor
 
 ## Purpose
 
-Use this skill for any edit to a Sirno-managed repository.
+Use this skill for repository-material edits in a Sirno-managed project.
 Start in the active project's configured lake.
 Read the entries that explain the work,
 update those entries when the design changes,
@@ -18,6 +18,10 @@ then edit repository material under that named design.
 Repository material covers source, tests, generated artifacts, configuration,
 README files, design documents outside the configured lake, witness blocks, and skill packages.
 Any important local commitment should trace back to an entry in the active project.
+
+Use `sirno://skills/sirno-curator` for standalone lake curation:
+entry framing, structural relation fit, review-neighborhood placement,
+or witness-alignment assessment when no repository-material change drives the work.
 
 This full skill text is served as `sirno://skills/sirno-editor`.
 Apply it to the project currently bound through Sirno MCP.

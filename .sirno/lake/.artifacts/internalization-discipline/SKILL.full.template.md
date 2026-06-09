@@ -1,7 +1,7 @@
 ---
 name: sirno-internalizer
 description: >-
-  Record durable design facts from repository material into the configured lake.
+  Internalize durable repository facts into the configured lake when material reveals design knowledge.
 ---
 
 # Sirno Internalizer

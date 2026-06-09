@@ -1,8 +1,8 @@
 ---
 name: sirno-curator
 description: >-
-  Audit an existing Sirno-managed lake for clarity, focus, accurate structure, and witness
-  alignment, then act on findings only with the user's approval.
+  Assess and improve an existing Sirno Lake's entry framing, structure, review neighborhoods,
+  and witness alignment. Propose first; edit only after approval.
 ---
 
 Read the full skill text from the MCP resource `sirno://skills/sirno-curator`.

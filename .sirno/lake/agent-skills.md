@@ -21,12 +21,12 @@ The durable procedure for each skill lives in its own discipline entry.
 
 | Skill | Discipline entry | Local role |
 |---|---|---|
-| `sirno-editor` | `repository-editing-discipline` | Front door for repository edits. |
+| `sirno-editor` | `repository-editing-discipline` | Repository-material edits that start in the lake. |
 | `sirno-actualizer` | `actualization-discipline` | Lake-to-repository work. |
 | `sirno-internalizer` | `internalization-discipline` | Repository-to-lake work. |
 | `sirno-narrative-session` | `narrative-session-discipline` | Adaptive routes through lake knowledge. |
 | `sirno-skill-synthesizer` | `skill-synthesis-discipline` | Rebuilds MCP resources and wrappers. |
-| `sirno-curator` | `lake-curation-discipline` | Audits an existing lake with user approval. |
+| `sirno-curator` | `lake-curation-discipline` | Lake-shape audits and approved curation. |
 | `sirno-finalizer` | `finalization-discipline` | Accepts, stages, and commits reviewed work. |
 
 The roster orients readers; it is not the semantic contract of every skill.
