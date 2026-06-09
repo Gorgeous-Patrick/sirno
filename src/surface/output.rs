@@ -18,8 +18,8 @@ use crate::surface::dto::{
 };
 use crate::surface::error::CommandError;
 use crate::{
-    Entry, EntryDirectoryError, EntryDirectoryReport, UpstreamCrystallizeReport,
-    UpstreamStatusReport, UpstreamStatusState, WitnessRecord,
+    Entry, EntryDirectoryError, EntryDirectoryReport, EntryIntrinsicFields,
+    UpstreamCrystallizeReport, UpstreamStatusReport, UpstreamStatusState, WitnessRecord,
 };
 
 /// Render any serializable value as pretty JSON.
@@ -114,6 +114,13 @@ pub(crate) fn format_success_text(value: &str, style: OutputStyle) -> String {
 
 pub(crate) fn format_muted_text(value: &str, style: OutputStyle) -> String {
     style_text(value, SemanticStyle::Muted, style)
+}
+
+pub(crate) fn format_intrinsic_summary(fields: &EntryIntrinsicFields) -> String {
+    if fields.is_empty() {
+        return "-".to_owned();
+    }
+    fields.iter().map(|(field, value)| format!("{field}={value}")).collect::<Vec<_>>().join("; ")
 }
 
 pub(crate) fn format_warning_text(value: &str, style: OutputStyle) -> String {

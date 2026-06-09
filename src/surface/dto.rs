@@ -15,8 +15,9 @@ use crate::surface::output::{
 };
 use crate::{
     CheckMode, EntryAddress, EntryAddressError, EntryAtom, EntryDirectoryReport,
-    EntryStructuralMatcher, GenLinkDirectoryReport, MetaFieldRecord, StructuralEdgeSettings, Tide,
-    TideStatus, TideWorkitem, UpstreamSettings, WitnessRecord,
+    EntryIntrinsicFields, EntryStructuralFields, EntryStructuralMatcher, GenLinkDirectoryReport,
+    MetaFieldRecord, StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, UpstreamSettings,
+    WitnessRecord,
 };
 
 /// Shared human-or-JSON output renderer.
@@ -646,10 +647,8 @@ pub struct StructuralTarget {
 pub struct EntryNewRequest {
     /// Entry address.
     pub id: EntryAddress,
-    /// Human-readable entry name.
-    pub name: Option<String>,
-    /// Short entry description.
-    pub desc: String,
+    /// User-authored intrinsic metadata fields.
+    pub intrinsic: EntryIntrinsicFields,
     /// Structural link targets.
     #[serde(default)]
     pub structural: Vec<StructuralTarget>,
@@ -695,10 +694,10 @@ pub struct EntryReadResult {
     pub id: String,
     /// Sirno Lake entry file path.
     pub path: String,
-    /// Human-readable entry name.
-    pub name: String,
-    /// Short entry description.
-    pub desc: String,
+    /// Parsed intrinsic metadata fields.
+    pub intrinsic: EntryIntrinsicFields,
+    /// Parsed structural relation metadata fields.
+    pub relation: EntryStructuralFields,
     /// Markdown body outside the metadata block.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
@@ -950,8 +949,8 @@ pub struct ArtifactChangeResult {
 pub struct CharmRecord {
     /// Entry address that owns the charm.
     pub id: String,
-    /// Human-readable entry name.
-    pub name: String,
+    /// User-authored intrinsic metadata fields.
+    pub intrinsic: EntryIntrinsicFields,
     /// Whether the charm is enabled in project config.
     pub enabled: bool,
     /// Charm kind: direct or source.
@@ -978,8 +977,8 @@ pub struct CharmShowResult {
     pub ok: bool,
     /// Entry address that owns the charm.
     pub id: String,
-    /// Human-readable entry name.
-    pub name: String,
+    /// User-authored intrinsic metadata fields.
+    pub intrinsic: EntryIntrinsicFields,
     /// Whether the charm is enabled in project config.
     pub enabled: bool,
     /// Charm kind: direct or source.
@@ -1058,8 +1057,8 @@ pub struct CharmCleanResult {
 pub struct SpellRecord {
     /// Entry address that owns the charm.
     pub id: String,
-    /// Human-readable entry name.
-    pub name: String,
+    /// User-authored intrinsic metadata fields.
+    pub intrinsic: EntryIntrinsicFields,
     /// Spell kind: direct or source.
     pub kind: String,
     /// Spell cache directory for this charm fingerprint.

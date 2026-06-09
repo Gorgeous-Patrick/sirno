@@ -164,8 +164,9 @@ Start a *lake* of your own:
 
 ```sh
 sirno init                                   # choose config, lake, skills
-sirno new architecture --name "Architecture" \
-  --desc "How the system is structured"      # create one entry
+sirno new architecture \
+  --intrinsic name="Architecture" \
+  --intrinsic desc="How the system is structured" # create one entry
 sirno check --mode edit                      # check while editing; dangling refs are warnings
 ```
 

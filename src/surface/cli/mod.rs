@@ -32,20 +32,21 @@ use crate::surface::dto::{
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
-    OutputStyle, format_human_table_semantic_with_width, format_muted_text, format_path_table,
-    format_skill_wrapper_table_for_terminal, format_success_text, format_warning_text,
-    print_anchor_check_result, print_anchor_status_result, print_anchor_update_result,
-    print_cli_error, print_config_comment_result, print_entry_directory_report, print_json,
-    print_lake_check_result, print_mist_intake_result, print_mist_status_result,
-    print_query_column_options, print_query_results, print_render_result, print_status_result,
+    OutputStyle, format_human_table_semantic_with_width, format_intrinsic_summary,
+    format_muted_text, format_path_table, format_skill_wrapper_table_for_terminal,
+    format_success_text, format_warning_text, print_anchor_check_result,
+    print_anchor_status_result, print_anchor_update_result, print_cli_error,
+    print_config_comment_result, print_entry_directory_report, print_json, print_lake_check_result,
+    print_mist_intake_result, print_mist_status_result, print_query_column_options,
+    print_query_results, print_render_result, print_status_result,
     print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
 };
 use crate::surface::rg::{
     is_rg_preprocessor_invocation, rg_args_to_strings, run_rg_preprocessor_from_env,
 };
 use crate::{
-    CheckMode, EntryAddress, EntryAddressError, EntryAtom, TideSource, TideStatus, TideWorkitem,
-    TideWorkitemParseError, UpstreamSettings,
+    CheckMode, EntryAddress, EntryAddressError, EntryAtom, EntryIntrinsicFields, TideSource,
+    TideStatus, TideWorkitem, TideWorkitemParseError, UpstreamSettings,
 };
 
 /// Sirno command-line entry point.
@@ -199,12 +200,9 @@ enum TopLevelEntryCommand {
         /// Entry address.
         #[arg(value_name = "ENTRY_ADDRESS")]
         id: String,
-        /// Human-readable entry name.
-        #[arg(short = 'n', long)]
-        name: Option<String>,
-        /// Short entry desc.
-        #[arg(short = 'd', long)]
-        desc: String,
+        /// Intrinsic metadata as FIELD=VALUE.
+        #[arg(long = "intrinsic", alias = "metadata", value_name = "FIELD=VALUE")]
+        intrinsic: Vec<IntrinsicArgument>,
         /// Structural link target as FIELD=ENTRY_ADDRESS.
         #[arg(long = "structural", value_name = "FIELD=ENTRY_ADDRESS")]
         structural: Vec<StructuralPredicate>,
@@ -446,6 +444,38 @@ enum PathOutputFormat {
     Paths,
 }
 // sirno:witness:entry-commands:end
+
+/// Intrinsic metadata parsed from `FIELD=VALUE`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct IntrinsicArgument {
+    field: String,
+    value: String,
+}
+
+impl FromStr for IntrinsicArgument {
+    type Err = IntrinsicArgumentParseError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        let Some((field, value)) = raw.split_once('=') else {
+            return Err(IntrinsicArgumentParseError::MissingEquals);
+        };
+        if field.is_empty() {
+            return Err(IntrinsicArgumentParseError::EmptyField);
+        }
+        Ok(Self { field: field.to_owned(), value: value.to_owned() })
+    }
+}
+
+/// Error raised while parsing one intrinsic metadata `FIELD=VALUE` argument.
+#[derive(Debug, Error)]
+enum IntrinsicArgumentParseError {
+    /// The argument does not contain the field-value separator.
+    #[error("expected FIELD=VALUE")]
+    MissingEquals,
+    /// The intrinsic field name is empty.
+    #[error("intrinsic field name must not be empty")]
+    EmptyField,
+}
 
 /// Structural link predicate parsed from `FIELD=ENTRY_ADDRESS`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1308,14 +1338,18 @@ fn print_local_protection_result(result: &LocalProtectionResult, warning: &str) 
 impl TopLevelEntryCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         match self {
-            | TopLevelEntryCommand::New { id, name, desc, structural, body } => {
+            | TopLevelEntryCommand::New { id, intrinsic, structural, body } => {
                 let id = EntryAddress::new(&id)?;
+                let intrinsic = intrinsic
+                    .into_iter()
+                    .map(|field| (field.field, field.value))
+                    .collect::<EntryIntrinsicFields>();
                 let structural = structural
                     .into_iter()
                     .map(|target| StructuralTarget { field: target.field, target: target.target })
                     .collect();
                 let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                    .entry_new(EntryNewRequest { id, name, desc, structural, body })?;
+                    .entry_new(EntryNewRequest { id, intrinsic, structural, body })?;
                 println!("{}", result.message);
                 Ok(ExitCode::SUCCESS)
             }
@@ -2284,7 +2318,7 @@ fn print_charm_list(result: &CharmListResult) {
         .map(|record| {
             vec![
                 record.id.clone(),
-                record.name.clone(),
+                format_intrinsic_summary(&record.intrinsic),
                 record.kind.clone(),
                 if record.enabled { "yes" } else { "no" }.to_owned(),
             ]
@@ -2293,7 +2327,12 @@ fn print_charm_list(result: &CharmListResult) {
     print!(
         "{}",
         format_human_table_semantic_with_width(
-            vec!["entry".to_owned(), "name".to_owned(), "kind".to_owned(), "enabled".to_owned()],
+            vec![
+                "entry".to_owned(),
+                "intrinsic".to_owned(),
+                "kind".to_owned(),
+                "enabled".to_owned(),
+            ],
             rows,
             None,
             OutputStyle::Styled
@@ -2309,7 +2348,7 @@ fn print_spell_list(result: &SpellListResult) {
         .map(|record| {
             vec![
                 record.id.clone(),
-                record.name.clone(),
+                format_intrinsic_summary(&record.intrinsic),
                 record.kind.clone(),
                 record.spell_cache_path.clone(),
             ]
@@ -2318,7 +2357,7 @@ fn print_spell_list(result: &SpellListResult) {
     print!(
         "{}",
         format_human_table_semantic_with_width(
-            vec!["entry".to_owned(), "name".to_owned(), "kind".to_owned(), "cache".to_owned()],
+            vec!["entry".to_owned(), "intrinsic".to_owned(), "kind".to_owned(), "cache".to_owned(),],
             rows,
             None,
             OutputStyle::Styled
@@ -2329,7 +2368,7 @@ fn print_spell_list(result: &SpellListResult) {
 
 fn print_charm_show(result: &CharmShowResult) {
     println!("entry: {}", result.id);
-    println!("name: {}", result.name);
+    println!("intrinsic: {}", format_intrinsic_summary(&result.intrinsic));
     println!("kind: {}", result.kind);
     println!("enabled: {}", if result.enabled { "yes" } else { "no" });
     println!("manifest: {}", result.manifest_path);
@@ -2500,4 +2539,53 @@ fn print_path_records(
 fn path_selection_from_args(args: &EntryPathsArgs) -> PathSelection {
     let all = !args.show_entry && !args.show_artifact;
     PathSelection::new(all || args.show_entry, all || args.show_artifact)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn entry_new_accepts_user_intrinsic_fields() {
+        let cli = Cli::try_parse_from([
+            "sirno",
+            "new",
+            "alpha",
+            "--intrinsic",
+            "name=Alpha",
+            "--intrinsic",
+            "desc=Alpha entry.",
+        ])
+        .unwrap();
+
+        let Command::TopLevelEntry(TopLevelEntryCommand::New { id, intrinsic, .. }) = cli.command
+        else {
+            panic!("expected top-level new command");
+        };
+
+        assert_eq!(id, "alpha");
+        assert_eq!(
+            intrinsic,
+            vec![
+                IntrinsicArgument { field: "name".to_owned(), value: "Alpha".to_owned() },
+                IntrinsicArgument { field: "desc".to_owned(), value: "Alpha entry.".to_owned() },
+            ]
+        );
+    }
+
+    #[test]
+    fn entry_new_rejects_hardcoded_name_desc_flags() {
+        let error = Cli::try_parse_from([
+            "sirno",
+            "new",
+            "alpha",
+            "--name",
+            "Alpha",
+            "--desc",
+            "Alpha entry.",
+        ])
+        .unwrap_err();
+
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
 }

@@ -91,7 +91,7 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.charm-and-spell-commands]
-fingerprint = "sha256:4e62098bac14a635398dd3bf3ff2af3d501303a8136de1f36475bc798f125db7"
+fingerprint = "sha256:ec46b2bbd9fc4a7fc600d99a32d03593a307a94d908321177f5f8371efeb0564"
 belongs = ["extension-system"]
 prerequisite = [
     "charm",
@@ -142,7 +142,7 @@ prerequisite = [
 refines = ["extension-system"]
 
 [entries.cli-interface]
-fingerprint = "sha256:ca6099ed5bacae97189f0ad63fa4f4a097b5a73b023bcd1c0722a7c99d87ccb5"
+fingerprint = "sha256:bce68bbe2deb1f510a557e72ccca533127e9660d131eac0bebe589e98fddf41b"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -259,7 +259,7 @@ belongs = ["entry-address-resolution"]
 prerequisite = ["entry"]
 
 [entries.entry-commands]
-fingerprint = "sha256:8fba401edd6e257ea29eb883eb66ee559a75f4f87791e1cb17981fc2849ee200"
+fingerprint = "sha256:389a7b9c956e144dd8059e899c3a6696e005fcd8a189d5b1391ad6ad5b0f1f28"
 belongs = ["entry"]
 prerequisite = ["project-config"]
 refines = ["command-families"]
@@ -276,7 +276,7 @@ prerequisite = [
 ]
 
 [entries.entry-freeze]
-fingerprint = "sha256:118b4b3905ecd6cb18c7a76240f5f863d31a02f05a8297a3f0f4292f3a731d1d"
+fingerprint = "sha256:653de13ffe42d19ad9b164eb7d68df89fab01bd766ff06da93ecff1bccb32e49"
 belongs = ["entry"]
 prerequisite = ["entry"]
 
@@ -492,7 +492,7 @@ prerequisite = [
 ]
 
 [entries.mcp-interface]
-fingerprint = "sha256:7968b9b297dc08dd5384ee27b63ee69d61f9a72b615f0d6d99a53b93e34fdd5f"
+fingerprint = "sha256:f81286bc5c478247483901c474db9205012bacb4e448d5c00690c01988bbfd58"
 belongs = ["interfaces"]
 prerequisite = ["project-config"]
 
@@ -522,7 +522,7 @@ belongs = ["metadata"]
 prerequisite = ["metadata"]
 
 [entries.metadata]
-fingerprint = "sha256:607a222f7fa1bd6b3d5d1868b161d5b9bcab7ec76bd57eb99279505d92341151"
+fingerprint = "sha256:863d1e80070cb24dcd0e5af872bc93d84166b865dcf64951fb41bc4df56e742f"
 belongs = ["entry"]
 prerequisite = ["entry"]
 

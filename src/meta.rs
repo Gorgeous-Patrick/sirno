@@ -107,24 +107,6 @@ impl MetaRegistry {
         }
     }
 
-    /// Construct the conventional registry used by isolated parser callers.
-    ///
-    /// Lake loading discovers this information from entries instead.
-    pub fn standard() -> Self {
-        let mut registry = Self::new();
-        registry.set_intrinsic_entry(
-            crate::entry::NAME_FIELD,
-            EntryAddress::new(crate::entry::NAME_FIELD)
-                .expect("standard name entry address is valid"),
-        );
-        registry.set_intrinsic_entry(
-            crate::entry::DESC_FIELD,
-            EntryAddress::new(crate::entry::DESC_FIELD)
-                .expect("standard desc entry address is valid"),
-        );
-        registry
-    }
-
     /// Discover a registry from raw entries.
     ///
     /// Registry order is entry-address order.

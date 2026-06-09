@@ -17,7 +17,7 @@ use sha2::Digest;
 use thiserror::Error;
 
 use crate::anchor::{AnchorEntry, AnchorError, SIRNO_CONTROL_DIR_NAME, entry_fingerprint};
-use crate::entry::{Entry, EntryMetadata};
+use crate::entry::Entry;
 use crate::identifier::{EntryAddress, EntryAddressError};
 use crate::render::{GeneratedLinkBody, GeneratedLinkError};
 use crate::structural::{
@@ -355,7 +355,8 @@ impl TideEntrySnapshot {
 
     /// Build a snapshot from one anchor entry record.
     pub fn from_anchor_entry(id: EntryAddress, record: &AnchorEntry) -> Result<Self, TideError> {
-        let mut metadata = EntryMetadata::new(id.to_string(), "Anchor baseline entry.")?;
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata(id.to_string(), "Anchor baseline entry.")?;
         for (field, targets) in &record.structural {
             metadata.set_structural_targets(field.clone(), targets.clone());
         }
@@ -721,8 +722,8 @@ pub enum TideFileError {
 mod tests {
     use super::*;
     use crate::{
-        EntryMetaType, EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings,
-        StructuralRippleSettings, StructuralTideSettings,
+        EntryMetaType, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
+        StructuralTideSettings,
     };
 
     fn id(raw: &str) -> EntryAddress {
@@ -732,7 +733,7 @@ mod tests {
     fn entry(raw_id: &str) -> Entry {
         Entry::new(
             id(raw_id),
-            EntryMetadata::new(raw_id, "desc").unwrap(),
+            crate::entry::seed_intrinsic_metadata(raw_id, "desc").unwrap(),
             format!("{raw_id} body.\n"),
         )
     }

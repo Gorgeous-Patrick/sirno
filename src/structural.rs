@@ -677,7 +677,7 @@ impl StructuralEdgeIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entry::{EntryMetaType, EntryMetadata};
+    use crate::entry::EntryMetaType;
 
     #[test]
     fn renames_structural_setting_field_in_place() {
@@ -751,7 +751,7 @@ mod tests {
             "belongs",
             StructuralFieldSettings::render_only(true, true, false),
         )]);
-        let mut metadata = EntryMetadata::new("Belongs", "A relation.").unwrap();
+        let mut metadata = crate::entry::seed_intrinsic_metadata("Belongs", "A relation.").unwrap();
         metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::new(
             StructuralRippleSettings::new(true, false),

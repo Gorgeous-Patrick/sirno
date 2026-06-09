@@ -60,7 +60,7 @@ impl Entry {
     pub fn from_markdown(
         id: impl Into<EntryAddress>, source: &str,
     ) -> Result<Self, EntryParseError> {
-        Self::from_markdown_with_registry(id, source, &MetaRegistry::standard())
+        Self::from_markdown_with_registry(id, source, &MetaRegistry::new())
     }
 
     /// Parse an entry from Markdown source with a discovered meta registry.
@@ -94,13 +94,15 @@ impl Entry {
     /// Later operations do not privilege them.
     pub fn default_seed_entries() -> Result<Vec<Self>, EntryParseError> {
         // sirno:witness:name:begin
-        let mut name =
-            EntryMetadata::new("Name", "The required plain-string title field for entries.")?;
+        let mut name = crate::entry::seed_intrinsic_metadata(
+            "Name",
+            "The required plain-string title field for entries.",
+        )?;
         name.meta.entry_type = Some(EntryMetaType::Intrinsic);
         // sirno:witness:name:end
 
         // sirno:witness:desc:begin
-        let mut desc = EntryMetadata::new(
+        let mut desc = crate::entry::seed_intrinsic_metadata(
             "Description",
             "The required plain-string summary field for entries.",
         )?;
@@ -108,24 +110,31 @@ impl Entry {
         // sirno:witness:desc:end
 
         // sirno:witness:category:begin
-        let category =
-            EntryMetadata::new("Category", "An entry that other entries can be categorized by.")?;
+        let category = crate::entry::seed_intrinsic_metadata(
+            "Category",
+            "An entry that other entries can be categorized by.",
+        )?;
         // sirno:witness:category:end
 
         // sirno:witness:meta:begin
-        let meta = EntryMetadata::new(
+        let meta = crate::entry::seed_intrinsic_metadata(
             "Meta",
             "An entry that defines the project's principles, vocabulary, and documentation method.",
         )?;
         // sirno:witness:meta:end
 
         // sirno:witness:concept:begin
-        let concept =
-            EntryMetadata::new("Concept", "A named idea that compresses project knowledge.")?;
+        let concept = crate::entry::seed_intrinsic_metadata(
+            "Concept",
+            "A named idea that compresses project knowledge.",
+        )?;
         // sirno:witness:concept:end
 
         // sirno:witness:narrative:begin
-        let narrative = EntryMetadata::new("Narrative", "A route through concepts for a reader.")?;
+        let narrative = crate::entry::seed_intrinsic_metadata(
+            "Narrative",
+            "A route through concepts for a reader.",
+        )?;
         // sirno:witness:narrative:end
 
         Ok(vec![
@@ -236,17 +245,29 @@ pub struct EntryMetadata {
     // sirno:witness:structural:end
 }
 
+// sirno:witness:metadata:begin
+pub(crate) fn seed_intrinsic_metadata(
+    name: impl Into<String>, desc: impl Into<String>,
+) -> Result<EntryMetadata, EntryParseError> {
+    let name = name.into();
+    let desc = desc.into();
+    validate_plain_string(NAME_FIELD, &name)?;
+    validate_plain_string(DESC_FIELD, &desc)?;
+    let mut intrinsic = EntryIntrinsicFields::new();
+    intrinsic.insert(NAME_FIELD.to_owned(), name);
+    intrinsic.insert(DESC_FIELD.to_owned(), desc);
+    EntryMetadata::from_intrinsic_fields(intrinsic)
+}
+// sirno:witness:metadata:end
+
 impl EntryMetadata {
-    /// Construct metadata with required fields and no structural link values.
+    /// Construct metadata from explicit intrinsic fields and no structural link values.
     // sirno:witness:metadata:begin
-    pub fn new(name: impl Into<String>, desc: impl Into<String>) -> Result<Self, EntryParseError> {
-        let name = name.into();
-        let desc = desc.into();
-        validate_plain_string(NAME_FIELD, &name)?;
-        validate_plain_string(DESC_FIELD, &desc)?;
-        let mut intrinsic = EntryIntrinsicFields::new();
-        intrinsic.insert(NAME_FIELD.to_owned(), name);
-        intrinsic.insert(DESC_FIELD.to_owned(), desc);
+    pub fn from_intrinsic_fields(intrinsic: EntryIntrinsicFields) -> Result<Self, EntryParseError> {
+        for (field, value) in &intrinsic {
+            validate_plain_string(field, value)?;
+        }
+
         Ok(Self { intrinsic, meta: EntryMeta::default(), structural: EntryStructuralFields::new() })
     }
     // sirno:witness:metadata:end
@@ -254,7 +275,7 @@ impl EntryMetadata {
     /// Parse metadata from YAML source without surrounding `---` sentinels.
     // sirno:witness:metadata:begin
     pub fn from_yaml_source(source: &str) -> Result<Self, EntryParseError> {
-        Self::from_yaml_source_with_registry(source, &MetaRegistry::standard())
+        Self::from_yaml_source_with_registry(source, &MetaRegistry::new())
     }
 
     /// Parse metadata from YAML source with a discovered meta registry.
@@ -346,27 +367,6 @@ impl EntryMetadata {
     /// Iterate intrinsic metadata fields in stored order.
     pub fn intrinsic_fields(&self) -> impl Iterator<Item = (&str, &str)> {
         self.intrinsic.iter().map(|(field, value)| (field.as_str(), value.as_str()))
-    }
-
-    /// Human-readable entry name used by current Sirno surfaces.
-    pub fn name(&self) -> &str {
-        self.intrinsic_field(NAME_FIELD)
-            .or_else(|| self.intrinsic_field_with_local_atom(NAME_FIELD))
-            .unwrap_or("")
-    }
-
-    /// Short prose summary used by current Sirno surfaces.
-    pub fn desc(&self) -> &str {
-        self.intrinsic_field(DESC_FIELD)
-            .or_else(|| self.intrinsic_field_with_local_atom(DESC_FIELD))
-            .unwrap_or("")
-    }
-
-    fn intrinsic_field_with_local_atom(&self, atom: &str) -> Option<&str> {
-        self.intrinsic
-            .iter()
-            .find(|(field, _)| field.rsplit('.').next() == Some(atom))
-            .map(|(_, value)| value.as_str())
     }
 
     /// Set the targets for one link relation.
@@ -1159,6 +1159,17 @@ mod tests {
         EntryAddress::new("witness").unwrap()
     }
 
+    fn seed_registry() -> MetaRegistry {
+        let mut registry = MetaRegistry::new();
+        registry.set_intrinsic_entry(NAME_FIELD, EntryAddress::new(NAME_FIELD).unwrap());
+        registry.set_intrinsic_entry(DESC_FIELD, EntryAddress::new(DESC_FIELD).unwrap());
+        registry
+    }
+
+    fn parse_entry(source: &str) -> Result<Entry, EntryParseError> {
+        Entry::from_markdown_with_registry(entry_id(), source, &seed_registry())
+    }
+
     #[test]
     fn parses_canonical_entry_metadata() {
         let source = "\
@@ -1172,8 +1183,8 @@ topic:
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
-        assert_eq!(entry.metadata.name(), "Witness");
+        let entry = parse_entry(source).unwrap();
+        assert_eq!(entry.metadata.intrinsic_field(NAME_FIELD), Some("Witness"));
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
             &[EntryAddress::new("concept").unwrap()]
@@ -1194,9 +1205,9 @@ Body.
             "Body.\r\n",
         );
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
-        assert_eq!(entry.metadata.name(), "Witness");
+        assert_eq!(entry.metadata.intrinsic_field(NAME_FIELD), Some("Witness"));
         assert_eq!(
             entry.metadata.structural_targets_for("topic"),
             &[EntryAddress::new("concept").unwrap()]
@@ -1214,7 +1225,7 @@ topic: concept
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
         assert!(matches!(error, EntryParseError::FieldMustBeList(field) if field == "topic"));
     }
 
@@ -1229,7 +1240,7 @@ witness:
 ---
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
         assert_eq!(
             entry.metadata.structural_targets_for("witness"),
@@ -1252,7 +1263,7 @@ alpha:
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
         let fields = entry.metadata.structural_fields().map(|(field, _)| field).collect::<Vec<_>>();
         let rendered = entry.to_markdown().unwrap();
 
@@ -1272,9 +1283,9 @@ topic: []
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
         let rendered = entry.to_markdown().unwrap();
-        let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
+        let reparsed = parse_entry(&rendered).unwrap();
 
         assert!(
             matches!(entry.metadata.structural_field("topic"), Some(targets) if targets.is_empty())
@@ -1289,12 +1300,13 @@ Body.
     fn renders_structural_ids_as_yaml_scalars() {
         let target = EntryAddress::new("Design Note #1").unwrap();
         let mut metadata =
-            EntryMetadata::new("Evidence", "Metadata with a quoted target.").unwrap();
+            crate::entry::seed_intrinsic_metadata("Evidence", "Metadata with a quoted target.")
+                .unwrap();
         metadata.push_structural_target("witness", target.clone());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
-        let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
+        let reparsed = parse_entry(&rendered).unwrap();
 
         assert_eq!(reparsed.metadata.structural_targets_for("witness"), &[target]);
     }
@@ -1303,7 +1315,8 @@ Body.
     fn renames_structural_targets() {
         let old_id = EntryAddress::new("old-entry").unwrap();
         let new_id = EntryAddress::new("new-entry").unwrap();
-        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A named idea.").unwrap();
         metadata.push_structural_target("belongs", old_id.clone());
         metadata.push_structural_target("belongs", EntryAddress::new("other-entry").unwrap());
         metadata.push_structural_target("refines", old_id.clone());
@@ -1321,7 +1334,8 @@ Body.
     fn renames_structural_fields() {
         let old_id = EntryAddress::new("refines").unwrap();
         let new_id = EntryAddress::new("prerequisite").unwrap();
-        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A named idea.").unwrap();
         metadata.push_structural_target("category", EntryAddress::new("concept").unwrap());
         metadata.push_structural_target("refines", EntryAddress::new("broader").unwrap());
         metadata.push_structural_target("belongs", EntryAddress::new("area").unwrap());
@@ -1351,7 +1365,7 @@ meta:
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
         assert_eq!(entry.metadata.meta.frozen, Some(FrozenMarker::reviewed()));
         assert!(entry.metadata.meta.frozen.as_ref().unwrap().is_reviewed());
@@ -1370,7 +1384,7 @@ topic:
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
         assert!(entry.metadata.meta.is_empty());
         assert_eq!(
@@ -1390,7 +1404,7 @@ frozen:
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::TopLevelFrozenMarker));
     }
@@ -1406,7 +1420,7 @@ meta:
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::InvalidFrozenMarker));
     }
@@ -1422,7 +1436,7 @@ meta:
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::InvalidFrozenMarker));
     }
@@ -1442,7 +1456,7 @@ meta:
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
         let frozen = entry.metadata.meta.frozen.as_ref().unwrap();
 
         assert!(frozen.is_reviewed());
@@ -1463,7 +1477,7 @@ meta.ripple.anchor: [\"from\"]
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
         let structural = entry.metadata.meta.tide.unwrap();
 
         assert_eq!(
@@ -1478,13 +1492,14 @@ Body.
 
     #[test]
     fn renders_empty_structural_tide_settings() {
-        let mut metadata = EntryMetadata::new("Category", "A structural relation.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Category", "A structural relation.").unwrap();
         metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::default());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
-        let reparsed = Entry::from_markdown(entry_id(), &rendered).unwrap();
+        let reparsed = parse_entry(&rendered).unwrap();
 
         assert!(
             rendered.contains(
@@ -1506,7 +1521,7 @@ meta.type: \"structural\"
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
         assert_eq!(entry.metadata.meta.entry_type, Some(EntryMetaType::Structural));
         assert_eq!(entry.metadata.meta.tide, None);
@@ -1524,7 +1539,7 @@ meta.type: \"intrinsic\"
 Body.
 ";
 
-        let entry = Entry::from_markdown(entry_id(), source).unwrap();
+        let entry = parse_entry(source).unwrap();
 
         assert_eq!(entry.metadata.meta.entry_type, Some(EntryMetaType::Intrinsic));
         assert!(entry.metadata.meta.is_intrinsic_field());
@@ -1533,7 +1548,8 @@ Body.
 
     #[test]
     fn renders_intrinsic_meta_type() {
-        let mut metadata = EntryMetadata::new("Name", "A required metadata field.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Name", "A required metadata field.").unwrap();
         metadata.meta.entry_type = Some(EntryMetaType::Intrinsic);
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
@@ -1544,7 +1560,8 @@ Body.
 
     #[test]
     fn renders_structural_tide_settings() {
-        let mut metadata = EntryMetadata::new("Belongs", "A structural relation.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Belongs", "A structural relation.").unwrap();
         metadata.meta.entry_type = Some(EntryMetaType::Structural);
         metadata.meta.tide = Some(StructuralTideSettings::new(
             crate::structural::StructuralRippleSettings::new(true, false),
@@ -1565,7 +1582,8 @@ meta.ripple.anchor: [\"from\"]
 
     #[test]
     fn renders_canonical_frozen_marker() {
-        let mut metadata = EntryMetadata::new("Frozen", "Protected entry.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Frozen", "Protected entry.").unwrap();
         metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
@@ -1581,7 +1599,8 @@ meta.ripple.anchor: [\"from\"]
 
     #[test]
     fn omits_empty_managed_meta_when_rendering() {
-        let metadata = EntryMetadata::new("Plain", "No managed metadata.").unwrap();
+        let metadata =
+            crate::entry::seed_intrinsic_metadata("Plain", "No managed metadata.").unwrap();
         let entry = Entry::new(entry_id(), metadata, "Body.\n");
 
         let rendered = entry.to_markdown().unwrap();
@@ -1599,7 +1618,7 @@ meta: true
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::MetaMustBeMapping));
     }
@@ -1615,7 +1634,7 @@ meta:
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "owner"));
     }
@@ -1631,7 +1650,7 @@ meta:
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "structural"));
     }
@@ -1646,7 +1665,7 @@ meta.ripple.lake.to: true
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(
             matches!(error, EntryParseError::UnknownMetaField(field) if field == "ripple.lake.to")
@@ -1664,7 +1683,7 @@ meta.lake: [\"to\"]
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::UnknownMetaField(field) if field == "lake"));
     }
@@ -1680,7 +1699,7 @@ meta.ripple.lake: true
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(
             matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.ripple.lake")
@@ -1698,7 +1717,7 @@ meta.ripple.lake: [\"around\"]
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(
             matches!(error, EntryParseError::InvalidStructuralTideField(field) if field == "meta.ripple.lake")
@@ -1715,7 +1734,7 @@ meta.ripple.lake: [\"to\"]
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(
             matches!(error, EntryParseError::StructuralTideWithoutType(field) if field == "meta.ripple.lake")
@@ -1733,7 +1752,7 @@ meta.ripple.lake: [\"to\"]
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(
             matches!(error, EntryParseError::StructuralTideWithoutType(field) if field == "meta.ripple.lake")
@@ -1750,7 +1769,7 @@ meta.type: \"concept\"
 ---
 ";
 
-        let error = Entry::from_markdown(entry_id(), source).unwrap_err();
+        let error = parse_entry(source).unwrap_err();
 
         assert!(matches!(error, EntryParseError::InvalidMetaType));
     }

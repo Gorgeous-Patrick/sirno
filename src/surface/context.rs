@@ -36,12 +36,13 @@ use crate::surface::rg::{RgPreprocessorLink, resolve_lake_path_for_rg};
 use crate::{
     AnchorFile, CHARM_MANIFEST_FILE_NAME, CONFIG_FILE_NAME, CheckMode, Entry, EntryAddress,
     EntryArtifactPath, EntryAtom, EntryDirectory, EntryDirectoryCheckSettings, EntryDirectoryError,
-    EntryDirectoryReport, EntryDirectoryWritePolicy, EntryMetadata, EntryQuery,
-    EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody, MetaFile, MetaRegistry,
-    MistManifest, MistManifestEntry, MistRenderSettings, MistSpec, SIRNO_CONTROL_DIR_NAME,
-    SPELL_CACHE_DIRECTORY, SirnoConfig, StructuralEdgeIndex, StructuralSettings, Tide,
-    TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport, UpstreamFile,
-    UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings, WitnessRecord,
+    EntryDirectoryReport, EntryDirectoryWritePolicy, EntryIntrinsicFields, EntryMetadata,
+    EntryParseError, EntryQuery, EntryStructuralMatcher, GenLinkDirectoryReport, GeneratedLinkBody,
+    MetaFile, MetaRegistry, MistManifest, MistManifestEntry, MistRenderSettings, MistSpec,
+    SIRNO_CONTROL_DIR_NAME, SPELL_CACHE_DIRECTORY, SirnoConfig, StructuralEdgeIndex,
+    StructuralSettings, Tide, TideEntrySnapshot, TideFile, TideStatus, UpstreamCrystallizeReport,
+    UpstreamFile, UpstreamGitCache, UpstreamStatusReport, VagueEntryQuery, WitnessCheckSettings,
+    WitnessRecord,
 };
 
 // sirno:witness:agent-skills:begin
@@ -258,8 +259,8 @@ impl SurfaceContext {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
-            name: entry.metadata.name().to_owned(),
-            desc: entry.metadata.desc().to_owned(),
+            intrinsic: entry.metadata.intrinsic.clone(),
+            relation: entry.metadata.structural.clone(),
             body: request.content.includes_body().then(|| entry.body.clone()),
             source,
             message: format!("read entry {id} from {}", path.display()),
@@ -348,10 +349,10 @@ impl SurfaceContext {
         if report.has_errors() {
             return Err(EntryDirectoryError::InvalidEntryDirectory(lake).into());
         }
-        let mut metadata = EntryMetadata::new(
-            request.name.unwrap_or_else(|| title_name_from_id(&request.id)),
-            request.desc,
-        )?;
+        let mut metadata = EntryMetadata::from_intrinsic_fields(intrinsic_fields_from_request(
+            request.intrinsic,
+            report.meta(),
+        )?)?;
         for (field, targets) in
             structural_targets_by_target(request.structural, report.structural())?
         {
@@ -950,7 +951,7 @@ impl SurfaceContext {
     fn charm_record(&self, config: &SirnoConfig, bundle: &CharmBundle) -> CharmRecord {
         CharmRecord {
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name().to_owned(),
+            intrinsic: bundle.entry.metadata.intrinsic.clone(),
             enabled: config.charm.contains(&bundle.entry.id),
             kind: bundle.kind_label().to_owned(),
             manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
@@ -961,7 +962,7 @@ impl SurfaceContext {
         CharmShowResult {
             ok: true,
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name().to_owned(),
+            intrinsic: bundle.entry.metadata.intrinsic.clone(),
             enabled: config.charm.contains(&bundle.entry.id),
             kind: bundle.kind_label().to_owned(),
             manifest_path: display_path(&bundle.artifact_root.join(CHARM_MANIFEST_FILE_NAME)),
@@ -978,7 +979,7 @@ impl SurfaceContext {
     fn spell_record(&self, bundle: &CharmBundle) -> SpellRecord {
         SpellRecord {
             id: bundle.entry.id.to_string(),
-            name: bundle.entry.metadata.name().to_owned(),
+            intrinsic: bundle.entry.metadata.intrinsic.clone(),
             kind: bundle.kind_label().to_owned(),
             spell_cache_path: display_path(&self.spell_cache_path(bundle)),
         }
@@ -2806,6 +2807,26 @@ fn structural_targets_by_target(
     Ok(targets_by_field)
 }
 
+fn intrinsic_fields_from_request(
+    requested: EntryIntrinsicFields, meta: &MetaRegistry,
+) -> Result<EntryIntrinsicFields, CommandError> {
+    for field in requested.keys() {
+        if !meta.contains_intrinsic_field(field) {
+            return Err(CommandError::UndefinedIntrinsicField(field.clone()));
+        }
+    }
+
+    let mut intrinsic = EntryIntrinsicFields::new();
+    for (field, _) in meta.intrinsic_fields() {
+        let value = requested
+            .get(field)
+            .cloned()
+            .ok_or_else(|| EntryParseError::MissingField(field.to_owned()))?;
+        intrinsic.insert(field.to_owned(), value);
+    }
+    Ok(intrinsic)
+}
+
 fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
     if count == 1 { singular } else { plural }
 }
@@ -2818,24 +2839,6 @@ fn tide_selection_matches(request: &TideResolveRequest, status: &TideStatus) -> 
 fn tide_selection_request_matches(request: &TideSelectionRequest, status: &TideStatus) -> bool {
     request.neighbors.iter().any(|id| &status.workitem.neighbor == id)
         || request.workitems.iter().any(|workitem| &status.workitem == workitem)
-}
-
-fn title_name_from_id(id: &EntryAddress) -> String {
-    let local_atom = id.local_atom();
-    local_atom
-        .as_str()
-        .split('-')
-        .map(|segment| {
-            let mut chars = segment.chars();
-            let Some(first) = chars.next() else {
-                return String::new();
-            };
-            let mut word = first.to_uppercase().to_string();
-            word.push_str(chars.as_str());
-            word
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 fn tide_statuses_for_output(tide: &Tide, all: bool) -> Vec<TideStatus> {
@@ -2859,8 +2862,7 @@ mod tests {
         context
             .entry_new(EntryNewRequest {
                 id: EntryAddress::new("alpha").unwrap(),
-                name: Some("Alpha".to_owned()),
-                desc: "Alpha entry.".to_owned(),
+                intrinsic: intrinsic_fields([("name", "Alpha"), ("desc", "Alpha entry.")]),
                 structural: Vec::new(),
                 body: Some("Body.".to_owned()),
             })
@@ -2878,8 +2880,7 @@ mod tests {
         context
             .entry_new(EntryNewRequest {
                 id: id.clone(),
-                name: None,
-                desc: "test charm".to_owned(),
+                intrinsic: intrinsic_fields([("name", id.as_str()), ("desc", "test charm")]),
                 structural: Vec::new(),
                 body: None,
             })
@@ -2906,6 +2907,51 @@ mod tests {
                 })
                 .unwrap();
         }
+    }
+
+    fn intrinsic_fields<'a>(
+        fields: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> EntryIntrinsicFields {
+        fields.into_iter().map(|(field, value)| (field.to_owned(), value.to_owned())).collect()
+    }
+
+    #[test]
+    fn entry_new_requires_discovered_intrinsic_fields() {
+        let (_temp, context) = initialized_context();
+
+        let error = context
+            .entry_new(EntryNewRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                intrinsic: intrinsic_fields([("desc", "Alpha entry.")]),
+                structural: Vec::new(),
+                body: None,
+            })
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            CommandError::EntryParse(EntryParseError::MissingField(field)) if field == "name"
+        ));
+    }
+
+    #[test]
+    fn entry_new_rejects_undiscovered_intrinsic_fields() {
+        let (_temp, context) = initialized_context();
+
+        let error = context
+            .entry_new(EntryNewRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                intrinsic: intrinsic_fields([
+                    ("name", "Alpha"),
+                    ("desc", "Alpha entry."),
+                    ("title", "Alpha"),
+                ]),
+                structural: Vec::new(),
+                body: None,
+            })
+            .unwrap_err();
+
+        assert!(matches!(error, CommandError::UndefinedIntrinsicField(field) if field == "title"));
     }
 
     #[test]

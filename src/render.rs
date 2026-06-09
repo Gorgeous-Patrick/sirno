@@ -389,7 +389,7 @@ pub enum GeneratedLinkError {
 mod tests {
     use super::*;
     use crate::structural::{StructuralFieldSettings, StructuralSettings};
-    use crate::{Entry, EntryAddress, EntryMetadata};
+    use crate::{Entry, EntryAddress};
 
     const FIELD_KIND: &str = "kind";
     const FIELD_AREA: &str = "area";
@@ -400,7 +400,8 @@ mod tests {
     }
 
     fn entry() -> Entry {
-        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A named idea.").unwrap();
         metadata.push_structural_target(FIELD_KIND, id("meta"));
         metadata.push_structural_target(FIELD_AREA, id("core"));
         metadata.push_structural_target(FIELD_PARENT, id("metadata"));
@@ -480,10 +481,12 @@ mod tests {
     #[test]
     fn renders_relative_links_between_root_and_domain_entries() {
         let settings = structural_settings([(FIELD_AREA, render_settings(true, false, false))]);
-        let mut root_metadata = EntryMetadata::new("Concept", "A root entry.").unwrap();
+        let mut root_metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A root entry.").unwrap();
         root_metadata.push_structural_target(FIELD_AREA, id("core.design"));
         let root = Entry::new(id("concept"), root_metadata, "Body.\n");
-        let mut domain_metadata = EntryMetadata::new("Design", "A domain entry.").unwrap();
+        let mut domain_metadata =
+            crate::entry::seed_intrinsic_metadata("Design", "A domain entry.").unwrap();
         domain_metadata.push_structural_target(FIELD_AREA, id("concept"));
         let domain = Entry::new(id("core.design"), domain_metadata, "Body.\n");
         let entries = vec![root.clone(), domain.clone()];
@@ -510,7 +513,8 @@ mod tests {
     #[test]
     fn generated_links_escape_filename_like_entry_addresses() {
         let target = id("Spec [A] #1");
-        let mut metadata = EntryMetadata::new("Concept", "A named idea.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A named idea.").unwrap();
         metadata.push_structural_target(FIELD_AREA, target);
         let entry = Entry::new(id("concept"), metadata, "Body.\n");
 
@@ -522,9 +526,13 @@ mod tests {
     #[test]
     fn boolean_field_settings_render_to_and_from_edges() {
         let settings = structural_settings([(FIELD_KIND, render_settings(true, true, false))]);
-        let target_entry =
-            Entry::new(id("meta"), EntryMetadata::new("Meta", "A kind.").unwrap(), "Body.\n");
-        let mut member_metadata = EntryMetadata::new("Member", "A kind member.").unwrap();
+        let target_entry = Entry::new(
+            id("meta"),
+            crate::entry::seed_intrinsic_metadata("Meta", "A kind.").unwrap(),
+            "Body.\n",
+        );
+        let mut member_metadata =
+            crate::entry::seed_intrinsic_metadata("Member", "A kind member.").unwrap();
         member_metadata.push_structural_target(FIELD_KIND, id("meta"));
         let member = Entry::new(id("member"), member_metadata, "Body.\n");
         let entries = vec![target_entry.clone(), member.clone()];
@@ -544,9 +552,13 @@ mod tests {
     #[test]
     fn table_field_settings_can_choose_one_side() {
         let settings = structural_settings([(FIELD_KIND, render_settings(false, true, false))]);
-        let target_entry =
-            Entry::new(id("meta"), EntryMetadata::new("Meta", "A kind.").unwrap(), "Body.\n");
-        let mut member_metadata = EntryMetadata::new("Member", "A kind member.").unwrap();
+        let target_entry = Entry::new(
+            id("meta"),
+            crate::entry::seed_intrinsic_metadata("Meta", "A kind.").unwrap(),
+            "Body.\n",
+        );
+        let mut member_metadata =
+            crate::entry::seed_intrinsic_metadata("Member", "A kind member.").unwrap();
         member_metadata.push_structural_target(FIELD_KIND, id("meta"));
         let member = Entry::new(id("member"), member_metadata, "Body.\n");
         let entries = vec![target_entry.clone(), member.clone()];
@@ -567,16 +579,19 @@ mod tests {
 
         let closure = Entry::new(
             id("core"),
-            EntryMetadata::new("Core", "A review neighborhood.").unwrap(),
+            crate::entry::seed_intrinsic_metadata("Core", "A review neighborhood.").unwrap(),
             "Body.\n",
         );
-        let mut left_metadata = EntryMetadata::new("Left", "A neighborhood member.").unwrap();
+        let mut left_metadata =
+            crate::entry::seed_intrinsic_metadata("Left", "A neighborhood member.").unwrap();
         left_metadata.push_structural_target(FIELD_AREA, id("core"));
         let left = Entry::new(id("left"), left_metadata, "Body.\n");
-        let mut right_metadata = EntryMetadata::new("Right", "A neighborhood member.").unwrap();
+        let mut right_metadata =
+            crate::entry::seed_intrinsic_metadata("Right", "A neighborhood member.").unwrap();
         right_metadata.push_structural_target(FIELD_AREA, id("core"));
         let right = Entry::new(id("right"), right_metadata, "Body.\n");
-        let mut outside_metadata = EntryMetadata::new("Outside", "Another member.").unwrap();
+        let mut outside_metadata =
+            crate::entry::seed_intrinsic_metadata("Outside", "Another member.").unwrap();
         outside_metadata.push_structural_target(FIELD_AREA, id("other"));
         let outside = Entry::new(id("outside"), outside_metadata, "Body.\n");
         let entries = vec![closure.clone(), left.clone(), right.clone(), outside];
@@ -605,13 +620,15 @@ mod tests {
 
         let closure = Entry::new(
             id("core"),
-            EntryMetadata::new("Core", "A review neighborhood.").unwrap(),
+            crate::entry::seed_intrinsic_metadata("Core", "A review neighborhood.").unwrap(),
             "Body.\n",
         );
-        let mut left_metadata = EntryMetadata::new("Left", "A neighborhood member.").unwrap();
+        let mut left_metadata =
+            crate::entry::seed_intrinsic_metadata("Left", "A neighborhood member.").unwrap();
         left_metadata.push_structural_target(FIELD_AREA, id("core"));
         let left = Entry::new(id("left"), left_metadata, "Body.\n");
-        let mut right_metadata = EntryMetadata::new("Right", "A neighborhood member.").unwrap();
+        let mut right_metadata =
+            crate::entry::seed_intrinsic_metadata("Right", "A neighborhood member.").unwrap();
         right_metadata.push_structural_target(FIELD_AREA, id("core"));
         let right = Entry::new(id("right"), right_metadata, "Body.\n");
         let entries = vec![closure, left.clone(), right];
@@ -630,13 +647,15 @@ mod tests {
 
         let closure = Entry::new(
             id("core"),
-            EntryMetadata::new("Core", "A review neighborhood.").unwrap(),
+            crate::entry::seed_intrinsic_metadata("Core", "A review neighborhood.").unwrap(),
             "Body.\n",
         );
-        let mut left_metadata = EntryMetadata::new("Left", "A neighborhood member.").unwrap();
+        let mut left_metadata =
+            crate::entry::seed_intrinsic_metadata("Left", "A neighborhood member.").unwrap();
         left_metadata.push_structural_target(FIELD_AREA, id("core"));
         let left = Entry::new(id("left"), left_metadata, "Body.\n");
-        let mut right_metadata = EntryMetadata::new("Right", "A neighborhood member.").unwrap();
+        let mut right_metadata =
+            crate::entry::seed_intrinsic_metadata("Right", "A neighborhood member.").unwrap();
         right_metadata.push_structural_target(FIELD_AREA, id("core"));
         let right = Entry::new(id("right"), right_metadata, "Body.\n");
         let entries = vec![closure, left.clone(), right];
@@ -653,7 +672,7 @@ mod tests {
 
     #[test]
     fn renders_empty_enabled_sections_when_entry_has_no_structural_targets() {
-        let metadata = EntryMetadata::new("Meta", "A kind.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("Meta", "A kind.").unwrap();
         let entry = Entry::new(EntryAddress::new("meta").unwrap(), metadata, "Body.\n");
 
         let footer = render_entry(&entry, &area_settings());
@@ -666,7 +685,7 @@ mod tests {
 
     #[test]
     fn renders_region_none_when_no_sections_are_enabled() {
-        let metadata = EntryMetadata::new("Meta", "A kind.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("Meta", "A kind.").unwrap();
         let entry = Entry::new(EntryAddress::new("meta").unwrap(), metadata, "Body.\n");
         let settings = StructuralSettings::from_fields([
             (FIELD_KIND, StructuralFieldSettings::default()),

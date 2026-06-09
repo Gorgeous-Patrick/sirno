@@ -234,7 +234,6 @@ fn push_intrinsic_values(text: &mut String, entry: &Entry) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entry::EntryMetadata;
 
     const FIELD_KIND: &str = "kind";
     const FIELD_AREA: &str = "area";
@@ -244,7 +243,7 @@ mod tests {
     }
 
     fn entry(raw_id: &str, name: &str, desc: &str, body: &str) -> Entry {
-        Entry::new(id(raw_id), EntryMetadata::new(name, desc).unwrap(), body)
+        Entry::new(id(raw_id), crate::entry::seed_intrinsic_metadata(name, desc).unwrap(), body)
     }
 
     #[test]

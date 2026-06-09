@@ -319,14 +319,18 @@ impl CheckReport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entry::{DESC_FIELD, EntryMetaType, EntryMetadata, NAME_FIELD};
+    use crate::entry::{DESC_FIELD, EntryMetaType, NAME_FIELD};
     use crate::structural::{StructuralFieldSettings, StructuralTideSettings};
 
     const FIELD_TOPIC: &str = "topic";
     const FIELD_CATEGORY: &str = "category";
 
     fn entry(id: &str) -> Entry {
-        Entry::new(EntryAddress::new(id).unwrap(), EntryMetadata::new(id, "desc").unwrap(), "")
+        Entry::new(
+            EntryAddress::new(id).unwrap(),
+            crate::entry::seed_intrinsic_metadata(id, "desc").unwrap(),
+            "",
+        )
     }
 
     fn relation_entry(id: &str) -> Entry {

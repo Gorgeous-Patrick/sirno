@@ -4,6 +4,7 @@
 //! Command behavior remains in `surface`; this module only converts JSON parameters
 //! into typed surface requests and converts surface DTOs into MCP tool results.
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::Write as _;
 use std::future::{self, Future};
@@ -35,7 +36,8 @@ use crate::surface::{
 };
 use crate::surface::{CommandError, format_command_error};
 use crate::{
-    CheckMode, EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings,
+    CheckMode, EntryAddress, EntryAtom, EntryIntrinsicFields, StructuralEdgeDirection,
+    TideWorkitem, UpstreamSettings,
 };
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
@@ -329,17 +331,18 @@ impl SirnoMcpServer {
     }
 
     /// Create one Markdown entry.
+    // sirno:witness:mcp-interface:begin
     #[tool(name = "sirno_entry_new")]
     fn entry_new(&self, Parameters(params): Parameters<EntryNewParams>) -> McpToolResult {
         let request = EntryNewRequest {
             id: entry_address(params.id)?,
-            name: params.name,
-            desc: params.desc,
+            intrinsic: entry_intrinsic_fields(params.intrinsic),
             structural: params.structural.into_targets()?,
             body: params.body,
         };
         result(self.context.entry_new(request))
     }
+    // sirno:witness:mcp-interface:end
 
     /// Rename one entry address and its Sirno references.
     #[tool(name = "sirno_entry_rename")]
@@ -634,6 +637,10 @@ fn entry_address(raw: String) -> Result<EntryAddress, String> {
     EntryAddress::new(raw).map_err(|error| error.to_string())
 }
 
+fn entry_intrinsic_fields(fields: BTreeMap<String, String>) -> EntryIntrinsicFields {
+    fields.into_iter().collect()
+}
+
 fn entry_atom(raw: String) -> Result<EntryAtom, String> {
     EntryAtom::new(raw).map_err(|error| error.to_string())
 }
@@ -737,15 +744,16 @@ struct McpStructuralTarget {
     target: String,
 }
 
+// sirno:witness:mcp-interface:begin
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryNewParams {
     id: String,
-    name: Option<String>,
-    desc: String,
+    intrinsic: BTreeMap<String, String>,
     #[serde(default)]
     structural: McpStructuralTargets,
     body: Option<String>,
 }
+// sirno:witness:mcp-interface:end
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryRenameParams {
@@ -1207,7 +1215,10 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::{CONFIG_FILE_NAME, MetaRegistry, RepoMember, RepoSettings, SirnoConfig};
+    use crate::{
+        CONFIG_FILE_NAME, EntryAddress, MetaRegistry, RepoMember, RepoSettings, SirnoConfig,
+        StructuralSettings,
+    };
 
     // sirno:witness:mcp-interface:begin
     const EXPECTED_TOOLS: &[&str] = &[
@@ -1253,7 +1264,7 @@ mod tests {
         let docs = root.join("docs");
         SirnoConfig::new("docs").write_new(&config_path).unwrap();
         fs::create_dir(&docs).unwrap();
-        MetaRegistry::standard().write(root.join(".sirno").join("meta.toml")).unwrap();
+        seed_meta_registry().write(root.join(".sirno").join("meta.toml")).unwrap();
         write_intrinsic_entries(&docs);
         fs::write(
             docs.join("alpha.md"),
@@ -1402,8 +1413,65 @@ Body.
         .unwrap();
     }
 
+    fn seed_meta_registry() -> MetaRegistry {
+        MetaRegistry::from_parts(
+            [
+                ("name", EntryAddress::new("name").unwrap()),
+                ("desc", EntryAddress::new("desc").unwrap()),
+            ],
+            StructuralSettings::default(),
+        )
+    }
+
     fn structured(result: &CallToolResult) -> &serde_json::Value {
         result.structured_content.as_ref().expect("tool result has structured content")
+    }
+
+    fn intrinsic_params(
+        fields: impl IntoIterator<Item = (&'static str, &'static str)>,
+    ) -> BTreeMap<String, String> {
+        fields.into_iter().map(|(field, value)| (field.to_owned(), value.to_owned())).collect()
+    }
+
+    fn relation_params(
+        fields: impl IntoIterator<Item = (&'static str, &'static str)>,
+    ) -> McpStructuralTargets {
+        McpStructuralTargets(
+            fields
+                .into_iter()
+                .map(|(field, target)| McpStructuralTarget {
+                    field: field.to_owned(),
+                    target: target.to_owned(),
+                })
+                .collect(),
+        )
+    }
+
+    fn write_topic_relation(root: &Path) {
+        fs::write(
+            root.join("topic.md"),
+            "\
+---
+name: Topic
+desc: Test relation.
+meta.type: \"structural\"
+---
+
+Body.
+",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn entry_new_params_require_intrinsic_metadata() {
+        let params = serde_json::from_value::<EntryNewParams>(json!({
+            "id": "alpha",
+            "structural": [],
+            "body": "Body."
+        }));
+
+        assert!(params.is_err());
     }
 
     #[test]
@@ -1432,12 +1500,12 @@ Body.
         let init = server
             .lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) }))
             .unwrap();
+        write_topic_relation(&temp.path().join("docs"));
         let entry = server
             .entry_new(Parameters(EntryNewParams {
                 id: "alpha".to_owned(),
-                name: None,
-                desc: "Alpha entry.".to_owned(),
-                structural: McpStructuralTargets::default(),
+                intrinsic: intrinsic_params([("name", "Alpha"), ("desc", "Alpha entry.")]),
+                structural: relation_params([("topic", "concept")]),
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
@@ -1459,6 +1527,11 @@ Body.
         assert!(structured(&cwd)["path"].as_str().is_some_and(|path| !path.is_empty()));
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
+        assert_eq!(structured(&read)["intrinsic"]["name"], "Alpha");
+        assert_eq!(structured(&read)["intrinsic"]["desc"], "Alpha entry.");
+        assert_eq!(structured(&read)["relation"]["topic"][0], "concept");
+        assert!(structured(&read).get("name").is_none());
+        assert!(structured(&read).get("desc").is_none());
         assert_eq!(structured(&read)["body"], "Body.");
         assert!(structured(&read).get("source").is_none());
         assert!(text.starts_with("created "));
@@ -1473,12 +1546,12 @@ Body.
         let server = SirnoMcpServer::new(SurfaceContext::new(&config_path));
 
         server.lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) })).unwrap();
+        write_topic_relation(&temp.path().join("docs"));
         server
             .entry_new(Parameters(EntryNewParams {
                 id: "alpha".to_owned(),
-                name: None,
-                desc: "Alpha entry.".to_owned(),
-                structural: McpStructuralTargets::default(),
+                intrinsic: intrinsic_params([("name", "Alpha"), ("desc", "Alpha entry.")]),
+                structural: relation_params([("topic", "concept")]),
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
@@ -1505,8 +1578,13 @@ Body.
             .unwrap();
 
         assert_eq!(structured(&metadata)["id"], "alpha");
+        assert_eq!(structured(&metadata)["intrinsic"]["name"], "Alpha");
+        assert_eq!(structured(&metadata)["intrinsic"]["desc"], "Alpha entry.");
+        assert_eq!(structured(&metadata)["relation"]["topic"][0], "concept");
         assert!(structured(&metadata).get("body").is_none());
         assert!(structured(&metadata).get("source").is_none());
+        assert!(structured(&metadata).get("name").is_none());
+        assert!(structured(&metadata).get("desc").is_none());
         assert_eq!(structured(&body)["body"], "Body.");
         assert!(structured(&body).get("source").is_none());
         assert!(structured(&source).get("body").is_none());

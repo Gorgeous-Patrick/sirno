@@ -25,6 +25,8 @@ They prepare or validate the reviewed artifact bundle.
 
 The CLI exposes direct runtime execution and inspection commands under `sirno spell`.
 Spell operations run the resolved script or executable.
+Charm and spell list and show output carries the owning entry's intrinsic metadata
+as discovered field-keyed values.
 
 The minimal command surface is:
 

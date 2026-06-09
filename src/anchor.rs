@@ -431,14 +431,14 @@ pub enum AnchorError {
 mod tests {
     use super::*;
     use crate::{
-        EntryMetadata, StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
+        StructuralEdgeSettings, StructuralFieldSettings, StructuralRippleSettings,
         StructuralSettings,
     };
 
     fn entry(raw_id: &str, body: impl Into<String>) -> Entry {
         Entry::new(
             EntryAddress::new(raw_id).unwrap(),
-            EntryMetadata::new(raw_id, "desc").unwrap(),
+            crate::entry::seed_intrinsic_metadata(raw_id, "desc").unwrap(),
             body,
         )
     }

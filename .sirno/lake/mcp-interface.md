@@ -65,10 +65,19 @@ Without `path`, it returns the current working directory without changing it.
 Relative config paths are resolved against the process current working directory
 on every project tool call.
 
-`sirno_entry_read` returns parsed metadata and selected entry content.
+`sirno_entry_new` accepts `{ id, intrinsic, structural, body }`.
+The `intrinsic` object maps discovered intrinsic field names to user-authored plain strings.
+The active lake defines which keys are required.
+The tool rejects unknown intrinsic keys and missing required intrinsic keys.
+
+`sirno_entry_read` returns parsed intrinsic metadata and selected entry content.
+Its result includes `intrinsic`,
+an object keyed by discovered intrinsic field names.
+It also includes `relation`,
+an object keyed by discovered structural relation field names.
 Its `content` selector accepts `metadata`, `body`, `source`, or `full`.
 Omitting `content` selects `body`,
-so the default result includes parsed metadata and body text.
+so the default result includes intrinsic metadata and body text.
 The full stored Markdown source is returned only for `source` or `full`.
 Structural filters may use `{ field, targets }` objects
 or compact `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]` strings.

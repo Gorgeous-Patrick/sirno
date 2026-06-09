@@ -20,8 +20,7 @@ use crate::artifact::{
 };
 use crate::check::{CheckMode, CheckReport, CheckSeverity};
 use crate::entry::{
-    DESC_FIELD, Entry, EntryParseError, EntryRenderError, FrozenMarker, NAME_FIELD, RawEntry,
-    has_mixed_line_endings,
+    Entry, EntryParseError, EntryRenderError, FrozenMarker, RawEntry, has_mixed_line_endings,
 };
 use crate::freeze::FrozenPath;
 use crate::identifier::EntryAtom;
@@ -365,9 +364,6 @@ fn undefined_intrinsic_diagnostic(
     let EntryParseError::FieldMustBeList(field) = source else {
         return None;
     };
-    if field != NAME_FIELD && field != DESC_FIELD {
-        return None;
-    }
     if registry.is_some_and(|registry| registry.contains_intrinsic_field(field)) {
         return None;
     }
@@ -2710,10 +2706,10 @@ pub enum EntryDirectoryError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::entry::{DESC_FIELD, NAME_FIELD};
     use crate::structural::StructuralEdgeDirection;
     use crate::{
-        EntryMetadata, MetaFile, RepoMember, StructuralFieldSettings, WitnessCheckSettings,
-        WitnessSettings,
+        MetaFile, RepoMember, StructuralFieldSettings, WitnessCheckSettings, WitnessSettings,
     };
 
     const FIELD_KIND: &str = "kind";
@@ -2874,7 +2870,8 @@ Body.
         let temp = tempfile::tempdir().unwrap();
         let directory = entry_directory(temp.path());
         let domain = EntryAtom::new("core").unwrap();
-        let mut metadata = EntryMetadata::new("Design", "Managed upstream entry.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Design", "Managed upstream entry.").unwrap();
         metadata.meta.frozen = Some(FrozenMarker::managed());
         let entry = Entry::new(EntryAddress::new("core.design").unwrap(), metadata, "Body.\n");
         let artifact = EntryArtifact::new(
@@ -3044,11 +3041,11 @@ Body.
 
         assert_eq!(entries.len(), 4);
         let local = entries.iter().find(|entry| entry.id.as_str() == "local").unwrap();
-        assert_eq!(local.metadata.name(), "Local");
-        assert_eq!(local.metadata.desc(), "Local projected entry.");
+        assert_eq!(local.metadata.intrinsic_field(NAME_FIELD), Some("Local"));
+        assert_eq!(local.metadata.intrinsic_field(DESC_FIELD), Some("Local projected entry."));
         let design = entries.iter().find(|entry| entry.id.as_str() == "core.design").unwrap();
-        assert_eq!(design.metadata.name(), "Design");
-        assert_eq!(design.metadata.desc(), "Managed upstream entry.");
+        assert_eq!(design.metadata.intrinsic_field("core.name"), Some("Design"));
+        assert_eq!(design.metadata.intrinsic_field("core.desc"), Some("Managed upstream entry."));
     }
 
     #[test]
@@ -3631,7 +3628,8 @@ Body.
     fn create_entry_file_writes_one_entry() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
-        let mut metadata = EntryMetadata::new("Local Idea", "A local design idea.").unwrap();
+        let mut metadata =
+            crate::entry::seed_intrinsic_metadata("Local Idea", "A local design idea.").unwrap();
         metadata.push_structural_target(FIELD_KIND, EntryAddress::new("meta").unwrap());
         let entry = Entry::new(EntryAddress::new("local-idea").unwrap(), metadata, "");
 
@@ -3647,7 +3645,8 @@ Body.
     fn create_entry_file_refuses_to_overwrite() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
-        let metadata = EntryMetadata::new("Local Idea", "A local design idea.").unwrap();
+        let metadata =
+            crate::entry::seed_intrinsic_metadata("Local Idea", "A local design idea.").unwrap();
         let entry = Entry::new(EntryAddress::new("local-idea").unwrap(), metadata, "");
 
         entry_directory(&root).create_entry(&entry).unwrap();
@@ -4011,7 +4010,7 @@ Body.
         fs::create_dir_all(root.join(".obsidian")).unwrap();
         fs::write(root.join(".obsidian/state.json"), "{}").unwrap();
         fs::write(root.join("old.md"), "---\nname: Old\ndesc: Old.\n---\n").unwrap();
-        let metadata = EntryMetadata::new("New", "New entry.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("New", "New entry.").unwrap();
         let entry = Entry::new(EntryAddress::new("new").unwrap(), metadata, "Body.\n");
 
         entry_directory(&root)
@@ -4037,7 +4036,7 @@ Body.
         fs::write(root.join(ARTIFACT_DIRECTORY_NAME).join("old").join("note.txt"), "old").unwrap();
         let directory = entry_directory(&root);
         directory.set_readonly(&EntryDirectoryCheckSettings::default()).unwrap();
-        let metadata = EntryMetadata::new("New", "New entry.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("New", "New entry.").unwrap();
         let entry = Entry::new(EntryAddress::new("new").unwrap(), metadata, "Body.\n");
         let artifact = EntryArtifact::new(
             entry.id.clone(),
@@ -4067,7 +4066,7 @@ Body.
         let root = temp.path().join("docs");
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("2026-05-12.md"), "").unwrap();
-        let metadata = EntryMetadata::new("New", "New entry.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("New", "New entry.").unwrap();
         let entry = Entry::new(EntryAddress::new("new").unwrap(), metadata, "Body.\n");
 
         let error = entry_directory(&root)
@@ -4181,7 +4180,7 @@ Body.
     fn readonly_checkout_warning_is_visible_body_quote() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("docs");
-        let metadata = EntryMetadata::new("New", "New entry.").unwrap();
+        let metadata = crate::entry::seed_intrinsic_metadata("New", "New entry.").unwrap();
         let entry = Entry::new(EntryAddress::new("new").unwrap(), metadata, "Body.\n");
         let mut entries = Entry::default_seed_entries().unwrap();
         entries.push(entry.clone());

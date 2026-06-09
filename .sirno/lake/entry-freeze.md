@@ -21,7 +21,8 @@ It clears local protection only when no other frozen reason remains.
 
 `sirno freeze`, `sirno melt`, `sirno freeze tui`, and `sirno melt tui`
 open one terminal UI for entry freeze and melt work.
-The UI lists entries, their freeze state, and artifact counts.
+The UI lists entries, their freeze state, artifact counts,
+and a summary of discovered intrinsic metadata.
 It applies freeze or melt to the selected entry only.
 `Space` applies the command's default operation.
 `f` freezes, `m` melts, `c` refreshes, and `Tab` switches the default operation.

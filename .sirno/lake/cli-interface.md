@@ -16,6 +16,8 @@ The binary `main.rs` delegates process startup to `sirno::surface`.
 
 Reusable helpers in `sirno::surface` return typed query, path, tide, and witness data
 before the CLI renders human text or JSON.
+When a command displays entry metadata,
+it renders discovered intrinsic fields instead of fixed title or summary fields.
 Human output prints records, tables, or diagnostics before command summary lines.
 Commands with no detail may print only their summary.
 Terminal output may color semantic labels such as setup choices, diagnostic severity,

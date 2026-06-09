@@ -17,7 +17,11 @@ use crate::surface::cli::tui::{
 };
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
-use crate::{CheckMode, Entry, EntryAddress, EntryArtifact, EntryDirectory, EntryDirectoryReport};
+use crate::surface::output::format_intrinsic_summary;
+use crate::{
+    CheckMode, Entry, EntryAddress, EntryArtifact, EntryDirectory, EntryDirectoryReport,
+    EntryIntrinsicFields,
+};
 
 /// Default action for the shared entry freeze/melt UI.
 // sirno:witness:entry-freeze:begin
@@ -145,15 +149,13 @@ impl EntryFreezeTui {
     fn render(&self, frame: &mut Frame<'_>) {
         let areas = table_detail_footer_areas(frame, 4, 4);
 
-        let header =
-            Row::new(["Entry", "State", "Artifacts", "Name", "Description"]).style(header_style());
+        let header = Row::new(["Entry", "State", "Artifacts", "Intrinsic"]).style(header_style());
         let rows = self.rows.iter().map(|row| {
             Row::new([
                 Cell::from(row.id.to_string()),
                 Cell::from(row.state.label()),
                 Cell::from(row.artifacts.to_string()),
-                Cell::from(row.name.as_str()),
-                Cell::from(row.desc.as_str()),
+                Cell::from(format_intrinsic_summary(&row.intrinsic)),
             ])
             .style(row.style())
         });
@@ -163,7 +165,6 @@ impl EntryFreezeTui {
                 Constraint::Length(24),
                 Constraint::Length(10),
                 Constraint::Length(10),
-                Constraint::Length(24),
                 Constraint::Min(24),
             ],
         )
@@ -250,8 +251,7 @@ struct EntryFreezeRow {
     id: EntryAddress,
     state: EntryFreezeState,
     artifacts: usize,
-    name: String,
-    desc: String,
+    intrinsic: EntryIntrinsicFields,
     path: String,
 }
 
@@ -298,8 +298,7 @@ fn entry_freeze_rows(report: &EntryDirectoryReport) -> Vec<EntryFreezeRow> {
                 id: entry.id.clone(),
                 state: EntryFreezeState::from_entry(entry),
                 artifacts,
-                name: entry.metadata.name().to_owned(),
-                desc: entry.metadata.desc().to_owned(),
+                intrinsic: entry.metadata.intrinsic.clone(),
                 path,
             }
         })
@@ -329,7 +328,7 @@ fn entry_check_summary(report: &EntryDirectoryReport) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{EntryArtifactPath, EntryMetadata, FrozenMarker};
+    use crate::{EntryArtifactPath, FrozenMarker};
 
     #[test]
     fn action_toggle_switches_between_freeze_and_melt() {
@@ -363,7 +362,7 @@ mod tests {
 
     #[test]
     fn state_reports_frozen_marker() {
-        let mut metadata = EntryMetadata::new("Alpha", "Alpha entry.").unwrap();
+        let mut metadata = crate::entry::seed_intrinsic_metadata("Alpha", "Alpha entry.").unwrap();
         let mutable = Entry::new(EntryAddress::new("alpha").unwrap(), metadata.clone(), "");
         metadata.meta.frozen = Some(FrozenMarker::reviewed());
         let frozen = Entry::new(EntryAddress::new("alpha").unwrap(), metadata, "");

@@ -8,6 +8,7 @@ use ratatui::Frame;
 use ratatui::layout::Constraint;
 use ratatui::widgets::{Cell, Row, Table};
 
+use crate::entry::{DESC_FIELD, NAME_FIELD};
 use crate::surface::cli::tui::{
     TuiApp, TuiFlow, TuiKey, TuiSelection, handle_table_key, header_style, key_help, panel_block,
     render_key_footer, render_selectable_table, run_terminal_ui, run_tui_app, table_footer_areas,
@@ -15,9 +16,8 @@ use crate::surface::cli::tui::{
 use crate::surface::context::resolve_lake_directory;
 use crate::surface::error::CommandError;
 use crate::{
-    CheckMode, DESC_FIELD, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings,
-    EntryMetaType, EntryMetadata, NAME_FIELD, StructuralRippleSettings, StructuralSettings,
-    StructuralTideSettings,
+    CheckMode, Entry, EntryAddress, EntryDirectory, EntryDirectoryCheckSettings, EntryMetaType,
+    EntryMetadata, StructuralRippleSettings, StructuralSettings, StructuralTideSettings,
 };
 
 const CATEGORY_FIELD: &str = "category";
@@ -313,7 +313,7 @@ struct DefaultEntrySpec {
 
 impl DefaultEntrySpec {
     fn entry(self, structural: &StructuralSettings) -> Result<Entry, CommandError> {
-        let mut metadata = EntryMetadata::new(self.name, self.desc)?;
+        let mut metadata = crate::entry::seed_intrinsic_metadata(self.name, self.desc)?;
         if matches!(self.id, NAME_FIELD | DESC_FIELD) {
             metadata.meta.entry_type = Some(EntryMetaType::Intrinsic);
         } else if structural.contains_field(self.id) {
@@ -475,11 +475,15 @@ mod tests {
 
     #[test]
     fn rows_report_missing_and_category_marker_status() {
-        let mut concept_metadata = EntryMetadata::new("Concept", "A concept.").unwrap();
+        let mut concept_metadata =
+            crate::entry::seed_intrinsic_metadata("Concept", "A concept.").unwrap();
         concept_metadata.push_structural_target(CATEGORY_FIELD, entry_address("meta"));
         let concept = Entry::new(entry_address("concept"), concept_metadata, "");
-        let meta =
-            Entry::new(entry_address("meta"), EntryMetadata::new("Meta", "Meta.").unwrap(), "");
+        let meta = Entry::new(
+            entry_address("meta"),
+            crate::entry::seed_intrinsic_metadata("Meta", "Meta.").unwrap(),
+            "",
+        );
 
         let rows = default_entry_rows(&[concept, meta], &StructuralSettings::default());
 

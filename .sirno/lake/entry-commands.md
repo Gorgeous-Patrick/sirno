@@ -27,8 +27,10 @@ Entry commands operate on Markdown entries and their owner-relative artifact tre
 
 Entry creation options:
 
-- `-d`, `-n`, and `-b` are short forms for `--desc`, `--name`, and `--body`.
+- `--intrinsic FIELD=VALUE` supplies one discovered intrinsic metadata value.
+- Repeat `--intrinsic` for every required intrinsic field in the active lake.
 - `--structural FIELD=ENTRY_ADDRESS` adds structural link targets.
+- `-b` is the short form for `--body`.
 - Creation refuses to overwrite an existing entry file.
 
 Entry rename updates structural link targets,
