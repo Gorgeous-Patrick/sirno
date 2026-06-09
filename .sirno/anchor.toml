@@ -888,7 +888,7 @@ prerequisite = ["upstream-lake"]
 refines = ["versioning"]
 
 [entries.upstream-lake]
-fingerprint = "sha256:1a943f6d5c8fefdef7c993389c15f811b284f9dfdd67c60b5322ff9db2a1f02e"
+fingerprint = "sha256:aff3fa2bf2ccb109037e0f06071b372967ba52270cf20985fb19833a04a02f14"
 belongs = [
     "lake-composition",
     "upstream",

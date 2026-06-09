@@ -41,5 +41,7 @@ so imported field keys can resolve to definitions inside the glacier.
 An upstream with no mist imports the complete upstream lake.
 
 Upstream fetches are cached in the global Sirno store under `~/.sirno`.
-The cache stores one Git mirror for each normalized upstream URI.
+The cache stores one bare Git mirror for each normalized upstream URI.
 Projects reuse those mirrors across lake systems.
+Sirno forces `safe.bareRepository=all` on every Git invocation against a mirror,
+so reads succeed even when the host or sandbox defaults the setting to `explicit`.

@@ -1012,6 +1012,7 @@ fn path_arg(path: &Path) -> &str {
     path.to_str().expect("Sirno paths passed to git are UTF-8")
 }
 
+// sirno:witness:upstream-lake:begin
 fn run_git<const N: usize>(args: [&str; N]) -> Result<(), UpstreamError> {
     run_git_output(args).map(|_| ())
 }
@@ -1033,6 +1034,7 @@ fn run_git_output<const N: usize>(args: [&str; N]) -> Result<Vec<u8>, UpstreamEr
         stderr: String::from_utf8_lossy(&output.stderr).trim().to_owned(),
     })
 }
+// sirno:witness:upstream-lake:end
 
 fn stable_hash(bytes: &[u8]) -> u64 {
     let mut hash = 0xcbf29ce484222325u64;
