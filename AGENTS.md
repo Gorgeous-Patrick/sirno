@@ -39,7 +39,7 @@ Use `sirno-narrative-session` when guiding or saving a route through lake knowle
 Use `sirno-curator` when auditing an existing lake for clarity, focus, structure, or witness alignment.
 Use `sirno-skill-synthesizer` after changing meta discipline entries or skill packages.
 After reservoir metadata changes, run `sirno_mist_render`,
-then `sirno_lake_check` in edit and review modes.
+then `sirno_status` in edit and review modes.
 Use `.sirno/lake/introduction.md` as the first narrative route.
 Use `.sirno/lake/methodology.md` as the working guide.
 

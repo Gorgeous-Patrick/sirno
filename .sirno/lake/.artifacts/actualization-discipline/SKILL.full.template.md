@@ -66,9 +66,9 @@ Call `sirno_cwd` again before switching projects in the same server process.
    create the exact entry for that claim through the internalizer skill.
 
 4. Keep adjacent surfaces aligned.
-   Prefer MCP tools such as `sirno_lake_move`, `sirno_anchor_status`, `sirno_anchor_check`,
-   `sirno_anchor_update`, and `sirno_entry_artifact_*`
-   for routine lake movement, Anchor checks, Anchor updates, and artifact moves.
+   Prefer MCP tools such as `sirno_lake_move`, `sirno_status`, `sirno_anchor_update`,
+   and `sirno_entry_artifact_*`
+   for routine lake movement, project status, Anchor updates, and artifact moves.
    Use manual `Sirno.toml` edits only for schema or comment work the MCP tools cannot express.
    Treat long-form documents outside the configured lake as repository material.
    Render or rewrite them from the entries that name their design claims.
@@ -76,7 +76,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 ## Validation
 
 Run `sirno_mist_render` after reservoir metadata changes.
-Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
+Run `sirno_status` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` against any entry whose evidence changed.
 Run the formatter, tests, and checks that fit the active repository.
 

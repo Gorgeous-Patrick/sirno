@@ -15,16 +15,16 @@ use crate::charm::{
     manifest_artifact_path,
 };
 use crate::surface::dto::{
-    AnchorCheckResult, AnchorRippleKind, AnchorRippleRecord, AnchorStatusResult,
-    AnchorUpdateResult, ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult,
-    ArtifactRemoveRequest, ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult,
-    CharmListResult, CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult,
-    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadMetadataFields,
-    EntryReadMetadataValue, EntryReadRequest, EntryReadResult, EntryRenameResult, LakeCheckResult,
-    LakeInitRequest, LakeInitResult, LocalProtectionResult, MistIntakeResult, MistStatusResult,
-    MovePathResult, PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest,
-    QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext,
-    SkillWrapperRecord, SkillWrapperResult, SpellListResult, SpellRecord, StatusBlockers,
+    AnchorRippleKind, AnchorRippleRecord, AnchorUpdateResult, ArtifactAddRequest,
+    ArtifactChangeResult, ArtifactListResult, ArtifactRemoveRequest, ArtifactRenameRequest,
+    CharmCleanResult, CharmEnablementResult, CharmListResult, CharmProcessResult, CharmRecord,
+    CharmShowResult, ConfigCommentResult, CwdResult, EntryFileResult, EntryNewRequest,
+    EntryPathsRequest, EntryReadMetadataFields, EntryReadMetadataValue, EntryReadRequest,
+    EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
+    LocalProtectionResult, MistIntakeResult, MistStatusResult, MovePathResult, PathRecord,
+    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
+    QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
+    SkillWrapperResult, SpellListResult, SpellRecord, StatusAnchor, StatusBlockers,
     StatusCheckPolicy, StatusRequest, StatusResult, StatusTide, StructuralEdgeStatus,
     StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
     TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
@@ -1303,16 +1303,6 @@ impl SurfaceContext {
     }
     // sirno:witness:lake-commands:end
 
-    /// Check current entry structure.
-    // sirno:witness:lake-commands:begin
-    pub fn lake_check(&self, mode: CheckMode) -> Result<LakeCheckResult, CommandError> {
-        let (lake, settings) =
-            resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
-        let report = EntryDirectory::new(lake).check_with_settings(mode, &settings)?;
-        Ok(LakeCheckResult::from_report(&report))
-    }
-    // sirno:witness:lake-commands:end
-
     // sirno:witness:mist-commands:begin
     /// Render Markdown links for one misty lake projection.
     pub fn mist_render(
@@ -1468,50 +1458,6 @@ impl SurfaceContext {
     // sirno:witness:mist-commands:end
 
     // sirno:witness:anchor-commands:begin
-    /// Show the current lake ripples against the accepted anchor baseline.
-    pub fn anchor_status(&self) -> Result<AnchorStatusResult, CommandError> {
-        let context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
-        let report = context.checked_report(CheckMode::Edit)?;
-        let current = context.anchor_from_report(&report)?;
-        let anchor = AnchorFile::from_file_if_exists(&context.anchor_path)?;
-        let (initialized, ripples) = match anchor {
-            | Some(anchor) => (true, anchor_ripples(&anchor, &current)?),
-            | None => (false, unanchored_ripples(&current)?),
-        };
-        let ok = initialized && ripples.is_empty();
-        Ok(AnchorStatusResult {
-            ok,
-            initialized,
-            anchor_path: display_path(&context.anchor_path),
-            lake_path: display_path(report.root()),
-            entry_count: report.entries().len(),
-            ripples,
-            message: anchor_status_message(ok, initialized, current.entries.len()),
-        })
-    }
-
-    /// Validate the anchor file and compare it with the current lake.
-    pub fn anchor_check(&self) -> Result<AnchorCheckResult, CommandError> {
-        let status = self.anchor_status()?;
-        let message = if status.ok {
-            format!("anchor check ok in {}", status.anchor_path)
-        } else if status.initialized {
-            let count = status.ripples.len();
-            format!("anchor check found {count} {}", plural(count, "ripple", "ripples"))
-        } else {
-            format!("anchor check found no anchor at {}", status.anchor_path)
-        };
-        Ok(AnchorCheckResult {
-            ok: status.ok,
-            initialized: status.initialized,
-            anchor_path: status.anchor_path,
-            lake_path: status.lake_path,
-            entry_count: status.entry_count,
-            ripples: status.ripples,
-            message,
-        })
-    }
-
     /// Accept the current lake as the new anchor baseline.
     // sirno:witness:versioning:begin
     pub fn anchor_update(&self) -> Result<AnchorUpdateResult, CommandError> {
@@ -1558,14 +1504,23 @@ impl SurfaceContext {
     pub fn status(&self, request: StatusRequest) -> Result<StatusResult, CommandError> {
         let (lake, settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
-        let report =
-            EntryDirectory::new(&lake).check_with_settings(CheckMode::Review, &settings)?;
+        let report = EntryDirectory::new(&lake).check_with_settings(request.mode, &settings)?;
         let check = LakeCheckResult::from_report(&report);
-        let tide = if !check.has_errors {
-            let tide_context = TideContext::load(&self.config_path, self.lake_path.as_deref())?;
+        let tide_context = if !check.has_errors {
+            Some(TideContext::load(&self.config_path, self.lake_path.as_deref())?)
+        } else {
+            None
+        };
+        let tide = if let Some(tide_context) = &tide_context {
             let tide_file = tide_context.load_tide_file_or_current()?;
             let tide = tide_context.tide(&tide_file)?;
             Some(StatusTide::from_tide(&tide))
+        } else {
+            None
+        };
+        let include_ripples = request.show.includes_full_details();
+        let anchor = if let Some(tide_context) = &tide_context {
+            Some(status_anchor_from_report(tide_context, &report, include_ripples)?)
         } else {
             None
         };
@@ -1574,7 +1529,10 @@ impl SurfaceContext {
         } else {
             None
         };
-        let ok = check.ok && mist.as_ref().is_none_or(|mist| mist.ok || !mist.manifest_present);
+        let ok = check.ok
+            && tide.as_ref().is_none_or(|tide| tide.clear)
+            && anchor.as_ref().is_none_or(|anchor| anchor.ok)
+            && mist.as_ref().is_none_or(|mist| mist.ok || !mist.manifest_present);
         let structural_fields = report
             .structural()
             .with_tide_policies_from_entries(report.entries())
@@ -1592,8 +1550,9 @@ impl SurfaceContext {
             })
             .collect::<Vec<_>>();
         let structural_field_count = structural_fields.len();
-        let check_policy = StatusCheckPolicy { mode: CheckMode::Review, render: settings.render };
-        let blockers = StatusBlockers::from_parts(&check, tide.as_ref(), mist.as_ref());
+        let check_policy = StatusCheckPolicy { mode: request.mode, render: settings.render };
+        let blockers =
+            StatusBlockers::from_parts(&check, tide.as_ref(), anchor.as_ref(), mist.as_ref());
         let message = status_message(ok, report.entries().len(), report.root(), &blockers);
         let show = request.show;
         Ok(StatusResult {
@@ -1611,6 +1570,7 @@ impl SurfaceContext {
                 Vec::new()
             },
             tide: show.includes_domain_details().then_some(tide).flatten(),
+            anchor: show.includes_domain_details().then_some(anchor).flatten(),
             mist: show.includes_domain_details().then_some(mist).flatten(),
             check: show.includes_full_details().then_some(check),
         })
@@ -1709,6 +1669,11 @@ fn status_message(ok: bool, entry_count: usize, lake: &Path, blockers: &StatusBl
             "{open_workitems} tide {}",
             plural(open_workitems, "workitem", "workitems")
         ));
+    }
+    if blockers.anchor_missing.unwrap_or(false) {
+        parts.push("anchor missing".to_owned());
+    } else if let Some(ripples) = blockers.anchor_ripples.filter(|ripples| *ripples > 0) {
+        parts.push(format!("{ripples} anchor {}", plural(ripples, "ripple", "ripples")));
     }
     let mist_blockers = blockers.mist_blocker_count();
     if mist_blockers > 0 {
@@ -2077,11 +2042,36 @@ fn unanchored_ripples(current: &AnchorFile) -> Result<Vec<AnchorRippleRecord>, C
         .collect()
 }
 
-fn anchor_status_message(ok: bool, initialized: bool, entry_count: usize) -> String {
+fn status_anchor_from_report(
+    context: &TideContext, report: &EntryDirectoryReport, include_ripples: bool,
+) -> Result<StatusAnchor, CommandError> {
+    let current = context.anchor_from_report(report)?;
+    let anchor = AnchorFile::from_file_if_exists(&context.anchor_path)?;
+    let (initialized, ripples) = match anchor {
+        | Some(anchor) => (true, anchor_ripples(&anchor, &current)?),
+        | None => (false, unanchored_ripples(&current)?),
+    };
+    let ripple_count = ripples.len();
+    let ok = initialized && ripple_count == 0;
+    Ok(StatusAnchor {
+        ok,
+        initialized,
+        anchor_path: display_path(&context.anchor_path),
+        lake_path: display_path(report.root()),
+        entry_count: report.entries().len(),
+        ripple_count,
+        ripples: if include_ripples { ripples } else { Vec::new() },
+        message: anchor_status_message(ok, initialized, current.entries.len(), ripple_count),
+    })
+}
+
+fn anchor_status_message(
+    ok: bool, initialized: bool, entry_count: usize, ripple_count: usize,
+) -> String {
     if ok {
         format!("anchor is current for {entry_count} entries")
     } else if initialized {
-        "anchor ripples detected".to_owned()
+        format!("{ripple_count} anchor {}", plural(ripple_count, "ripple", "ripples"))
     } else {
         "anchor is not initialized; run `sirno anchor update`".to_owned()
     }

@@ -29,7 +29,7 @@ Its local contract is accepted-state comparison:
 
 - write the accepted baseline to `.sirno/anchor.toml`;
 - compare the current waterline against that baseline;
-- expose current ripples for operators and agents;
+- expose current ripples through project status;
 - accept a new baseline only after review-mode checks and Tide review pass;
 - clear obsolete Tide review state after the current waterline is accepted.
 
@@ -53,7 +53,7 @@ These related entries are the review route through those contracts:
 
 ## Accepted Baseline Behavior
 
-Anchor status and check compare the current waterline against `.sirno/anchor.toml`.
+Project status compares the current waterline against `.sirno/anchor.toml`.
 If Anchor is absent, Tide treats the current lake as added against an empty baseline.
 Anchor update writes a new `.sirno/anchor.toml`
 after review-mode checks pass,

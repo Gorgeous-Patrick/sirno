@@ -110,7 +110,7 @@ Skip the witness when the entry holds only prose.
 
 Validate at the review boundary.
 Run `sirno_mist_render` after reservoir metadata changes.
-Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
+Run `sirno_status` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` on entries whose evidence changed.
 If `sirno_status` reports an open tide,
 walk workitems with `sirno_tide_status`

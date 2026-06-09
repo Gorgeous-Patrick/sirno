@@ -68,7 +68,7 @@ while linked entries carry the durable detail.
 Use prose paragraphs for continuity,
 bullets or numbered steps for route structure,
 and simple diagrams when they make the path easier for a human reader to inspect.
-After materializing, run `sirno_mist_render` and `sirno_lake_check` in edit mode.
+After materializing, run `sirno_mist_render` and `sirno_status` in edit mode.
 Finish by naming the artifact, the entry address, and the main sequencing choice,
 and confirm the route preserves pull, a clean first bite, and an aftertaste.
 If the serializer script is unavailable or its input contract does not fit the session,

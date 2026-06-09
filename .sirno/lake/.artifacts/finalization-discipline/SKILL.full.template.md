@@ -72,7 +72,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 
 3. Validate the waterline.
    Run `sirno_mist_render` after reservoir metadata changes.
-   Run `sirno_lake_check` in edit mode and review mode.
+   Run `sirno_status` in edit mode and review mode.
    Run `sirno_mist_status` and require a clean editable mist before accepting Anchor.
    Run `sirno_entry_witness` against entries whose evidence changed.
    Run the formatter, tests, and checks that fit the changed repository material.
@@ -87,7 +87,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
    stop and report the blocker instead of forcing acceptance.
    Call `sirno_anchor_update` only after review checks pass, mist status is clean,
    and Tide is clear.
-   Then call `sirno_anchor_status` and confirm the anchor is current.
+   Then call `sirno_status` and confirm the anchor is current.
    If Anchor refuses the update, inspect the reported blocker and return to the relevant step.
 
 5. Stage, commit, and confirm.

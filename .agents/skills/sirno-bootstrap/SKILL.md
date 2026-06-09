@@ -104,12 +104,10 @@ Confirm the install and the project resolve:
 
 ```sh
 sirno --version
-sirno status
-sirno check --mode review
+sirno status --mode review
 ```
 
-`sirno status` should report the project and lake state.
-`sirno check --mode review` should end with `ok: <lake-path>`.
+`sirno status --mode review` should report the project, lake, Anchor, Tide, and mist state.
 After the agent reloads, the Sirno MCP tools and `sirno://skills/*` resources should be reachable.
 
 ## Reverting

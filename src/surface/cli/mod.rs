@@ -26,17 +26,17 @@ use crate::surface::dto::{
     CharmListResult, CharmProcessResult, CharmShowResult, EntryNewRequest, EntryPathsRequest,
     LakeInitRequest, LocalProtectionResult, PathRecord, PathSelection, QueryColumnSelection,
     QueryColumns, QueryOutputFormat, QueryRequest, QueryResponse, QueryRun, RgRequest,
-    SkillWrapperResult, SpellListResult, StatusRequest, StructuralFilter, StructuralStateFilter,
-    StructuralTarget, TideOutputFormat, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    UpstreamAddRequest, UpstreamCrystallizeRequest,
+    SkillWrapperResult, SpellListResult, StatusMode, StatusOutputFormat, StatusRequest,
+    StructuralFilter, StructuralStateFilter, StructuralTarget, TideOutputFormat,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    UpstreamCrystallizeRequest,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{
     OutputStyle, format_human_table_semantic_with_width, format_intrinsic_summary,
     format_muted_text, format_path_table, format_skill_wrapper_table_for_terminal,
-    format_success_text, format_warning_text, print_anchor_check_result,
-    print_anchor_status_result, print_anchor_update_result, print_cli_error,
-    print_config_comment_result, print_entry_directory_report, print_json, print_lake_check_result,
+    format_success_text, format_warning_text, print_anchor_update_result, print_cli_error,
+    print_config_comment_result, print_entry_directory_report, print_json,
     print_mist_intake_result, print_mist_status_result, print_query_column_options,
     print_query_results, print_render_result, print_status_result,
     print_upstream_crystallize_report, print_upstream_status_report, print_witness_records,
@@ -153,14 +153,11 @@ enum Command {
     // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     #[command(visible_alias = "st")]
-    Status,
+    Status(StatusArgs),
     // sirno:witness:project-status-commands:end
     /// Run an entry operation at the top level.
     #[command(flatten)]
     TopLevelEntry(TopLevelEntryCommand),
-    /// Run a lake operation at the top level.
-    #[command(flatten)]
-    TopLevelLake(TopLevelLakeCommand),
     /// Run a mist operation at the top level.
     #[command(flatten)]
     TopLevelMist(TopLevelMistCommand),
@@ -175,6 +172,22 @@ enum Command {
     },
     // sirno:witness:cli-interface:end
 }
+
+/// Arguments for the go-to project status command.
+// sirno:witness:project-status-commands:begin
+#[derive(Debug, Args)]
+struct StatusArgs {
+    /// Select summary, normal, or full status detail.
+    #[arg(long, value_enum, default_value_t = StatusMode::Normal)]
+    show: StatusMode,
+    /// Check boundary used while assembling status.
+    #[arg(short = 'm', long, value_enum, default_value_t = CheckModeArg::Review)]
+    mode: CheckModeArg,
+    /// Output format.
+    #[arg(short = 'o', long, value_enum)]
+    format: Option<StatusOutputFormat>,
+}
+// sirno:witness:project-status-commands:end
 
 /// Supported Sirno Lake entry commands.
 #[derive(Debug, Subcommand)]
@@ -314,22 +327,6 @@ enum LakeCommand {
     /// Move the configured lake path.
     #[command(visible_alias = "mv")]
     Move(LakeMoveArgs),
-    /// Run a top-level lake operation under `sirno lake`.
-    #[command(flatten)]
-    TopLevel(TopLevelLakeCommand),
-    // sirno:witness:lake-commands:end
-}
-
-/// Supported top-level Sirno Lake commands.
-#[derive(Debug, Subcommand)]
-enum TopLevelLakeCommand {
-    // sirno:witness:lake-commands:begin
-    /// Check current entry structure.
-    Check {
-        /// Check boundary.
-        #[arg(short = 'm', long, value_enum)]
-        mode: Option<CheckModeArg>,
-    },
     // sirno:witness:lake-commands:end
 }
 
@@ -786,18 +783,6 @@ enum TideCommand {
 /// Supported Anchor commands.
 #[derive(Debug, Subcommand)]
 enum AnchorCommand {
-    /// Show lake ripples against `.sirno/anchor.toml`.
-    Status {
-        /// Output format.
-        #[arg(short = 'o', long, value_enum)]
-        format: Option<AnchorOutputFormat>,
-    },
-    /// Validate `.sirno/anchor.toml` and compare it with the lake.
-    Check {
-        /// Output format.
-        #[arg(short = 'o', long, value_enum)]
-        format: Option<AnchorOutputFormat>,
-    },
     /// Accept the current lake as the new anchor baseline.
     Update {
         /// Output format.
@@ -1038,10 +1023,9 @@ impl Cli {
                 // sirno:witness:tide-commands:end
             }
             // sirno:witness:project-status-commands:begin
-            | Command::Status => run_status_command(&config_path, lake_path.as_deref()),
+            | Command::Status(args) => args.run(&config_path, lake_path.as_deref()),
             // sirno:witness:project-status-commands:end
             | Command::TopLevelEntry(command) => command.run(&config_path, lake_path.as_deref()),
-            | Command::TopLevelLake(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelMist(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::TopLevelTide(command) => command.run(&config_path, lake_path.as_deref()),
             | Command::Util { command } => command.run(&config_path, lake_path.as_deref()),
@@ -1460,7 +1444,6 @@ impl LakeCommand {
         match self {
             | LakeCommand::Init { lake } => run_lake_init(lake, config_path, lake_path),
             | LakeCommand::Move(args) => args.run(config_path),
-            | LakeCommand::TopLevel(command) => command.run(config_path, lake_path),
         }
     }
 }
@@ -1483,22 +1466,6 @@ impl LakeMoveArgs {
         let result = SurfaceContext::new(config_path.to_path_buf()).lake_move(self.lake)?;
         println!("{}", result.message);
         Ok(ExitCode::SUCCESS)
-    }
-    // sirno:witness:lake-commands:end
-}
-
-impl TopLevelLakeCommand {
-    // sirno:witness:lake-commands:begin
-    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
-        match self {
-            | TopLevelLakeCommand::Check { mode } => {
-                let mode = mode.unwrap_or(CheckModeArg::Review);
-                let result = SurfaceContext::from_cli_paths(config_path, lake_path)
-                    .lake_check(mode.into())?;
-                print_lake_check_result(&result);
-                if result.has_errors { Ok(ExitCode::FAILURE) } else { Ok(ExitCode::SUCCESS) }
-            }
-        }
     }
     // sirno:witness:lake-commands:end
 }
@@ -1558,14 +1525,17 @@ impl MistRenderArgs {
 }
 // sirno:witness:mist-commands:end
 
-fn run_status_command(
-    config_path: &Path, lake_path: Option<&Path>,
-) -> Result<ExitCode, CommandError> {
+impl StatusArgs {
     // sirno:witness:project-status-commands:begin
-    let result =
-        SurfaceContext::from_cli_paths(config_path, lake_path).status(StatusRequest::full())?;
-    print_status_result(&result);
-    if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+    fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
+        let result = SurfaceContext::from_cli_paths(config_path, lake_path)
+            .status(StatusRequest::new(self.show, self.mode.into()))?;
+        match self.format.unwrap_or_default() {
+            | StatusOutputFormat::Json => print_json(&result)?,
+            | StatusOutputFormat::Human => print_status_result(&result),
+        }
+        if result.ok { Ok(ExitCode::SUCCESS) } else { Ok(ExitCode::FAILURE) }
+    }
     // sirno:witness:project-status-commands:end
 }
 
@@ -1649,22 +1619,6 @@ impl AnchorCommand {
     fn run(self, config_path: &Path, lake_path: Option<&Path>) -> Result<ExitCode, CommandError> {
         let context = SurfaceContext::from_cli_paths(config_path, lake_path);
         match self {
-            | Self::Status { format } => {
-                let result = context.anchor_status()?;
-                match format.unwrap_or_default() {
-                    | AnchorOutputFormat::Json => print_json(&result)?,
-                    | AnchorOutputFormat::Human => print_anchor_status_result(&result),
-                }
-                Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
-            }
-            | Self::Check { format } => {
-                let result = context.anchor_check()?;
-                match format.unwrap_or_default() {
-                    | AnchorOutputFormat::Json => print_json(&result)?,
-                    | AnchorOutputFormat::Human => print_anchor_check_result(&result),
-                }
-                Ok(if result.ok { ExitCode::SUCCESS } else { ExitCode::FAILURE })
-            }
             | Self::Update { format } => {
                 let result = context.anchor_update()?;
                 match format.unwrap_or_default() {

@@ -11,6 +11,7 @@ prerequisite:
   - cli-interface
   - mcp-interface
   - lake
+  - anchor
   - tide
   - mist
 refines:
@@ -18,6 +19,7 @@ refines:
 ---
 
 Project status commands summarize the configured Sirno project as an operational dashboard.
+Status is the go-to read-only health command for human and agent callers.
 
 ## Command Surface
 
@@ -33,21 +35,25 @@ Status reports:
 - reservoir path;
 - entry count;
 - structural link relation count;
-- review-mode lake check;
+- selected-mode lake check;
 - active Tide summary;
+- Anchor baseline state;
 - default mist projection state.
 
 CLI status keeps structural policy collapsed.
-MCP status accepts `show: summary | normal | full`.
+CLI and MCP status accept `show: summary | normal | full`.
 Omitting `show` selects `summary`.
+CLI status accepts `-m, --mode edit | review`.
+MCP status accepts `mode: edit | review`.
+Omitting `mode` selects `review`.
 Summary status returns `ok`, project paths, entry and structural-field counts,
 blocker counts, and a short message.
-Normal status adds check policy, Tide summary, and default mist status.
-Full status adds structural link policy and review-mode check output.
+Normal status adds check policy, Tide summary, Anchor summary, and default mist status.
+Full status adds structural link policy, selected-mode check output, and Anchor ripples.
 
 `project-status-commands` owns project status command spelling and behavior.
 `project-config` owns project configuration.
-`lake`, `tide`, and `mist` own the status domains being summarized.
+`lake`, `anchor`, `tide`, and `mist` own the status domains being summarized.
 
 The *repository witnesses* for this entry should show CLI and MCP status dispatch
 and the shared surface-context operation that assembles status data.

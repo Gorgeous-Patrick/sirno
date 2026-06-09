@@ -167,10 +167,10 @@ sirno init                                   # choose config, lake, skills
 sirno new architecture \
   --intrinsic name="Architecture" \
   --intrinsic desc="How the system is structured" # create one entry
-sirno check --mode edit                      # check while editing; dangling refs are warnings
+sirno status --mode edit                     # check while editing; dangling refs are warnings
 ```
 
-Edit the generated Markdown under the lake path, then re-run `check`.
+Edit the generated Markdown under the lake path, then re-run `status`.
 Add a `sirno:witness:architecture:begin` and `sirno:witness:architecture:end` block in code
 to link evidence back to the entry.
 
@@ -190,11 +190,11 @@ Explore an existing lake; this repository keeps its current design source in `.s
 The default misty workspace renders to `sirno-lake/`.
 
 ```sh
-sirno status                                 # project, check, and tide summary
+sirno status                                 # project, lake, Anchor, Tide, and mist summary
 sirno mist status                            # pending mist ripples and stale projection state
 sirno mist intake                            # accept edited misty-lake entries into the reservoir
 sirno mist render                            # render the default misty lake workspace
-sirno check --mode review                    # review boundary; dangling refs are errors
+sirno status --mode review                   # review boundary; dangling refs are errors
 sirno query --columns id,desc                # list entry ids and the discovered desc field
 sirno query --has category=meta              # filter by structural link target
 sirno witness readme --full                  # show how this README witnesses its own intention

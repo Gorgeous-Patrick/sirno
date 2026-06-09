@@ -58,7 +58,7 @@ Do not create placeholder witnesses.
 When evidence supports a related but different claim, create the exact entry for that claim.
 
 Maintain project configuration as part of the same workflow.
-Prefer MCP tools for routine lake movement, Anchor checks, and Anchor updates.
+Prefer MCP tools for routine lake movement, project status, and Anchor updates.
 When manual `Sirno.toml` edits are needed, preserve schema comments and path rules from
 `Sirno.toml` and the active project,
 then run deterministic config repair when available.
@@ -72,7 +72,7 @@ what makes the design easiest for a human co-worker to scan and review.
 
 Validate at the review boundary.
 Run `sirno_mist_render` after reservoir metadata changes,
-then run `sirno_lake_check` in edit and review modes.
+then run `sirno_status` in edit and review modes.
 Run direct witness queries for changed evidence.
 If `sirno_status` reports an open tide,
 walk workitems with `sirno_tide_status` and resolve them with

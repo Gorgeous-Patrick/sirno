@@ -27,7 +27,7 @@ This includes `category` itself
 and the initialized `concept`, `narrative`, `meta`, `proposal`, `deprecated`, `implemented`,
 and `uninhabited` *entries*.
 The marker is self-applied, which keeps the category vocabulary closed under its own rule.
-`sirno check` reports a category target that lacks this marker.
+`sirno status --mode review` reports a category target that lacks this marker as an error.
 It also warns when category metadata needs the `category` *entry* and that entry is missing.
 
 The reserved `locked` field may later protect *entries* or regions that a project treats as controlled.

@@ -88,7 +88,7 @@ correct the artifact or wrapper, never the lake.
 ## Validation
 
 Run `sirno_mist_render` after reservoir metadata changes.
-Run `sirno_lake_check` in edit mode and review mode.
+Run `sirno_status` in edit mode and review mode.
 Confirm each generated `SKILL.md` and `SKILL.full.template.md` has valid frontmatter.
 Compare installed wrappers against their artifacts byte for byte.
 Confirm every rostered discipline has the artifacts, resources, and packages

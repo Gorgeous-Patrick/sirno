@@ -51,10 +51,10 @@ MCP tool names are stable snake-case names prefixed with `sirno_`:
   `sirno_entry_rg`, and `sirno_entry_witness`
 - entry artifacts: `sirno_entry_artifact_list`, `sirno_entry_artifact_add`,
   `sirno_entry_artifact_rename`, and `sirno_entry_artifact_remove`
-- lake: `sirno_lake_init`, `sirno_lake_move`, and `sirno_lake_check`
+- lake: `sirno_lake_init` and `sirno_lake_move`
 - mist: `sirno_mist_status`, `sirno_mist_intake`, `sirno_mist_render`,
   and `sirno_mist_render_delete`
-- anchor: `sirno_anchor_status`, `sirno_anchor_check`, and `sirno_anchor_update`
+- anchor: `sirno_anchor_update`
 - tide: `sirno_tide_status`, `sirno_tide_resolve`, `sirno_tide_unresolve`,
   and `sirno_tide_reset`
 
@@ -87,12 +87,17 @@ or compact `FIELD=present`, `FIELD=empty`, and `FIELD=missing` strings.
 An empty `columns` array returns selectable column names and no records.
 A non-empty `columns` array selects `id`, `path`, discovered intrinsic fields,
 or structural link relations.
-`sirno_status` accepts `show: summary | normal | full`.
+`sirno_status` accepts `show: summary | normal | full`
+and `mode: edit | review`.
 Omitting `show` selects `summary`,
-which returns project paths, entry and structural-field counts,
+and omitting `mode` selects `review`.
+The selected mode controls the lake check boundary.
+Edit mode keeps dangling structural references as warnings.
+Review mode reports them as errors.
+Summary returns `ok`, project paths, entry and structural-field counts,
 blocker counts, and a short message.
-`normal` adds check policy, Tide summary, and default mist status.
-`full` adds structural link policy and review-mode check output.
+Normal adds check policy, Tide summary, Anchor summary, and default mist status.
+Full adds structural link policy, selected-mode check output, and Anchor ripples.
 `sirno_entry_rg` accepts `args: string[]` and returns captured `exit_code`, `stdout`, and `stderr`.
 `sirno_entry_witness` accepts `{ id }` by default.
 Default records contain `entry`, `location`, and `body`.

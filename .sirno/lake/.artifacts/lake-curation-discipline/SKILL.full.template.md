@@ -120,7 +120,7 @@ Call `sirno_cwd` again before switching projects in the same server process.
 ## Validation
 
 Run `sirno_mist_render` after reservoir metadata changes.
-Run `sirno_lake_check` in edit mode and review mode before treating the work as complete.
+Run `sirno_status` in edit mode and review mode before treating the work as complete.
 Run `sirno_entry_witness` on entries whose evidence changed.
 
 If `sirno_status` reports an open tide,

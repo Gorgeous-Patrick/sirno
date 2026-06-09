@@ -30,6 +30,7 @@ pub enum StructuredOutputFormat {
 }
 
 pub(crate) type QueryOutputFormat = StructuredOutputFormat;
+pub(crate) type StatusOutputFormat = StructuredOutputFormat;
 pub(crate) type TideOutputFormat = StructuredOutputFormat;
 pub(crate) type AnchorOutputFormat = StructuredOutputFormat;
 
@@ -67,9 +68,9 @@ pub struct AnchorRippleRecord {
     pub kind: AnchorRippleKind,
 }
 
-/// JSON-ready Anchor status result.
+/// Anchor status embedded in project status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AnchorStatusResult {
+pub struct StatusAnchor {
     /// Whether the lake matches the stored anchor.
     pub ok: bool,
     /// Whether `.sirno/anchor.toml` exists.
@@ -80,26 +81,10 @@ pub struct AnchorStatusResult {
     pub lake_path: String,
     /// Number of current lake entries.
     pub entry_count: usize,
+    /// Number of current entry-level ripples.
+    pub ripple_count: usize,
     /// Current entry-level ripples.
-    pub ripples: Vec<AnchorRippleRecord>,
-    /// Human-readable summary.
-    pub message: String,
-}
-
-/// JSON-ready Anchor check result.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AnchorCheckResult {
-    /// Whether the anchor exists, parses, and matches the current lake.
-    pub ok: bool,
-    /// Whether `.sirno/anchor.toml` exists.
-    pub initialized: bool,
-    /// Anchor file path.
-    pub anchor_path: String,
-    /// Lake path.
-    pub lake_path: String,
-    /// Number of current lake entries.
-    pub entry_count: usize,
-    /// Current entry-level ripples.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ripples: Vec<AnchorRippleRecord>,
     /// Human-readable summary.
     pub message: String,
@@ -1403,7 +1388,7 @@ impl StatusTide {
 }
 
 /// Project status detail selected by command callers.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
 pub enum StatusMode {
     /// Return the compact project dashboard.
     #[default]
@@ -1427,33 +1412,41 @@ impl StatusMode {
 }
 
 /// Project status request shared by interface surfaces.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StatusRequest {
     /// Status detail selected by the caller.
     pub show: StatusMode,
+    /// Check boundary selected by the caller.
+    pub mode: CheckMode,
+}
+
+impl Default for StatusRequest {
+    fn default() -> Self {
+        Self::summary()
+    }
 }
 
 impl StatusRequest {
     /// Build a status request from explicit typed fields.
-    pub fn new(show: StatusMode) -> Self {
-        Self { show }
+    pub fn new(show: StatusMode, mode: CheckMode) -> Self {
+        Self { show, mode }
     }
 
     /// Build a compact status request.
     pub fn summary() -> Self {
-        Self { show: StatusMode::Summary }
+        Self { show: StatusMode::Summary, mode: CheckMode::Review }
     }
 
     /// Build a full status request.
     pub fn full() -> Self {
-        Self { show: StatusMode::Full }
+        Self { show: StatusMode::Full, mode: CheckMode::Review }
     }
 }
 
 /// Compact status blocker counts.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusBlockers {
-    /// Number of review-mode lake check errors.
+    /// Number of selected-mode lake check errors.
     pub check_errors: usize,
     /// Number of open Tide workitems, when Tide could be loaded.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1464,6 +1457,12 @@ pub struct StatusBlockers {
     /// Number of entries that need Tide review, when Tide could be loaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tide_review_entries: Option<usize>,
+    /// Whether the Anchor baseline is missing, when Anchor could be inspected.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub anchor_missing: Option<bool>,
+    /// Number of Anchor ripples, when Anchor could be inspected.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub anchor_ripples: Option<usize>,
     /// Number of changed mist entries, when mist status could be loaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mist_changed_entries: Option<usize>,
@@ -1480,7 +1479,8 @@ pub struct StatusBlockers {
 
 impl StatusBlockers {
     pub(crate) fn from_parts(
-        check: &LakeCheckResult, tide: Option<&StatusTide>, mist: Option<&MistStatusResult>,
+        check: &LakeCheckResult, tide: Option<&StatusTide>, anchor: Option<&StatusAnchor>,
+        mist: Option<&MistStatusResult>,
     ) -> Self {
         let check_errors = check.diagnostics.iter().filter(|item| item.severity == "error").count();
         let check_errors = if check_errors == 0 && check.has_errors { 1 } else { check_errors };
@@ -1489,6 +1489,8 @@ impl StatusBlockers {
             tide_open_workitems: tide.map(|tide| tide.open_workitems),
             tide_open_waves: tide.map(|tide| tide.open_waves),
             tide_review_entries: tide.map(|tide| tide.review_entries),
+            anchor_missing: anchor.map(|anchor| !anchor.initialized),
+            anchor_ripples: anchor.map(|anchor| anchor.ripple_count),
             mist_changed_entries: mist.map(|mist| mist.changed_entries.len()),
             mist_stale_entries: mist.map(|mist| mist.stale_entries.len()),
             mist_missing_entries: mist.map(|mist| mist.missing_entries.len()),
@@ -1502,6 +1504,11 @@ impl StatusBlockers {
             + self.mist_stale_entries.unwrap_or(0)
             + self.mist_missing_entries.unwrap_or(0)
             + self.mist_staged_paths.unwrap_or(0)
+    }
+
+    /// Return true when Anchor is missing or has pending ripples.
+    pub fn has_anchor_blocker(&self) -> bool {
+        self.anchor_missing.unwrap_or(false) || self.anchor_ripples.unwrap_or(0) > 0
     }
 }
 
@@ -1531,10 +1538,13 @@ pub struct StatusResult {
     /// Tide summary when the lake can be compared against the active review baseline.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tide: Option<StatusTide>,
+    /// Anchor summary when the lake can be compared against the accepted baseline.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<StatusAnchor>,
     /// Default mist projection status.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mist: Option<MistStatusResult>,
-    /// Review-mode check result.
+    /// Selected-mode check result.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub check: Option<LakeCheckResult>,
 }

@@ -11,14 +11,13 @@ use serde::Serialize;
 use unicode_width::UnicodeWidthStr;
 
 use crate::surface::dto::{
-    AnchorCheckResult, AnchorRippleKind, AnchorRippleRecord, AnchorStatusResult,
-    AnchorUpdateResult, ConfigCommentResult, DiagnosticRecord, LakeCheckResult, MistIntakeResult,
-    MistStatusResult, PathRecord, QueryColumn, QueryColumns, QueryOutputFormat, QueryResults,
-    QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
+    AnchorRippleKind, AnchorRippleRecord, AnchorUpdateResult, ConfigCommentResult,
+    DiagnosticRecord, MistIntakeResult, MistStatusResult, PathRecord, QueryColumn, QueryColumns,
+    QueryOutputFormat, QueryResults, QueryValue, RenderResult, SkillWrapperRecord, StatusResult,
 };
 use crate::surface::error::CommandError;
 use crate::{
-    Entry, EntryDirectoryError, EntryDirectoryReport, EntryIntrinsicFields,
+    CheckMode, Entry, EntryDirectoryError, EntryDirectoryReport, EntryIntrinsicFields,
     UpstreamCrystallizeReport, UpstreamStatusReport, UpstreamStatusState, WitnessRecord,
 };
 
@@ -237,36 +236,8 @@ pub(crate) fn print_upstream_status_report(result: &UpstreamStatusReport) {
     anstream::print!("{}", format_upstream_status_report_with_style(result, OutputStyle::Styled));
 }
 
-pub(crate) fn print_anchor_status_result(result: &AnchorStatusResult) {
-    anstream::print!("{}", format_anchor_status_result(result));
-}
-
-pub(crate) fn print_anchor_check_result(result: &AnchorCheckResult) {
-    anstream::print!("{}", format_anchor_check_result(result));
-}
-
 pub(crate) fn print_anchor_update_result(result: &AnchorUpdateResult) {
     anstream::println!("{}", result.message);
-}
-
-fn format_anchor_status_result(result: &AnchorStatusResult) -> String {
-    let mut output = String::new();
-    if !result.ripples.is_empty() {
-        output.push_str(&format_anchor_ripple_table(&result.ripples));
-    }
-    output.push_str(&result.message);
-    output.push('\n');
-    output
-}
-
-fn format_anchor_check_result(result: &AnchorCheckResult) -> String {
-    let mut output = String::new();
-    if !result.ripples.is_empty() {
-        output.push_str(&format_anchor_ripple_table(&result.ripples));
-    }
-    output.push_str(&result.message);
-    output.push('\n');
-    output
 }
 
 fn format_anchor_ripple_table(ripples: &[AnchorRippleRecord]) -> String {
@@ -355,15 +326,16 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
         .check_policy
         .as_ref()
         .map(|policy| if policy.render { "render links checked" } else { "render links skipped" });
+    let mode = result.check_policy.as_ref().map(|policy| check_mode_label(policy.mode));
     if let Some(check) = result.check.as_ref().filter(|check| !check.ok) {
         output.push_str(&format_diagnostics_with_style(&check.diagnostics, style));
     }
     let check_ok =
         result.check.as_ref().map_or(result.blockers.check_errors == 0, |check| check.ok);
     if check_ok {
-        if let Some(render) = render {
+        if let (Some(mode), Some(render)) = (mode, render) {
             output.push_str(&format!(
-                "lake check: {} (review; {render})\n",
+                "lake check: {} ({mode}; {render})\n",
                 style_text("ok", SemanticStyle::Success, style)
             ));
         } else {
@@ -372,9 +344,9 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
                 style_text("ok", SemanticStyle::Success, style)
             ));
         }
-    } else if let Some(render) = render {
+    } else if let (Some(mode), Some(render)) = (mode, render) {
         output.push_str(&format!(
-            "lake check: {} (review; {render})\n",
+            "lake check: {} ({mode}; {render})\n",
             style_text("failed", SemanticStyle::Error, style)
         ));
     } else {
@@ -401,6 +373,31 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
             ));
         }
     }
+    if let Some(anchor) = &result.anchor {
+        if anchor.ok {
+            output.push_str(&format!(
+                "anchor: {} ({})\n",
+                style_text("current", SemanticStyle::Success, style),
+                anchor.anchor_path
+            ));
+        } else if !anchor.initialized {
+            output.push_str(&format!(
+                "anchor: {} ({})\n",
+                style_text("missing", SemanticStyle::Warning, style),
+                anchor.anchor_path
+            ));
+        } else {
+            output.push_str(&format!(
+                "anchor: {} {} ({})\n",
+                anchor.ripple_count,
+                plural(anchor.ripple_count, "ripple", "ripples"),
+                anchor.anchor_path
+            ));
+        }
+        if !anchor.ripples.is_empty() {
+            output.push_str(&format_anchor_ripple_table(&anchor.ripples));
+        }
+    }
     if let Some(mist) = &result.mist {
         if mist.ok {
             output.push_str(&format!(
@@ -419,40 +416,15 @@ fn format_status_result_with_style(result: &StatusResult, style: OutputStyle) ->
     output
 }
 
+fn check_mode_label(mode: CheckMode) -> &'static str {
+    match mode {
+        | CheckMode::Edit => "edit",
+        | CheckMode::Review => "review",
+    }
+}
+
 fn plural<'a>(count: usize, singular: &'a str, plural: &'a str) -> &'a str {
     if count == 1 { singular } else { plural }
-}
-
-pub(crate) fn print_lake_check_result(result: &LakeCheckResult) {
-    anstream::print!("{}", format_lake_check_result_with_style(result, OutputStyle::Styled));
-}
-
-#[cfg(test)]
-#[allow(dead_code)]
-pub(crate) fn format_lake_check_result(result: &LakeCheckResult) -> String {
-    format_lake_check_result_with_style(result, OutputStyle::Plain)
-}
-
-fn format_lake_check_result_with_style(result: &LakeCheckResult, style: OutputStyle) -> String {
-    if result.diagnostics.is_empty() {
-        return format!("{}\n", format_ok_line(&result.root, style));
-    }
-
-    let mut output = format_diagnostics_with_style(&result.diagnostics, style);
-    output.push_str(&format!("{}\n", lake_check_summary(result, style)));
-    output
-}
-
-fn lake_check_summary(result: &LakeCheckResult, style: OutputStyle) -> String {
-    if result.has_errors {
-        format!("check: {} in {}", style_text("failed", SemanticStyle::Error, style), result.root)
-    } else {
-        format!(
-            "check: {} in {}",
-            style_text("warnings", SemanticStyle::Warning, style),
-            result.root
-        )
-    }
 }
 
 pub(crate) fn print_render_result(result: &RenderResult) {

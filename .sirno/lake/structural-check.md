@@ -37,9 +37,9 @@ Sentinel shape is always checked.
 Freshness is controlled by `[check].render`,
 which is enabled by default.
 
-## Check Command
+## Status Boundary
 
-`sirno check` checks the configured reservoir.
+`sirno status --mode MODE` checks the configured reservoir as part of project status.
 The `-m, --mode` option selects the check boundary.
 Mist render derives generated-footer freshness from the checked reservoir and the selected projection.
 

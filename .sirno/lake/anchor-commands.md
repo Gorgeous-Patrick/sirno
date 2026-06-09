@@ -1,5 +1,5 @@
 ---
-desc: The command surface for Anchor status, validation, and baseline updates.
+desc: The command surface for accepted-baseline updates.
 name: Anchor Commands
 category:
   - concept
@@ -14,20 +14,14 @@ refines:
   - command-families
 ---
 
-Anchor commands operate on the accepted baseline for the current Sirno Lake.
-They show current ripples,
-validate the accepted baseline,
-and accept the current waterline as the new baseline.
+Anchor commands accept the current waterline as the new baseline.
+Project status reports Anchor freshness and current ripples.
 
 ## Command Surface
 
 | Surface | Operation | Behavior |
 |---|---|---|
-| CLI | `sirno anchor status` | Shows current lake ripples against `.sirno/anchor.toml`. |
-| CLI | `sirno anchor check` | Validates `.sirno/anchor.toml` and compares it with the lake. |
 | CLI | `sirno anchor update` | Accepts the current lake as the new baseline. |
-| MCP | `sirno_anchor_status` | Returns current lake ripples against the accepted baseline. |
-| MCP | `sirno_anchor_check` | Returns accepted-baseline validation and ripple state. |
 | MCP | `sirno_anchor_update` | Writes the current lake as the accepted baseline. |
 
 Anchor update runs review-mode lake checks,
@@ -40,6 +34,7 @@ Later updates require a clear Tide.
 
 `anchor-commands` owns Anchor command spelling and behavior.
 `anchor` owns the accepted-baseline subsystem.
+`project-status-commands` owns read-only Anchor health reporting.
 `tide` owns review obligations created from Anchor differences.
 
 The *repository witnesses* for this entry should show CLI and MCP command dispatch

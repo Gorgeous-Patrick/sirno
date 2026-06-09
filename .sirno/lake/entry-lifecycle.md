@@ -17,7 +17,7 @@ Anchor is the accepted baseline used for comparison.
 The lifecycle has stored states and check gates.
 Stored states are visible from files and metadata.
 Check gates are predicates that commands require before they continue.
-`sirno check`, `sirno query`, `sirno rg`, `sirno witness`, and `sirno status`
+`sirno status`, `sirno query`, `sirno rg`, and `sirno witness`
 observe entries without changing their lifecycle state.
 
 ## Creation And Editing
@@ -106,7 +106,7 @@ Those regions help readers navigate,
 but they are ignored by Anchor fingerprints.
 Authored prose and metadata are the accepted entry content.
 
-`sirno query`, `sirno rg`, `sirno witness`, `sirno check`, and `sirno status`
+`sirno status`, `sirno query`, `sirno rg`, and `sirno witness`
 do not move an entry between lifecycle states.
 They read the lake, report structure, or inspect configured repository evidence.
 

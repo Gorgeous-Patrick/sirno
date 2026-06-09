@@ -140,8 +140,8 @@ After changing lake metadata, run render maintenance and structural checks:
 
 ```text
 sirno_mist_render
-sirno_lake_check mode=edit
-sirno_lake_check mode=review
+sirno_status mode=edit
+sirno_status mode=review
 ```
 
 If the serializer script is unavailable or its input contract does not fit the session,
