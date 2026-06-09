@@ -27,10 +27,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
-    EntryPathsRequest, LakeInitRequest, PathSelection, QueryColumn, QueryColumnSelection,
-    QueryColumns, QueryRequest, RgRequest, SkillResourceContext, StructuralFieldState,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, SurfaceContext, TideResolveRequest,
-    TideSelectionRequest, TideStatusMode, UpstreamAddRequest, UpstreamCrystallizeRequest,
+    EntryPathsRequest, EntryReadContent, EntryReadRequest, LakeInitRequest, PathSelection,
+    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, RgRequest, SkillResourceContext,
+    StructuralFieldState, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    SurfaceContext, TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    UpstreamCrystallizeRequest,
 };
 use crate::{
     CheckMode, EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings,
@@ -295,14 +296,20 @@ impl ServerHandler for SirnoMcpServer {
                 .map_err(|error| McpError::invalid_params(error, None))
                 .and_then(|id| {
                     self.context
-                        .entry_read(id)
+                        .entry_read(EntryReadRequest::new(id, EntryReadContent::Source))
                         .map_err(|error| McpError::resource_not_found(error.to_string(), None))
                 })
-                .map(|entry| {
-                    ReadResourceResult::new(vec![
-                        ResourceContents::text(entry.source, request.uri)
+                .and_then(|entry| {
+                    let Some(source) = entry.source else {
+                        return Err(McpError::resource_not_found(
+                            format!("entry source was not returned for {}", entry.id),
+                            None,
+                        ));
+                    };
+                    Ok(ReadResourceResult::new(vec![
+                        ResourceContents::text(source, request.uri)
                             .with_mime_type(ENTRY_RESOURCE_MIME_TYPE),
-                    ])
+                    ]))
                 })
         } else {
             Err(McpError::resource_not_found(format!("resource not found: {}", request.uri), None))
@@ -369,8 +376,13 @@ impl SirnoMcpServer {
 
     /// Read one Sirno Lake Markdown entry.
     #[tool(name = "sirno_entry_read")]
-    fn entry_read(&self, Parameters(params): Parameters<EntryAddressOnlyParams>) -> McpToolResult {
-        result(self.context.entry_read(entry_address(params.id)?))
+    fn entry_read(&self, Parameters(params): Parameters<EntryReadParams>) -> McpToolResult {
+        result(
+            self.context.entry_read(EntryReadRequest::new(
+                entry_address(params.id)?,
+                params.content.into(),
+            )),
+        )
     }
 
     /// Query Sirno Lake Markdown entries.
@@ -663,6 +675,39 @@ struct CwdParams {
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryAddressOnlyParams {
     id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
+struct EntryReadParams {
+    id: String,
+    /// Entry content to include. Defaults to parsed body text.
+    #[serde(default)]
+    content: McpEntryReadContent,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+enum McpEntryReadContent {
+    /// Return entry metadata and paths only.
+    Metadata,
+    /// Return metadata, paths, and parsed body text.
+    #[default]
+    Body,
+    /// Return metadata, paths, and full stored Markdown source.
+    Source,
+    /// Return metadata, paths, parsed body text, and full stored Markdown source.
+    Full,
+}
+
+impl From<McpEntryReadContent> for EntryReadContent {
+    fn from(value: McpEntryReadContent) -> Self {
+        match value {
+            | McpEntryReadContent::Metadata => Self::Metadata,
+            | McpEntryReadContent::Body => Self::Body,
+            | McpEntryReadContent::Source => Self::Source,
+            | McpEntryReadContent::Full => Self::Full,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
@@ -1367,7 +1412,10 @@ Body.
             }))
             .unwrap();
         let read = server
-            .entry_read(Parameters(EntryAddressOnlyParams { id: "alpha".to_owned() }))
+            .entry_read(Parameters(EntryReadParams {
+                id: "alpha".to_owned(),
+                content: McpEntryReadContent::default(),
+            }))
             .unwrap();
         let text = entry
             .content
@@ -1382,10 +1430,59 @@ Body.
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
         assert_eq!(structured(&read)["body"], "Body.");
-        assert!(structured(&read)["source"].as_str().unwrap().contains("desc: Alpha entry."));
+        assert!(structured(&read).get("source").is_none());
         assert!(text.starts_with("created "));
         assert!(text.contains("alpha.md"));
         assert!(!text.contains("\"ok\""));
+    }
+
+    #[test]
+    fn entry_read_content_selector_controls_large_fields() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(CONFIG_FILE_NAME);
+        let server = SirnoMcpServer::new(SurfaceContext::new(&config_path));
+
+        server.lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) })).unwrap();
+        server
+            .entry_new(Parameters(EntryNewParams {
+                id: "alpha".to_owned(),
+                name: None,
+                desc: "Alpha entry.".to_owned(),
+                structural: McpStructuralTargets::default(),
+                body: Some("Body.".to_owned()),
+            }))
+            .unwrap();
+
+        let omitted: EntryReadParams = serde_json::from_value(json!({ "id": "alpha" })).unwrap();
+        let metadata = server
+            .entry_read(Parameters(EntryReadParams {
+                id: "alpha".to_owned(),
+                content: McpEntryReadContent::Metadata,
+            }))
+            .unwrap();
+        let body = server.entry_read(Parameters(omitted)).unwrap();
+        let source = server
+            .entry_read(Parameters(EntryReadParams {
+                id: "alpha".to_owned(),
+                content: McpEntryReadContent::Source,
+            }))
+            .unwrap();
+        let full = server
+            .entry_read(Parameters(EntryReadParams {
+                id: "alpha".to_owned(),
+                content: McpEntryReadContent::Full,
+            }))
+            .unwrap();
+
+        assert_eq!(structured(&metadata)["id"], "alpha");
+        assert!(structured(&metadata).get("body").is_none());
+        assert!(structured(&metadata).get("source").is_none());
+        assert_eq!(structured(&body)["body"], "Body.");
+        assert!(structured(&body).get("source").is_none());
+        assert!(structured(&source).get("body").is_none());
+        assert!(structured(&source)["source"].as_str().unwrap().contains("desc: Alpha entry."));
+        assert_eq!(structured(&full)["body"], "Body.");
+        assert!(structured(&full)["source"].as_str().unwrap().contains("desc: Alpha entry."));
     }
 
     #[test]

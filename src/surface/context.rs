@@ -19,11 +19,11 @@ use crate::surface::dto::{
     AnchorUpdateResult, ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult,
     ArtifactRemoveRequest, ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult,
     CharmListResult, CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult,
-    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadResult,
-    EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult, LocalProtectionResult,
-    MistIntakeResult, MistStatusResult, MovePathResult, PathRecord, QueryColumn,
-    QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults, QueryRun,
-    RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
+    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadRequest,
+    EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
+    LocalProtectionResult, MistIntakeResult, MistStatusResult, MovePathResult, PathRecord,
+    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
+    QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
     SkillWrapperResult, SpellListResult, SpellRecord, StatusCheckPolicy, StatusResult, StatusTide,
     StructuralEdgeStatus, StructuralFieldStatus, StructuralFilter, StructuralStateFilter,
     StructuralTarget, TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode,
@@ -236,15 +236,20 @@ impl SurfaceContext {
     }
 
     // sirno:witness:mcp-interface:begin
-    /// Read one Sirno Lake Markdown entry and return its parsed body and stored source.
-    pub fn entry_read(&self, id: EntryAddress) -> Result<EntryReadResult, CommandError> {
+    /// Read one Sirno Lake Markdown entry with selected content.
+    pub fn entry_read(&self, request: EntryReadRequest) -> Result<EntryReadResult, CommandError> {
+        let id = request.id;
         let (lake, mut settings) =
             resolve_lake_directory(self.lake_path.as_deref(), &self.config_path)?;
         settings.render = false;
         settings.witness = None;
         let directory = EntryDirectory::new(&lake);
         let path = directory.entry_file_path(&id);
-        let source = directory.read_entry_source(&id)?;
+        let source = if request.content.includes_source() {
+            Some(directory.read_entry_source(&id)?)
+        } else {
+            None
+        };
         let report = directory.check_with_settings(CheckMode::Edit, &settings)?;
         let entry = report
             .entries()
@@ -257,7 +262,7 @@ impl SurfaceContext {
             path: display_path(&path),
             name: entry.metadata.name().to_owned(),
             desc: entry.metadata.desc().to_owned(),
-            body: entry.body.clone(),
+            body: request.content.includes_body().then(|| entry.body.clone()),
             source,
             message: format!("read entry {id} from {}", path.display()),
         })

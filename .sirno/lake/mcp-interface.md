@@ -65,7 +65,11 @@ Without `path`, it returns the current working directory without changing it.
 Relative config paths are resolved against the process current working directory
 on every project tool call.
 
-`sirno_entry_read` returns parsed metadata, body text, and the full stored Markdown source.
+`sirno_entry_read` returns parsed metadata and selected entry content.
+Its `content` selector accepts `metadata`, `body`, `source`, or `full`.
+Omitting `content` selects `body`,
+so the default result includes parsed metadata and body text.
+The full stored Markdown source is returned only for `source` or `full`.
 Structural filters may use `{ field, targets }` objects
 or compact `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]` strings.
 Structural states may use `{ field, state }` objects

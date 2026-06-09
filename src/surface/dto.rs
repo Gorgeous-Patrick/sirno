@@ -566,6 +566,50 @@ impl EntryPathsRequest {
     }
 }
 
+// sirno:witness:mcp-interface:begin
+/// Entry content selected by a read request.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum EntryReadContent {
+    /// Return metadata and paths only.
+    Metadata,
+    /// Return metadata, paths, and parsed body text.
+    #[default]
+    Body,
+    /// Return metadata, paths, and full stored Markdown source.
+    Source,
+    /// Return metadata, paths, parsed body text, and full stored Markdown source.
+    Full,
+}
+
+impl EntryReadContent {
+    /// Return true when parsed body text should be included.
+    pub fn includes_body(self) -> bool {
+        matches!(self, Self::Body | Self::Full)
+    }
+
+    /// Return true when stored Markdown source should be included.
+    pub fn includes_source(self) -> bool {
+        matches!(self, Self::Source | Self::Full)
+    }
+}
+
+/// Entry read request shared by non-CLI front ends.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EntryReadRequest {
+    /// Entry address to read.
+    pub id: EntryAddress,
+    /// Entry content included in the result.
+    pub content: EntryReadContent,
+}
+
+impl EntryReadRequest {
+    /// Build an entry read request from explicit typed fields.
+    pub fn new(id: EntryAddress, content: EntryReadContent) -> Self {
+        Self { id, content }
+    }
+}
+// sirno:witness:mcp-interface:end
+
 /// Lake initialization request shared by non-CLI front ends.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LakeInitRequest {
@@ -641,6 +685,7 @@ pub struct LocalProtectionResult {
     pub message: String,
 }
 
+// sirno:witness:mcp-interface:begin
 /// Result of reading one Sirno Lake Markdown entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryReadResult {
@@ -655,12 +700,15 @@ pub struct EntryReadResult {
     /// Short entry description.
     pub desc: String,
     /// Markdown body outside the metadata block.
-    pub body: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub body: Option<String>,
     /// Full Markdown source as stored on disk.
-    pub source: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
     /// Concise human-readable summary.
     pub message: String,
 }
+// sirno:witness:mcp-interface:end
 
 /// Result of renaming one entry address.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
