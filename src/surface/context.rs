@@ -19,16 +19,16 @@ use crate::surface::dto::{
     AnchorUpdateResult, ArtifactAddRequest, ArtifactChangeResult, ArtifactListResult,
     ArtifactRemoveRequest, ArtifactRenameRequest, CharmCleanResult, CharmEnablementResult,
     CharmListResult, CharmProcessResult, CharmRecord, CharmShowResult, ConfigCommentResult,
-    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadRequest,
-    EntryReadResult, EntryRenameResult, LakeCheckResult, LakeInitRequest, LakeInitResult,
-    LocalProtectionResult, MistIntakeResult, MistStatusResult, MovePathResult, PathRecord,
-    QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, QueryResponse, QueryResults,
-    QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext, SkillWrapperRecord,
-    SkillWrapperResult, SpellListResult, SpellRecord, StatusBlockers, StatusCheckPolicy,
-    StatusRequest, StatusResult, StatusTide, StructuralEdgeStatus, StructuralFieldStatus,
-    StructuralFilter, StructuralStateFilter, StructuralTarget, TideChangeResult,
-    TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult, UpstreamAddRequest,
-    UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
+    CwdResult, EntryFileResult, EntryNewRequest, EntryPathsRequest, EntryReadMetadataFields,
+    EntryReadMetadataValue, EntryReadRequest, EntryReadResult, EntryRenameResult, LakeCheckResult,
+    LakeInitRequest, LakeInitResult, LocalProtectionResult, MistIntakeResult, MistStatusResult,
+    MovePathResult, PathRecord, QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest,
+    QueryResponse, QueryResults, QueryRun, RenderResult, RgRequest, RgResult, SkillResourceContext,
+    SkillWrapperRecord, SkillWrapperResult, SpellListResult, SpellRecord, StatusBlockers,
+    StatusCheckPolicy, StatusRequest, StatusResult, StatusTide, StructuralEdgeStatus,
+    StructuralFieldStatus, StructuralFilter, StructuralStateFilter, StructuralTarget,
+    TideChangeResult, TideResolveRequest, TideSelectionRequest, TideStatusMode, TideStatusResult,
+    UpstreamAddRequest, UpstreamCrystallizeRequest, WitnessRecordResult, WitnessResult,
 };
 use crate::surface::error::CommandError;
 use crate::surface::output::{display_path, display_paths, output_path, query_result_rows};
@@ -259,8 +259,7 @@ impl SurfaceContext {
             ok: true,
             id: id.to_string(),
             path: display_path(&path),
-            intrinsic: entry.metadata.intrinsic.clone(),
-            relation: entry.metadata.structural.clone(),
+            metadata: entry_read_metadata(entry),
             body: request.content.includes_body().then(|| entry.body.clone()),
             source,
             message: format!("read entry {id} from {}", path.display()),
@@ -2805,6 +2804,17 @@ fn structural_targets_by_target(
         targets_by_field.entry(target.field).or_default().push(target.target);
     }
     Ok(targets_by_field)
+}
+
+fn entry_read_metadata(entry: &Entry) -> EntryReadMetadataFields {
+    let mut metadata = EntryReadMetadataFields::new();
+    for (field, value) in &entry.metadata.intrinsic {
+        metadata.insert(field.clone(), EntryReadMetadataValue::Text(value.clone()));
+    }
+    for (field, targets) in &entry.metadata.structural {
+        metadata.insert(field.clone(), EntryReadMetadataValue::Targets(targets.clone()));
+    }
+    metadata
 }
 
 fn intrinsic_fields_from_request(

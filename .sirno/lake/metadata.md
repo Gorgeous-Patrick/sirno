@@ -43,9 +43,9 @@ Generic entry parsing starts with no intrinsic fields.
 Callers must pass the registry discovered for the active lake or ownership scope.
 Entry creation receives intrinsic values from the caller,
 keyed by the active lake's discovered intrinsic fields.
-Entry read surfaces return intrinsic values with the same field-keyed shape.
-They return structural relation values as `relation`,
-keyed by discovered structural relation field names.
+Entry read surfaces return a `metadata` object keyed by parsed metadata field names.
+Intrinsic fields render as plain strings.
+Structural relation fields render as entry-address lists.
 The default seed lake still creates `name` and `desc` entries,
 but normal command and tool surfaces treat them as ordinary discovered intrinsics.
 
@@ -93,8 +93,8 @@ If a tool needs to know that an entry defines an intrinsic metadata field,
 the entry must carry `meta.type: "intrinsic"`.
 If a tool needs typed intrinsic or structural fields,
 it must use the registry discovered for the entry's ownership scope.
-Entry metadata APIs expose intrinsic values as field-keyed maps,
-not as fixed title or description slots.
+Entry metadata APIs expose intrinsic and structural relation values as field-keyed maps,
+not as fixed title, description, or relation slots.
 If an agent needs to inspect *repository* evidence for an *entry*,
 it should use the agent-facing MCP tool.
 If a human needs the same evidence,

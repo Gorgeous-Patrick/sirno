@@ -70,14 +70,14 @@ The `intrinsic` object maps discovered intrinsic field names to user-authored pl
 The active lake defines which keys are required.
 The tool rejects unknown intrinsic keys and missing required intrinsic keys.
 
-`sirno_entry_read` returns parsed intrinsic metadata and selected entry content.
-Its result includes `intrinsic`,
-an object keyed by discovered intrinsic field names.
-It also includes `relation`,
-an object keyed by discovered structural relation field names.
+`sirno_entry_read` returns parsed user metadata and selected entry content.
+Its result includes `metadata`,
+an object keyed by intrinsic and structural relation metadata field names.
+Intrinsic fields render as plain strings.
+Structural relation fields render as entry-address arrays.
 Its `content` selector accepts `metadata`, `body`, `source`, or `full`.
 Omitting `content` selects `body`,
-so the default result includes intrinsic metadata and body text.
+so the default result includes metadata and body text.
 The full stored Markdown source is returned only for `source` or `full`.
 Structural filters may use `{ field, targets }` objects
 or compact `FIELD=ENTRY_ADDRESS[,ENTRY_ADDRESS]` strings.

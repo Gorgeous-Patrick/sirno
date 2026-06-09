@@ -15,9 +15,8 @@ use crate::surface::output::{
 };
 use crate::{
     CheckMode, EntryAddress, EntryAddressError, EntryAtom, EntryDirectoryReport,
-    EntryIntrinsicFields, EntryStructuralFields, EntryStructuralMatcher, GenLinkDirectoryReport,
-    MetaFieldRecord, StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, UpstreamSettings,
-    WitnessRecord,
+    EntryIntrinsicFields, EntryStructuralMatcher, GenLinkDirectoryReport, MetaFieldRecord,
+    StructuralEdgeSettings, Tide, TideStatus, TideWorkitem, UpstreamSettings, WitnessRecord,
 };
 
 /// Shared human-or-JSON output renderer.
@@ -685,6 +684,19 @@ pub struct LocalProtectionResult {
 }
 
 // sirno:witness:mcp-interface:begin
+/// Parsed entry metadata keyed by metadata field name.
+pub type EntryReadMetadataFields = IndexMap<String, EntryReadMetadataValue>;
+
+/// Parsed entry metadata value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum EntryReadMetadataValue {
+    /// User-authored intrinsic plain-string value.
+    Text(String),
+    /// User-authored structural relation targets.
+    Targets(Vec<EntryAddress>),
+}
+
 /// Result of reading one Sirno Lake Markdown entry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EntryReadResult {
@@ -694,10 +706,8 @@ pub struct EntryReadResult {
     pub id: String,
     /// Sirno Lake entry file path.
     pub path: String,
-    /// Parsed intrinsic metadata fields.
-    pub intrinsic: EntryIntrinsicFields,
-    /// Parsed structural relation metadata fields.
-    pub relation: EntryStructuralFields,
+    /// Parsed intrinsic and structural relation metadata fields.
+    pub metadata: EntryReadMetadataFields,
     /// Markdown body outside the metadata block.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,

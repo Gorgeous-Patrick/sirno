@@ -1527,9 +1527,11 @@ Body.
         assert!(structured(&cwd)["path"].as_str().is_some_and(|path| !path.is_empty()));
         assert_eq!(structured(&init)["ok"], true);
         assert_eq!(structured(&entry)["id"], "alpha");
-        assert_eq!(structured(&read)["intrinsic"]["name"], "Alpha");
-        assert_eq!(structured(&read)["intrinsic"]["desc"], "Alpha entry.");
-        assert_eq!(structured(&read)["relation"]["topic"][0], "concept");
+        assert_eq!(structured(&read)["metadata"]["name"], "Alpha");
+        assert_eq!(structured(&read)["metadata"]["desc"], "Alpha entry.");
+        assert_eq!(structured(&read)["metadata"]["topic"][0], "concept");
+        assert!(structured(&read).get("intrinsic").is_none());
+        assert!(structured(&read).get("relation").is_none());
         assert!(structured(&read).get("name").is_none());
         assert!(structured(&read).get("desc").is_none());
         assert_eq!(structured(&read)["body"], "Body.");
@@ -1578,9 +1580,11 @@ Body.
             .unwrap();
 
         assert_eq!(structured(&metadata)["id"], "alpha");
-        assert_eq!(structured(&metadata)["intrinsic"]["name"], "Alpha");
-        assert_eq!(structured(&metadata)["intrinsic"]["desc"], "Alpha entry.");
-        assert_eq!(structured(&metadata)["relation"]["topic"][0], "concept");
+        assert_eq!(structured(&metadata)["metadata"]["name"], "Alpha");
+        assert_eq!(structured(&metadata)["metadata"]["desc"], "Alpha entry.");
+        assert_eq!(structured(&metadata)["metadata"]["topic"][0], "concept");
+        assert!(structured(&metadata).get("intrinsic").is_none());
+        assert!(structured(&metadata).get("relation").is_none());
         assert!(structured(&metadata).get("body").is_none());
         assert!(structured(&metadata).get("source").is_none());
         assert!(structured(&metadata).get("name").is_none());
