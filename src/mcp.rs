@@ -1,10 +1,9 @@
 //! MCP server adapter for Sirno.
 //!
 //! The adapter exposes grouped Sirno command tools and skill resources over stdio.
-//! Command behavior remains in `surface`; this module only converts JSON parameters
-//! into typed surface requests and converts surface DTOs into MCP tool results.
+//! Command behavior remains in `surface`; this module deserializes JSON tool parameters
+//! directly into typed surface requests and converts surface DTOs into MCP tool results.
 
-use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::Write as _;
 use std::future::{self, Future};
@@ -30,15 +29,12 @@ use crate::surface::{
     ArtifactAddRequest, ArtifactRemoveRequest, ArtifactRenameRequest, EntryNewRequest,
     EntryPathsRequest, EntryReadContent, EntryReadRequest, LakeInitRequest, PathSelection,
     QueryColumn, QueryColumnSelection, QueryColumns, QueryRequest, RgRequest, SkillResourceContext,
-    StatusMode, StatusRequest, StructuralFieldState, StructuralFilter, StructuralStateFilter,
-    StructuralTarget, SurfaceContext, TideResolveRequest, TideSelectionRequest, TideStatusMode,
-    UpstreamAddRequest, UpstreamCrystallizeRequest,
+    StatusRequest, StructuralFieldState, StructuralFilter, StructuralStateFilter, SurfaceContext,
+    TideResolveRequest, TideSelectionRequest, TideStatusMode, UpstreamAddRequest,
+    UpstreamCrystallizeRequest,
 };
 use crate::surface::{CommandError, format_command_error};
-use crate::{
-    CheckMode, EntryAddress, EntryAtom, EntryIntrinsicFields, StructuralEdgeDirection,
-    TideWorkitem, UpstreamSettings,
-};
+use crate::{EntryAddress, EntryAtom, StructuralEdgeDirection, TideWorkitem, UpstreamSettings};
 
 const SKILL_RESOURCE_MIME_TYPE: &str = "text/markdown";
 const SKILL_PROJECT_CONTEXT_TOKEN: &str = "{{SIRNO_ACTIVE_PROJECT_METADATA}}";
@@ -333,13 +329,7 @@ impl SirnoMcpServer {
     /// Create one Markdown entry.
     // sirno:witness:mcp-interface:begin
     #[tool(name = "sirno_entry_new")]
-    fn entry_new(&self, Parameters(params): Parameters<EntryNewParams>) -> McpToolResult {
-        let request = EntryNewRequest {
-            id: entry_address(params.id)?,
-            intrinsic: entry_intrinsic_fields(params.intrinsic),
-            structural: params.structural.into_targets()?,
-            body: params.body,
-        };
+    fn entry_new(&self, Parameters(request): Parameters<EntryNewRequest>) -> McpToolResult {
         result(self.context.entry_new(request))
     }
     // sirno:witness:mcp-interface:end
@@ -347,9 +337,7 @@ impl SirnoMcpServer {
     /// Rename one entry address and its Sirno references.
     #[tool(name = "sirno_entry_rename")]
     fn entry_rename(&self, Parameters(params): Parameters<EntryRenameParams>) -> McpToolResult {
-        result(
-            self.context.entry_rename(entry_address(params.old_id)?, entry_address(params.new_id)?),
-        )
+        result(self.context.entry_rename(params.old_id, params.new_id))
     }
 
     /// Freeze one current lake entry and make its file read-only.
@@ -357,36 +345,28 @@ impl SirnoMcpServer {
     fn entry_freeze(
         &self, Parameters(params): Parameters<EntryAddressOnlyParams>,
     ) -> McpToolResult {
-        result(self.context.entry_freeze(entry_address(params.id)?))
+        result(self.context.entry_freeze(params.id))
     }
 
     /// Melt one Sirno Lake Markdown entry and make its file writable.
     #[tool(name = "sirno_entry_melt")]
     fn entry_melt(&self, Parameters(params): Parameters<EntryAddressOnlyParams>) -> McpToolResult {
-        result(self.context.entry_melt(entry_address(params.id)?))
+        result(self.context.entry_melt(params.id))
     }
 
     /// Show filesystem paths related to one entry.
     #[tool(name = "sirno_entry_path")]
     fn entry_paths(&self, Parameters(params): Parameters<EntryPathsParams>) -> McpToolResult {
         let selection = path_selection(params.entry, params.artifact);
-        let request = EntryPathsRequest::new(
-            entry_address(params.id)?,
-            selection,
-            params.absolute.unwrap_or(false),
-        );
+        let request =
+            EntryPathsRequest::new(params.id, selection, params.absolute.unwrap_or(false));
         result(self.context.entry_paths(request))
     }
 
     /// Read one Sirno Lake Markdown entry.
     #[tool(name = "sirno_entry_read")]
-    fn entry_read(&self, Parameters(params): Parameters<EntryReadParams>) -> McpToolResult {
-        result(
-            self.context.entry_read(EntryReadRequest::new(
-                entry_address(params.id)?,
-                params.content.into(),
-            )),
-        )
+    fn entry_read(&self, Parameters(request): Parameters<EntryReadRequest>) -> McpToolResult {
+        result(self.context.entry_read(request))
     }
 
     /// Query Sirno Lake Markdown entries.
@@ -404,17 +384,14 @@ impl SirnoMcpServer {
 
     /// Run ripgrep in the configured Sirno Lake.
     #[tool(name = "sirno_entry_rg")]
-    fn entry_rg(&self, Parameters(params): Parameters<EntryRgParams>) -> McpToolResult {
-        result(self.context.entry_rg(RgRequest {
-            with_generated_footer: params.with_generated_footer,
-            args: params.args,
-        }))
+    fn entry_rg(&self, Parameters(request): Parameters<RgRequest>) -> McpToolResult {
+        result(self.context.entry_rg(request))
     }
 
     /// Return repository witness blocks for one entry.
     #[tool(name = "sirno_entry_witness")]
     fn entry_witness(&self, Parameters(params): Parameters<EntryWitnessParams>) -> McpToolResult {
-        result(self.context.entry_witness(entry_address(params.id)?, params.verbose_json))
+        result(self.context.entry_witness(params.id, params.verbose_json))
     }
 
     /// List artifacts owned by one entry.
@@ -422,49 +399,38 @@ impl SirnoMcpServer {
     fn entry_artifact_list(
         &self, Parameters(params): Parameters<EntryAddressOnlyParams>,
     ) -> McpToolResult {
-        result(self.context.entry_artifact_list(entry_address(params.id)?))
+        result(self.context.entry_artifact_list(params.id))
     }
 
     /// Copy a file into one entry's artifact tree.
     #[tool(name = "sirno_entry_artifact_add")]
     fn entry_artifact_add(
-        &self, Parameters(params): Parameters<ArtifactAddParams>,
+        &self, Parameters(request): Parameters<ArtifactAddRequest>,
     ) -> McpToolResult {
-        result(self.context.entry_artifact_add(ArtifactAddRequest {
-            id: entry_address(params.id)?,
-            source: params.source,
-            artifact_path: params.artifact_path,
-        }))
+        result(self.context.entry_artifact_add(request))
     }
 
     /// Rename one artifact path owned by an entry.
     #[tool(name = "sirno_entry_artifact_rename")]
     fn entry_artifact_rename(
-        &self, Parameters(params): Parameters<ArtifactRenameParams>,
+        &self, Parameters(request): Parameters<ArtifactRenameRequest>,
     ) -> McpToolResult {
-        result(self.context.entry_artifact_rename(ArtifactRenameRequest {
-            id: entry_address(params.id)?,
-            old_path: params.old_path,
-            new_path: params.new_path,
-        }))
+        result(self.context.entry_artifact_rename(request))
     }
 
     /// Remove one artifact owned by an entry.
     #[tool(name = "sirno_entry_artifact_remove")]
     fn entry_artifact_remove(
-        &self, Parameters(params): Parameters<ArtifactRemoveParams>,
+        &self, Parameters(request): Parameters<ArtifactRemoveRequest>,
     ) -> McpToolResult {
-        result(self.context.entry_artifact_remove(ArtifactRemoveRequest {
-            id: entry_address(params.id)?,
-            artifact_path: params.artifact_path,
-        }))
+        result(self.context.entry_artifact_remove(request))
     }
 
     /// Create a Sirno config and ordinary seed entries.
     #[tool(name = "sirno_lake_init")]
     // sirno:witness:lake-commands:begin
-    fn lake_init(&self, Parameters(params): Parameters<LakeInitParams>) -> McpToolResult {
-        result(self.context.lake_init(LakeInitRequest { lake: params.lake }))
+    fn lake_init(&self, Parameters(request): Parameters<LakeInitRequest>) -> McpToolResult {
+        result(self.context.lake_init(request))
     }
     // sirno:witness:lake-commands:end
 
@@ -480,33 +446,33 @@ impl SirnoMcpServer {
     /// Render Markdown links for one misty lake projection.
     #[tool(name = "sirno_mist_render")]
     fn mist_render(&self, Parameters(params): Parameters<MistRenderParams>) -> McpToolResult {
-        result(self.context.mist_render(mist_name(params.mist)?, params.dry))
+        result(self.context.mist_render(params.mist, params.dry))
     }
 
     /// Show pending mist ripples and stale projection state.
     #[tool(name = "sirno_mist_status")]
     fn mist_status(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
-        result(self.context.mist_status(mist_name(params.mist)?))
+        result(self.context.mist_status(params.mist))
     }
 
     /// Intake edited Markdown entry sources from a misty lake into the reservoir.
     #[tool(name = "sirno_mist_intake")]
     fn mist_intake(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
-        result(self.context.mist_intake(mist_name(params.mist)?))
+        result(self.context.mist_intake(params.mist))
     }
 
     /// Delete generated Markdown link footers for one misty lake projection.
     #[tool(name = "sirno_mist_render_delete")]
     fn mist_render_delete(&self, Parameters(params): Parameters<MistNameParams>) -> McpToolResult {
-        result(self.context.mist_render_delete(mist_name(params.mist)?))
+        result(self.context.mist_render_delete(params.mist))
     }
     // sirno:witness:mist-commands:end
 
     // sirno:witness:project-status-commands:begin
     /// Show the current Sirno project status.
     #[tool(name = "sirno_status")]
-    fn status(&self, Parameters(params): Parameters<StatusParams>) -> McpToolResult {
-        result(self.context.status(StatusRequest::new(params.show.into(), params.mode.into())))
+    fn status(&self, Parameters(request): Parameters<StatusRequest>) -> McpToolResult {
+        result(self.context.status(request))
     }
     // sirno:witness:project-status-commands:end
 
@@ -522,15 +488,15 @@ impl SirnoMcpServer {
     fn upstream_remove(
         &self, Parameters(params): Parameters<EntryAtomOnlyParams>,
     ) -> McpToolResult {
-        result(self.context.upstream_remove(entry_atom(params.domain)?))
+        result(self.context.upstream_remove(params.domain))
     }
 
     /// Crystallize configured upstream lakes into glaciers.
     #[tool(name = "sirno_upstream_crystallize")]
     fn upstream_crystallize(
-        &self, Parameters(params): Parameters<UpstreamCrystallizeParams>,
+        &self, Parameters(request): Parameters<UpstreamCrystallizeRequest>,
     ) -> McpToolResult {
-        result(self.context.upstream_crystallize(params.into_request()?))
+        result(self.context.upstream_crystallize(request))
     }
 
     /// Refresh upstream locks and glaciers.
@@ -538,7 +504,7 @@ impl SirnoMcpServer {
     fn upstream_update(
         &self, Parameters(params): Parameters<UpstreamDomainsParams>,
     ) -> McpToolResult {
-        result(self.context.upstream_update(entry_atoms(params.domains)?))
+        result(self.context.upstream_update(params.domains))
     }
 
     /// Show upstream lock and cache status.
@@ -560,7 +526,7 @@ impl SirnoMcpServer {
     /// Show tide review status.
     #[tool(name = "sirno_tide_status")]
     fn tide_status(&self, Parameters(params): Parameters<TideStatusParams>) -> McpToolResult {
-        result(self.context.tide_status(params.show.into()))
+        result(self.context.tide_status(params.show))
     }
 
     /// Resolve tide workitems.
@@ -617,22 +583,6 @@ fn entry_address(raw: String) -> Result<EntryAddress, String> {
     EntryAddress::new(raw).map_err(|error| error.to_string())
 }
 
-fn entry_intrinsic_fields(fields: BTreeMap<String, String>) -> EntryIntrinsicFields {
-    fields.into_iter().collect()
-}
-
-fn entry_atom(raw: String) -> Result<EntryAtom, String> {
-    EntryAtom::new(raw).map_err(|error| error.to_string())
-}
-
-fn entry_atoms(raw: Vec<String>) -> Result<Vec<EntryAtom>, String> {
-    raw.into_iter().map(entry_atom).collect()
-}
-
-fn mist_name(raw: Option<String>) -> Result<Option<EntryAtom>, String> {
-    raw.map(entry_atom).transpose()
-}
-
 fn path_selection(entry: Option<bool>, artifact: Option<bool>) -> PathSelection {
     let entry = entry.unwrap_or(false);
     let artifact = artifact.unwrap_or(false);
@@ -662,88 +612,24 @@ struct CwdParams {
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryAddressOnlyParams {
-    id: String,
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct EntryReadParams {
-    id: String,
-    /// Entry content to include. Defaults to parsed body text.
-    #[serde(default)]
-    content: McpEntryReadContent,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-enum McpEntryReadContent {
-    /// Return entry metadata and paths only.
-    Metadata,
-    /// Return metadata, paths, and parsed body text.
-    #[default]
-    Body,
-    /// Return metadata, paths, and full stored Markdown source.
-    Source,
-    /// Return metadata, paths, parsed body text, and full stored Markdown source.
-    Full,
-}
-
-impl From<McpEntryReadContent> for EntryReadContent {
-    fn from(value: McpEntryReadContent) -> Self {
-        match value {
-            | McpEntryReadContent::Metadata => Self::Metadata,
-            | McpEntryReadContent::Body => Self::Body,
-            | McpEntryReadContent::Source => Self::Source,
-            | McpEntryReadContent::Full => Self::Full,
-        }
-    }
+    id: EntryAddress,
 }
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryAtomOnlyParams {
     /// Glacier domain.
-    domain: String,
+    domain: EntryAtom,
 }
-
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct McpStructuralTargets(Vec<McpStructuralTarget>);
-
-impl McpStructuralTargets {
-    fn into_targets(self) -> Result<Vec<StructuralTarget>, String> {
-        self.0
-            .into_iter()
-            .map(|target| {
-                Ok(StructuralTarget { field: target.field, target: entry_address(target.target)? })
-            })
-            .collect()
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct McpStructuralTarget {
-    field: String,
-    target: String,
-}
-
-// sirno:witness:mcp-interface:begin
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct EntryNewParams {
-    id: String,
-    intrinsic: BTreeMap<String, String>,
-    #[serde(default)]
-    structural: McpStructuralTargets,
-    body: Option<String>,
-}
-// sirno:witness:mcp-interface:end
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryRenameParams {
-    old_id: String,
-    new_id: String,
+    old_id: EntryAddress,
+    new_id: EntryAddress,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryPathsParams {
-    id: String,
+    id: EntryAddress,
     entry: Option<bool>,
     artifact: Option<bool>,
     absolute: Option<bool>,
@@ -844,7 +730,7 @@ impl McpStructuralStateInput {
     fn into_state(self) -> Result<StructuralStateFilter, String> {
         match self {
             | Self::Object(state) => {
-                Ok(StructuralStateFilter { field: state.field, state: state.state.into() })
+                Ok(StructuralStateFilter { field: state.field, state: state.state })
             }
             | Self::Compact(raw) => {
                 StructuralStateFilter::from_str(&raw).map_err(|error| error.to_string())
@@ -856,27 +742,9 @@ impl McpStructuralStateInput {
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct McpStructuralState {
     field: String,
-    state: McpStructuralFieldState,
+    state: StructuralFieldState,
 }
 // sirno:witness:mcp-interface:end
-
-#[derive(Clone, Copy, Debug, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-enum McpStructuralFieldState {
-    Present,
-    Empty,
-    Missing,
-}
-
-impl From<McpStructuralFieldState> for StructuralFieldState {
-    fn from(value: McpStructuralFieldState) -> Self {
-        match value {
-            | McpStructuralFieldState::Present => Self::Present,
-            | McpStructuralFieldState::Empty => Self::Empty,
-            | McpStructuralFieldState::Missing => Self::Missing,
-        }
-    }
-}
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct EntryQueryParams {
@@ -891,17 +759,10 @@ struct EntryQueryParams {
     columns: Option<Vec<String>>,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct EntryRgParams {
-    args: Vec<String>,
-    #[serde(default)]
-    with_generated_footer: bool,
-}
-
 // sirno:witness:mcp-interface:begin
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct EntryWitnessParams {
-    id: String,
+    id: EntryAddress,
     /// Return path and region as separate fields.
     #[serde(default, alias = "verbose-json")]
     verbose_json: bool,
@@ -909,105 +770,31 @@ struct EntryWitnessParams {
 // sirno:witness:mcp-interface:end
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct ArtifactAddParams {
-    id: String,
-    source: PathBuf,
-    artifact_path: Option<PathBuf>,
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct ArtifactRenameParams {
-    id: String,
-    old_path: PathBuf,
-    new_path: PathBuf,
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
-struct ArtifactRemoveParams {
-    id: String,
-    artifact_path: PathBuf,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct LakeInitParams {
-    lake: Option<PathBuf>,
-}
-
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct LakeMoveParams {
     lake: PathBuf,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-enum McpCheckMode {
-    Edit,
-    #[default]
-    Review,
-}
-
-impl From<McpCheckMode> for CheckMode {
-    fn from(value: McpCheckMode) -> Self {
-        match value {
-            | McpCheckMode::Edit => Self::Edit,
-            | McpCheckMode::Review => Self::Review,
-        }
-    }
 }
 
 // sirno:witness:mist-commands:begin
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct MistNameParams {
     /// Mist name. Omit for the default mist.
-    mist: Option<String>,
+    mist: Option<EntryAtom>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct MistRenderParams {
     /// Mist name. Omit for the default mist.
-    mist: Option<String>,
+    mist: Option<EntryAtom>,
     #[serde(default)]
     dry: bool,
 }
 // sirno:witness:mist-commands:end
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct StatusParams {
-    /// Select summary, normal, or full status detail.
-    #[serde(default)]
-    show: McpStatusMode,
-    /// Select edit or review check boundary.
-    #[serde(default)]
-    mode: McpCheckMode,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-enum McpStatusMode {
-    /// Include paths, counts, blockers, and message.
-    #[default]
-    Summary,
-    /// Include compact status plus domain summaries.
-    Normal,
-    /// Include every status detail.
-    Full,
-}
-
-impl From<McpStatusMode> for StatusMode {
-    fn from(value: McpStatusMode) -> Self {
-        match value {
-            | McpStatusMode::Summary => Self::Summary,
-            | McpStatusMode::Normal => Self::Normal,
-            | McpStatusMode::Full => Self::Full,
-        }
-    }
-}
-
 // sirno:witness:upstream-commands:begin
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct UpstreamAddParams {
     /// Glacier domain used as the crystallized entry-address prefix.
-    domain: String,
+    domain: EntryAtom,
     /// Git URI or local Git repository source accepted by Git.
     git: String,
     /// Branch name to resolve.
@@ -1021,7 +808,7 @@ struct UpstreamAddParams {
     /// Project config manifest path relative to `project`.
     manifest: Option<PathBuf>,
     /// Upstream mist that selects the crystallized entries.
-    mist: Option<String>,
+    mist: Option<EntryAtom>,
 }
 
 impl UpstreamAddParams {
@@ -1049,9 +836,9 @@ impl UpstreamAddParams {
             settings.manifest = manifest;
         }
         if let Some(mist) = self.mist {
-            settings.mist = Some(entry_atom(mist)?);
+            settings.mist = Some(mist);
         }
-        Ok(UpstreamAddRequest { domain: entry_atom(self.domain)?, settings })
+        Ok(UpstreamAddRequest { domain: self.domain, settings })
     }
 }
 
@@ -1059,59 +846,22 @@ impl UpstreamAddParams {
 struct UpstreamDomainsParams {
     /// Selected glacier domains. Empty means every upstream.
     #[serde(default)]
-    domains: Vec<String>,
+    domains: Vec<EntryAtom>,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
-struct UpstreamCrystallizeParams {
-    /// Selected glacier domains. Empty means every upstream.
-    #[serde(default)]
-    domains: Vec<String>,
-    /// Use only existing lock records and cache mirrors.
-    #[serde(default)]
-    locked: bool,
-}
-
-impl UpstreamCrystallizeParams {
-    fn into_request(self) -> Result<UpstreamCrystallizeRequest, String> {
-        Ok(UpstreamCrystallizeRequest { domains: entry_atoms(self.domains)?, locked: self.locked })
-    }
-}
 // sirno:witness:upstream-commands:end
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideStatusParams {
     /// Select review entries, full open workitems, or all workitems.
     #[serde(default)]
-    show: McpTideStatusMode,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, JsonSchema)]
-#[serde(rename_all = "kebab-case")]
-enum McpTideStatusMode {
-    /// Return only entry addresses that need review.
-    #[default]
-    Review,
-    /// Include full open workitem statuses.
-    Full,
-    /// Include full open and resolved workitem statuses.
-    All,
-}
-
-impl From<McpTideStatusMode> for TideStatusMode {
-    fn from(value: McpTideStatusMode) -> Self {
-        match value {
-            | McpTideStatusMode::Review => Self::Review,
-            | McpTideStatusMode::Full => Self::Full,
-            | McpTideStatusMode::All => Self::All,
-        }
-    }
+    show: TideStatusMode,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema)]
 struct TideSelectionParams {
     #[serde(default)]
-    neighbors: Vec<String>,
+    neighbors: Vec<EntryAddress>,
     #[serde(default)]
     workitems: Vec<McpTideWorkitem>,
 }
@@ -1119,11 +869,7 @@ struct TideSelectionParams {
 impl TideSelectionParams {
     fn into_request(self) -> Result<TideSelectionRequest, String> {
         Ok(TideSelectionRequest {
-            neighbors: self
-                .neighbors
-                .into_iter()
-                .map(entry_address)
-                .collect::<Result<Vec<_>, _>>()?,
+            neighbors: self.neighbors,
             workitems: self
                 .workitems
                 .into_iter()
@@ -1138,7 +884,7 @@ struct TideResolveParams {
     #[serde(default)]
     infer: bool,
     #[serde(default)]
-    neighbors: Vec<String>,
+    neighbors: Vec<EntryAddress>,
     #[serde(default)]
     workitems: Vec<McpTideWorkitem>,
 }
@@ -1147,11 +893,7 @@ impl TideResolveParams {
     fn into_request(self) -> Result<TideResolveRequest, String> {
         Ok(TideResolveRequest {
             infer: self.infer,
-            neighbors: self
-                .neighbors
-                .into_iter()
-                .map(entry_address)
-                .collect::<Result<Vec<_>, _>>()?,
+            neighbors: self.neighbors,
             workitems: self
                 .workitems
                 .into_iter()
@@ -1163,10 +905,10 @@ impl TideResolveParams {
 
 #[derive(Clone, Debug, Deserialize, JsonSchema)]
 struct McpTideWorkitem {
-    ripple: String,
+    ripple: EntryAddress,
     field: String,
     direction: String,
-    neighbor: String,
+    neighbor: EntryAddress,
 }
 
 impl TryFrom<McpTideWorkitem> for TideWorkitem {
@@ -1174,11 +916,11 @@ impl TryFrom<McpTideWorkitem> for TideWorkitem {
 
     fn try_from(value: McpTideWorkitem) -> Result<Self, Self::Error> {
         TideWorkitem::new(
-            entry_address(value.ripple)?,
+            value.ripple,
             value.field,
             StructuralEdgeDirection::from_str(&value.direction)
                 .map_err(|error| error.to_string())?,
-            entry_address(value.neighbor)?,
+            value.neighbor,
         )
         .map_err(|error| error.to_string())
     }
@@ -1194,9 +936,10 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::surface::{StatusMode, StructuralTarget};
     use crate::{
-        CONFIG_FILE_NAME, EntryAddress, MetaRegistry, RepoMember, RepoSettings, SirnoConfig,
-        StructuralSettings,
+        CONFIG_FILE_NAME, EntryAddress, EntryIntrinsicFields, MetaRegistry, RepoMember,
+        RepoSettings, SirnoConfig, StructuralSettings,
     };
 
     // sirno:witness:mcp-interface:begin
@@ -1405,22 +1148,20 @@ Body.
 
     fn intrinsic_params(
         fields: impl IntoIterator<Item = (&'static str, &'static str)>,
-    ) -> BTreeMap<String, String> {
+    ) -> EntryIntrinsicFields {
         fields.into_iter().map(|(field, value)| (field.to_owned(), value.to_owned())).collect()
     }
 
     fn relation_params(
         fields: impl IntoIterator<Item = (&'static str, &'static str)>,
-    ) -> McpStructuralTargets {
-        McpStructuralTargets(
-            fields
-                .into_iter()
-                .map(|(field, target)| McpStructuralTarget {
-                    field: field.to_owned(),
-                    target: target.to_owned(),
-                })
-                .collect(),
-        )
+    ) -> Vec<StructuralTarget> {
+        fields
+            .into_iter()
+            .map(|(field, target)| StructuralTarget {
+                field: field.to_owned(),
+                target: EntryAddress::new(target).unwrap(),
+            })
+            .collect()
     }
 
     fn write_topic_relation(root: &Path) {
@@ -1441,7 +1182,7 @@ Body.
 
     #[test]
     fn entry_new_params_require_intrinsic_metadata() {
-        let params = serde_json::from_value::<EntryNewParams>(json!({
+        let params = serde_json::from_value::<EntryNewRequest>(json!({
             "id": "alpha",
             "structural": [],
             "body": "Body."
@@ -1474,21 +1215,21 @@ Body.
 
         let cwd = server.cwd(Parameters(CwdParams::default())).unwrap();
         let init = server
-            .lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) }))
+            .lake_init(Parameters(LakeInitRequest { lake: Some(PathBuf::from("docs")) }))
             .unwrap();
         write_topic_relation(&temp.path().join("docs"));
         let entry = server
-            .entry_new(Parameters(EntryNewParams {
-                id: "alpha".to_owned(),
+            .entry_new(Parameters(EntryNewRequest {
+                id: EntryAddress::new("alpha").unwrap(),
                 intrinsic: intrinsic_params([("name", "Alpha"), ("desc", "Alpha entry.")]),
                 structural: relation_params([("topic", "concept")]),
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
         let read = server
-            .entry_read(Parameters(EntryReadParams {
-                id: "alpha".to_owned(),
-                content: McpEntryReadContent::default(),
+            .entry_read(Parameters(EntryReadRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                content: EntryReadContent::default(),
             }))
             .unwrap();
         let text = entry
@@ -1523,35 +1264,37 @@ Body.
         let config_path = temp.path().join(CONFIG_FILE_NAME);
         let server = SirnoMcpServer::new(SurfaceContext::new(&config_path));
 
-        server.lake_init(Parameters(LakeInitParams { lake: Some(PathBuf::from("docs")) })).unwrap();
+        server
+            .lake_init(Parameters(LakeInitRequest { lake: Some(PathBuf::from("docs")) }))
+            .unwrap();
         write_topic_relation(&temp.path().join("docs"));
         server
-            .entry_new(Parameters(EntryNewParams {
-                id: "alpha".to_owned(),
+            .entry_new(Parameters(EntryNewRequest {
+                id: EntryAddress::new("alpha").unwrap(),
                 intrinsic: intrinsic_params([("name", "Alpha"), ("desc", "Alpha entry.")]),
                 structural: relation_params([("topic", "concept")]),
                 body: Some("Body.".to_owned()),
             }))
             .unwrap();
 
-        let omitted: EntryReadParams = serde_json::from_value(json!({ "id": "alpha" })).unwrap();
+        let omitted: EntryReadRequest = serde_json::from_value(json!({ "id": "alpha" })).unwrap();
         let metadata = server
-            .entry_read(Parameters(EntryReadParams {
-                id: "alpha".to_owned(),
-                content: McpEntryReadContent::Metadata,
+            .entry_read(Parameters(EntryReadRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                content: EntryReadContent::Metadata,
             }))
             .unwrap();
         let body = server.entry_read(Parameters(omitted)).unwrap();
         let source = server
-            .entry_read(Parameters(EntryReadParams {
-                id: "alpha".to_owned(),
-                content: McpEntryReadContent::Source,
+            .entry_read(Parameters(EntryReadRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                content: EntryReadContent::Source,
             }))
             .unwrap();
         let full = server
-            .entry_read(Parameters(EntryReadParams {
-                id: "alpha".to_owned(),
-                content: McpEntryReadContent::Full,
+            .entry_read(Parameters(EntryReadRequest {
+                id: EntryAddress::new("alpha").unwrap(),
+                content: EntryReadContent::Full,
             }))
             .unwrap();
 
@@ -1609,17 +1352,17 @@ Body.
         let config_path = write_project(temp.path());
         let server = SirnoMcpServer::new(SurfaceContext::new(config_path));
 
-        let summary = server.status(Parameters(StatusParams::default())).unwrap();
+        let summary = server.status(Parameters(StatusRequest::default())).unwrap();
         let normal = server
-            .status(Parameters(StatusParams {
-                show: McpStatusMode::Normal,
-                ..StatusParams::default()
+            .status(Parameters(StatusRequest {
+                show: StatusMode::Normal,
+                ..StatusRequest::default()
             }))
             .unwrap();
         let full = server
-            .status(Parameters(StatusParams {
-                show: McpStatusMode::Full,
-                ..StatusParams::default()
+            .status(Parameters(StatusRequest {
+                show: StatusMode::Full,
+                ..StatusRequest::default()
             }))
             .unwrap();
 
@@ -1666,11 +1409,10 @@ Body.
 
         let summary = server.tide_status(Parameters(TideStatusParams::default())).unwrap();
         let full = server
-            .tide_status(Parameters(TideStatusParams { show: McpTideStatusMode::Full }))
+            .tide_status(Parameters(TideStatusParams { show: TideStatusMode::Full }))
             .unwrap();
-        let all = server
-            .tide_status(Parameters(TideStatusParams { show: McpTideStatusMode::All }))
-            .unwrap();
+        let all =
+            server.tide_status(Parameters(TideStatusParams { show: TideStatusMode::All })).unwrap();
 
         assert_eq!(structured(&summary)["ok"], false);
         assert_eq!(structured(&summary)["review_entries"], json!(["beta"]));
@@ -1688,7 +1430,7 @@ Body.
 
         let result = server
             .entry_witness(Parameters(EntryWitnessParams {
-                id: "alpha".to_owned(),
+                id: EntryAddress::new("alpha").unwrap(),
                 verbose_json: false,
             }))
             .unwrap();
@@ -1711,7 +1453,7 @@ Body.
 
         let result = server
             .entry_witness(Parameters(EntryWitnessParams {
-                id: "alpha".to_owned(),
+                id: EntryAddress::new("alpha").unwrap(),
                 verbose_json: true,
             }))
             .unwrap();

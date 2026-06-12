@@ -113,8 +113,12 @@ Command failures return MCP tool errors with concise text.
 
 The MCP surface calls `sirno::surface` methods for command behavior.
 Public request and result DTOs live in `sirno::surface`.
-The MCP interface only converts JSON parameters into surface requests
-and surface DTOs into MCP tool results.
+The surface request DTOs are the MCP tool input types:
+the interface deserializes JSON parameters directly into them
+and converts surface DTOs into MCP tool results.
+Domain newtypes validate during deserialization, so no separate parameter types are needed.
+A tool keeps a small parameter struct only when its JSON shape differs from the request DTO,
+such as the compact structural filters accepted by `sirno_entry_query`.
 This keeps CLI JSON and MCP JSON aligned without duplicating command logic.
 
 The MCP interface serves interactive tooling.

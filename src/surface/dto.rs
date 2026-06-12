@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use clap::ValueEnum;
 use indexmap::IndexMap;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -35,7 +36,9 @@ pub(crate) type TideOutputFormat = StructuredOutputFormat;
 pub(crate) type AnchorOutputFormat = StructuredOutputFormat;
 
 /// Tide status detail selected by command callers.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ValueEnum, JsonSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum TideStatusMode {
     /// Show only entry addresses that need review.
@@ -155,11 +158,13 @@ pub struct UpstreamAddRequest {
 }
 
 /// Request to crystallize or update glacier domains.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, JsonSchema)]
 pub struct UpstreamCrystallizeRequest {
     /// Selected glacier domains. Empty means every upstream.
+    #[serde(default)]
     pub domains: Vec<EntryAtom>,
     /// Use only the existing lock state and cache.
+    #[serde(default)]
     pub locked: bool,
 }
 
@@ -420,7 +425,7 @@ impl FromStr for StructuralStateFilter {
 }
 
 /// Structural link state matched by `sirno query --is`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum StructuralFieldState {
     /// The relation is present with any target count.
@@ -553,7 +558,8 @@ impl EntryPathsRequest {
 
 // sirno:witness:mcp-interface:begin
 /// Entry content selected by a read request.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
 pub enum EntryReadContent {
     /// Return metadata and paths only.
     Metadata,
@@ -579,11 +585,12 @@ impl EntryReadContent {
 }
 
 /// Entry read request shared by non-CLI front ends.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, JsonSchema)]
 pub struct EntryReadRequest {
     /// Entry address to read.
     pub id: EntryAddress,
     /// Entry content included in the result.
+    #[serde(default)]
     pub content: EntryReadContent,
 }
 
@@ -596,7 +603,7 @@ impl EntryReadRequest {
 // sirno:witness:mcp-interface:end
 
 /// Lake initialization request shared by non-CLI front ends.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct LakeInitRequest {
     /// Sirno Lake path written to `Sirno.toml`.
     pub lake: Option<PathBuf>,
@@ -618,7 +625,7 @@ pub struct LakeInitResult {
 }
 
 /// Structural link target for typed command callers.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct StructuralTarget {
     /// Link relation name.
     pub field: String,
@@ -627,11 +634,12 @@ pub struct StructuralTarget {
 }
 
 /// Entry creation request shared by the CLI and tool callers.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct EntryNewRequest {
     /// Entry address.
     pub id: EntryAddress,
     /// User-authored intrinsic metadata fields.
+    #[schemars(with = "std::collections::BTreeMap<String, String>")]
     pub intrinsic: EntryIntrinsicFields,
     /// Structural link targets.
     #[serde(default)]
@@ -757,7 +765,7 @@ impl QueryResponse {
 }
 
 /// Ripgrep request shared by typed callers.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct RgRequest {
     /// Include Sirno-owned generated-footer regions in the search.
     #[serde(default)]
@@ -894,7 +902,7 @@ pub struct ArtifactListResult {
 }
 
 /// Artifact add request.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ArtifactAddRequest {
     /// Entry address that will own the artifact.
     pub id: EntryAddress,
@@ -905,7 +913,7 @@ pub struct ArtifactAddRequest {
 }
 
 /// Artifact rename request.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ArtifactRenameRequest {
     /// Entry address that owns the artifact.
     pub id: EntryAddress,
@@ -916,7 +924,7 @@ pub struct ArtifactRenameRequest {
 }
 
 /// Artifact removal request.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ArtifactRemoveRequest {
     /// Entry address that owns the artifact.
     pub id: EntryAddress,
@@ -1388,7 +1396,8 @@ impl StatusTide {
 }
 
 /// Project status detail selected by command callers.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
 pub enum StatusMode {
     /// Return the compact project dashboard.
     #[default]
@@ -1412,11 +1421,13 @@ impl StatusMode {
 }
 
 /// Project status request shared by interface surfaces.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, JsonSchema)]
 pub struct StatusRequest {
-    /// Status detail selected by the caller.
+    /// Status detail selected by the caller. Defaults to summary.
+    #[serde(default)]
     pub show: StatusMode,
-    /// Check boundary selected by the caller.
+    /// Check boundary selected by the caller. Defaults to review.
+    #[serde(default)]
     pub mode: CheckMode,
 }
 

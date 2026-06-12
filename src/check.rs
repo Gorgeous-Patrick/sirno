@@ -15,12 +15,15 @@ use crate::structural::{StructuralSettings, validate_structural_field_name};
 const CATEGORY_FIELD: &str = "category";
 
 /// Boundary at which Sirno checks structure.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum CheckMode {
     /// Editing checks keep local movement fast.
     Edit,
     /// Review checks treat dangling structural link references as errors.
+    #[default]
     Review,
 }
 

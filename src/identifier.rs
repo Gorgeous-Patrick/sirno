@@ -159,6 +159,21 @@ impl<'de> Deserialize<'de> for EntryAtom {
     }
 }
 
+/// Note: the wire schema is a plain string; validation happens during deserialization.
+impl schemars::JsonSchema for EntryAtom {
+    fn inline_schema() -> bool {
+        true
+    }
+
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "EntryAtom".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        String::json_schema(generator)
+    }
+}
+
 // sirno:witness:entry-address:begin
 /// Dot-separated lookup address for one Sirno entry.
 ///
@@ -340,6 +355,21 @@ impl<'de> Deserialize<'de> for EntryAddress {
     {
         let value = SmolStr::deserialize(deserializer)?;
         Self::new(value.as_str()).map_err(serde::de::Error::custom)
+    }
+}
+
+/// Note: the wire schema is a plain string; validation happens during deserialization.
+impl schemars::JsonSchema for EntryAddress {
+    fn inline_schema() -> bool {
+        true
+    }
+
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "EntryAddress".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        String::json_schema(generator)
     }
 }
 
