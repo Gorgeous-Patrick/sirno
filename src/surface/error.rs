@@ -91,16 +91,16 @@ pub enum CommandError {
         rollback: std::io::Error,
     },
     /// Witness lookup requires configured repo members.
-    #[error("repo members are not configured; add [repo].members to Sirno.toml")]
+    #[error("repo members are not configured")]
     RepoMembersNotConfigured,
     /// Witness lookup requires an existing entry address.
     #[error("entry `{0}` does not exist")]
     MissingWitnessEntry(EntryAddress),
     /// The MCP server selects its project only through the config path.
-    #[error("`--lake-path` cannot be used with `sirno util mcp`; configure the lake in Sirno.toml")]
+    #[error("`--lake-path` cannot be used with `sirno util mcp`")]
     McpRejectsLakePath,
     /// The config utility only inspects the config file.
-    #[error("`--lake-path` cannot be used with `sirno util config`; use `--config` only")]
+    #[error("`--lake-path` cannot be used with `sirno util config`")]
     ConfigRejectsLakePath,
     /// The terminal UI failed.
     #[error("terminal UI failed")]
@@ -118,7 +118,7 @@ pub enum CommandError {
     #[error("MCP server failed: {0}")]
     McpServer(String),
     /// The skill wrapper utility uses bundled wrapper constants.
-    #[error("`--lake-path` cannot be used with `sirno util skills`; wrappers are bundled")]
+    #[error("`--lake-path` cannot be used with `sirno util skills`")]
     SkillsRejectsLakePath,
     /// A skill wrapper package target could not be read.
     #[error("failed to read skill wrapper target {path}")]
@@ -177,25 +177,16 @@ pub enum CommandError {
     #[error("`--override-json` only applies to `sirno mist render` without a subcommand")]
     OverrideJsonWithRenderSubcommand,
     /// A command named a link relation not defined in the lake.
-    #[error(
-        "link relation `{0}` is not defined in the lake; add `{0}` with `meta.type: \"structural\"`"
-    )]
+    #[error("link relation `{0}` is not defined in the lake")]
     UndefinedStructuralField(String),
     /// A command named an intrinsic metadata field not defined in the lake.
-    #[error(
-        "intrinsic field `{0}` is not defined in the lake; add `{0}` with `meta.type: \"intrinsic\"`"
-    )]
+    #[error("intrinsic field `{0}` is not defined in the lake")]
     UndefinedIntrinsicField(String),
     /// A command named a query column that is not built-in or discovered in the lake.
-    #[error(
-        "query column `{0}` is not defined in the lake; select `id`, `path`, a discovered \
-         intrinsic field, or a structural relation"
-    )]
+    #[error("query column `{0}` is not defined in the lake")]
     UndefinedQueryColumn(String),
     /// Generated-footer masking cannot compose with another ripgrep preprocessor.
-    #[error(
-        "generated-footer filtering cannot be combined with `rg --pre`; use `--with-generated-footer`"
-    )]
+    #[error("generated-footer filtering cannot be combined with `rg --pre`")]
     RgPreprocessorConflict,
     /// Anchor update requires all current tide workitems to be reviewed.
     #[error("anchor update blocked by {open_workitems} open tide workitems")]
@@ -261,7 +252,7 @@ pub enum CommandError {
     #[error("git output is not valid UTF-8")]
     GitOutput(#[source] std::string::FromUtf8Error),
     /// A charm command requires an enabled charm.
-    #[error("charm `{0}` is not enabled; run `sirno charm enable {0}` first")]
+    #[error("charm `{0}` is not enabled")]
     CharmNotEnabled(EntryAddress),
     /// A charm process could not be started.
     #[error("failed to run {phase} command for charm `{id}`")]
@@ -349,4 +340,81 @@ pub enum CommandError {
     /// JSON parsing or rendering failed.
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+}
+
+impl CommandError {
+    /// Concrete repair hint for this error when a next step is known.
+    ///
+    /// The `Display` message states what went wrong; the hint states how to fix it.
+    /// Hints read as imperative sentences and end with a period.
+    /// Transparent variants delegate to the hint carried by the wrapped error.
+    pub fn help(&self) -> Option<String> {
+        match self {
+            | Self::ArtifactSourceHasNoFileName(_) => {
+                Some("Pass an explicit artifact path that includes a file name.".to_owned())
+            }
+            | Self::MoveDestinationExists(path) => Some(format!(
+                "Remove or rename `{}`, then retry the move.",
+                path.display()
+            )),
+            | Self::RepoMembersNotConfigured => {
+                Some("Add `[repo].members` to Sirno.toml.".to_owned())
+            }
+            | Self::MissingWitnessEntry(entry) => {
+                Some(format!("Create entry `{entry}` before requesting its witness."))
+            }
+            | Self::McpRejectsLakePath => {
+                Some("Configure the lake in Sirno.toml instead of passing `--lake-path`.".to_owned())
+            }
+            | Self::ConfigRejectsLakePath => {
+                Some("Select the config file with `--config` instead.".to_owned())
+            }
+            | Self::SkillsRejectsLakePath => {
+                Some("Drop `--lake-path`; skill wrappers are bundled.".to_owned())
+            }
+            | Self::SkillWrapperTargetExists(path) => Some(format!(
+                "Remove the existing file at `{}`, then retry.",
+                path.display()
+            )),
+            | Self::DryWithRenderSubcommand => {
+                Some("Run `sirno mist render` without a subcommand to use `--dry`.".to_owned())
+            }
+            | Self::OverrideJsonWithRenderSubcommand => Some(
+                "Run `sirno mist render` without a subcommand to use `--override-json`.".to_owned(),
+            ),
+            | Self::UndefinedStructuralField(field) => Some(format!(
+                "Add entry `{field}` with `meta.type: \"structural\"`."
+            )),
+            | Self::UndefinedIntrinsicField(field) => Some(format!(
+                "Add entry `{field}` with `meta.type: \"intrinsic\"`."
+            )),
+            | Self::UndefinedQueryColumn(_) => Some(
+                "Select `id`, `path`, a discovered intrinsic field, or a structural relation."
+                    .to_owned(),
+            ),
+            | Self::RgPreprocessorConflict => {
+                Some("Use `--with-generated-footer` instead of `rg --pre`.".to_owned())
+            }
+            | Self::AnchorUpdateOpenTide { .. } => Some(
+                "Review open tide workitems with `sirno tide resolve`, then retry the anchor update."
+                    .to_owned(),
+            ),
+            | Self::AnchorUpdateMist(_) => Some(
+                "Re-render the editable mist projection with `sirno mist render`, then retry."
+                    .to_owned(),
+            ),
+            | Self::MistIntakeBlocked(_) => Some(
+                "Re-render the editable mist projection with `sirno mist render`, then retry intake."
+                    .to_owned(),
+            ),
+            | Self::CharmNotEnabled(id) => {
+                Some(format!("Enable the charm with `sirno charm enable {id}`."))
+            }
+            | Self::RunGit(_) => Some("Ensure `git` is installed and on PATH.".to_owned()),
+            | Self::RunRg(_) => Some("Ensure ripgrep (`rg`) is installed and on PATH.".to_owned()),
+            | Self::Config(error) => error.help(),
+            | Self::EntryParse(error) => error.help().map(str::to_owned),
+            | _ => None,
+        }
+    }
 }

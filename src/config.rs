@@ -1058,6 +1058,31 @@ pub enum ConfigError {
     },
 }
 
+impl ConfigError {
+    /// Repair hint for this config error when a concise next step is known.
+    pub fn help(&self) -> Option<String> {
+        match self {
+            | Self::Read { source, .. } if source.kind() == std::io::ErrorKind::NotFound => {
+                Some(format!("Run `sirno init` to create {CONFIG_FILE_NAME}."))
+            }
+            | Self::Parse { path, .. } => {
+                Some(format!("Fix the TOML syntax in {}.", path.display()))
+            }
+            | Self::LakeIgnorePath(_) => Some("Use a path relative to the lake root.".to_owned()),
+            | Self::RepoMemberPath(_) => {
+                Some(format!("Use a path relative to the directory containing {CONFIG_FILE_NAME}."))
+            }
+            | Self::ReservedStructuralField(_) => Some(
+                "Choose a link relation name that is not reserved for Sirno metadata.".to_owned(),
+            ),
+            | Self::UpstreamRefSelector(_) => Some(
+                "Configure exactly one of `branch`, `tag`, or `rev` for the upstream.".to_owned(),
+            ),
+            | _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

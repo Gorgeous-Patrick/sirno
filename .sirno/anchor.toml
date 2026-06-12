@@ -205,7 +205,7 @@ belongs = ["methodology"]
 prerequisite = ["methodology"]
 
 [entries.diagnostics]
-fingerprint = "sha256:e6e683fb0870eee9ac1a42bbe357da80a0ecebeeb983944c9d22e42522a8e82c"
+fingerprint = "sha256:a76cdcae7b43344b3b778cea8a5986098bc3a12e30b508a393d631eb1b1df1fc"
 belongs = ["interfaces"]
 refines = ["structural-check"]
 

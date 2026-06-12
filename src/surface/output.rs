@@ -85,12 +85,14 @@ pub(crate) fn print_cli_error(error: &CommandError) {
 pub(crate) fn format_command_error(error: &CommandError) -> String {
     let mut output = format!("{error}\n");
     append_error_sources(&mut output, error);
+    append_error_help(&mut output, error);
     output.trim_end().to_owned()
 }
 
 fn format_cli_error(error: &CommandError, style: OutputStyle) -> String {
     let mut output = format!("{} {error}\n", style_text("sirno:", SemanticStyle::Error, style));
     append_error_sources(&mut output, error);
+    append_error_help(&mut output, error);
     output
 }
 
@@ -104,6 +106,12 @@ fn append_error_sources(output: &mut String, error: &CommandError) {
             rendered.push_str(&source_text);
         }
         source = error.source();
+    }
+}
+
+fn append_error_help(output: &mut String, error: &CommandError) {
+    if let Some(help) = error.help() {
+        output.push_str(&format!("  help: {help}\n"));
     }
 }
 
@@ -899,4 +907,46 @@ pub(crate) fn print_ok_path(path: &Path) {
 
 fn format_ok_line(location: &str, style: OutputStyle) -> String {
     format!("{}: {location}", style_text("ok", SemanticStyle::Success, style))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_error_renders_help_line_for_actionable_error() {
+        let error = CommandError::RepoMembersNotConfigured;
+        let rendered = format_cli_error(&error, OutputStyle::Plain);
+        assert_eq!(
+            rendered,
+            "sirno: repo members are not configured\n  help: Add `[repo].members` to Sirno.toml.\n"
+        );
+    }
+
+    #[test]
+    fn command_error_renders_help_line_for_mcp_output() {
+        let error = CommandError::CharmNotEnabled("charm".parse().unwrap());
+        let rendered = format_command_error(&error);
+        assert_eq!(
+            rendered,
+            "charm `charm` is not enabled\n  help: Enable the charm with `sirno charm enable charm`."
+        );
+    }
+
+    #[test]
+    fn command_error_delegates_help_to_missing_config() {
+        let error = CommandError::Config(crate::ConfigError::Read {
+            path: PathBuf::from("Sirno.toml"),
+            source: std::io::Error::from(std::io::ErrorKind::NotFound),
+        });
+        let rendered = format_command_error(&error);
+        assert!(rendered.contains("  help: Run `sirno init` to create Sirno.toml."), "{rendered}");
+    }
+
+    #[test]
+    fn command_error_omits_help_line_when_no_hint_is_known() {
+        let error = CommandError::TerminalUi(std::io::Error::from(std::io::ErrorKind::BrokenPipe));
+        let rendered = format_command_error(&error);
+        assert!(!rendered.contains("help:"), "{rendered}");
+    }
 }

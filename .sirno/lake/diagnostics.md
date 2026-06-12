@@ -24,6 +24,10 @@ while edit-mode checks may keep them as warnings.
 Command errors remain hard-stop failures.
 They cover unreadable files, failed writes, invalid command input,
 failed process execution, and other cases where the operation cannot continue safely.
+A command error states what went wrong through its message and cause chain,
+and carries a concise repair hint when a next step is known.
+The message names the cause; the hint names the fix.
+Human and MCP output render the hint as a `help` line after the cause chain.
 
 Human CLI output renders diagnostics as concise lines with codes, locations, and help when known.
 JSON and MCP output keep diagnostics as structured data.
