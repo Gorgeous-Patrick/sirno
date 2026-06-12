@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Message Convention"
+  short_description: "Use project commit message style"
+  default_prompt: "Use $commit-message-convention to write a commit message."
