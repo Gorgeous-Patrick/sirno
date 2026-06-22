@@ -60,6 +60,11 @@ Use `meta` for the project's principles, vocabulary, and Sirno-facing documentat
 A `meta` *entry* should answer how the project should be understood and developed:
 guiding principles, terms, splitting rules, narrative habits, review expectations, or agent-facing guidance.
 
+Use immutable update when a change should reshape a design instead of preserving its current form.
+Treat the current repository and *lake* as an immutable snapshot.
+Write the desired next state from the facts that still hold,
+then carry forward only the old prose, code, or layers that still belong.
+
 Actualize from named objects.
 Before editing repository material,
 read the *entries* that govern the work.

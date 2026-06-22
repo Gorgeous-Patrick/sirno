@@ -25,11 +25,12 @@ belongs = ["transform"]
 prerequisite = ["transform"]
 
 [entries.agent-skills]
-fingerprint = "sha256:f66a25a29d24f930ab53bcd0786c941f47d0248bc90ff8c2c8d9bf16618788d6"
+fingerprint = "sha256:790a1bacebd8e3a5d0110fbeadbbda9665f6d9e75204966f3aaf5077101f76f3"
 belongs = ["sirno"]
 prerequisite = [
     "methodology",
     "semantic-locality",
+    "immutable-update",
 ]
 
 [entries.anchor]
@@ -345,6 +346,21 @@ prerequisite = [
     "entry-freeze",
 ]
 
+[entries.immutable-update]
+fingerprint = "sha256:ef3cd1187fc4b93340f1473337676e9a58cca4f391010fff3d3a5da3148fc57d"
+belongs = ["methodology"]
+prerequisite = [
+    "methodology",
+    "design-source-authority",
+    "min-cut",
+    "semantic-locality",
+]
+refines = [
+    "documentation-driven-development",
+    "min-cut",
+    "semantic-locality",
+]
+
 [entries.implemented]
 fingerprint = "sha256:4f0ef2f028b920639cf23ab6cc86d368cbe99be08a0b2078a15653d3c7153846"
 belongs = ["category"]
@@ -527,7 +543,7 @@ belongs = ["entry"]
 prerequisite = ["entry"]
 
 [entries.methodology]
-fingerprint = "sha256:8995076fe8c63c994a4fdc3764caf942022a7fbc4588326b023eaefab164f397"
+fingerprint = "sha256:bbb99bdcf6fa9a4dd7a14a982585d86d46c1a4a43d22fb83bfd7bac55628e991"
 belongs = ["narrative"]
 prerequisite = [
     "introduction",
@@ -707,14 +723,15 @@ belongs = ["form"]
 prerequisite = ["form"]
 
 [entries.repository-editing-discipline]
-fingerprint = "sha256:ce1824e2adcfa2b1212f62123e0b47a0c18240d7e413605e8bc704f582cb1c42"
-artifact_fingerprint = "sha256:3d1afc4ccc7ec7af0ebc3522cf4b038fe515c746f5355bfd74b9885a08570201"
+fingerprint = "sha256:ad902407f51fb9d6242d8d218d7de1a8f128394ed7f2a481cc00ef5a1c3ddf39"
+artifact_fingerprint = "sha256:bac1f08b6ef66afa97d7a476af3d7132433a4abcf5c8c4ca043bf097f46f65fc"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
     "portable-agent-skill-language",
     "methodology",
     "semantic-locality",
+    "immutable-update",
     "actualize",
     "witness",
     "project-config",
@@ -746,13 +763,14 @@ refines = ["methodology"]
 fingerprint = "sha256:d6fed283be37710a2119cd98111520fd5fa544fadadfed144984af18af893145"
 
 [entries.skill-synthesis-discipline]
-fingerprint = "sha256:e5310a29d9a043a55d9f9d253a10d2617d5c3a8f35995e49f65d5c0b2b22ca6f"
-artifact_fingerprint = "sha256:4783f758351b88a4cb3178ea84d76d2242cf4d0c2e11795475e1750e12184c4f"
+fingerprint = "sha256:11084db4fff27708400b5374c3177c2276c4882bf9efd590c32a3f17f045bfba"
+artifact_fingerprint = "sha256:8816ac36db889fb2920434fccaf4ca4499899deefaa4f78448f6940a6606ba86"
 belongs = ["agent-skills"]
 prerequisite = [
     "agent-skills",
     "portable-agent-skill-language",
     "semantic-locality",
+    "immutable-update",
 ]
 
 [entries.spec-driven-development]

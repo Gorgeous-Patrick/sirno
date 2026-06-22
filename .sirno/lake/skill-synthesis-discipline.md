@@ -9,6 +9,7 @@ prerequisite:
   - agent-skills
   - portable-agent-skill-language
   - semantic-locality
+  - immutable-update
 ---
 
 Skill synthesis rebuilds the packaged Sirno skill wrappers and MCP skill resource templates
@@ -38,12 +39,16 @@ A `meta` entry named by the active project's Sirno skill roster is a skill sourc
 The other `meta` entries carry vocabulary, principles, perspective, and design authority.
 They are cross-cutting method that every skill must respect,
 not skills in their own right.
-Semantic locality is one of those cross-cutting methods.
+Semantic locality and immutable update are cross-cutting methods.
 When a generated skill creates, edits, audits, or materializes entries,
 its procedure should preserve the entry's local meaning
 and preserve useful lists without confusing them for semantic contracts.
 A route, index, roster, or review front door may enumerate children
 when that list is part of that entry's local claim.
+When a generated skill changes repository material,
+its procedure should treat the current repository and lake as a snapshot,
+carry forward the facts that still hold,
+and prefer replacing stale local shape over layering around it.
 Repository-specific design-document skills or documented prose methods are the first method input
 when Sirno skill work touches design prose.
 If a repository has none,

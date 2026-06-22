@@ -10,6 +10,7 @@ prerequisite:
   - portable-agent-skill-language
   - methodology
   - semantic-locality
+  - immutable-update
   - actualize
   - witness
   - project-config
@@ -47,6 +48,10 @@ Apply semantic locality when creating or revising entries.
 The body should state the local meaning in place,
 and any route, index, roster, or review front door should say what the list is for.
 Keep the semantic contract separate from the current route through children.
+Apply immutable update when the desired design is clearer as a fresh next state.
+Treat the current repository and lake as a snapshot,
+carry forward the facts that still hold,
+and replace local prose or code when that lowers total complexity.
 Use configured structural relations only when they improve navigation, review, or accountability.
 Leave generated footer regions untouched.
 

@@ -67,6 +67,10 @@ correct the artifact or wrapper, never the lake.
    and useful lists should not be confused for semantic contracts.
    A route, index, roster, or review front door may enumerate children
    when that list is part of that entry's local claim.
+   Include immutable update when the rendered resource changes repository material:
+   treat the current repository and lake as a snapshot,
+   carry forward the facts that still hold,
+   and prefer replacing stale local shape over layering around it.
    Preserve shared documentation habits such as reader-aware bullets, diagrams,
    conceptual ordering, and declarative precision when the rendered resource touches prose.
    Include failure paths for missing sources, unavailable tools, blocked validation,

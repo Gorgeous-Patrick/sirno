@@ -8,6 +8,7 @@ belongs:
 prerequisite:
   - methodology
   - semantic-locality
+  - immutable-update
 ---
 
 Sirno ships an agent skill set that renders the lake method into operational procedure.
@@ -59,6 +60,10 @@ When a skill creates or revises an entry,
 it applies semantic locality:
 the entry body should carry the local meaning,
 and any roster, route, index, or review front door should say what the list is for.
+When a skill changes repository material,
+it applies immutable update:
+the old repository and lake are a snapshot,
+and the next state should carry forward only the facts, prose, code, and layers that still belong.
 
 The `design-doc-writer-skill` entry documents an adjacent design-document method.
 It is a reusable method input for Sirno skill work,

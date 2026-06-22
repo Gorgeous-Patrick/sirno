@@ -57,6 +57,10 @@ Call `sirno_cwd` again before switching projects in the same server process.
    the body should state the local meaning in place,
    and any route, index, roster, or review front door should say what the list is for.
    Keep the semantic contract separate from the current route through children.
+   Apply immutable update when the desired design is clearer as a fresh next state:
+   treat the current repository and lake as a snapshot,
+   carry forward the facts that still hold,
+   and replace local prose or code when that lowers total complexity.
    Use `sirno_entry_new` for a new entry,
    `sirno_entry_rename` to change its id,
    and `sirno_entry_artifact_*` for artifacts owned by an entry.
